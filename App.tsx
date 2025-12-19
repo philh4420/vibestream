@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Layout } from './components/layout/Layout';
 import { PostCard } from './components/feed/PostCard';
 import { Toast } from './components/ui/Toast';
@@ -74,6 +75,7 @@ const App: React.FC = () => {
   
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userData, setUserData] = useState<VibeUser | null>(null);
+  const [sessionStartTime] = useState<number>(Date.now());
   const [systemSettings, setSystemSettings] = useState<SystemSettings>({
     maintenanceMode: false,
     registrationDisabled: false,
@@ -300,7 +302,7 @@ const App: React.FC = () => {
       case AppRoute.ADMIN:
         return userData?.role === 'admin' ? <AdminPanel addToast={addToast} locale={userRegion} systemSettings={systemSettings} /> : <div className="text-center py-20 font-black">UNAUTHORISED ACCESS</div>;
       case AppRoute.PROFILE:
-        return <ProfilePage userData={userData!} onUpdateProfile={(d) => setUserData({...userData!, ...d})} addToast={addToast} locale={userRegion} />;
+        return <ProfilePage userData={userData!} onUpdateProfile={(d) => setUserData({...userData!, ...d})} addToast={addToast} locale={userRegion} sessionStartTime={sessionStartTime} />;
       default:
         return (
           <div className="space-y-6 animate-in fade-in duration-700">

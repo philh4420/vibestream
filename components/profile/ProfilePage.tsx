@@ -16,14 +16,16 @@ interface ProfilePageProps {
   onUpdateProfile: (newData: Partial<User>) => void;
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
   locale: Region;
+  sessionStartTime: number;
 }
 
-export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProfile, addToast, locale }) => {
+export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProfile, addToast, locale, sessionStartTime }) => {
   const [activeTab, setActiveTab] = useState<ProfileTab>('broadcasting');
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [expandedTile, setExpandedTile] = useState<string | null>(null);
+  const [currentUptime, setCurrentUptime] = useState<string>('0h 0m');
 
   useEffect(() => {
     const fetchUserPosts = async () => {
@@ -36,6 +38,20 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
     };
     fetchUserPosts();
   }, [userData.id]);
+
+  // Real-time Uptime Tracker
+  useEffect(() => {
+    const updateUptime = () => {
+      const diffMs = Date.now() - sessionStartTime;
+      const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      setCurrentUptime(`${diffHrs}h ${diffMins}m`);
+    };
+
+    updateUptime();
+    const interval = setInterval(updateUptime, 60000); // Update every minute
+    return () => clearInterval(interval);
+  }, [sessionStartTime]);
 
   const handleUpdateIdentity = async (processedData: any) => {
     if (!db) return;
@@ -55,12 +71,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
     const eventCount = (userData.lifeEvents?.length || 0) + 1;
     return Math.min(99.9, base + (eventCount * 5)).toFixed(1);
   }, [userData.followers, userPosts.length, userData.lifeEvents]);
-
-  // Simulated daily activity - in a real app, this would be tracked in DB
-  const dailyUptime = useMemo(() => {
-    const hours = new Date().getHours();
-    return `${Math.min(hours, 12)}h ${Math.floor(Math.random() * 60)}m`;
-  }, []);
 
   const chronologyLogs = useMemo(() => {
     const logs = [...(userData.lifeEvents || [])];
@@ -187,7 +197,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
                 'up',
                 'Uptime',
                 <>
-                  <div className="text-3xl font-black text-slate-900 tracking-tighter">{dailyUptime}</div>
+                  <div className="text-3xl font-black text-slate-900 tracking-tighter">{currentUptime}</div>
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1 font-mono">Active Connection</p>
                 </>,
                 <div className="space-y-4">
