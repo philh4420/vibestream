@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from './components/layout/Layout';
 import { PostCard } from './components/feed/PostCard';
@@ -19,7 +20,10 @@ import {
   doc,
   increment,
   getDoc,
-  setDoc
+  setDoc,
+  getDocs,
+  limit,
+  where
 } from 'firebase/firestore';
 import { uploadToCloudinary } from './services/cloudinary';
 import { ICONS } from './constants';
@@ -38,6 +42,7 @@ const App: React.FC = () => {
   const [userData, setUserData] = useState<VibeUser | null>(null);
   const [activeRoute, setActiveRoute] = useState<AppRoute>(AppRoute.FEED);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [chats, setChats] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -89,14 +94,13 @@ const App: React.FC = () => {
               setUserData({ 
                 id: userDoc.id, 
                 ...data,
-                badges: data.badges || [],
-                verifiedHuman: !!data.verifiedHuman,
-                role: data.role || 'member',
-                followers: data.followers || 0,
-                following: data.following || 0,
-                location: data.location || 'London, UK'
               } as VibeUser);
             } else {
+              // BOOTSTRAP ADMIN: Check if this is the first user
+              const usersQuery = query(collection(db, 'users'), limit(1));
+              const usersSnap = await getDocs(usersQuery);
+              const isFirstUser = usersSnap.empty;
+
               const newProfile: any = {
                 username: user.email?.split('@')[0] || `node_${user.uid.slice(0, 5)}`,
                 displayName: user.displayName || user.email?.split('@')[0] || 'Unknown Signal',
@@ -105,16 +109,17 @@ const App: React.FC = () => {
                 coverUrl: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop',
                 followers: 0,
                 following: 0,
-                role: 'member',
+                role: isFirstUser ? 'admin' : 'member',
                 location: 'London, UK',
                 joinedAt: new Date().toISOString(),
-                badges: ['Citizen'],
-                verifiedHuman: false,
+                badges: isFirstUser ? ['Citadel Founder', 'Admin'] : ['Citizen'],
+                verifiedHuman: isFirstUser,
                 isSuspended: false,
-                geoNode: 'UK' // CRITICAL: Must match firestore.rules
+                geoNode: 'UK' 
               };
               await setDoc(userDocRef, newProfile);
               setUserData({ id: user.uid, ...newProfile } as VibeUser);
+              if (isFirstUser) addToast("Founder Privileges Granted", "success");
             }
           } catch (e) {
             console.warn("Sync error:", e);
@@ -133,6 +138,7 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
+  // Sync Posts
   useEffect(() => {
     if (!isAuthenticated || !db) return;
 
@@ -143,7 +149,6 @@ const App: React.FC = () => {
           id: doc.id,
           ...doc.data()
         })) as Post[];
-        
         setPosts(fetchedPosts);
       }, (error) => {
         console.error("Snapshot error:", error);
@@ -155,6 +160,29 @@ const App: React.FC = () => {
       console.error("Grid sync failed:", e);
     }
   }, [isAuthenticated]);
+
+  // Sync Chats
+  useEffect(() => {
+    if (!isAuthenticated || !db || !currentUser) return;
+
+    const q = query(
+      collection(db, 'chats'), 
+      where('participants', 'array-contains', currentUser.uid),
+      orderBy('lastMessageTimestamp', 'desc')
+    );
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedChats = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setChats(fetchedChats);
+    }, (error) => {
+      console.error("Chat sync error:", error);
+    });
+
+    return () => unsubscribe();
+  }, [isAuthenticated, currentUser]);
 
   const handleLike = async (postId: string) => {
     if (!db || !currentUser) return;
@@ -287,26 +315,35 @@ const App: React.FC = () => {
           />
         ) : null;
       case AppRoute.EXPLORE:
+        const discoveryPosts = posts.filter(p => p.media && p.media.length > 0).slice(0, 10);
         return (
           <div className="space-y-8 page-transition">
             <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">Grid Discovery</h1>
             <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar">
-              {['Trending', 'Art', 'UK Tech', 'London', 'Global'].map(tag => (
+              {['Visuals', 'Global', 'Trending'].map(tag => (
                 <button key={tag} className="px-6 py-3 bg-white border border-slate-200 rounded-2xl whitespace-nowrap font-bold text-slate-600 hover:text-indigo-600 transition-all shadow-sm">
                   {tag}
                 </button>
               ))}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="relative group rounded-[2.5rem] overflow-hidden aspect-video shadow-lg border border-slate-200/50 bg-white">
-                  <img src={`https://picsum.photos/800/600?random=${i+20}`} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all" alt="" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 p-8 flex flex-col justify-end">
-                    <p className="text-white font-black text-xl tracking-tight">Signal Alpha-{i*10}</p>
+            {discoveryPosts.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {discoveryPosts.map((post, i) => (
+                  <div key={post.id} className="relative group rounded-[2.5rem] overflow-hidden aspect-video shadow-lg border border-slate-200/50 bg-white cursor-pointer active:scale-95 transition-all">
+                    <img src={post.media[0].url} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all" alt="" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-8 flex flex-col justify-end">
+                      <p className="text-white font-black text-xl tracking-tight line-clamp-1">{post.content || 'Signal Alpha'}</p>
+                      <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-1">Shared by {post.authorName}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-24 bg-white rounded-[3rem] border border-slate-200/50">
+                 <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Discovery Offline</h3>
+                 <p className="text-slate-400 font-bold mt-2">No visual signals captured on the grid yet.</p>
+              </div>
+            )}
           </div>
         );
       case AppRoute.MESSAGES:
@@ -317,21 +354,26 @@ const App: React.FC = () => {
                 <button className="p-4 bg-indigo-600 text-white rounded-2xl"><ICONS.Create /></button>
              </div>
              <div className="space-y-4">
-               {[1, 2, 3].map(i => (
-                 <div key={i} className="bg-white p-6 rounded-[2.5rem] border border-slate-200/50 shadow-sm flex items-center gap-6 hover:shadow-md transition-all cursor-pointer">
+               {chats.length > 0 ? chats.map((chat, i) => (
+                 <div key={chat.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-200/50 shadow-sm flex items-center gap-6 hover:shadow-md transition-all cursor-pointer group active:scale-[0.98]">
                     <div className="relative">
-                       <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i+50}`} className="w-16 h-16 rounded-[1.5rem] object-cover" alt="" />
+                       <img src={chat.icon || `https://api.dicebear.com/7.x/avataaars/svg?seed=${chat.id}`} className="w-16 h-16 rounded-[1.5rem] object-cover" alt="" />
                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-4 border-white rounded-full"></div>
                     </div>
                     <div className="flex-1">
                       <div className="flex justify-between items-center">
-                        <h4 className="font-black text-slate-900 text-lg">Signal {i+100}</h4>
-                        <span className="text-[10px] font-bold text-slate-400">2m</span>
+                        <h4 className="font-black text-slate-900 text-lg">{chat.name || 'Private Signal'}</h4>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">{chat.lastMessageTime || 'Just Now'}</span>
                       </div>
-                      <p className="text-slate-500 text-sm font-medium line-clamp-1 truncate">Encrypted transmission incoming...</p>
+                      <p className="text-slate-500 text-sm font-medium line-clamp-1 truncate">{chat.lastMessage || 'Encrypted transmission incoming...'}</p>
                     </div>
                  </div>
-               ))}
+               )) : (
+                <div className="text-center py-24 bg-white rounded-[3rem] border border-slate-200/50">
+                   <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">No Neural Links</h3>
+                   <p className="text-slate-400 font-bold mt-2">Initiate a link to start communicating.</p>
+                </div>
+               )}
              </div>
           </div>
         );

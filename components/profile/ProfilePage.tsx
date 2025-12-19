@@ -136,7 +136,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
           </div>
 
           <div className="bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl shadow-indigo-200/20 text-white">
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-2 gap-4 text-center">
               <div>
                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Resonance</p>
                 <p className="text-2xl font-black">{userData.followers.toLocaleString(locale)}</p>
@@ -144,10 +144,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
               <div>
                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Signals</p>
                 <p className="text-2xl font-black">{userData.following.toLocaleString(locale)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Nodes</p>
-                <p className="text-2xl font-black">1.2k</p>
               </div>
             </div>
           </div>

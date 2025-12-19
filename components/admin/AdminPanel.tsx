@@ -19,7 +19,7 @@ interface AdminPanelProps {
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale }) => {
-  const [stats, setStats] = useState({ users: 0, posts: 0, reports: 12 });
+  const [stats, setStats] = useState({ users: 0, posts: 0, reports: 0 });
   const [users, setUsers] = useState<User[]>([]);
   const [recentPosts, setRecentPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,7 +30,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale }) => {
     setIsLoading(true);
     try {
       const usersSnap = await getDocs(collection(db, 'users'));
-      const postsSnap = await getDocs(query(collection(db, 'posts'), limit(20), orderBy('timestamp', 'desc')));
+      const postsSnap = await getDocs(query(collection(db, 'posts'), limit(50), orderBy('timestamp', 'desc')));
+      // Placeholder for reports if collection exists later
+      const reportsSnap = await getDocs(collection(db, 'reports')).catch(() => ({ size: 0 }));
       
       const usersData = usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as User));
       const postsData = postsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Post));
@@ -39,8 +41,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale }) => {
       setRecentPosts(postsData);
       setStats({
         users: usersSnap.size,
-        posts: postsData.length,
-        reports: Math.floor(Math.random() * 20) + 5
+        posts: postsSnap.size,
+        reports: reportsSnap.size
       });
     } catch (e) {
       console.error(e);
@@ -219,7 +221,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale }) => {
           </div>
         ) : activeTab === 'content' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {recentPosts.map(post => (
+            {recentPosts.length > 0 ? recentPosts.map(post => (
               <div key={post.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm relative group">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-3">
@@ -241,7 +243,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale }) => {
                   <img src={post.media[0].url} className="w-full h-32 object-cover rounded-xl" alt="" />
                 )}
               </div>
-            ))}
+            )) : (
+              <div className="md:col-span-2 text-center py-20 bg-white rounded-[3rem] border border-slate-100">
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No Transmissions Logged</p>
+              </div>
+            )}
           </div>
         ) : (
           <div className="bg-slate-900 rounded-[2.5rem] p-12 text-center text-white">
@@ -249,7 +255,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale }) => {
               <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
             </div>
             <h3 className="text-2xl font-black mb-4 uppercase tracking-tighter">System Pulse</h3>
-            <p className="text-slate-400 max-w-md mx-auto mb-10 font-medium">All infrastructure nodes operating within established parameters. Global latency: 12ms.</p>
+            <p className="text-slate-400 max-w-md mx-auto mb-10 font-medium">All infrastructure nodes operating within established parameters. Database connections active.</p>
             <div className="flex justify-center gap-4">
               <div className="px-6 py-3 bg-white/5 rounded-2xl border border-white/10 text-[10px] font-black uppercase tracking-[0.3em]">Build v2.6.4-UK</div>
               <div className="px-6 py-3 bg-white/5 rounded-2xl border border-white/10 text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400">Stable</div>
