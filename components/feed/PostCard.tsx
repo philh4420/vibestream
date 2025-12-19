@@ -6,9 +6,11 @@ import { ICONS } from '../../constants';
 interface PostCardProps {
   post: Post;
   onLike: (id: string) => void;
+  // Added locale support to fix the TypeScript error and support regional formatting for 2026+ standards
+  locale?: string;
 }
 
-export const PostCard: React.FC<PostCardProps> = ({ post, onLike }) => {
+export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-GB' }) => {
   return (
     <div className="bg-white rounded-[2rem] p-5 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-5">
@@ -46,7 +48,8 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
               </svg>
             </div>
-            <span className={`text-sm font-bold ${post.isLiked ? 'text-rose-600' : 'text-slate-500'}`}>{post.likes.toLocaleString('en-GB')}</span>
+            {/* Format numbers based on provided locale for global accessibility */}
+            <span className={`text-sm font-bold ${post.isLiked ? 'text-rose-600' : 'text-slate-500'}`}>{post.likes.toLocaleString(locale)}</span>
           </button>
         </div>
       </div>
