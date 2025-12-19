@@ -1,27 +1,27 @@
 
-// Fixed: Switching to named imports for 'firebase/app' to resolve persistent symbol resolution errors
-import { initializeApp, getApps, getApp } from 'firebase/app';
+// Fixed: Switching to namespace import for 'firebase/app' to resolve persistent symbol resolution errors
+import * as firebaseApp from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { CONFIG } from './config';
 
 let app: any;
 try {
-  // Fixed: Safely calling modular getApps() function to check for existing instances
-  const existingApps = getApps();
+  // Fixed: Safely calling modular getApps() via namespace to check for existing instances
+  const existingApps = firebaseApp.getApps();
   if (!existingApps.length) {
     // Only initialize if we have at least an API key to prevent crashing the whole app
     if (CONFIG.FIREBASE.apiKey && CONFIG.FIREBASE.apiKey !== '') {
-      // Fixed: Calling named initializeApp for consistent symbol lookup in the modular SDK
-      app = initializeApp(CONFIG.FIREBASE as any);
+      // Fixed: Calling initializeApp via namespace for consistent symbol lookup
+      app = firebaseApp.initializeApp(CONFIG.FIREBASE as any);
     } else {
       console.warn("Firebase: No API Key found. App running in offline/mock mode.");
       // Provide a dummy app object to prevent downstream reference errors
       app = { name: '[DEFAULT]-mock' } as any;
     }
   } else {
-    // Fixed: Calling named getApp function for consistent symbol lookup in multi-instance environments
-    app = getApp();
+    // Fixed: Calling getApp via namespace for consistent symbol lookup in multi-instance environments
+    app = firebaseApp.getApp();
   }
 } catch (error) {
   console.error("Firebase Initialization Error:", error);
