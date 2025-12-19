@@ -29,6 +29,7 @@ import { uploadToCloudinary } from './services/cloudinary';
 import { ICONS } from './constants';
 
 const SESSION_KEY = 'vibestream_session_2026';
+const SESSION_START_KEY = 'vibestream_session_start_timestamp';
 const ROUTE_KEY = 'vibestream_active_route';
 
 const MaintenanceOverlay: React.FC = () => (
@@ -75,7 +76,16 @@ const App: React.FC = () => {
   
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userData, setUserData] = useState<VibeUser | null>(null);
-  const [sessionStartTime] = useState<number>(Date.now());
+  
+  // Persistent Session Start Time
+  const [sessionStartTime, setSessionStartTime] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(SESSION_START_KEY);
+      return saved ? parseInt(saved, 10) : Date.now();
+    }
+    return Date.now();
+  });
+
   const [systemSettings, setSystemSettings] = useState<SystemSettings>({
     maintenanceMode: false,
     registrationDisabled: false,
@@ -122,6 +132,7 @@ const App: React.FC = () => {
       await signOut(auth);
       setIsAuthenticated(false);
       localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(SESSION_START_KEY); // Reset duration on logout
       addToast("Session Terminated", "info");
     }
   };
@@ -149,6 +160,13 @@ const App: React.FC = () => {
         setIsAuthenticated(true);
         localStorage.setItem(SESSION_KEY, 'active');
         
+        // Handle Session Start Persistence
+        if (!localStorage.getItem(SESSION_START_KEY)) {
+          const now = Date.now();
+          localStorage.setItem(SESSION_START_KEY, now.toString());
+          setSessionStartTime(now);
+        }
+
         if (db) {
           try {
             const userDocRef = doc(db, 'users', user.uid);
@@ -189,6 +207,7 @@ const App: React.FC = () => {
         setCurrentUser(null);
         setUserData(null);
         localStorage.removeItem(SESSION_KEY);
+        localStorage.removeItem(SESSION_START_KEY);
       }
       setIsLoading(false);
     });
