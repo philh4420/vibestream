@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from './components/layout/Layout';
 import { PostCard } from './components/feed/PostCard';
@@ -19,8 +20,18 @@ import {
 } from 'firebase/firestore';
 import { uploadToCloudinary } from './services/cloudinary';
 
+const SESSION_KEY = 'vibestream_session_2026';
+
 const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    // Check for existing session on initial load
+    if (typeof window !== 'undefined') {
+      const savedSession = localStorage.getItem(SESSION_KEY);
+      return savedSession === 'active';
+    }
+    return false;
+  });
+  
   const [activeRoute, setActiveRoute] = useState<AppRoute>(AppRoute.FEED);
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,6 +52,12 @@ const App: React.FC = () => {
   const removeToast = (id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      addToast('Welcome back to VibeStream', 'success');
+    }
+  }, []); // Only run once on mount if authenticated
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -99,6 +116,12 @@ const App: React.FC = () => {
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem(SESSION_KEY);
+    setIsAuthenticated(false);
+    addToast('Session terminated securely', 'info');
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -167,6 +190,7 @@ const App: React.FC = () => {
 
   if (!isAuthenticated) {
     return <LandingPage onEnter={() => {
+      localStorage.setItem(SESSION_KEY, 'active');
       setIsAuthenticated(true);
       addToast('Secure connection established', 'success');
     }} />;
@@ -177,6 +201,7 @@ const App: React.FC = () => {
       activeRoute={activeRoute} 
       onNavigate={setActiveRoute}
       onOpenCreate={() => setIsCreateModalOpen(true)}
+      onLogout={handleLogout}
     >
       <div className="space-y-4 md:space-y-8 pb-32 md:pb-12 max-w-2xl mx-auto">
         {posts.map(post => (
