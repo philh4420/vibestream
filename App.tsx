@@ -4,7 +4,8 @@ import { Layout } from './components/layout/Layout';
 import { PostCard } from './components/feed/PostCard';
 import { Toast } from './components/ui/Toast';
 import { LandingPage } from './components/landing/LandingPage';
-import { AppRoute, Post, ToastMessage } from './types';
+import { AdminPanel } from './components/admin/AdminPanel';
+import { AppRoute, Post, ToastMessage, UserRole } from './types';
 import { MOCK_POSTS, MOCK_USER } from './constants';
 import { db, auth } from './services/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -17,7 +18,8 @@ import {
   serverTimestamp,
   updateDoc,
   doc,
-  increment
+  increment,
+  getDoc
 } from 'firebase/firestore';
 import { uploadToCloudinary } from './services/cloudinary';
 
@@ -32,6 +34,7 @@ const App: React.FC = () => {
   });
   
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<UserRole>('member');
   const [activeRoute, setActiveRoute] = useState<AppRoute>(AppRoute.FEED);
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,15 +63,32 @@ const App: React.FC = () => {
       return;
     }
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        setIsAuthenticated(true);
         setCurrentUser(user);
+        setIsAuthenticated(true);
         localStorage.setItem(SESSION_KEY, 'active');
+        
+        // Fetch role from Firestore
+        if (db) {
+          try {
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            if (userDoc.exists()) {
+              setUserRole(userDoc.data().role as UserRole || 'member');
+            } else {
+              // Create default user doc if it doesn't exist
+              setUserRole('member');
+            }
+          } catch (e) {
+            console.warn("Role detection offline.");
+          }
+        }
+
         addToast(`Neural Link Active: ${user.email}`, 'success');
       } else {
         setIsAuthenticated(false);
         setCurrentUser(null);
+        setUserRole('member');
         localStorage.removeItem(SESSION_KEY);
       }
       setIsLoading(false);
@@ -141,6 +161,7 @@ const App: React.FC = () => {
       }
       localStorage.removeItem(SESSION_KEY);
       setIsAuthenticated(false);
+      setActiveRoute(AppRoute.FEED);
       addToast('Neural Link Terminated', 'info');
     } catch (error) {
       addToast('Logout Failed', 'error');
@@ -177,7 +198,7 @@ const App: React.FC = () => {
       const postData = {
         authorId: currentUser?.uid || MOCK_USER.id,
         authorName: currentUser?.displayName || currentUser?.email?.split('@')[0] || MOCK_USER.displayName,
-        authorAvatar: MOCK_USER.avatarUrl, // Placeholder avatar for now
+        authorAvatar: MOCK_USER.avatarUrl,
         content: newPostText,
         media: mediaUrl ? [{ type: mediaType, url: mediaUrl }] : [],
         likes: 0,
@@ -223,23 +244,35 @@ const App: React.FC = () => {
     return <LandingPage onEnter={() => setIsAuthenticated(true)} />;
   }
 
+  const renderRoute = () => {
+    switch(activeRoute) {
+      case AppRoute.ADMIN:
+        return <AdminPanel addToast={addToast} locale={userRegion} />;
+      default:
+        return (
+          <div className="space-y-4 md:space-y-8 pb-32 md:pb-12 max-w-2xl mx-auto">
+            {posts.map(post => (
+              <PostCard 
+                key={post.id} 
+                post={post} 
+                onLike={handleLike} 
+                locale={userRegion}
+              />
+            ))}
+          </div>
+        );
+    }
+  };
+
   return (
     <Layout 
       activeRoute={activeRoute} 
       onNavigate={setActiveRoute}
       onOpenCreate={() => setIsCreateModalOpen(true)}
       onLogout={handleLogout}
+      userRole={userRole}
     >
-      <div className="space-y-4 md:space-y-8 pb-32 md:pb-12 max-w-2xl mx-auto">
-        {posts.map(post => (
-          <PostCard 
-            key={post.id} 
-            post={post} 
-            onLike={handleLike} 
-            locale={userRegion}
-          />
-        ))}
-      </div>
+      {renderRoute()}
 
       <div className="fixed top-safe-top pt-4 left-0 right-0 z-[500] flex flex-col gap-2 items-center pointer-events-none px-4">
         {toasts.map(toast => (

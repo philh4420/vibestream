@@ -57,7 +57,8 @@ export enum AppRoute {
   CREATE = 'create',
   MESSAGES = 'messages',
   PROFILE = 'profile',
-  COMMUNITIES = 'communities'
+  COMMUNITIES = 'communities',
+  ADMIN = 'admin'
 }
 
 export interface ToastMessage {

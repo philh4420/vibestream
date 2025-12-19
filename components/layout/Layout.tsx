@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { ICONS, MOCK_USER } from '../../constants';
-import { AppRoute } from '../../types';
+import { AppRoute, UserRole } from '../../types';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -9,9 +9,17 @@ interface LayoutProps {
   onNavigate: (route: AppRoute) => void;
   onOpenCreate: () => void;
   onLogout?: () => void;
+  userRole?: UserRole;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children, activeRoute, onNavigate, onOpenCreate, onLogout }) => {
+export const Layout: React.FC<LayoutProps> = ({ 
+  children, 
+  activeRoute, 
+  onNavigate, 
+  onOpenCreate, 
+  onLogout,
+  userRole = 'member'
+}) => {
   const NavItem = ({ route, icon: Icon, label }: { route: AppRoute, icon: React.FC, label: string }) => {
     const isActive = activeRoute === route;
     return (
@@ -24,6 +32,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeRoute, onNavigat
       </button>
     );
   };
+
+  const isAdmin = userRole === 'admin';
 
   return (
     <div className="flex flex-col h-full w-full max-w-[1920px] mx-auto overflow-hidden">
@@ -53,6 +63,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeRoute, onNavigat
           <NavItem route={AppRoute.FEED} icon={ICONS.Home} label="Feed" />
           <NavItem route={AppRoute.EXPLORE} icon={ICONS.Explore} label="Explore" />
           <NavItem route={AppRoute.PROFILE} icon={ICONS.Profile} label="Profile" />
+          {isAdmin && <NavItem route={AppRoute.ADMIN} icon={ICONS.Admin} label="Admin Citadel" />}
           
           <button 
             onClick={onOpenCreate}
@@ -76,7 +87,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeRoute, onNavigat
         </aside>
 
         <main className="flex-1 h-full overflow-y-auto scroll-smooth bg-slate-50 pb-24 md:pb-0">
-          <div className="max-w-4xl mx-auto px-4 md:px-8 py-6">
+          <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6">
             {children}
           </div>
         </main>
@@ -92,7 +103,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeRoute, onNavigat
           >
             <ICONS.Create />
           </button>
-          <NavItem route={AppRoute.PROFILE} icon={ICONS.Profile} label="Me" />
+          {isAdmin ? (
+            <NavItem route={AppRoute.ADMIN} icon={ICONS.Admin} label="Citadel" />
+          ) : (
+            <NavItem route={AppRoute.PROFILE} icon={ICONS.Profile} label="Me" />
+          )}
           <button 
             onClick={onLogout}
             className="flex flex-col items-center gap-1 p-2 text-slate-400 active:text-rose-500"
