@@ -1,131 +1,195 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { Input } from '../ui/Input';
 
 interface LandingPageProps {
   onEnter: () => void;
 }
 
+type AuthMode = 'login' | 'register';
+type Step = 'hero' | 'neural' | 'auth';
+
 export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
-  const [step, setStep] = useState<'idle' | 'verifying' | 'granted'>('idle');
+  const [step, setStep] = useState<Step>('hero');
+  const [authMode, setAuthMode] = useState<AuthMode>('login');
+  const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  const startVerification = () => {
-    setStep('verifying');
+  const startNeuralScan = () => {
+    setStep('neural');
     let p = 0;
     const interval = setInterval(() => {
-      p += Math.random() * 15;
+      p += Math.random() * 12;
       if (p >= 100) {
         p = 100;
         clearInterval(interval);
-        setTimeout(() => setStep('granted'), 500);
-        setTimeout(onEnter, 1500);
+        setTimeout(() => setStep('auth'), 600);
       }
       setProgress(p);
-    }, 150);
+    }, 100);
+  };
+
+  const handleAuth = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    // Simulate professional secure auth delay
+    setTimeout(() => {
+      setIsLoading(false);
+      onEnter();
+    }, 1500);
   };
 
   return (
-    <div className="fixed inset-0 z-[200] bg-[#020617] text-white flex flex-col items-center justify-center overflow-hidden font-outfit selection:bg-indigo-500">
-      {/* 2026 Ambient Background */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-indigo-600/10 blur-[150px] rounded-full animate-pulse" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[60%] h-[60%] bg-blue-600/10 blur-[150px] rounded-full" />
+    <div className="fixed inset-0 z-[200] bg-[#020617] text-white overflow-y-auto selection:bg-indigo-500 font-outfit">
+      {/* 2026 Background Engine */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-[-20%] right-[-10%] w-[70%] h-[70%] bg-indigo-600/10 blur-[180px] rounded-full animate-pulse" />
+        <div className="absolute bottom-[-20%] left-[-10%] w-[70%] h-[70%] bg-blue-600/10 blur-[180px] rounded-full" />
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
       </div>
 
-      <div className="relative z-10 w-full max-w-[90rem] px-6 md:px-12 flex flex-col items-center">
-        {/* Brand */}
-        <header className="mb-12 animate-in fade-in slide-in-from-top-10 duration-1000">
+      <div className="relative z-10 min-h-screen flex flex-col items-center p-6 md:p-12 lg:p-24">
+        {/* Navigation */}
+        <nav className="w-full max-w-[120rem] flex justify-between items-center mb-12 lg:mb-24 animate-in fade-in slide-in-from-top-10 duration-1000">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-[1.5rem] flex items-center justify-center shadow-2xl shadow-indigo-500/30 ring-1 ring-white/20">
-              <span className="text-3xl font-black italic tracking-tighter">V</span>
+            <div className="w-12 h-12 lg:w-16 lg:h-16 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-[1.2rem] lg:rounded-[1.5rem] flex items-center justify-center shadow-2xl shadow-indigo-500/30">
+              <span className="text-2xl lg:text-3xl font-black italic tracking-tighter">V</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-3xl font-black tracking-tighter leading-none">VIBESTREAM</span>
-              <span className="text-[10px] font-bold text-indigo-400 tracking-[0.3em] uppercase opacity-80">Social Protocol v2.6</span>
+              <span className="text-xl lg:text-3xl font-black tracking-tighter leading-none">VIBESTREAM</span>
+              <span className="text-[8px] lg:text-[10px] font-bold text-indigo-400 tracking-[0.3em] uppercase opacity-80">Social Protocol v2.6</span>
             </div>
           </div>
-        </header>
-
-        {/* Hero Text */}
-        <div className="text-center max-w-6xl mb-16 space-y-8">
-          <h1 className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tight leading-[0.95] animate-in fade-in zoom-in-95 duration-1000 delay-200">
-            CONNECT THE <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-blue-400 to-indigo-400 bg-[length:200%_auto] animate-text-gradient">NEURAL ERA.</span>
-          </h1>
-          <p className="text-slate-400 text-lg md:text-2xl max-w-3xl mx-auto leading-relaxed font-medium animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-500">
-            A high-fidelity ecosystem for the next generation of creators. Built for 8K resolution, powered by security, and refined for the 2026 standard.
-          </p>
-        </div>
-
-        {/* Verification System */}
-        <div className="w-full max-w-xl">
-          <div className="bg-white/[0.03] backdrop-blur-3xl border border-white/10 rounded-[3rem] p-10 md:p-12 shadow-2xl relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-50" />
-            
-            {step === 'idle' && (
-              <div className="text-center space-y-8 animate-in fade-in duration-500">
-                <div>
-                  <h2 className="text-2xl font-bold mb-2">Neural Handshake</h2>
-                  <p className="text-slate-500 text-sm">Initiate biometric validation to access the protocol.</p>
-                </div>
-                <button 
-                  onClick={startVerification}
-                  className="w-full py-6 bg-white text-slate-950 rounded-2xl font-black text-xl hover:bg-indigo-50 transition-all active:scale-95 shadow-xl shadow-white/5"
-                >
-                  ENTER HUB
-                </button>
-              </div>
-            )}
-
-            {step === 'verifying' && (
-              <div className="space-y-8 animate-in fade-in duration-500">
-                <div className="flex justify-between items-end">
-                  <div>
-                    <h2 className="text-xl font-bold text-indigo-400">Verifying Identity</h2>
-                    <p className="text-slate-500 text-xs font-mono uppercase tracking-widest">Scanning neural patterns...</p>
-                  </div>
-                  <span className="text-3xl font-mono font-black">{Math.floor(progress)}%</span>
-                </div>
-                <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-indigo-500 transition-all duration-300" 
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mb-1" />
-                    <span className="text-[10px] text-slate-500 font-bold uppercase">SSL Secured</span>
-                  </div>
-                  <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse mb-1" />
-                    <span className="text-[10px] text-slate-500 font-bold uppercase">Bot-Shield v4</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {step === 'granted' && (
-              <div className="text-center py-4 space-y-4 animate-in zoom-in-95 duration-500">
-                <div className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-emerald-500/20 ring-4 ring-emerald-500/20">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={4} stroke="currentColor" className="w-10 h-10">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                  </svg>
-                </div>
-                <h2 className="text-3xl font-black text-emerald-400">ACCESS GRANTED</h2>
-                <p className="text-slate-500 font-medium">Synchronizing profile nodes...</p>
-              </div>
-            )}
+          <div className="hidden md:flex gap-12 text-[10px] font-bold tracking-[0.2em] uppercase text-slate-500">
+            <a href="#" className="hover:text-white transition-colors">Vision</a>
+            <a href="#" className="hover:text-white transition-colors">Infrastructure</a>
+            <a href="#" className="hover:text-white transition-colors">Compliance</a>
           </div>
-        </div>
+          <button 
+            onClick={() => setStep('auth')} 
+            className="px-6 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl text-[10px] font-black tracking-widest uppercase hover:bg-white/10 transition-all"
+          >
+            Access Portal
+          </button>
+        </nav>
 
-        {/* Dynamic Footer Info */}
-        <div className="mt-20 flex flex-wrap justify-center gap-12 text-slate-600 font-bold text-[10px] uppercase tracking-[0.3em]">
-          <span>ENCRYPTED IN THE UK</span>
-          <span>8K NATIVE INTERFACE</span>
-          <span>NEURAL PROTECTED</span>
-        </div>
+        {/* Dynamic Main Content */}
+        <main className="flex-1 w-full max-w-[120rem] flex flex-col items-center justify-center text-center">
+          {step === 'hero' && (
+            <div className="animate-in fade-in zoom-in-95 duration-1000 delay-200 flex flex-col items-center">
+              <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-[0.3em] mb-12">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                </span>
+                Deployment Region: UK-EN
+              </div>
+              <h1 className="text-5xl md:text-8xl lg:text-9xl 2xl:text-[10rem] font-black tracking-tight leading-[0.9] mb-12 max-w-7xl">
+                REDEFINING <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-blue-400 to-indigo-400 bg-[length:200%_auto] animate-text-gradient">CONNECTION.</span>
+              </h1>
+              <p className="text-slate-400 text-lg md:text-2xl 2xl:text-3xl max-w-3xl leading-relaxed mb-16 font-medium">
+                Enter a professional-grade ecosystem designed for the next era of creators. High-fidelity, neural-secure, and globally compliant.
+              </p>
+              <button 
+                onClick={startNeuralScan}
+                className="group relative px-12 py-6 md:px-20 md:py-8 bg-white text-slate-950 rounded-[2rem] font-black text-xl md:text-2xl hover:bg-indigo-50 transition-all active:scale-95 shadow-2xl shadow-white/5 overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-indigo-600/10 translate-y-full group-hover:translate-y-0 transition-transform" />
+                <span className="relative">INITIALIZE SESSION</span>
+              </button>
+            </div>
+          )}
+
+          {step === 'neural' && (
+            <div className="w-full max-w-2xl animate-in fade-in duration-700">
+              <div className="mb-12">
+                <h2 className="text-4xl lg:text-5xl font-black mb-4 tracking-tighter">NEURAL HANDSHAKE</h2>
+                <p className="text-slate-500 text-lg">Validating session integrity for your region...</p>
+              </div>
+              <div className="bg-white/[0.03] backdrop-blur-3xl border border-white/10 rounded-[3rem] p-12 lg:p-16">
+                 <div className="flex justify-between items-end mb-8">
+                    <span className="text-[10px] font-bold text-indigo-400 tracking-[0.3em] uppercase">Security Protocol active</span>
+                    <span className="text-5xl font-black font-mono">{Math.floor(progress)}%</span>
+                 </div>
+                 <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden mb-12">
+                   <div 
+                     className="h-full bg-indigo-500 transition-all duration-300" 
+                     style={{ width: `${progress}%` }}
+                   />
+                 </div>
+                 <div className="grid grid-cols-2 gap-6">
+                    <div className="bg-white/5 border border-white/5 rounded-2xl p-6 text-left">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mb-3" />
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Biometric Match</p>
+                      <p className="text-xs font-mono text-slate-400 mt-1">SUCCESS_99.2%</p>
+                    </div>
+                    <div className="bg-white/5 border border-white/5 rounded-2xl p-6 text-left">
+                      <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse mb-3" />
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Node Sync</p>
+                      <p className="text-xs font-mono text-slate-400 mt-1">REGIONAL_UK_GB</p>
+                    </div>
+                 </div>
+              </div>
+            </div>
+          )}
+
+          {step === 'auth' && (
+            <div className="w-full max-w-xl animate-in zoom-in-95 duration-500">
+              <div className="bg-white/[0.03] backdrop-blur-3xl border border-white/10 rounded-[3.5rem] p-10 lg:p-14 shadow-2xl relative">
+                <div className="flex gap-8 mb-12 justify-center">
+                  <button 
+                    onClick={() => setAuthMode('login')}
+                    className={`text-2xl font-black tracking-tight transition-all ${authMode === 'login' ? 'text-white' : 'text-slate-600 hover:text-slate-400'}`}
+                  >
+                    LOGIN
+                  </button>
+                  <button 
+                    onClick={() => setAuthMode('register')}
+                    className={`text-2xl font-black tracking-tight transition-all ${authMode === 'register' ? 'text-white' : 'text-slate-600 hover:text-slate-400'}`}
+                  >
+                    SIGN UP
+                  </button>
+                </div>
+
+                <form onSubmit={handleAuth} className="space-y-6">
+                  {authMode === 'register' && (
+                    <Input label="Display Name" placeholder="e.g. Oliver Bennett" required />
+                  )}
+                  <Input label="Neural ID / Email" type="email" placeholder="name@vibestream.com" required />
+                  <Input label="Access Key" type="password" placeholder="••••••••" required />
+
+                  <button 
+                    disabled={isLoading}
+                    className="w-full py-5 bg-white text-slate-950 rounded-2xl font-black text-lg hover:bg-indigo-50 transition-all active:scale-95 shadow-xl flex items-center justify-center gap-3 disabled:opacity-70 mt-4"
+                  >
+                    {isLoading ? (
+                      <svg className="animate-spin h-6 w-6" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    ) : (
+                      authMode === 'login' ? 'ESTABLISH LINK' : 'CREATE PROTOCOL'
+                    )}
+                  </button>
+                </form>
+
+                <p className="mt-8 text-slate-500 text-xs font-medium leading-relaxed">
+                  By accessing VibeStream, you agree to our 2026 Neural Security Standards and Regional Privacy Protocols.
+                </p>
+              </div>
+            </div>
+          )}
+        </main>
+
+        {/* Footer Metrics */}
+        <footer className="w-full max-w-[120rem] mt-24 border-t border-white/5 pt-12 flex flex-col md:flex-row justify-between items-center gap-8 text-slate-600 font-bold text-[10px] uppercase tracking-[0.3em] pb-12">
+          <div className="flex gap-12">
+            <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> SYSTEMS_OPTIMAL</span>
+            <span>LATENCY: 12ms</span>
+          </div>
+          <p>© 2026 VibeStream Social Infrastructure Group. London, UK.</p>
+        </footer>
       </div>
 
       <style>{`
