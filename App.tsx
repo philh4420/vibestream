@@ -60,7 +60,7 @@ const App: React.FC = () => {
 
   const handleRegionChange = (newRegion: Region) => {
     setUserRegion(newRegion);
-    addToast(`Neural Node Switched: ${newRegion}`, 'info');
+    addToast(`Neural Switch: ${newRegion}`, 'info');
   };
 
   useEffect(() => {
@@ -84,7 +84,7 @@ const App: React.FC = () => {
               const data = userDoc.data() as VibeUser;
               if (data.isSuspended) {
                  await signOut(auth);
-                 addToast("Protocol Breach: Node Suspended", "error");
+                 addToast("Access Terminated: Node Suspended", "error");
                  return;
               }
               setUserData({ 
@@ -95,13 +95,13 @@ const App: React.FC = () => {
                 role: data.role || 'member',
                 followers: data.followers || 0,
                 following: data.following || 0,
-                location: data.location || 'Unknown Node'
+                location: data.location || 'London, UK'
               } as VibeUser);
             } else {
               const newProfile: Partial<VibeUser> = {
-                username: user.email?.split('@')[0] || `user_${user.uid.slice(0, 5)}`,
-                displayName: user.displayName || user.email?.split('@')[0] || 'Unknown Node',
-                bio: 'New VibeStream citizen.',
+                username: user.email?.split('@')[0] || `node_${user.uid.slice(0, 5)}`,
+                displayName: user.displayName || user.email?.split('@')[0] || 'Unknown Signal',
+                bio: 'Citadel citizen.',
                 avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`,
                 coverUrl: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop',
                 followers: 0,
@@ -109,7 +109,7 @@ const App: React.FC = () => {
                 role: 'member',
                 location: 'London, UK',
                 joinedAt: new Date().toISOString(),
-                badges: ['New Citizen'],
+                badges: ['Citizen'],
                 verifiedHuman: false,
                 isSuspended: false
               };
@@ -117,10 +117,9 @@ const App: React.FC = () => {
               setUserData({ id: user.uid, ...newProfile } as VibeUser);
             }
           } catch (e) {
-            console.warn("Profile Sync Offline:", e);
+            console.warn("Sync error:", e);
           }
         }
-        addToast(`Neural Link Active`, 'success');
       } else {
         setIsAuthenticated(false);
         setCurrentUser(null);
@@ -146,12 +145,12 @@ const App: React.FC = () => {
         
         setPosts(fetchedPosts);
       }, (error) => {
-        addToast("Network Syncing...", "info");
+        addToast("Resyncing grid...", "info");
       });
 
       return () => unsubscribe();
     } catch (e) {
-      console.error("Feed error:", e);
+      console.error("Grid sync failed:", e);
     }
   }, [isAuthenticated]);
 
@@ -161,7 +160,7 @@ const App: React.FC = () => {
     setPosts(prev => prev.map(p => {
       if (p.id === postId) {
         const isLiked = !p.isLiked;
-        if (isLiked) addToast('Resonance Increased', 'success');
+        if (isLiked) addToast('Signal Liked', 'success');
         return { ...p, likes: isLiked ? p.likes + 1 : p.likes - 1, isLiked };
       }
       return p;
@@ -188,7 +187,7 @@ const App: React.FC = () => {
       setActiveRoute(AppRoute.FEED);
       addToast('Neural Link Terminated', 'info');
     } catch (error) {
-      addToast('Logout Failed', 'error');
+      addToast('Termination failed', 'error');
     }
   };
 
@@ -199,18 +198,18 @@ const App: React.FC = () => {
       const reader = new FileReader();
       reader.onloadend = () => setFilePreview(reader.result as string);
       reader.readAsDataURL(file);
-      addToast('Buffer Prepared', 'info');
+      addToast('Data buffered', 'info');
     }
   };
 
   const handleCreatePost = async () => {
     if (!newPostText.trim() && !selectedFile) {
-      addToast('Content required for broadcast', 'error');
+      addToast('Missing signal content', 'error');
       return;
     }
 
     if (!userData) {
-      addToast('Identity Sync Required', 'error');
+      addToast('Identity sync required', 'error');
       return;
     }
 
@@ -233,7 +232,7 @@ const App: React.FC = () => {
         likes: 0,
         comments: 0,
         shares: 0,
-        createdAt: new Date().toLocaleDateString(userRegion, { 
+        createdAt: new Date().toLocaleDateString('en-GB', { 
           day: '2-digit', 
           month: 'short', 
           year: 'numeric',
@@ -251,9 +250,9 @@ const App: React.FC = () => {
       setSelectedFile(null);
       setFilePreview(null);
       setIsCreateModalOpen(false);
-      addToast('Broadcast Successful', 'success');
+      addToast('Broadcast active', 'success');
     } catch (error) {
-      addToast('Transmission Failure', 'error');
+      addToast('Protocol failed', 'error');
     } finally {
       setIsUploading(false);
     }
@@ -261,8 +260,8 @@ const App: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="fixed inset-0 bg-[#020617] flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+      <div className="fixed inset-0 bg-white flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-600 rounded-full animate-spin" />
       </div>
     );
   }
@@ -274,34 +273,33 @@ const App: React.FC = () => {
   const renderRoute = () => {
     switch(activeRoute) {
       case AppRoute.ADMIN:
-        return <AdminPanel addToast={addToast} locale={userRegion} />;
+        return <AdminPanel addToast={addToast} locale="en-GB" />;
       case AppRoute.PROFILE:
         return userData ? (
           <ProfilePage 
             userData={userData} 
             onUpdateProfile={(newData) => setUserData(prev => prev ? ({ ...prev, ...newData }) : null)}
             addToast={addToast}
-            locale={userRegion}
+            locale="en-GB"
           />
         ) : null;
       case AppRoute.EXPLORE:
         return (
           <div className="space-y-8 page-transition">
-            <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">Discovery Hub</h1>
-            <div className="flex gap-4 overflow-x-auto pb-4 scroll-container">
-              {['Trending', 'Neural Art', 'UK Tech', 'London Live', 'Creator Hub'].map(tag => (
-                <button key={tag} className="px-6 py-3 bg-white border border-slate-100 rounded-2xl whitespace-nowrap font-bold text-slate-600 hover:border-indigo-400 hover:text-indigo-600 transition-all shadow-sm">
+            <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">Grid Discovery</h1>
+            <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar">
+              {['Trending', 'Art', 'UK Tech', 'London', 'Global'].map(tag => (
+                <button key={tag} className="px-6 py-3 bg-white border border-slate-200 rounded-2xl whitespace-nowrap font-bold text-slate-600 hover:text-indigo-600 transition-all shadow-sm">
                   {tag}
                 </button>
               ))}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[1, 2, 3, 4].map(i => (
-                <div key={i} className="relative group rounded-[2.5rem] overflow-hidden aspect-video shadow-xl border border-slate-100">
-                  <img src={`https://picsum.photos/800/600?random=${i+20}`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent p-8 flex flex-col justify-end">
-                    <p className="text-white font-black text-2xl tracking-tight mb-2">Neural Cluster #{i*100}</p>
-                    <p className="text-white/70 text-sm font-bold uppercase tracking-widest">Active Signal from GB-LON</p>
+                <div key={i} className="relative group rounded-[2.5rem] overflow-hidden aspect-video shadow-lg border border-slate-200/50 bg-white">
+                  <img src={`https://picsum.photos/800/600?random=${i+20}`} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all" alt="" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 p-8 flex flex-col justify-end">
+                    <p className="text-white font-black text-xl tracking-tight">Signal Alpha-{i*10}</p>
                   </div>
                 </div>
               ))}
@@ -311,23 +309,23 @@ const App: React.FC = () => {
       case AppRoute.MESSAGES:
         return (
           <div className="space-y-6 page-transition">
-             <div className="flex justify-between items-center px-2">
+             <div className="flex justify-between items-center">
                 <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">Neural Comms</h1>
-                <button className="p-4 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-100"><ICONS.Create /></button>
+                <button className="p-4 bg-indigo-600 text-white rounded-2xl"><ICONS.Create /></button>
              </div>
              <div className="space-y-4">
-               {[1, 2, 3, 4, 5].map(i => (
-                 <div key={i} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 hover:shadow-md transition-all cursor-pointer">
+               {[1, 2, 3].map(i => (
+                 <div key={i} className="bg-white p-6 rounded-[2.5rem] border border-slate-200/50 shadow-sm flex items-center gap-6 hover:shadow-md transition-all cursor-pointer">
                     <div className="relative">
                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i+50}`} className="w-16 h-16 rounded-[1.5rem] object-cover" alt="" />
                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-4 border-white rounded-full"></div>
                     </div>
                     <div className="flex-1">
-                      <div className="flex justify-between items-center mb-1">
-                        <h4 className="font-black text-slate-900 text-lg tracking-tight">Node Identity #{i+1000}</h4>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">2m ago</span>
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-black text-slate-900 text-lg">Signal {i+100}</h4>
+                        <span className="text-[10px] font-bold text-slate-400">2m</span>
                       </div>
-                      <p className="text-slate-500 text-sm font-medium line-clamp-1">Incoming encrypted transmission: Handshake requested...</p>
+                      <p className="text-slate-500 text-sm font-medium line-clamp-1 truncate">Encrypted transmission incoming...</p>
                     </div>
                  </div>
                ))}
@@ -336,21 +334,18 @@ const App: React.FC = () => {
         );
       default:
         return (
-          <div className="space-y-6 md:space-y-10 max-w-2xl mx-auto page-transition">
+          <div className="space-y-6 page-transition">
             {posts.length === 0 ? (
-              <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-100 shadow-sm">
-                 <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-slate-300">
-                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path></svg>
-                 </div>
-                 <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">No signals found</h3>
-                 <p className="text-slate-400 font-medium mt-2">Be the first to broadcast on the network.</p>
+              <div className="text-center py-24 bg-white rounded-[3rem] border border-slate-200/50 shadow-sm">
+                 <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">No signals found</h3>
+                 <p className="text-slate-400 font-bold mt-2">The grid is currently silent.</p>
               </div>
             ) : posts.map(post => (
               <PostCard 
                 key={post.id} 
                 post={post} 
                 onLike={handleLike} 
-                locale={userRegion}
+                locale="en-GB"
               />
             ))}
           </div>
@@ -371,7 +366,8 @@ const App: React.FC = () => {
     >
       {renderRoute()}
 
-      <div className="fixed top-safe-top pt-24 md:pt-28 left-0 right-0 z-[500] flex flex-col gap-2 items-center pointer-events-none px-4">
+      {/* FIXED TOAST LAYER */}
+      <div className="fixed top-24 left-0 right-0 z-[500] flex flex-col gap-2 items-center pointer-events-none px-4">
         {toasts.map(toast => (
           <div key={toast.id} className="pointer-events-auto w-fit">
             <Toast toast={toast} onClose={removeToast} />
@@ -379,18 +375,19 @@ const App: React.FC = () => {
         ))}
       </div>
 
+      {/* CREATE MODAL */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-[400] flex items-end md:items-center justify-center p-0 md:p-6">
+        <div className="fixed inset-0 z-[600] flex items-end md:items-center justify-center p-0 md:p-6">
           <div 
-            className="absolute inset-0 bg-slate-950/80 backdrop-blur-2xl animate-in fade-in duration-500" 
+            className="absolute inset-0 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-300" 
             onClick={() => !isUploading && setIsCreateModalOpen(false)}
           ></div>
-          <div className="relative bg-white w-full max-w-2xl rounded-t-[2.5rem] md:rounded-[3rem] shadow-2xl overflow-hidden p-6 md:p-10 animate-in slide-in-from-bottom-12 md:zoom-in-95 duration-500">
+          <div className="relative bg-white w-full max-w-2xl rounded-t-[2.5rem] md:rounded-[3rem] shadow-2xl overflow-hidden p-6 md:p-10 animate-in slide-in-from-bottom-12 duration-400">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Broadcast</h2>
+              <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Broadcast</h2>
               <button 
                 onClick={() => setIsCreateModalOpen(false)} 
-                className="p-3 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors active:scale-90"
+                className="p-3 bg-slate-100 rounded-2xl hover:bg-slate-200 transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M6 18L18 6M6 6l12 12"></path></svg>
               </button>
@@ -399,45 +396,43 @@ const App: React.FC = () => {
             <textarea 
               value={newPostText}
               onChange={(e) => setNewPostText(e.target.value)}
-              className="w-full h-40 md:h-56 p-6 bg-slate-50 rounded-[1.5rem] md:rounded-[2rem] border-none focus:ring-2 focus:ring-indigo-100 text-lg md:text-xl placeholder:text-slate-400 mb-6 resize-none transition-all font-semibold"
+              className="w-full h-40 p-6 bg-slate-50 rounded-[2rem] border-none focus:ring-2 focus:ring-indigo-100 text-xl placeholder:text-slate-400 mb-6 resize-none transition-all font-semibold"
               placeholder="What's your frequency?"
               autoFocus
             />
 
             {filePreview && (
-              <div className="relative rounded-2xl md:rounded-3xl overflow-hidden mb-6 bg-slate-100 aspect-video group">
+              <div className="relative rounded-3xl overflow-hidden mb-6 bg-slate-100 aspect-video group">
                 <img src={filePreview} className="w-full h-full object-cover" alt="Preview" />
                 <button 
                   onClick={() => { setSelectedFile(null); setFilePreview(null); }}
-                  className="absolute top-4 right-4 p-2.5 bg-black/60 text-white rounded-full backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-4 right-4 p-2.5 bg-black/60 text-white rounded-full"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
               </div>
             )}
 
-            <div className="flex justify-between items-center gap-4">
-              <div className="flex gap-2">
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleFileChange} 
-                  className="hidden" 
-                  accept="image/*,video/*"
-                />
-                <button 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="p-4 md:p-5 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-100 transition-all active:scale-90"
-                >
-                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                </button>
-              </div>
+            <div className="flex gap-4">
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileChange} 
+                className="hidden" 
+                accept="image/*,video/*"
+              />
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="p-5 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-100 transition-all active:scale-90"
+              >
+                <ICONS.Create />
+              </button>
               <button 
                 onClick={handleCreatePost}
                 disabled={isUploading}
-                className="flex-1 py-4 md:py-5 bg-indigo-600 text-white font-black rounded-2xl md:rounded-[1.5rem] shadow-xl shadow-indigo-100 hover:bg-indigo-700 disabled:opacity-50 transition-all active:scale-95 text-base md:text-lg tracking-tight uppercase"
+                className="flex-1 py-5 bg-indigo-600 text-white font-black rounded-[1.5rem] shadow-xl hover:bg-indigo-700 disabled:opacity-50 transition-all uppercase tracking-widest"
               >
-                {isUploading ? 'Encrypting...' : 'Initiate Broadcast'}
+                {isUploading ? 'Syncing...' : 'Initiate'}
               </button>
             </div>
           </div>
