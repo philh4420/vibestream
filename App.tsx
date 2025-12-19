@@ -6,7 +6,8 @@ import { Toast } from './components/ui/Toast';
 import { LandingPage } from './components/landing/LandingPage';
 import { AppRoute, Post, ToastMessage } from './types';
 import { MOCK_POSTS, MOCK_USER } from './constants';
-import { db } from './services/firebase';
+import { db, auth } from './services/firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { 
   collection, 
   onSnapshot, 
@@ -24,14 +25,13 @@ const SESSION_KEY = 'vibestream_session_2026';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    // Check for existing session on initial load
     if (typeof window !== 'undefined') {
-      const savedSession = localStorage.getItem(SESSION_KEY);
-      return savedSession === 'active';
+      return localStorage.getItem(SESSION_KEY) === 'active';
     }
     return false;
   });
   
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [activeRoute, setActiveRoute] = useState<AppRoute>(AppRoute.FEED);
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,11 +53,29 @@ const App: React.FC = () => {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
 
+  // Real Auth Observer
   useEffect(() => {
-    if (isAuthenticated) {
-      addToast('Welcome back to VibeStream', 'success');
+    if (!auth) {
+      setIsLoading(false);
+      return;
     }
-  }, []); // Only run once on mount if authenticated
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsAuthenticated(true);
+        setCurrentUser(user);
+        localStorage.setItem(SESSION_KEY, 'active');
+        addToast(`Neural Link Active: ${user.email}`, 'success');
+      } else {
+        setIsAuthenticated(false);
+        setCurrentUser(null);
+        localStorage.removeItem(SESSION_KEY);
+      }
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -82,7 +100,7 @@ const App: React.FC = () => {
         setPosts(fetchedPosts.length > 0 ? fetchedPosts : MOCK_POSTS);
         setIsLoading(false);
       }, (error) => {
-        addToast("Syncing offline data", "info");
+        addToast("Network Syncing...", "info");
         setPosts(MOCK_POSTS);
         setIsLoading(false);
       });
@@ -98,7 +116,7 @@ const App: React.FC = () => {
     setPosts(prev => prev.map(p => {
       if (p.id === postId) {
         const isLiked = !p.isLiked;
-        if (isLiked) addToast('Post Liked', 'success');
+        if (isLiked) addToast('Resonance Increased', 'success');
         return { ...p, likes: isLiked ? p.likes + 1 : p.likes - 1, isLiked };
       }
       return p;
@@ -107,21 +125,26 @@ const App: React.FC = () => {
     if (!db) return;
 
     try {
-      if (!postId.startsWith('p')) {
-        const postRef = doc(db, 'posts', postId);
-        await updateDoc(postRef, {
-          likes: increment(1)
-        });
-      }
+      const postRef = doc(db, 'posts', postId);
+      await updateDoc(postRef, {
+        likes: increment(1)
+      });
     } catch (e) {
       console.error(e);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem(SESSION_KEY);
-    setIsAuthenticated(false);
-    addToast('Session terminated securely', 'info');
+  const handleLogout = async () => {
+    try {
+      if (auth) {
+        await signOut(auth);
+      }
+      localStorage.removeItem(SESSION_KEY);
+      setIsAuthenticated(false);
+      addToast('Neural Link Terminated', 'info');
+    } catch (error) {
+      addToast('Logout Failed', 'error');
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -131,13 +154,13 @@ const App: React.FC = () => {
       const reader = new FileReader();
       reader.onloadend = () => setFilePreview(reader.result as string);
       reader.readAsDataURL(file);
-      addToast('Media attached', 'info');
+      addToast('Buffer Prepared', 'info');
     }
   };
 
   const handleCreatePost = async () => {
     if (!newPostText.trim() && !selectedFile) {
-      addToast('Cannot publish empty post', 'error');
+      addToast('Content required for broadcast', 'error');
       return;
     }
 
@@ -152,9 +175,9 @@ const App: React.FC = () => {
       }
 
       const postData = {
-        authorId: MOCK_USER.id,
-        authorName: MOCK_USER.displayName,
-        authorAvatar: MOCK_USER.avatarUrl,
+        authorId: currentUser?.uid || MOCK_USER.id,
+        authorName: currentUser?.displayName || currentUser?.email?.split('@')[0] || MOCK_USER.displayName,
+        authorAvatar: MOCK_USER.avatarUrl, // Placeholder avatar for now
         content: newPostText,
         media: mediaUrl ? [{ type: mediaType, url: mediaUrl }] : [],
         likes: 0,
@@ -180,20 +203,24 @@ const App: React.FC = () => {
       setSelectedFile(null);
       setFilePreview(null);
       setIsCreateModalOpen(false);
-      addToast('Published to VibeStream', 'success');
+      addToast('Broadcast Successful', 'success');
     } catch (error) {
-      addToast('Publishing failed', 'error');
+      addToast('Transmission Failure', 'error');
     } finally {
       setIsUploading(false);
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 bg-[#020617] flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
-    return <LandingPage onEnter={() => {
-      localStorage.setItem(SESSION_KEY, 'active');
-      setIsAuthenticated(true);
-      addToast('Secure connection established', 'success');
-    }} />;
+    return <LandingPage onEnter={() => setIsAuthenticated(true)} />;
   }
 
   return (
@@ -230,7 +257,7 @@ const App: React.FC = () => {
           ></div>
           <div className="relative bg-white w-full max-w-2xl rounded-t-[2.5rem] md:rounded-[3rem] shadow-2xl overflow-hidden p-6 md:p-10 animate-in slide-in-from-bottom-12 md:zoom-in-95 duration-500">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Create Post</h2>
+              <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Broadcast</h2>
               <button 
                 onClick={() => setIsCreateModalOpen(false)} 
                 className="p-3 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors active:scale-90"
@@ -243,7 +270,7 @@ const App: React.FC = () => {
               value={newPostText}
               onChange={(e) => setNewPostText(e.target.value)}
               className="w-full h-40 md:h-56 p-6 bg-slate-50 rounded-[1.5rem] md:rounded-[2rem] border-none focus:ring-2 focus:ring-indigo-100 text-lg md:text-xl placeholder:text-slate-400 mb-6 resize-none transition-all"
-              placeholder="Share your vibe..."
+              placeholder="What's your frequency?"
               autoFocus
             />
 
@@ -280,7 +307,7 @@ const App: React.FC = () => {
                 disabled={isUploading}
                 className="flex-1 py-4 md:py-5 bg-indigo-600 text-white font-black rounded-2xl md:rounded-[1.5rem] shadow-xl shadow-indigo-100 hover:bg-indigo-700 disabled:opacity-50 transition-all active:scale-95 text-base md:text-lg tracking-tight uppercase"
               >
-                {isUploading ? 'Authorising...' : 'Publish Post'}
+                {isUploading ? 'Encrypting...' : 'Initiate Broadcast'}
               </button>
             </div>
           </div>
