@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Layout } from './components/Layout';
 import { PostCard } from './components/PostCard';
 import { Toast } from './components/Toast';
+import { LandingPage } from './components/LandingPage';
 import { AppRoute, Post, ToastMessage } from './types';
 import { MOCK_POSTS, MOCK_USER } from './constants';
 import { db } from './lib/firebase';
@@ -20,6 +21,7 @@ import {
 import { uploadToCloudinary } from './lib/cloudinary';
 
 const App: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeRoute, setActiveRoute] = useState<AppRoute>(AppRoute.FEED);
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,28 +44,28 @@ const App: React.FC = () => {
 
   // Real-time Firebase Feed
   useEffect(() => {
-    const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+    if (!isAuthenticated) return;
+
+    const q = query(collection(db, 'posts'), orderBy('timestamp', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetchedPosts = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Post[];
       
-      // Merge with MOCK_POSTS if empty, or just use Firestore
       setPosts(fetchedPosts.length > 0 ? fetchedPosts : MOCK_POSTS);
       setIsLoading(false);
     }, (error) => {
       console.error("Firestore Listen Error:", error);
-      addToast("Failed to connect to feed", "error");
+      addToast("Feed sync paused", "info");
       setPosts(MOCK_POSTS);
       setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [isAuthenticated]);
 
   const handleLike = async (postId: string) => {
-    // Optimistic UI update
     setPosts(prev => prev.map(p => {
       if (p.id === postId) {
         const isLiked = !p.isLiked;
@@ -74,7 +76,6 @@ const App: React.FC = () => {
     }));
 
     try {
-      // If it's a firebase post, update it
       if (!postId.startsWith('p')) {
         const postRef = doc(db, 'posts', postId);
         await updateDoc(postRef, {
@@ -151,7 +152,6 @@ const App: React.FC = () => {
       case AppRoute.FEED:
         return (
           <div className="space-y-6">
-            {/* Quick Status / Stories Row */}
             <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
               <div className="flex-shrink-0 flex flex-col items-center gap-1 group cursor-pointer">
                 <div className="w-16 h-16 rounded-full p-1 border-2 border-dashed border-indigo-400 group-hover:scale-105 transition-transform flex items-center justify-center">
@@ -226,11 +226,7 @@ const App: React.FC = () => {
                   </button>
                 </div>
               </div>
-
-              <p className="text-slate-700 leading-relaxed max-w-2xl mb-6">
-                {MOCK_USER.bio}
-              </p>
-
+              <p className="text-slate-700 leading-relaxed max-w-2xl mb-6">{MOCK_USER.bio}</p>
               <div className="flex items-center gap-6 mb-8 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                 <div className="text-center">
                   <p className="text-xl font-bold text-slate-900">{(MOCK_USER.followers / 1000).toFixed(1)}k</p>
@@ -247,7 +243,6 @@ const App: React.FC = () => {
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Posts</p>
                 </div>
               </div>
-
               <div className="grid grid-cols-3 gap-1 md:gap-4">
                 {[...Array(6)].map((_, i) => (
                   <div key={i} className="aspect-square bg-slate-100 rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity">
@@ -274,6 +269,10 @@ const App: React.FC = () => {
     }
   };
 
+  if (!isAuthenticated) {
+    return <LandingPage onEnter={() => setIsAuthenticated(true)} />;
+  }
+
   return (
     <Layout 
       activeRoute={activeRoute} 
@@ -282,7 +281,6 @@ const App: React.FC = () => {
     >
       {renderContent()}
 
-      {/* Toasts Container */}
       <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 items-center pointer-events-none">
         {toasts.map(toast => (
           <div key={toast.id} className="pointer-events-auto">
@@ -291,7 +289,6 @@ const App: React.FC = () => {
         ))}
       </div>
 
-      {/* Create Modal */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => !isUploading && setIsCreateModalOpen(false)}></div>
@@ -389,8 +386,8 @@ const App: React.FC = () => {
                 >
                   {isUploading ? (
                     <>
-                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
                       <span>Uploading...</span>

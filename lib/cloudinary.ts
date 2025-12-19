@@ -6,6 +6,8 @@ export const uploadToCloudinary = async (file: File): Promise<string> => {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', uploadPreset);
+  // Ensure files are added to the VibeStream folder
+  formData.append('folder', 'VibeStream');
 
   const resourceType = file.type.startsWith('video/') ? 'video' : 'image';
   
