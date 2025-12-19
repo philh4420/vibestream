@@ -254,7 +254,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
 
   return (
     <div className="animate-in fade-in duration-1000 pb-20">
-      <ProfileHeader userData={userData} onEdit={() => setIsEditModalOpen(true)} postCount={userPosts.length} />
+      <ProfileHeader userData={userData} onEdit={() => setIsEditModalOpen(true)} postCount={userPosts.length} addToast={addToast} />
       <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
       <div className="mt-8 px-4 md:px-0">{renderTabContent()}</div>
       {isEditModalOpen && (

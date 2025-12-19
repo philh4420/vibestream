@@ -2,24 +2,27 @@
 import { CONFIG } from './config';
 import { WeatherInfo } from '../types';
 
-export const fetchWeather = async (location: string): Promise<WeatherInfo | null> => {
+export const fetchWeather = async (params: { query?: string; coords?: { lat: number; lon: number } }): Promise<WeatherInfo | null> => {
   const apiKey = CONFIG.WEATHER.apiKey;
   if (!apiKey) return null;
 
   try {
-    // Sanitize query: use specific city name if it's too broad like 'United Kingdom'
-    let query = location.trim();
-    if (!query || query.toLowerCase() === 'united kingdom' || query.toLowerCase() === 'uk') {
-      query = 'London';
+    let url = '';
+    
+    if (params.coords) {
+      url = `https://api.openweathermap.org/data/2.5/weather?lat=${params.coords.lat}&lon=${params.coords.lon}&units=metric&appid=${apiKey}`;
+    } else {
+      let query = (params.query || 'London').trim();
+      if (!query || query.toLowerCase() === 'united kingdom' || query.toLowerCase() === 'uk') {
+        query = 'London';
+      }
+      url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(query)}&units=metric&appid=${apiKey}`;
     }
 
-    const response = await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(query)}&units=metric&appid=${apiKey}`
-    );
+    const response = await fetch(url);
     
-    // Gracefully handle not found or API errors without crashing the profile view
     if (response.status === 404) {
-      console.warn(`Weather sync: Location '${query}' not found by provider.`);
+      // Return null quietly, consumer handles fallback
       return null;
     }
 
@@ -37,8 +40,7 @@ export const fetchWeather = async (location: string): Promise<WeatherInfo | null
       icon: data.weather[0].icon
     };
   } catch (error) {
-    // Silent failure for weather; UI will fallback to just showing the clock/node
-    console.debug('Weather sync bypassed:', error instanceof Error ? error.message : 'Unknown error');
+    console.debug('Atmospheric sync bypassed:', error instanceof Error ? error.message : 'Unknown error');
     return null;
   }
 };

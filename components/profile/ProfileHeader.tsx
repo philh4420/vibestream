@@ -8,11 +8,13 @@ interface ProfileHeaderProps {
   userData: User;
   onEdit: () => void;
   postCount?: number;
+  addToast?: (msg: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ userData, onEdit, postCount = 0 }) => {
+export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ userData, onEdit, postCount = 0, addToast }) => {
   const [time, setTime] = useState<string>(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
   const [weather, setWeather] = useState<WeatherInfo | null>(null);
+  const [isUsingGPS, setIsUsingGPS] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -23,13 +25,46 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ userData, onEdit, 
 
   useEffect(() => {
     const getAtmosphere = async () => {
-      // Use location or fallback to a standard node for en-GB
-      const query = userData.location || 'London';
-      const data = await fetchWeather(query);
-      setWeather(data);
+      let weatherData: WeatherInfo | null = null;
+
+      // Attempt Geolocation Handshake
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+          });
+          
+          weatherData = await fetchWeather({ 
+            coords: { 
+              lat: position.coords.latitude, 
+              lon: position.coords.longitude 
+            } 
+          });
+
+          if (weatherData) {
+            setIsUsingGPS(true);
+            if (addToast) addToast("Neural-Geo Handshake Established", "success");
+          }
+        } catch (geoError) {
+          console.debug("Geo-link refused, falling back to identity string.");
+        }
+      }
+
+      // Fallback to identity location string if GPS failed or wasn't available
+      if (!weatherData) {
+        weatherData = await fetchWeather({ query: userData.location || 'London' });
+        // Secondary fallback to London Core if specific location fails
+        if (!weatherData && userData.location) {
+          weatherData = await fetchWeather({ query: 'London' });
+        }
+        setIsUsingGPS(false);
+      }
+
+      setWeather(weatherData);
     };
+
     getAtmosphere();
-  }, [userData.location]);
+  }, [userData.location, addToast]);
 
   const getPulseClass = () => {
     switch (userData.presenceStatus) {
@@ -72,7 +107,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ userData, onEdit, 
               <span className="text-[10px] font-black text-white uppercase tracking-widest font-mono leading-none">
                 {time}
               </span>
-              <span className="text-[8px] font-bold text-white/50 uppercase tracking-[0.2em] mt-1 font-mono">
+              <span className="text-[8px] font-bold text-white/50 uppercase tracking-[0.2em] mt-1 font-mono flex items-center gap-1.5">
+                {isUsingGPS && <div className="w-1 h-1 bg-emerald-400 rounded-full animate-pulse" />}
                 {userData.location || 'GB_NODE'}
               </span>
             </div>
