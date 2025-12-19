@@ -5,7 +5,7 @@ import { PostCard } from './components/feed/PostCard';
 import { Toast } from './components/ui/Toast';
 import { LandingPage } from './components/landing/LandingPage';
 import { AdminPanel } from './components/admin/AdminPanel';
-import { AppRoute, Post, ToastMessage, UserRole } from './types';
+import { AppRoute, Post, ToastMessage, UserRole, Region } from './types';
 import { MOCK_POSTS, MOCK_USER } from './constants';
 import { db, auth } from './services/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -44,7 +44,7 @@ const App: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
-  const [userRegion, setUserRegion] = useState('en-GB');
+  const [userRegion, setUserRegion] = useState<Region>('en-GB');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -54,6 +54,11 @@ const App: React.FC = () => {
 
   const removeToast = (id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));
+  };
+
+  const handleRegionChange = (newRegion: Region) => {
+    setUserRegion(newRegion);
+    addToast(`Neural Node Switched: ${newRegion}`, 'info');
   };
 
   // Real Auth Observer
@@ -76,7 +81,6 @@ const App: React.FC = () => {
             if (userDoc.exists()) {
               setUserRole(userDoc.data().role as UserRole || 'member');
             } else {
-              // Create default user doc if it doesn't exist
               setUserRole('member');
             }
           } catch (e) {
@@ -250,7 +254,7 @@ const App: React.FC = () => {
         return <AdminPanel addToast={addToast} locale={userRegion} />;
       default:
         return (
-          <div className="space-y-4 md:space-y-8 pb-32 md:pb-12 max-w-2xl mx-auto">
+          <div className="space-y-6 md:space-y-10 pb-32 md:pb-12 max-w-2xl mx-auto">
             {posts.map(post => (
               <PostCard 
                 key={post.id} 
@@ -271,10 +275,12 @@ const App: React.FC = () => {
       onOpenCreate={() => setIsCreateModalOpen(true)}
       onLogout={handleLogout}
       userRole={userRole}
+      currentRegion={userRegion}
+      onRegionChange={handleRegionChange}
     >
       {renderRoute()}
 
-      <div className="fixed top-safe-top pt-4 left-0 right-0 z-[500] flex flex-col gap-2 items-center pointer-events-none px-4">
+      <div className="fixed top-safe-top pt-24 md:pt-28 left-0 right-0 z-[500] flex flex-col gap-2 items-center pointer-events-none px-4">
         {toasts.map(toast => (
           <div key={toast.id} className="pointer-events-auto w-fit">
             <Toast toast={toast} onClose={removeToast} />
@@ -302,7 +308,7 @@ const App: React.FC = () => {
             <textarea 
               value={newPostText}
               onChange={(e) => setNewPostText(e.target.value)}
-              className="w-full h-40 md:h-56 p-6 bg-slate-50 rounded-[1.5rem] md:rounded-[2rem] border-none focus:ring-2 focus:ring-indigo-100 text-lg md:text-xl placeholder:text-slate-400 mb-6 resize-none transition-all"
+              className="w-full h-40 md:h-56 p-6 bg-slate-50 rounded-[1.5rem] md:rounded-[2rem] border-none focus:ring-2 focus:ring-indigo-100 text-lg md:text-xl placeholder:text-slate-400 mb-6 resize-none transition-all font-semibold"
               placeholder="What's your frequency?"
               autoFocus
             />

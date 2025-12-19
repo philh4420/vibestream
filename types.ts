@@ -1,6 +1,8 @@
 
 export type UserRole = 'member' | 'verified' | 'creator' | 'admin';
 
+export type Region = 'en-GB' | 'en-US' | 'de-DE' | 'fr-FR' | 'ja-JP';
+
 export interface User {
   id: string;
   username: string;
