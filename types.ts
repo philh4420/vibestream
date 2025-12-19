@@ -3,6 +3,8 @@ export type UserRole = 'member' | 'verified' | 'creator' | 'admin';
 
 export type Region = 'en-GB' | 'en-US' | 'de-DE' | 'fr-FR' | 'ja-JP';
 
+export type PresenceStatus = 'Online' | 'Focus' | 'Invisible' | 'Away';
+
 export interface User {
   id: string;
   username: string;
@@ -31,6 +33,8 @@ export interface User {
   occupation?: string;
   relationshipStatus?: 'Single' | 'Partnered' | 'Married' | 'Encoded' | 'Private';
   hobbies?: string[];
+  skills?: string[];
+  presenceStatus?: PresenceStatus;
   socialLinks?: {
     platform: string;
     url: string;

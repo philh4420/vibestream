@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { User } from '../../types';
+import { User, PresenceStatus } from '../../types';
 
 interface CalibrationOverlayProps {
   userData: User;
@@ -8,41 +8,63 @@ interface CalibrationOverlayProps {
   onSave: (newData: any) => void;
 }
 
+const PRONOUN_OPTIONS = [
+  'Not Specified',
+  'They/Them',
+  'He/Him',
+  'She/Her',
+  'He/They',
+  'She/They',
+  'Xe/Xem',
+  'Ze/Zir',
+  'Ey/Em',
+  'Per/Per',
+  'Fae/Faer',
+  'Fluid',
+  'Private/Encrypted'
+];
+
+const PRESENCE_OPTIONS: PresenceStatus[] = ['Online', 'Focus', 'Invisible', 'Away'];
+
+// Moved outside to ensure stable focus during re-renders
+const InputField = ({ label, type = "text", value, onChange, placeholder }: any) => (
+  <div className="space-y-2 group">
+    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 font-mono group-focus-within:text-indigo-500 transition-colors">{label}</label>
+    <input 
+      type={type} 
+      value={value} 
+      placeholder={placeholder}
+      onChange={onChange} 
+      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300" 
+    />
+  </div>
+);
+
 export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData, onClose, onSave }) => {
   const [activeSubTab, setActiveSubTab] = useState<'basic' | 'professional' | 'social'>('basic');
   const [form, setForm] = useState({
-    displayName: userData.displayName,
-    bio: userData.bio,
-    location: userData.location,
-    dob: userData.dob || '2000-01-01',
-    pronouns: userData.pronouns || '',
+    displayName: userData.displayName || '',
+    bio: userData.bio || '',
+    location: userData.location || '',
+    dob: userData.dob || '',
+    pronouns: userData.pronouns || 'Not Specified',
     website: userData.website || '',
     tags: userData.tags?.join(', ') || '',
+    skills: userData.skills?.join(', ') || '',
     occupation: userData.occupation || '',
     education: userData.education || '',
-    relationshipStatus: userData.relationshipStatus || 'Single'
+    relationshipStatus: userData.relationshipStatus || 'Single',
+    presenceStatus: userData.presenceStatus || 'Online'
   });
 
   const handleSubmit = () => {
     const processedData = {
       ...form,
-      tags: form.tags.split(',').map(t => t.trim()).filter(t => t !== '')
+      tags: form.tags.split(',').map(t => t.trim()).filter(t => t !== ''),
+      skills: form.skills.split(',').map(s => s.trim()).filter(s => s !== '')
     };
     onSave(processedData);
   };
-
-  const InputField = ({ label, type = "text", value, onChange, placeholder }: any) => (
-    <div className="space-y-2 group">
-      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 font-mono group-focus-within:text-indigo-500 transition-colors">{label}</label>
-      <input 
-        type={type} 
-        value={value} 
-        placeholder={placeholder}
-        onChange={onChange} 
-        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300" 
-      />
-    </div>
-  );
 
   return (
     <div className="fixed inset-0 z-[600] flex items-center justify-center p-4">
@@ -89,15 +111,30 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
                   className="w-full h-32 bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-medium resize-none outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all" 
                 />
               </div>
+              <div className="space-y-2">
+                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 font-mono">Network Presence</label>
+                 <div className="flex flex-wrap gap-2">
+                    {PRESENCE_OPTIONS.map(status => (
+                      <button
+                        key={status}
+                        onClick={() => setForm({...form, presenceStatus: status})}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${form.presenceStatus === status ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
+                      >
+                        {status}
+                      </button>
+                    ))}
+                 </div>
+              </div>
             </div>
           )}
 
           {activeSubTab === 'professional' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <InputField label="Current Occupation" value={form.occupation} onChange={(e: any) => setForm({...form, occupation: e.target.value})} placeholder="e.g. Creative Director" />
-                <InputField label="Education Hub" value={form.education} onChange={(e: any) => setForm({...form, education: e.target.value})} placeholder="e.g. Oxford University" />
+                <InputField label="Current Occupation" value={form.occupation} onChange={(e: any) => setForm({...form, occupation: e.target.value})} placeholder="e.g. Creative Technologist" />
+                <InputField label="Education Hub" value={form.education} onChange={(e: any) => setForm({...form, education: e.target.value})} placeholder="e.g. Oxford Neural Labs" />
               </div>
+              <InputField label="Neural Skills (Comma Separated)" value={form.skills} onChange={(e: any) => setForm({...form, skills: e.target.value})} placeholder="AI, React, UI/UX" />
               <InputField label="Personal Port (URL)" type="url" value={form.website} onChange={(e: any) => setForm({...form, website: e.target.value})} placeholder="https://..." />
             </div>
           )}
@@ -106,6 +143,14 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <InputField label="Origin Date (DOB)" type="date" value={form.dob} onChange={(e: any) => setForm({...form, dob: e.target.value})} />
+                <div className="space-y-2">
+                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 font-mono">Biometric ID (Pronouns)</label>
+                   <select value={form.pronouns} onChange={e => setForm({...form, pronouns: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all appearance-none cursor-pointer">
+                      {PRONOUN_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
+                   </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 font-mono">Encoded Status</label>
                    <select value={form.relationshipStatus} onChange={e => setForm({...form, relationshipStatus: e.target.value as any})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all">
@@ -116,9 +161,8 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
                       <option value="Private">Privacy Mesh</option>
                    </select>
                 </div>
+                <InputField label="Identity Tags (Comma Separated)" value={form.tags} onChange={(e: any) => setForm({...form, tags: e.target.value})} placeholder="Explorer, Pioneer" />
               </div>
-              <InputField label="Identity Tags (Comma Separated)" value={form.tags} onChange={(e: any) => setForm({...form, tags: e.target.value})} placeholder="Design, AI, London" />
-              <InputField label="Biometric ID (Pronouns)" value={form.pronouns} onChange={(e: any) => setForm({...form, pronouns: e.target.value})} placeholder="they/them" />
             </div>
           )}
         </div>

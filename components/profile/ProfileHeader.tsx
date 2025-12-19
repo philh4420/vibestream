@@ -6,9 +6,10 @@ import { ICONS } from '../../constants';
 interface ProfileHeaderProps {
   userData: User;
   onEdit: () => void;
+  postCount?: number;
 }
 
-export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ userData, onEdit }) => {
+export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ userData, onEdit, postCount = 0 }) => {
   return (
     <div className="relative glass-panel rounded-[3rem] overflow-hidden mb-8 shadow-2xl border-white/20">
       {/* Cover Image with Depth Effect */}
@@ -77,7 +78,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ userData, onEdit }
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Following</span>
            </div>
            <div className="flex flex-col">
-              <span className="text-xl font-black text-slate-900 leading-none">2.4k</span>
+              <span className="text-xl font-black text-slate-900 leading-none">{postCount.toLocaleString()}</span>
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Transmissions</span>
            </div>
         </div>

@@ -44,11 +44,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
       onUpdateProfile(processedData);
       setIsEditModalOpen(false);
       addToast('Neural Identity Clusters Synchronised', 'success');
-    } catch (e) { addToast('Sync Error: Neural Handshake Refused', 'error'); }
+    } catch (e) { 
+      console.error(e);
+      addToast('Sync Error: Neural Handshake Refused', 'error'); 
+    }
   };
 
   const signalQuality = useMemo(() => 
-    Math.min(99, (userData.followers / 10) + (userPosts.length * 2)).toFixed(1), 
+    Math.min(99, ((userData.followers || 0) / 10) + (userPosts.length * 2)).toFixed(1), 
   [userData.followers, userPosts.length]);
 
   const renderTabContent = () => {
@@ -153,7 +156,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
 
   return (
     <div className="animate-in fade-in duration-1000 pb-20">
-      <ProfileHeader userData={userData} onEdit={() => setIsEditModalOpen(true)} />
+      <ProfileHeader 
+        userData={userData} 
+        onEdit={() => setIsEditModalOpen(true)} 
+        postCount={userPosts.length}
+      />
       
       <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
