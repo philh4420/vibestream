@@ -10,7 +10,6 @@ import { ProfileMedia } from './ProfileMedia';
 import { CalibrationOverlay } from './CalibrationOverlay';
 import { BentoTile } from './tiles/BentoTile';
 import { ProfileTabs, ProfileTab } from './ProfileTabs';
-import { ICONS } from '../../constants';
 
 interface ProfilePageProps {
   userData: User;
@@ -52,8 +51,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
 
   const signalQuality = useMemo(() => {
     const base = ((userData.followers || 0) / 10) + (userPosts.length * 2);
-    const eventBonus = (userData.lifeEvents?.length || 0) * 5;
-    return Math.min(99.9, base + eventBonus).toFixed(1);
+    const eventCount = userData.lifeEvents?.length || 0;
+    return Math.min(99.9, base + (eventCount * 5)).toFixed(1);
   }, [userData.followers, userPosts.length, userData.lifeEvents]);
 
   const renderTabContent = () => {
@@ -62,6 +61,38 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
         return <ProfileAboutSection userData={userData} locale={locale} />;
       case 'visuals':
         return <ProfileMedia posts={userPosts} />;
+      case 'chronology':
+        return (
+          <div className="max-w-2xl mx-auto space-y-0 relative animate-in fade-in slide-in-from-bottom-8 duration-700">
+            {/* Central Timeline Thread */}
+            <div className="absolute left-[31px] top-8 bottom-8 w-px bg-slate-100 z-0" />
+            
+            {userData.lifeEvents && userData.lifeEvents.length > 0 ? (
+              [...userData.lifeEvents].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((event) => (
+                <div key={event.id} className="relative flex items-start gap-8 group mb-12 last:mb-0">
+                  <div className="relative z-10 shrink-0">
+                    <div className="w-16 h-16 rounded-[1.4rem] bg-white border border-slate-100 shadow-xl shadow-slate-200/50 flex items-center justify-center text-3xl transition-transform group-hover:scale-110 duration-500">
+                      {event.icon}
+                    </div>
+                  </div>
+                  <div className="pt-2">
+                    <p className="text-[11px] font-black text-indigo-500 uppercase tracking-[0.2em] font-mono mb-2">
+                      {new Date(event.date).toLocaleDateString(locale)}
+                    </p>
+                    <h4 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter leading-tight">
+                      {event.title}
+                    </h4>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="glass-panel rounded-[3rem] py-32 text-center border-dashed border-2 border-slate-100">
+                 <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] font-mono mb-6">Null Chronology Logs Detected</p>
+                 <button onClick={() => setIsEditModalOpen(true)} className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-indigo-700 transition-all">Initialise Neural History</button>
+              </div>
+            )}
+          </div>
+        );
       case 'resonance':
         return (
           <div className="glass-panel rounded-[2.5rem] p-12 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -74,32 +105,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
                 </div>
               ))}
             </div>
-          </div>
-        );
-      case 'chronology':
-        return (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {userData.lifeEvents && userData.lifeEvents.length > 0 ? (
-              [...userData.lifeEvents].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((event, idx) => (
-                <div key={event.id} className="flex gap-6 group">
-                  <div className="flex flex-col items-center">
-                    <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-2xl shadow-sm group-hover:scale-110 transition-transform z-10">{event.icon}</div>
-                    {idx < (userData.lifeEvents?.length || 0) - 1 && <div className="flex-1 w-0.5 bg-slate-100 mt-2" />}
-                  </div>
-                  <div className="pb-12 pt-3">
-                    <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest font-mono mb-1">
-                      {new Date(event.date).toLocaleDateString(locale)}
-                    </p>
-                    <h4 className="text-xl font-black text-slate-900 tracking-tight">{event.title}</h4>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="glass-panel rounded-[3rem] py-32 text-center border-dashed border-2 border-slate-100">
-                 <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] font-mono mb-4">Null Chronology Logs</p>
-                 <button onClick={() => setIsEditModalOpen(true)} className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline">Initialise Event Mesh →</button>
-              </div>
-            )}
           </div>
         );
       default: // broadcasting
@@ -171,7 +176,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
       
       <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <div className="mt-8">
+      <div className="mt-8 px-4 md:px-0">
         {renderTabContent()}
       </div>
 

@@ -1,33 +1,28 @@
 
-// Fixed: Using namespace import for Firebase app core to ensure correct member resolution (initializeApp, getApps, getApp)
-import * as firebase from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import type { FirebaseApp } from 'firebase/app';
+import { getFirestore, Firestore } from 'firebase/firestore';
+import { getAuth, Auth } from 'firebase/auth';
 import { CONFIG } from './config';
 
-let app: any;
+let app: FirebaseApp;
+
 try {
-  // Fixed: Calling modular functions from the firebase namespace to resolve build environment type errors
-  const existingApps = firebase.getApps();
-  if (!existingApps.length) {
-    // Only initialize if we have at least an API key to prevent crashing the whole app
-    if (CONFIG.FIREBASE.apiKey && CONFIG.FIREBASE.apiKey !== '') {
-      // Fixed: Initializing through the namespace for improved reliability
-      app = firebase.initializeApp(CONFIG.FIREBASE as any);
-    } else {
-      console.warn("Firebase: No API Key found. App running in offline/mock mode.");
-      // Provide a dummy app object to prevent downstream reference errors
-      app = { name: '[DEFAULT]-mock' } as any;
-    }
+  const apps = getApps();
+  if (apps.length > 0) {
+    app = getApp();
   } else {
-    // Fixed: Retrieving the existing app through the namespace
-    app = firebase.getApp();
+    // Standard initialization pattern for Firebase v9+
+    app = initializeApp(CONFIG.FIREBASE);
   }
 } catch (error) {
-  console.error("Firebase Initialization Error:", error);
-  app = { name: '[DEFAULT]-error' } as any;
+  console.error("Firebase Initialization Critical Error:", error);
+  // Fallback for development environments without keys
+  // @ts-ignore - Providing a minimal fallback object for type safety
+  app = { name: '[DEFAULT]-fallback' } as FirebaseApp;
 }
 
-export const db = app.name === '[DEFAULT]-mock' || app.name === '[DEFAULT]-error' ? null : getFirestore(app);
-export const auth = app.name === '[DEFAULT]-mock' || app.name === '[DEFAULT]-error' ? null : getAuth(app);
+// Exporting with explicit types to ensure IDE stability
+export const db: Firestore = getFirestore(app);
+export const auth: Auth = getAuth(app);
 export default app;
