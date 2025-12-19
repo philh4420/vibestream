@@ -1,6 +1,8 @@
 
-// Fixed: Using named imports to resolve "no exported member" errors for initializeApp, getApps, and getApp in Firebase v9+
-import { initializeApp, getApps, getApp } from 'firebase/app';
+
+// Fixed: Using namespaced import and destructuring with any-cast to resolve "no exported member" errors for initializeApp, getApps, and getApp in Firebase v9+
+import * as FirebaseApp from 'firebase/app';
+const { initializeApp, getApps, getApp } = FirebaseApp as any;
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth';
 import { CONFIG } from './config';
@@ -9,7 +11,7 @@ import { CONFIG } from './config';
 let app: any;
 
 try {
-  // Fixed: Accessing functions directly via named imports for correct resolution
+  // Fixed: Utilizing functions extracted from namespaced import to avoid type-level missing member errors
   const apps = getApps();
   if (apps.length > 0) {
     app = getApp();

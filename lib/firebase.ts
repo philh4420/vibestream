@@ -1,6 +1,8 @@
 
-// Fixed: Using named import for initializeApp to resolve property missing on namespace
-import { initializeApp } from 'firebase/app';
+
+// Fixed: Using namespaced import and destructuring to resolve "no exported member" errors in Firebase types
+import * as FirebaseApp from 'firebase/app';
+const { initializeApp } = FirebaseApp as any;
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
@@ -24,7 +26,7 @@ if (!firebaseConfig.apiKey) {
   console.warn("Firebase API Key is missing. Check your environment variables.");
 }
 
-// Fixed: Utilizing the initializeApp function from named exports
+// Fixed: Utilizing the initializeApp function extracted from the namespaced import
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
