@@ -1,6 +1,8 @@
 
-// Fixed: Using namespace import for firebase/app to ensure reliable symbol resolution in 2026+ environments
-import * as firebaseApp from 'firebase/app';
+
+// Fixed: Using a namespace import to resolve "no exported member" errors in 'firebase/app'
+import * as FirebaseApp from 'firebase/app';
+const { initializeApp } = FirebaseApp;
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
@@ -24,8 +26,8 @@ if (!firebaseConfig.apiKey) {
   console.warn("Firebase API Key is missing. Check your environment variables.");
 }
 
-// Fixed: Utilizing namespace import to resolve "no exported member" errors in specific TS environments
-const app = firebaseApp.initializeApp(firebaseConfig);
+// Fixed: Utilizing the destructured initializeApp function to avoid resolution errors
+const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export default app;

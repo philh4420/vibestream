@@ -25,6 +25,22 @@ export interface User {
   website?: string;
   tags?: string[];
   trustTier?: 'Alpha' | 'Beta' | 'Gamma';
+
+  // Advanced Social Hub Data
+  education?: string;
+  occupation?: string;
+  relationshipStatus?: 'Single' | 'Partnered' | 'Married' | 'Encoded' | 'Private';
+  hobbies?: string[];
+  socialLinks?: {
+    platform: string;
+    url: string;
+  }[];
+  lifeEvents?: {
+    id: string;
+    title: string;
+    date: string;
+    icon: string;
+  }[];
 }
 
 export interface Post {
