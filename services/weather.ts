@@ -22,7 +22,6 @@ export const fetchWeather = async (params: { query?: string; coords?: { lat: num
     const response = await fetch(url);
     
     if (response.status === 404) {
-      // Return null quietly, consumer handles fallback
       return null;
     }
 
@@ -36,6 +35,8 @@ export const fetchWeather = async (params: { query?: string; coords?: { lat: num
 
     return {
       temp: Math.round(data.main.temp),
+      feelsLike: Math.round(data.main.feels_like),
+      humidity: data.main.humidity,
       condition: data.weather[0].main,
       icon: data.weather[0].icon
     };

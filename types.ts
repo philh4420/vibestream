@@ -7,6 +7,8 @@ export type PresenceStatus = 'Online' | 'Focus' | 'Invisible' | 'Away' | 'In-Tra
 
 export interface WeatherInfo {
   temp: number;
+  feelsLike: number;
+  humidity: number;
   condition: string;
   icon: string;
 }
