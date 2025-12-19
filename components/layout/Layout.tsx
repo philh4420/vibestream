@@ -47,7 +47,7 @@ export const Layout: React.FC<LayoutProps> = ({
         title={collapsed ? label : undefined}
         className={`flex items-center transition-all duration-300 touch-active group relative ${
           collapsed 
-            ? 'p-3.5 justify-center' 
+            ? 'p-4 justify-center' 
             : 'gap-3 px-4 py-3.5'
         } ${
           isActive 
@@ -103,9 +103,16 @@ export const Layout: React.FC<LayoutProps> = ({
           </button>
         </aside>
 
-        {/* Tablet Navigation Rail */}
-        <aside className="hidden md:flex lg:hidden flex-col w-[calc(5.5rem+var(--sal))] shrink-0 border-r border-precision bg-white/50 backdrop-blur-xl py-6 items-center gap-8 pt-[calc(var(--header-h)+1.5rem)]" style={{ paddingLeft: 'var(--sal)' }}>
-          <div className="flex flex-col gap-3 w-full items-center">
+        {/* Tablet/Landscape Navigation Rail - Forcefully offset from Notch */}
+        <aside 
+          className="hidden md:flex lg:hidden flex-col shrink-0 border-r border-precision bg-white/50 backdrop-blur-xl py-6 items-center gap-8 pt-[calc(var(--header-h)+1.5rem)]" 
+          style={{ 
+            width: 'calc(5.5rem + var(--sal))',
+            paddingLeft: 'var(--sal)',
+            paddingRight: '0.5rem'
+          }}
+        >
+          <div className="flex flex-col gap-4 w-full items-center">
             <NavItem route={AppRoute.FEED} icon={ICONS.Home} label="Central" collapsed />
             <NavItem route={AppRoute.EXPLORE} icon={ICONS.Explore} label="Discover" collapsed />
             <NavItem route={AppRoute.MESSAGES} icon={ICONS.Messages} label="Neural" collapsed />
@@ -123,8 +130,8 @@ export const Layout: React.FC<LayoutProps> = ({
 
         {/* Main Content Viewport */}
         <main className="flex-1 relative overflow-hidden flex flex-col pt-[var(--header-h)]">
-          <div className="flex-1 scroll-container px-4 sm:px-6 md:px-10 lg:px-14 py-6" style={{ paddingLeft: 'max(1rem, var(--sal))', paddingRight: 'max(1rem, var(--sar))' }}>
-            <div className="max-w-4xl mx-auto w-full pb-[calc(var(--bottom-nav-h)+2rem)] md:pb-12">
+          <div className="flex-1 scroll-container px-4 sm:px-6 md:px-10 lg:px-14 py-6" style={{ paddingLeft: 'max(1.25rem, var(--sal))', paddingRight: 'max(1.25rem, var(--sar))' }}>
+            <div className="max-w-4xl mx-auto w-full pb-[calc(var(--bottom-nav-h)+2.5rem)] md:pb-16">
               {children}
             </div>
           </div>
@@ -175,26 +182,26 @@ export const Layout: React.FC<LayoutProps> = ({
         </div>
       </nav>
 
-      {/* Mobile Landscape Floating Navigation - Notch Resilient */}
+      {/* Mobile Landscape Floating Navigation - Deep Notch Protection */}
       {orientation === 'landscape' && (
-        <div className="md:hidden fixed top-1/2 -translate-y-1/2 flex flex-col gap-4 z-[300]" style={{ left: 'max(1rem, var(--sal))' }}>
-           <div className="glass-panel p-2 rounded-2xl flex flex-col gap-1 border-precision shadow-2xl">
-              <button onClick={() => onNavigate(AppRoute.FEED)} className={`p-2.5 rounded-xl transition-all touch-active ${activeRoute === AppRoute.FEED ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
+        <div className="md:hidden fixed top-1/2 -translate-y-1/2 flex flex-col gap-4 z-[300]" style={{ left: 'max(1.25rem, var(--sal))' }}>
+           <div className="glass-panel p-2.5 rounded-2xl flex flex-col gap-2 border-precision shadow-2xl">
+              <button onClick={() => onNavigate(AppRoute.FEED)} className={`p-3 rounded-xl transition-all touch-active ${activeRoute === AppRoute.FEED ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
                 <ICONS.Home />
               </button>
-              <button onClick={() => onNavigate(AppRoute.EXPLORE)} className={`p-2.5 rounded-xl transition-all touch-active ${activeRoute === AppRoute.EXPLORE ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
+              <button onClick={() => onNavigate(AppRoute.EXPLORE)} className={`p-3 rounded-xl transition-all touch-active ${activeRoute === AppRoute.EXPLORE ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
                 <ICONS.Explore />
               </button>
-              <button onClick={() => onNavigate(AppRoute.MESSAGES)} className={`p-2.5 rounded-xl transition-all touch-active ${activeRoute === AppRoute.MESSAGES ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
+              <button onClick={() => onNavigate(AppRoute.MESSAGES)} className={`p-3 rounded-xl transition-all touch-active ${activeRoute === AppRoute.MESSAGES ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
                 <ICONS.Messages />
               </button>
-              <button onClick={() => onNavigate(AppRoute.PROFILE)} className={`p-2.5 rounded-xl transition-all touch-active ${activeRoute === AppRoute.PROFILE ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
+              <button onClick={() => onNavigate(AppRoute.PROFILE)} className={`p-3 rounded-xl transition-all touch-active ${activeRoute === AppRoute.PROFILE ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
                 <ICONS.Profile />
               </button>
            </div>
            <button 
             onClick={onOpenCreate}
-            className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-100 active:scale-90 transition-transform"
+            className="w-13 h-13 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-100 active:scale-90 transition-transform"
           >
             <ICONS.Create />
           </button>

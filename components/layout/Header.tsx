@@ -34,11 +34,18 @@ export const Header: React.FC<HeaderProps> = ({
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-[200] glass-panel border-b border-precision flex items-end transition-all pb-3" style={{ height: 'var(--header-h)' }}>
-      <div className="flex items-center justify-between w-full max-w-[2560px] mx-auto px-4 md:px-8 gap-4 md:gap-8 mb-0.5">
+    <header 
+      className="fixed top-0 left-0 right-0 z-[200] glass-panel border-b border-precision flex items-end transition-all pb-3" 
+      style={{ 
+        height: 'var(--header-h)',
+        paddingLeft: 'max(1.25rem, var(--sal))',
+        paddingRight: 'max(1.25rem, var(--sar))'
+      }}
+    >
+      <div className="flex items-center justify-between w-full max-w-[2560px] mx-auto gap-4 md:gap-8 mb-0.5">
         
-        {/* Branding - Shifted slightly for notch clearance */}
-        <div className="flex items-center gap-3 shrink-0 cursor-pointer group pl-[max(0px,var(--sal)-1rem)]" onClick={() => onNavigate(AppRoute.FEED)}>
+        {/* Branding - Aggressive Notch Protection */}
+        <div className="flex items-center gap-3 shrink-0 cursor-pointer group" onClick={() => onNavigate(AppRoute.FEED)}>
           <div className="w-9 h-9 md:w-10 md:h-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-lg ring-1 ring-white/10 group-active:scale-90 transition-transform">
             <span className="text-white font-black italic text-xl">V</span>
           </div>
@@ -66,7 +73,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Precision Controls */}
-        <div className="flex items-center gap-2 md:gap-4 pr-[max(0px,var(--sar)-1rem)]">
+        <div className="flex items-center gap-2 md:gap-4">
           <button className="hidden md:flex p-2.5 text-slate-400 hover:text-slate-900 transition-all rounded-xl hover:bg-slate-50">
             <ICONS.Bell />
           </button>
