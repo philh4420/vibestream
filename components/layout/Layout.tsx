@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ICONS } from '../../constants';
 import { AppRoute, UserRole, Region, User as VibeUser } from '../../types';
@@ -43,7 +42,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const isAdmin = userRole === 'admin';
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden bg-slate-50 relative">
+    <div className="flex flex-col min-h-screen w-full bg-slate-50 relative">
       {/* FIXED HEADER */}
       <Header 
         userRole={userRole} 
@@ -53,9 +52,9 @@ export const Layout: React.FC<LayoutProps> = ({
         onLogout={onLogout || (() => {})} 
       />
 
-      <div className="flex flex-1 overflow-hidden pt-20 md:pt-24 relative">
-        {/* DESKTOP SIDEBAR - FIXED POSITIONED IN FLEX */}
-        <aside className="hidden lg:flex flex-col w-80 border-r border-slate-200/60 bg-white p-8 gap-3 shrink-0 h-full">
+      <div className="flex flex-1 pt-20 md:pt-24 relative">
+        {/* DESKTOP SIDEBAR - STICKY POSITIONING */}
+        <aside className="hidden lg:flex flex-col w-80 shrink-0 h-[calc(100vh-6rem)] sticky top-24 border-r border-slate-200/60 bg-white p-8 gap-3">
           <div className="mb-6">
             <h4 className="px-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Neural Grid</h4>
             <div className="space-y-1">
@@ -88,9 +87,9 @@ export const Layout: React.FC<LayoutProps> = ({
           </div>
         </aside>
 
-        {/* MAIN CONTENT AREA - THE ONLY SCROLLABLE PART */}
-        <main className="flex-1 h-full scroll-container pb-32 lg:pb-12 bg-slate-50">
-          <div className="max-w-4xl mx-auto px-4 md:px-12 py-8 md:py-10">
+        {/* MAIN CONTENT AREA - NATURAL SCROLLING */}
+        <main className="flex-1 min-h-full bg-slate-50">
+          <div className="max-w-4xl mx-auto px-4 md:px-12 py-8 md:py-10 pb-32 md:pb-12">
             {children}
           </div>
         </main>

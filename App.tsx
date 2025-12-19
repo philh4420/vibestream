@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from './components/layout/Layout';
 import { PostCard } from './components/feed/PostCard';
@@ -81,7 +80,7 @@ const App: React.FC = () => {
             const userDoc = await getDoc(userDocRef);
             
             if (userDoc.exists()) {
-              const data = userDoc.data() as VibeUser;
+              const data = userDoc.data() as any;
               if (data.isSuspended) {
                  await signOut(auth);
                  addToast("Access Terminated: Node Suspended", "error");
@@ -98,7 +97,7 @@ const App: React.FC = () => {
                 location: data.location || 'London, UK'
               } as VibeUser);
             } else {
-              const newProfile: Partial<VibeUser> = {
+              const newProfile: any = {
                 username: user.email?.split('@')[0] || `node_${user.uid.slice(0, 5)}`,
                 displayName: user.displayName || user.email?.split('@')[0] || 'Unknown Signal',
                 bio: 'Citadel citizen.',
@@ -111,13 +110,15 @@ const App: React.FC = () => {
                 joinedAt: new Date().toISOString(),
                 badges: ['Citizen'],
                 verifiedHuman: false,
-                isSuspended: false
+                isSuspended: false,
+                geoNode: 'UK' // CRITICAL: Must match firestore.rules
               };
               await setDoc(userDocRef, newProfile);
               setUserData({ id: user.uid, ...newProfile } as VibeUser);
             }
           } catch (e) {
             console.warn("Sync error:", e);
+            addToast("Protocol Conflict: Check permissions", "error");
           }
         }
       } else {
@@ -145,6 +146,7 @@ const App: React.FC = () => {
         
         setPosts(fetchedPosts);
       }, (error) => {
+        console.error("Snapshot error:", error);
         addToast("Resyncing grid...", "info");
       });
 
@@ -252,7 +254,8 @@ const App: React.FC = () => {
       setIsCreateModalOpen(false);
       addToast('Broadcast active', 'success');
     } catch (error) {
-      addToast('Protocol failed', 'error');
+      console.error(error);
+      addToast('Protocol failed: Check permissions', 'error');
     } finally {
       setIsUploading(false);
     }

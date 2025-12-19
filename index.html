@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>VibeStream | Social 2026</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,43 +13,30 @@
             --app-height: 100%;
         }
         html, body {
-            height: 100dvh;
-            width: 100vw;
+            min-height: 100%;
+            width: 100%;
             margin: 0;
             padding: 0;
-            overflow: hidden; /* Lock the body permanently */
-            position: fixed; /* Prevent mobile pull-to-refresh on the body */
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #ffffff;
+            background-color: #f8fafc;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            overscroll-behavior-y: none;
+            scroll-behavior: smooth;
         }
         #root {
-            height: 100dvh;
-            width: 100vw;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
         }
         h1, h2, h3, .font-outfit {
             font-family: 'Outfit', sans-serif;
         }
-        /* Native-feeling scroll area for content ONLY */
+        /* Native-feeling scroll area */
         .scroll-container {
-            overflow-y: auto;
-            overflow-x: hidden;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(0,0,0,0.1) transparent;
-            overscroll-behavior-y: contain; /* Stop scroll chaining to body */
-        }
-        .scroll-container::-webkit-scrollbar {
-            width: 6px;
-        }
-        .scroll-container::-webkit-scrollbar-thumb {
-            background-color: rgba(0,0,0,0.05);
-            border-radius: 10px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: visible;
         }
         * {
             box-sizing: border-box;
@@ -69,6 +55,22 @@
         /* Orientation adjustments */
         @media (orientation: landscape) and (max-height: 500px) {
             .mobile-hide-landscape { display: none; }
+        }
+        /* Custom scrollbar for desktop */
+        @media (min-width: 1024px) {
+          ::-webkit-scrollbar {
+              width: 8px;
+          }
+          ::-webkit-scrollbar-track {
+              background: #f1f5f9;
+          }
+          ::-webkit-scrollbar-thumb {
+              background: #cbd5e1;
+              border-radius: 10px;
+          }
+          ::-webkit-scrollbar-thumb:hover {
+              background: #94a3b8;
+          }
         }
     </style>
 <script type="importmap">
