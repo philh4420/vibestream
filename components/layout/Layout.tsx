@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ICONS } from '../../constants';
 import { AppRoute, UserRole, Region, User as VibeUser } from '../../types';
@@ -43,13 +44,15 @@ export const Layout: React.FC<LayoutProps> = ({
 
   return (
     <div className="flex flex-col min-h-screen w-full bg-slate-50 relative">
-      {/* FIXED HEADER */}
+      {/* FIXED HEADER - NOW WITH NAV PROPS */}
       <Header 
         userRole={userRole} 
         userData={userData}
         currentRegion={currentRegion} 
         onRegionChange={onRegionChange} 
         onLogout={onLogout || (() => {})} 
+        activeRoute={activeRoute}
+        onNavigate={onNavigate}
       />
 
       <div className="flex flex-1 pt-20 md:pt-24 relative">
