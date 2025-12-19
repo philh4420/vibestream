@@ -86,7 +86,17 @@ const App: React.FC = () => {
                  addToast("Protocol Breach: Node Suspended", "error");
                  return;
               }
-              setUserData({ id: userDoc.id, ...data } as VibeUser);
+              // Normalise data to ensure no undefined crashes on map/toLocaleString
+              setUserData({ 
+                id: userDoc.id, 
+                ...data,
+                badges: data.badges || [],
+                verifiedHuman: !!data.verifiedHuman,
+                role: data.role || 'member',
+                followers: data.followers || 0,
+                following: data.following || 0,
+                location: data.location || 'Unknown Node'
+              } as VibeUser);
             } else {
               const newProfile: Partial<VibeUser> = {
                 username: user.email?.split('@')[0] || `user_${user.uid.slice(0, 5)}`,

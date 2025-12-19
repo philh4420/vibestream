@@ -127,7 +127,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
             </div>
 
             <div className="mt-8 flex flex-wrap gap-2">
-              {userData.badges.map(badge => (
+              {userData.badges?.map(badge => (
                 <span key={badge} className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-indigo-100/50">
                   {badge}
                 </span>
