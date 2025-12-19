@@ -32,19 +32,22 @@ export const Layout: React.FC<LayoutProps> = ({
     return (
       <button 
         onClick={() => onNavigate(route)}
-        className={`flex flex-col md:flex-row items-center gap-1 md:gap-4 p-2 md:px-6 md:py-3.5 rounded-2xl transition-all duration-200 active:scale-95 ${isActive ? 'text-indigo-600 md:bg-indigo-50/80 font-black' : 'text-slate-400 hover:text-slate-600 md:hover:bg-slate-50 font-bold'}`}
+        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 touch-active group ${
+          isActive 
+            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' 
+            : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900'
+        }`}
       >
-        <Icon />
-        <span className="text-[10px] md:text-[14px] uppercase tracking-tighter md:tracking-normal">{label}</span>
+        <div className={`${isActive ? 'scale-110' : 'group-hover:scale-105'} transition-transform`}>
+          <Icon />
+        </div>
+        <span className="text-sm font-semibold tracking-tight uppercase tracking-wider text-[11px]">{label}</span>
       </button>
     );
   };
 
-  const isAdmin = userRole === 'admin';
-
   return (
-    <div className="flex flex-col min-h-screen w-full bg-slate-50 relative">
-      {/* FIXED HEADER - NOW WITH NAV PROPS */}
+    <div className="flex flex-col h-full w-full bg-[#fcfcfd] overflow-hidden">
       <Header 
         userRole={userRole} 
         userData={userData}
@@ -55,64 +58,95 @@ export const Layout: React.FC<LayoutProps> = ({
         onNavigate={onNavigate}
       />
 
-      <div className="flex flex-1 pt-20 md:pt-24 relative">
-        {/* DESKTOP SIDEBAR - STICKY POSITIONING */}
-        <aside className="hidden lg:flex flex-col w-80 shrink-0 h-[calc(100vh-6rem)] sticky top-24 border-r border-slate-200/60 bg-white p-8 gap-3">
-          <div className="mb-6">
-            <h4 className="px-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Neural Grid</h4>
-            <div className="space-y-1">
-              <NavItem route={AppRoute.FEED} icon={ICONS.Home} label="Central Feed" />
-              <NavItem route={AppRoute.EXPLORE} icon={ICONS.Explore} label="Discovery Hub" />
-              <NavItem route={AppRoute.MESSAGES} icon={ICONS.Messages} label="Neural Comms" />
-              <NavItem route={AppRoute.PROFILE} icon={ICONS.Profile} label="Neural Identity" />
-              {isAdmin && <NavItem route={AppRoute.ADMIN} icon={ICONS.Admin} label="Citadel Command" />}
-            </div>
+      <div className="flex flex-1 overflow-hidden pt-20 md:pt-24">
+        {/* Navigation Rail / Sidebar */}
+        <aside className="hidden lg:flex flex-col w-72 shrink-0 border-r border-precision bg-white/50 backdrop-blur-xl p-6 gap-8">
+          <div className="space-y-1">
+            <p className="px-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">Core Systems</p>
+            <NavItem route={AppRoute.FEED} icon={ICONS.Home} label="Central Stream" />
+            <NavItem route={AppRoute.EXPLORE} icon={ICONS.Explore} label="Discovery" />
+            <NavItem route={AppRoute.MESSAGES} icon={ICONS.Messages} label="Comms" />
+            <NavItem route={AppRoute.PROFILE} icon={ICONS.Profile} label="Identity" />
+            {userRole === 'admin' && <NavItem route={AppRoute.ADMIN} icon={ICONS.Admin} label="Admin" />}
           </div>
-          
+
           <button 
             onClick={onOpenCreate}
-            className="mt-4 w-full bg-indigo-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3 active:scale-95"
+            className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl shadow-xl hover:bg-black transition-all flex items-center justify-center gap-3 touch-active"
           >
             <ICONS.Create />
-            <span className="uppercase tracking-widest text-sm">New Broadcast</span>
+            <span className="uppercase tracking-widest text-[11px]">New Signal</span>
           </button>
 
-          <div className="mt-auto pt-6 border-t border-slate-100">
+          <div className="mt-auto pt-6 border-t border-precision">
+            <div className="flex items-center gap-3 px-4 mb-6">
+              <img src={userData?.avatarUrl} className="w-10 h-10 rounded-lg object-cover border-precision" alt="" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-slate-900 truncate">{userData?.displayName}</p>
+                <p className="text-[10px] text-slate-400 font-medium">@{userData?.username}</p>
+              </div>
+            </div>
             <button 
               onClick={onLogout}
-              className="w-full flex items-center gap-4 px-6 py-4 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-2xl transition-all font-bold group"
+              className="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-rose-600 rounded-xl transition-all font-bold text-[11px] uppercase tracking-wider"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
-              </svg>
-              <span className="uppercase tracking-widest text-xs">Terminate Link</span>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" /></svg>
+              Terminate Session
             </button>
           </div>
         </aside>
 
-        {/* MAIN CONTENT AREA - NATURAL SCROLLING */}
-        <main className="flex-1 min-h-full bg-slate-50">
-          <div className="max-w-4xl mx-auto px-4 md:px-12 py-8 md:py-10 pb-32 md:pb-12">
-            {children}
+        {/* Main Fluid Container */}
+        <main className="flex-1 relative overflow-hidden flex flex-col">
+          <div className="flex-1 scroll-container px-4 md:px-8 lg:px-12 py-6">
+            <div className="max-w-4xl mx-auto w-full pb-24 md:pb-6">
+              {children}
+            </div>
           </div>
         </main>
+
+        {/* Right Info Panel (Desktop Only) */}
+        <aside className="hidden xl:flex flex-col w-80 shrink-0 border-l border-precision bg-white/30 p-8 gap-8">
+           <div className="bg-white/50 border-precision rounded-2xl p-6">
+              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Grid Resonance</h4>
+              <div className="space-y-4">
+                {[1,2,3].map(i => (
+                  <div key={i} className="flex gap-3 items-center group cursor-pointer">
+                    <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600 font-bold text-xs group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                      #{i}
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">Precision Protocol</p>
+                      <p className="text-[10px] text-slate-400">1.2k Signals</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+           </div>
+        </aside>
       </div>
 
-      {/* MOBILE BOTTOM NAVIGATION - FIXED AT BOTTOM */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-[20px] border-t border-slate-200/80 z-[150] safe-bottom">
-        <div className="flex items-center justify-around py-3 px-2">
-          <NavItem route={AppRoute.FEED} icon={ICONS.Home} label="Feed" />
-          <NavItem route={AppRoute.EXPLORE} icon={ICONS.Explore} label="Explore" />
-          
+      {/* High-Fidelity Mobile Tab Bar */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 glass-panel border-t border-precision z-[150] safe-bottom">
+        <div className="flex items-center justify-around py-2 px-1">
+          <button onClick={() => onNavigate(AppRoute.FEED)} className={`p-3 rounded-xl transition-all ${activeRoute === AppRoute.FEED ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
+            <ICONS.Home />
+          </button>
+          <button onClick={() => onNavigate(AppRoute.EXPLORE)} className={`p-3 rounded-xl transition-all ${activeRoute === AppRoute.EXPLORE ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
+            <ICONS.Explore />
+          </button>
           <button 
             onClick={onOpenCreate}
-            className="w-12 h-12 bg-indigo-600 text-white rounded-[1.2rem] flex items-center justify-center shadow-xl shadow-indigo-200 active:scale-90 transition-transform -translate-y-4 border-4 border-white"
+            className="w-12 h-12 bg-slate-900 text-white rounded-xl flex items-center justify-center shadow-xl active:scale-90 transition-transform -translate-y-2"
           >
             <ICONS.Create />
           </button>
-          
-          <NavItem route={AppRoute.MESSAGES} icon={ICONS.Messages} label="Chat" />
-          <NavItem route={AppRoute.PROFILE} icon={ICONS.Profile} label="Me" />
+          <button onClick={() => onNavigate(AppRoute.MESSAGES)} className={`p-3 rounded-xl transition-all ${activeRoute === AppRoute.MESSAGES ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
+            <ICONS.Messages />
+          </button>
+          <button onClick={() => onNavigate(AppRoute.PROFILE)} className={`p-3 rounded-xl transition-all ${activeRoute === AppRoute.PROFILE ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
+            <ICONS.Profile />
+          </button>
         </div>
       </nav>
     </div>

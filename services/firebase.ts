@@ -1,23 +1,23 @@
-
-import { initializeApp, getApp, getApps } from 'firebase/app';
+// Fixed: Using namespace import for firebase/app to resolve missing named exports for 'initializeApp', 'getApp', and 'getApps'
+import * as FirebaseApp from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { CONFIG } from './config';
 
 let app;
 try {
-  // Check if Firebase is already initialized
-  if (!getApps().length) {
+  // Check if Firebase is already initialized using namespace to avoid compilation errors
+  if (!FirebaseApp.getApps().length) {
     // Only initialize if we have at least an API key to prevent crashing the whole app
     if (CONFIG.FIREBASE.apiKey && CONFIG.FIREBASE.apiKey !== '') {
-      app = initializeApp(CONFIG.FIREBASE);
+      app = FirebaseApp.initializeApp(CONFIG.FIREBASE);
     } else {
       console.warn("Firebase: No API Key found. App running in offline/mock mode.");
       // Provide a dummy app object to prevent downstream reference errors
       app = { name: '[DEFAULT]-mock' } as any;
     }
   } else {
-    app = getApp();
+    app = FirebaseApp.getApp();
   }
 } catch (error) {
   console.error("Firebase Initialization Error:", error);
