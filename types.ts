@@ -5,6 +5,14 @@ export type Region = 'en-GB' | 'en-US' | 'de-DE' | 'fr-FR' | 'ja-JP';
 
 export type PresenceStatus = 'Online' | 'Focus' | 'Invisible' | 'Away';
 
+export interface SystemSettings {
+  maintenanceMode: boolean;
+  registrationDisabled: boolean;
+  minTrustTier: 'Alpha' | 'Beta' | 'Gamma';
+  lastUpdatedBy: string;
+  updatedAt: string;
+}
+
 export interface User {
   id: string;
   username: string;

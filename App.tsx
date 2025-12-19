@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from './components/layout/Layout';
 import { PostCard } from './components/feed/PostCard';
@@ -6,7 +5,7 @@ import { Toast } from './components/ui/Toast';
 import { LandingPage } from './components/landing/LandingPage';
 import { AdminPanel } from './components/admin/AdminPanel';
 import { ProfilePage } from './components/profile/ProfilePage';
-import { AppRoute, Post, ToastMessage, UserRole, Region, User as VibeUser } from './types';
+import { AppRoute, Post, ToastMessage, UserRole, Region, User as VibeUser, SystemSettings } from './types';
 import { db, auth } from './services/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { 
@@ -31,6 +30,40 @@ import { ICONS } from './constants';
 const SESSION_KEY = 'vibestream_session_2026';
 const ROUTE_KEY = 'vibestream_active_route';
 
+const MaintenanceOverlay: React.FC = () => (
+  <div className="fixed inset-0 z-[9999] bg-slate-950 flex flex-col items-center justify-center p-6 text-center overflow-hidden">
+    <div className="absolute inset-0 opacity-10 pointer-events-none">
+      <div className="grid grid-cols-[repeat(20,minmax(0,1fr))] w-full h-full">
+        {Array.from({ length: 400 }).map((_, i) => (
+          <div key={i} className="border-t border-l border-white h-full" />
+        ))}
+      </div>
+    </div>
+    <div className="relative z-10 max-w-lg space-y-8">
+      <div className="w-24 h-24 bg-white/5 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 flex items-center justify-center mx-auto mb-10 shadow-2xl">
+        <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+      </div>
+      <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase leading-none italic">
+        Infrastructure<br />Maintenance
+      </h1>
+      <div className="space-y-4">
+        <p className="text-slate-400 font-mono text-xs uppercase tracking-[0.3em]">Protocol_Interrupted • GB_NODE_OVR</p>
+        <p className="text-slate-500 text-sm font-medium leading-relaxed max-w-sm mx-auto">
+          The VibeStream Neural Grid is currently undergoing scheduled synchronization. All nodes are temporarily suspended.
+        </p>
+      </div>
+      <div className="pt-8 flex justify-center gap-4">
+        <div className="px-5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">
+          ETA: 14:00 GMT
+        </div>
+        <div className="px-5 py-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-[9px] font-black text-indigo-400 uppercase tracking-widest font-mono">
+          Priority Sync
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -41,6 +74,13 @@ const App: React.FC = () => {
   
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userData, setUserData] = useState<VibeUser | null>(null);
+  const [systemSettings, setSystemSettings] = useState<SystemSettings>({
+    maintenanceMode: false,
+    registrationDisabled: false,
+    minTrustTier: 'Gamma',
+    lastUpdatedBy: '',
+    updatedAt: ''
+  });
   
   const [activeRoute, setActiveRoute] = useState<AppRoute>(() => {
     if (typeof window !== 'undefined') {
@@ -75,10 +115,25 @@ const App: React.FC = () => {
     localStorage.setItem(ROUTE_KEY, route);
   };
 
-  const handleRegionChange = (newRegion: Region) => {
-    setUserRegion(newRegion);
-    addToast(`Link: ${newRegion}`, 'info');
+  const handleLogout = async () => {
+    if (auth) {
+      await signOut(auth);
+      setIsAuthenticated(false);
+      localStorage.removeItem(SESSION_KEY);
+      addToast("Session Terminated", "info");
+    }
   };
+
+  // Real-time System Control Sync
+  useEffect(() => {
+    if (!db) return;
+    const unsub = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
+      if (docSnap.exists()) {
+        setSystemSettings(docSnap.data() as SystemSettings);
+      }
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     if (!auth) {
@@ -104,43 +159,27 @@ const App: React.FC = () => {
                  addToast("Access Denied: Node Suspended", "error");
                  return;
               }
-              setUserData({ 
-                id: userDoc.id, 
-                ...data,
-              } as VibeUser);
+              setUserData({ id: userDoc.id, ...data } as VibeUser);
             } else {
-              const usersQuery = query(collection(db, 'users'), limit(1));
-              const usersSnap = await getDocs(usersQuery);
-              const isFirstUser = usersSnap.empty;
-
               const newProfile: any = {
                 username: user.email?.split('@')[0] || `node_${user.uid.slice(0, 5)}`,
                 displayName: user.displayName || user.email?.split('@')[0] || 'Member',
                 bio: 'Citadel User.',
                 avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`,
-                coverUrl: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop',
+                coverUrl: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80',
                 followers: 0,
                 following: 0,
-                role: isFirstUser ? 'admin' : 'member',
-                location: 'London, UK',
+                role: 'member',
+                location: 'United Kingdom',
                 joinedAt: new Date().toISOString(),
-                badges: isFirstUser ? ['Admin'] : ['Citizen'],
-                verifiedHuman: isFirstUser,
-                isSuspended: false,
-                geoNode: 'UK',
-                dob: '2000-01-01',
-                pronouns: 'they/them',
-                website: '',
-                tags: ['Pioneer'],
-                trustTier: 'Alpha'
+                badges: [],
+                trustTier: 'Gamma'
               };
-              await setDoc(userDocRef, newProfile);
+              await setDoc(doc(db, 'users', user.uid), newProfile);
               setUserData({ id: user.uid, ...newProfile } as VibeUser);
-              if (isFirstUser) addToast("Admin Privileges Granted", "success");
             }
           } catch (e) {
-            console.warn("Sync error:", e);
-            addToast("Protocol Conflict", "error");
+            console.error("User Data Sync Failure:", e);
           }
         }
       } else {
@@ -155,46 +194,35 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
+  // Real-time Posts Stream
   useEffect(() => {
-    if (!isAuthenticated || !db) return;
-    try {
-      const q = query(collection(db, 'posts'), orderBy('timestamp', 'desc'));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const fetchedPosts = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Post[];
-        setPosts(fetchedPosts);
-      });
-      return () => unsubscribe();
-    } catch (e) { console.error(e); }
+    if (!db || !isAuthenticated) return;
+    const q = query(collection(db, 'posts'), orderBy('timestamp', 'desc'), limit(50));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const postsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Post));
+      setPosts(postsData);
+    });
+    return () => unsubscribe();
   }, [isAuthenticated]);
 
   const handleLike = async (postId: string) => {
-    if (!db || !currentUser) return;
-    setPosts(prev => prev.map(p => {
-      if (p.id === postId) {
-        const isLiked = !p.isLiked;
-        return { ...p, likes: isLiked ? p.likes + 1 : p.likes - 1, isLiked };
-      }
-      return p;
-    }));
+    if (!db || !userData) return;
     try {
       const postRef = doc(db, 'posts', postId);
-      await updateDoc(postRef, { likes: increment(1) });
-    } catch (e) { console.error(e); }
-  };
-
-  const handleLogout = async () => {
-    try {
-      if (auth) await signOut(auth);
-      localStorage.removeItem(SESSION_KEY);
-      localStorage.removeItem(ROUTE_KEY);
-      setIsAuthenticated(false);
-      setUserData(null);
-      setActiveRoute(AppRoute.FEED);
-      addToast('Session Ended', 'info');
-    } catch (error) { addToast('Logout failed', 'error'); }
+      const postSnap = await getDoc(postRef);
+      if (postSnap.exists()) {
+        const isLiked = postSnap.data().likedBy?.includes(userData.id);
+        await updateDoc(postRef, {
+          likes: increment(isLiked ? -1 : 1),
+          likedBy: isLiked 
+            ? postSnap.data().likedBy.filter((id: string) => id !== userData.id)
+            : [...(postSnap.data().likedBy || []), userData.id]
+        });
+      }
+    } catch (e) { addToast("Sync Error: Pulse Interrupted", "error"); }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -209,74 +237,80 @@ const App: React.FC = () => {
 
   const handleCreatePost = async () => {
     if (!newPostText.trim() && !selectedFile) return;
-    if (!userData) return;
+    if (!db || !userData) return;
+
     setIsUploading(true);
     try {
       let mediaUrl = '';
-      if (selectedFile) mediaUrl = await uploadToCloudinary(selectedFile);
-      const postData = {
+      let mediaType: 'image' | 'video' | 'file' = 'image';
+
+      if (selectedFile) {
+        mediaUrl = await uploadToCloudinary(selectedFile);
+        mediaType = selectedFile.type.startsWith('video/') ? 'video' : 'image';
+      }
+
+      await addDoc(collection(db, 'posts'), {
         authorId: userData.id,
         authorName: userData.displayName,
         authorAvatar: userData.avatarUrl,
         content: newPostText,
-        media: mediaUrl ? [{ type: selectedFile?.type.startsWith('video/') ? 'video' : 'image', url: mediaUrl }] : [],
+        media: mediaUrl ? [{ type: mediaType, url: mediaUrl }] : [],
         likes: 0,
         comments: 0,
         shares: 0,
-        createdAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
-        timestamp: serverTimestamp()
-      };
-      if (db) await addDoc(collection(db, 'posts'), postData);
+        createdAt: 'Just now',
+        timestamp: serverTimestamp(),
+        likedBy: []
+      });
+
       setNewPostText('');
       setSelectedFile(null);
       setFilePreview(null);
       setIsCreateModalOpen(false);
-      addToast('Post Published', 'success');
+      addToast("Signal Published", "success");
     } catch (error) {
-      addToast('Publishing failed', 'error');
-    } finally { setIsUploading(false); }
+      addToast("Uplink Failed", "error");
+    } finally {
+      setIsUploading(false);
+    }
   };
+
+  // Global Maintenance Lock
+  if (systemSettings.maintenanceMode && userData?.role !== 'admin') {
+    return <MaintenanceOverlay />;
+  }
 
   if (isLoading) {
     return (
-      <div className="fixed inset-0 bg-white flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-indigo-500/20 border-t-indigo-600 rounded-full animate-spin" />
+      <div className="h-full w-full bg-[#fcfcfd] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-6">
+          <div className="w-16 h-16 bg-slate-900 rounded-[2rem] flex items-center justify-center text-white text-3xl font-black italic shadow-2xl animate-pulse">V</div>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono animate-pulse">Initialising Grid...</p>
+        </div>
       </div>
     );
   }
 
-  if (!isAuthenticated) return <LandingPage onEnter={() => setIsAuthenticated(true)} />;
+  if (!isAuthenticated) {
+    return <LandingPage onEnter={() => setIsAuthenticated(true)} systemSettings={systemSettings} />;
+  }
 
-  const renderRoute = () => {
-    switch(activeRoute) {
-      case AppRoute.ADMIN: return <AdminPanel addToast={addToast} locale="en-GB" />;
-      case AppRoute.PROFILE: return userData ? <ProfilePage userData={userData} onUpdateProfile={(d) => setUserData(p => p ? ({ ...p, ...d }) : null)} addToast={addToast} locale={userRegion} /> : null;
-      case AppRoute.EXPLORE:
-        return (
-          <div className="space-y-6 route-transition">
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Explore</h1>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {posts.filter(p => p.media?.[0]).map(post => (
-                <div key={post.id} className="relative aspect-square rounded-xl overflow-hidden border-precision bg-slate-100 cursor-pointer hover:opacity-90 transition-opacity">
-                  <img src={post.media[0].url} className="w-full h-full object-cover" alt="" />
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      case AppRoute.MESSAGES:
-        return (
-          <div className="space-y-4 route-transition">
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Messages</h1>
-            <div className="bg-white border-precision rounded-2xl p-12 text-center text-slate-400">
-               <p className="font-bold text-xs uppercase tracking-widest">Secure Channels Initializing...</p>
-            </div>
-          </div>
-        );
+  const renderContent = () => {
+    switch (activeRoute) {
+      case AppRoute.ADMIN:
+        return userData?.role === 'admin' ? <AdminPanel addToast={addToast} locale={userRegion} systemSettings={systemSettings} /> : <div className="text-center py-20 font-black">UNAUTHORISED ACCESS</div>;
+      case AppRoute.PROFILE:
+        return <ProfilePage userData={userData!} onUpdateProfile={(d) => setUserData({...userData!, ...d})} addToast={addToast} locale={userRegion} />;
       default:
         return (
-          <div className="space-y-4 route-transition">
-            {posts.map(post => <PostCard key={post.id} post={post} onLike={handleLike} />)}
+          <div className="space-y-6 animate-in fade-in duration-700">
+            <div className="flex flex-col gap-1 mb-8">
+              <h1 className="text-3xl font-black text-slate-900 tracking-tighter">CENTRAL_HUB</h1>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Infrastructure Relay Active • GB-LON</p>
+            </div>
+            {posts.map(post => (
+              <PostCard key={post.id} post={post} onLike={handleLike} locale={userRegion} />
+            ))}
           </div>
         );
     }
@@ -285,42 +319,78 @@ const App: React.FC = () => {
   return (
     <Layout 
       activeRoute={activeRoute} 
-      onNavigate={handleNavigate}
+      onNavigate={handleNavigate} 
       onOpenCreate={() => setIsCreateModalOpen(true)}
       onLogout={handleLogout}
-      userRole={userData?.role || 'member'}
       userData={userData}
+      userRole={userData?.role}
       currentRegion={userRegion}
-      onRegionChange={handleRegionChange}
+      onRegionChange={setUserRegion}
     >
-      {renderRoute()}
+      {renderContent()}
 
-      <div className="fixed bottom-6 right-6 md:bottom-12 md:right-12 z-[500] flex flex-col gap-2 items-end pointer-events-none">
-        {toasts.map(t => <div key={t.id} className="pointer-events-auto"><Toast toast={t} onClose={removeToast} /></div>)}
+      {/* Toasts System */}
+      <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[1000] flex flex-col gap-3 pointer-events-none w-full max-w-sm px-4">
+        {toasts.map(toast => <Toast key={toast.id} toast={toast} onClose={removeToast} />)}
       </div>
 
+      {/* Create Transmission Modal */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-md" onClick={() => !isUploading && setIsCreateModalOpen(false)}></div>
-          <div className="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden p-8 border-precision route-transition">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-slate-900 tracking-tight">Compose Post</h2>
-              <button onClick={() => setIsCreateModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-lg"><svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
+        <div className="fixed inset-0 z-[500] flex items-end md:items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-xl" onClick={() => !isUploading && setIsCreateModalOpen(false)}></div>
+          <div className="relative bg-white w-full max-w-xl rounded-t-[3rem] md:rounded-[3rem] p-8 md:p-12 shadow-2xl animate-in slide-in-from-bottom-20 duration-500">
+            <div className="flex justify-between items-center mb-10">
+               <div>
+                 <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">New Transmission</h2>
+                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Neural Uplink v2.6</p>
+               </div>
+               <button onClick={() => setIsCreateModalOpen(false)} className="p-3 bg-slate-100 hover:bg-slate-200 rounded-2xl transition-all">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+               </button>
             </div>
+            
             <textarea 
               value={newPostText}
               onChange={(e) => setNewPostText(e.target.value)}
-              className="w-full h-32 p-4 bg-slate-50 rounded-xl border-precision focus:ring-1 focus:ring-indigo-500 outline-none text-slate-800 placeholder:text-slate-400 text-sm font-medium resize-none mb-4"
-              placeholder="What's happening?"
-              autoFocus
+              placeholder="What's the signal, member?"
+              className="w-full h-40 bg-slate-50 border-none rounded-3xl p-6 text-lg font-medium placeholder:text-slate-300 focus:ring-0 resize-none transition-all"
             />
+
             {filePreview && (
-              <div className="relative rounded-lg overflow-hidden mb-4 bg-slate-100 aspect-video"><img src={filePreview} className="w-full h-full object-cover" alt="" /></div>
+              <div className="relative mt-4 rounded-2xl overflow-hidden group">
+                {selectedFile?.type.startsWith('video/') ? (
+                  <video src={filePreview} className="w-full h-48 object-cover" />
+                ) : (
+                  <img src={filePreview} className="w-full h-48 object-cover" alt="Preview" />
+                )}
+                <button onClick={() => { setSelectedFile(null); setFilePreview(null); }} className="absolute top-2 right-2 p-2 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
             )}
-            <div className="flex gap-3">
-              <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*,video/*" />
-              <button onClick={() => fileInputRef.current?.click()} className="p-3 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-all"><ICONS.Create /></button>
-              <button onClick={handleCreatePost} disabled={isUploading} className="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-lg shadow-lg hover:bg-indigo-700 disabled:opacity-50 transition-all uppercase text-xs tracking-widest">{isUploading ? 'Sending...' : 'Post'}</button>
+
+            <div className="flex items-center justify-between mt-8">
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-3 px-6 py-4 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl transition-all active:scale-95 group"
+              >
+                <div className="group-hover:rotate-12 transition-transform duration-500"><ICONS.Create /></div>
+                <span className="text-[10px] font-black uppercase tracking-widest">Attach Media</span>
+              </button>
+              <input type="file" ref={fileInputRef} className="hidden" accept="image/*,video/*" onChange={handleFileChange} />
+              
+              <button 
+                onClick={handleCreatePost}
+                disabled={isUploading || (!newPostText.trim() && !selectedFile)}
+                className="px-10 py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-3"
+              >
+                {isUploading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    Publishing...
+                  </>
+                ) : 'Publish'}
+              </button>
             </div>
           </div>
         </div>

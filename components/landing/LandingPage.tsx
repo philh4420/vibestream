@@ -6,15 +6,17 @@ import {
   updateProfile 
 } from 'firebase/auth';
 import { ICONS } from '../../constants';
+import { SystemSettings } from '../../types';
 
 interface LandingPageProps {
   onEnter: () => void;
+  systemSettings: SystemSettings;
 }
 
 type Step = 'discovery' | 'verification' | 'entry';
 type AuthMode = 'login' | 'register';
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSettings }) => {
   const [step, setStep] = useState<Step>('discovery');
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -56,6 +58,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
     setErrorDetails(null);
     try {
       if (authMode === 'register') {
+        if (systemSettings.registrationDisabled) {
+          throw new Error('REGISTRATION_DISABLED');
+        }
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         if (fullName) await updateProfile(userCredential.user, { displayName: fullName });
       } else {
@@ -63,7 +68,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
       }
       onEnter();
     } catch (error: any) {
-      setErrorDetails({ code: error.code || 'ERR', message: 'Credential authentication failed. Access denied.' });
+      const msg = error.message === 'REGISTRATION_DISABLED' 
+        ? 'Registration is currently locked by central command.'
+        : 'Credential authentication failed. Access denied.';
+      setErrorDetails({ code: error.code || 'ERR', message: msg });
     } finally {
       setIsProcessing(false);
     }
@@ -120,21 +128,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
 
         {step === 'entry' && (
           <div className="bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 md:p-12 animate-in slide-in-from-bottom-8 duration-500 shadow-2xl">
-            <div className="flex gap-8 mb-10 border-b border-white/5">
-              {(['login', 'register'] as const).map(mode => (
-                <button 
-                  key={mode} onClick={() => setAuthMode(mode)}
-                  className={`pb-4 text-xl font-black uppercase tracking-tight transition-all relative ${authMode === mode ? 'text-white' : 'text-slate-600 hover:text-slate-400'}`}
-                >
-                  {mode}
-                  {authMode === mode && <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-500 rounded-full" />}
-                </button>
-              ))}
+            <div className="flex gap-8 mb-10 border-b border-white/5 overflow-x-auto no-scrollbar">
+              {(['login', 'register'] as const).map(mode => {
+                if (mode === 'register' && systemSettings.registrationDisabled) return null;
+                return (
+                  <button 
+                    key={mode} onClick={() => setAuthMode(mode)}
+                    className={`pb-4 text-xl font-black uppercase tracking-tight transition-all relative whitespace-nowrap ${authMode === mode ? 'text-white' : 'text-slate-600 hover:text-slate-400'}`}
+                  >
+                    {mode}
+                    {authMode === mode && <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-500 rounded-full" />}
+                  </button>
+                );
+              })}
             </div>
 
             <form onSubmit={handleEntry} className="space-y-6">
               {authMode === 'register' && (
-                <div className="space-y-2">
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 font-mono">Full Name</label>
                   <input 
                     type="text" placeholder="Identity Label" value={fullName} onChange={e => setFullName(e.target.value)} required
@@ -157,7 +168,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
                 />
               </div>
 
-              {errorDetails && <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest text-center font-mono">{errorDetails.message}</p>}
+              {errorDetails && <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest text-center font-mono leading-relaxed">{errorDetails.message}</p>}
 
               <button 
                 disabled={isProcessing}

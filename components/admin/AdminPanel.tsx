@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { db } from '../../services/firebase';
+import { db, auth } from '../../services/firebase';
 import { 
   collection, 
   query, 
@@ -9,16 +8,34 @@ import {
   doc, 
   deleteDoc,
   orderBy,
-  limit
+  limit,
+  setDoc,
+  serverTimestamp
 } from 'firebase/firestore';
-import { Post, User } from '../../types';
+import { Post, User, SystemSettings } from '../../types';
 
 interface AdminPanelProps {
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
   locale: string;
+  systemSettings: SystemSettings;
 }
 
-export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale }) => {
+const SystemToggle = ({ label, description, isActive, onToggle }: { label: string, description: string, isActive: boolean, onToggle: () => void }) => (
+  <div className="flex items-center justify-between p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm hover:shadow-md transition-all group">
+    <div className="space-y-1">
+      <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-widest font-mono">{label}</h4>
+      <p className="text-xs text-slate-400 font-medium max-w-xs leading-relaxed">{description}</p>
+    </div>
+    <button 
+      onClick={onToggle}
+      className={`relative w-20 h-10 rounded-full p-1 transition-all duration-500 ease-in-out ${isActive ? 'bg-indigo-600' : 'bg-slate-200'}`}
+    >
+      <div className={`w-8 h-8 bg-white rounded-full shadow-lg transform transition-transform duration-500 ease-in-out ${isActive ? 'translate-x-10' : 'translate-x-0'}`} />
+    </button>
+  </div>
+);
+
+export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale, systemSettings }) => {
   const [stats, setStats] = useState({ users: 0, posts: 0, reports: 0 });
   const [users, setUsers] = useState<User[]>([]);
   const [recentPosts, setRecentPosts] = useState<Post[]>([]);
@@ -31,7 +48,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale }) => {
     try {
       const usersSnap = await getDocs(collection(db, 'users'));
       const postsSnap = await getDocs(query(collection(db, 'posts'), limit(50), orderBy('timestamp', 'desc')));
-      // Placeholder for reports if collection exists later
       const reportsSnap = await getDocs(collection(db, 'reports')).catch(() => ({ size: 0 }));
       
       const usersData = usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as User));
@@ -100,6 +116,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale }) => {
       fetchData();
     } catch (e) {
       addToast('Termination failed', 'error');
+    }
+  };
+
+  const updateSystemSetting = async (key: keyof SystemSettings, value: any) => {
+    if (!db || !auth.currentUser) return;
+    try {
+      const settingRef = doc(db, 'settings', 'global');
+      await updateDoc(settingRef, {
+        [key]: value,
+        lastUpdatedBy: auth.currentUser.uid,
+        updatedAt: new Date().toISOString()
+      }).catch(async (e) => {
+        // Fallback for first-time creation if doc doesn't exist
+        if (e.code === 'not-found') {
+          await setDoc(settingRef, {
+            maintenanceMode: false,
+            registrationDisabled: false,
+            minTrustTier: 'Gamma',
+            [key]: value,
+            lastUpdatedBy: auth.currentUser!.uid,
+            updatedAt: new Date().toISOString()
+          });
+        } else {
+          throw e;
+        }
+      });
+      addToast('System Parameters Synchronized', 'success');
+    } catch (e) {
+      console.error(e);
+      addToast('Handshake Denied', 'error');
     }
   };
 
@@ -250,15 +296,54 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale }) => {
             )}
           </div>
         ) : (
-          <div className="bg-slate-900 rounded-[2.5rem] p-12 text-center text-white">
-            <div className="w-20 h-20 bg-indigo-500 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-indigo-500/40">
-              <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+            <div className="bg-slate-950 rounded-[3rem] p-10 md:p-14 text-white relative overflow-hidden group">
+               <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
+               <div className="relative z-10 flex flex-col md:flex-row gap-12 items-center">
+                  <div className="w-24 h-24 bg-indigo-600 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-indigo-500/40 shrink-0">
+                    <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
+                  </div>
+                  <div className="space-y-4 text-center md:text-left">
+                     <h3 className="text-3xl font-black uppercase tracking-tighter italic">Neural Infrastructure Sync</h3>
+                     <p className="text-slate-400 max-w-md font-medium">All core parameters under direct Citadel oversight. Adjust global routing protocols below.</p>
+                     <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-2">
+                        <div className="px-6 py-2 bg-white/5 rounded-xl border border-white/10 text-[9px] font-black uppercase tracking-[0.3em] font-mono">Kernel_v2.6.4</div>
+                        <div className="px-6 py-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20 text-[9px] font-black uppercase tracking-[0.3em] text-emerald-400 font-mono">Live_Pulse</div>
+                     </div>
+                  </div>
+               </div>
             </div>
-            <h3 className="text-2xl font-black mb-4 uppercase tracking-tighter">System Pulse</h3>
-            <p className="text-slate-400 max-w-md mx-auto mb-10 font-medium">All infrastructure nodes operating within established parameters. Database connections active.</p>
-            <div className="flex justify-center gap-4">
-              <div className="px-6 py-3 bg-white/5 rounded-2xl border border-white/10 text-[10px] font-black uppercase tracking-[0.3em]">Build v2.6.4-UK</div>
-              <div className="px-6 py-3 bg-white/5 rounded-2xl border border-white/10 text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400">Stable</div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <SystemToggle 
+                label="Maintenance_Lock"
+                description="Intercepts all non-admin node sessions with the synchronization protocol overlay."
+                isActive={systemSettings.maintenanceMode}
+                onToggle={() => updateSystemSetting('maintenanceMode', !systemSettings.maintenanceMode)}
+              />
+              <SystemToggle 
+                label="Registration_Halt"
+                description="Disables the creation of new neural identities within the VibeStream grid."
+                isActive={systemSettings.registrationDisabled}
+                onToggle={() => updateSystemSetting('registrationDisabled', !systemSettings.registrationDisabled)}
+              />
+            </div>
+            
+            <div className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem]">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-ping" />
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono">System_Audit_Log</h4>
+              </div>
+              <div className="space-y-3">
+                 <div className="flex justify-between items-center text-[10px] font-mono">
+                    <span className="text-slate-400">Last System Update:</span>
+                    <span className="text-slate-900 font-bold">{systemSettings.updatedAt || 'N/A'}</span>
+                 </div>
+                 <div className="flex justify-between items-center text-[10px] font-mono">
+                    <span className="text-slate-400">Modified By:</span>
+                    <span className="text-indigo-600 font-bold">NODE_{systemSettings.lastUpdatedBy?.slice(0, 8) || 'SYSTEM'}</span>
+                 </div>
+              </div>
             </div>
           </div>
         )}

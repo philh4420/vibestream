@@ -3,7 +3,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
     
     // =========================================================================
-    // VIBESTREAM CORE SECURITY PROTOCOL v5.2 [GLOBAL_EN_GB]
+    // VIBESTREAM CORE SECURITY PROTOCOL v5.3 [GLOBAL_EN_GB]
     // =========================================================================
     
     function isAuthenticated() {
@@ -20,17 +20,16 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Fixed: User Profile Access
+    // Global Infrastructure Settings
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // User Profile Access
     match /users/{userId} {
-      // Anyone logged in can view profiles
       allow read: if isAuthenticated();
-      
-      // Allow user to create their own initial profile
-      // This allows the bootstrapping logic in App.tsx to succeed
       allow create: if isUser(userId);
-      
-      // Allow updates by owner or admin
-      // Prevents members from promoting themselves to admin after creation
       allow update: if (isUser(userId) && 
         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'verifiedHuman']))) 
         || isAdmin()
@@ -47,11 +46,9 @@ service cloud.firestore {
       }
     }
 
-    // Fixed: Posts & Content
+    // Posts & Content
     match /posts/{postId} {
       allow read: if isAuthenticated();
-      
-      // Removed complex rate limiting for creation to prevent sync failures
       allow create: if isAuthenticated() && 
         request.resource.data.authorId == request.auth.uid;
       
