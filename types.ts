@@ -3,7 +3,13 @@ export type UserRole = 'member' | 'verified' | 'creator' | 'admin';
 
 export type Region = 'en-GB' | 'en-US' | 'de-DE' | 'fr-FR' | 'ja-JP';
 
-export type PresenceStatus = 'Online' | 'Focus' | 'Invisible' | 'Away';
+export type PresenceStatus = 'Online' | 'Focus' | 'Invisible' | 'Away' | 'In-Transit';
+
+export interface WeatherInfo {
+  temp: number;
+  condition: string;
+  icon: string;
+}
 
 export interface SystemSettings {
   maintenanceMode: boolean;

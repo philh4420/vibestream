@@ -15,7 +15,7 @@ const PRONOUN_OPTIONS = [
   'Xe/Xem', 'Ze/Zir', 'Ey/Em', 'Per/Per', 'Fae/Faer', 'Fluid', 'Private/Encrypted'
 ];
 
-const PRESENCE_OPTIONS: PresenceStatus[] = ['Online', 'Focus', 'Invisible', 'Away'];
+const PRESENCE_OPTIONS: PresenceStatus[] = ['Online', 'Focus', 'Invisible', 'Away', 'In-Transit'];
 
 const RELATIONSHIP_OPTIONS = ['Single', 'Partnered', 'Married', 'Encoded', 'Private'];
 

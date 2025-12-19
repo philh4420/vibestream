@@ -77,6 +77,44 @@
             border: 0.5px solid var(--glass-border);
         }
 
+        /* Neural Pulse Animations */
+        @keyframes pulse-emerald {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        @keyframes pulse-amber {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.3); }
+            70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+        @keyframes pulse-indigo {
+            0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.3); }
+            70% { box-shadow: 0 0 0 12px rgba(79, 70, 229, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+        }
+
+        .pulse-active-emerald { animation: pulse-emerald 2s infinite; }
+        .pulse-active-amber { animation: pulse-amber 3s infinite; }
+        .pulse-active-indigo { animation: pulse-indigo 2.5s infinite; }
+
+        /* Glass Shimmer Overlay */
+        @keyframes shimmer-move {
+            0% { transform: translateX(-150%) skewX(-20deg); }
+            100% { transform: translateX(150%) skewX(-20deg); }
+        }
+        .glass-shimmer::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
+            animation: shimmer-move 4s infinite linear;
+            pointer-events: none;
+        }
+
         /* Interactive Micro-feedback */
         .touch-active {
             transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);

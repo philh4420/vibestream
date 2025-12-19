@@ -30,6 +30,9 @@ export const CONFIG = {
     cloudName: getEnv('VITE_CLOUDINARY_CLOUD_NAME'),
     uploadPreset: getEnv('VITE_CLOUDINARY_UPLOAD_PRESET') || 'ml_default',
   },
+  WEATHER: {
+    apiKey: getEnv('VITE_OPENWEATHER_API_KEY') || '31895ab433268844337dd3ce24bf423c',
+  },
   REGION: 'en-GB'
 };
 
