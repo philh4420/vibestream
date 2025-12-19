@@ -48,16 +48,16 @@ export const ProfileAboutSection: React.FC<ProfileAboutSectionProps> = ({ userDa
       
       {/* Core Operational Cluster */}
       <DataCluster title="Core_Professional">
-        <InfoItem label="Operational Function" value={userData.occupation || 'Awaiting Synchronization...'} />
-        <InfoItem label="Neural Training" value={userData.education || 'Self-Initialised'} />
+        <InfoItem label="Operational Function" value={userData.occupation || ''} />
+        <InfoItem label="Neural Training" value={userData.education || ''} />
         <InfoItem label="Geospatial Node" value={userData.location} icon={ICONS.Globe} />
       </DataCluster>
 
       {/* Biometric Cluster */}
       <DataCluster title="Biometric_Identity">
         <InfoItem label="Temporal Origin" value={formattedDob} />
-        <InfoItem label="Identity Label (Pronouns)" value={userData.pronouns || 'Not Specified'} />
-        <InfoItem label="Social Status" value={userData.relationshipStatus || 'Independent'} />
+        <InfoItem label="Identity Label (Pronouns)" value={userData.pronouns || ''} />
+        <InfoItem label="Social Status" value={userData.relationshipStatus || ''} />
       </DataCluster>
 
       {/* Social Mesh Hub */}
@@ -88,7 +88,7 @@ export const ProfileAboutSection: React.FC<ProfileAboutSectionProps> = ({ userDa
         </DataCluster>
       )}
 
-      {/* Skills Capability Matrix */}
+      {/* Skills Matrix */}
       {(userData.skills?.length || 0) > 0 && (
         <DataCluster title="Capability_Matrix">
           <div className="flex flex-wrap gap-3">
@@ -127,7 +127,7 @@ export const ProfileAboutSection: React.FC<ProfileAboutSectionProps> = ({ userDa
         </DataCluster>
       )}
 
-      {/* Identity Chronology Timeline */}
+      {/* Identity Timeline */}
       {userData.lifeEvents && userData.lifeEvents.length > 0 && (
         <DataCluster title="Identity_Chronology" className="md:col-span-2">
            <div className="space-y-6 relative before:absolute before:left-6 before:top-2 before:bottom-2 before:w-px before:bg-slate-100">
@@ -138,7 +138,7 @@ export const ProfileAboutSection: React.FC<ProfileAboutSectionProps> = ({ userDa
                   </div>
                   <div className="flex-1 pb-8 border-b border-slate-50 last:border-none">
                     <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest font-mono mb-1">
-                      {event.date ? new Date(event.date).toLocaleDateString(locale, { month: 'long', year: 'numeric' }) : 'TBD'}
+                      {event.date ? new Date(event.date).toLocaleDateString(locale, { month: 'long', year: 'numeric' }) : ''}
                     </p>
                     <h4 className="text-xl font-black text-slate-900 tracking-tight leading-tight">{event.title}</h4>
                   </div>
