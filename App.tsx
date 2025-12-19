@@ -190,7 +190,7 @@ const App: React.FC = () => {
                 followers: 0,
                 following: 0,
                 role: 'member',
-                location: 'United Kingdom',
+                location: 'London',
                 joinedAt: new Date().toISOString(),
                 badges: [],
                 trustTier: 'Gamma'
