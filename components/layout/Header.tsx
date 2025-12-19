@@ -34,30 +34,30 @@ export const Header: React.FC<HeaderProps> = ({
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-[200] header-safe glass-panel border-b border-precision flex items-center transition-all">
-      <div className="flex items-center justify-between w-full max-w-[2560px] mx-auto px-4 md:px-8 gap-4 md:gap-8 h-full">
+    <header className="fixed top-0 left-0 right-0 z-[200] glass-panel border-b border-precision flex items-end transition-all pb-3" style={{ height: 'var(--header-h)' }}>
+      <div className="flex items-center justify-between w-full max-w-[2560px] mx-auto px-4 md:px-8 gap-4 md:gap-8 mb-0.5">
         
-        {/* Branding */}
-        <div className="flex items-center gap-3 shrink-0 cursor-pointer group" onClick={() => onNavigate(AppRoute.FEED)}>
-          <div className="w-8 h-8 md:w-10 md:h-10 bg-slate-900 rounded-lg flex items-center justify-center shadow-lg ring-1 ring-white/10 group-active:scale-95 transition-transform">
-            <span className="text-white font-black italic text-lg md:text-xl">V</span>
+        {/* Branding - Shifted slightly for notch clearance */}
+        <div className="flex items-center gap-3 shrink-0 cursor-pointer group pl-[max(0px,var(--sal)-1rem)]" onClick={() => onNavigate(AppRoute.FEED)}>
+          <div className="w-9 h-9 md:w-10 md:h-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-lg ring-1 ring-white/10 group-active:scale-90 transition-transform">
+            <span className="text-white font-black italic text-xl">V</span>
           </div>
           <div className="hidden sm:flex flex-col">
             <span className="text-sm md:text-base font-bold tracking-tight text-slate-900 leading-none">VibeStream</span>
-            <span className="text-[7px] md:text-[8px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-1 flex items-center gap-1.5 font-mono">
+            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-1 flex items-center gap-1.5 font-mono">
               <span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></span>
               Node: {currentRegion}
             </span>
           </div>
         </div>
 
-        {/* Universal Search / Command Bar */}
+        {/* Universal Search */}
         <div className={`relative flex-1 max-w-md transition-all duration-300 ${isSearchFocused ? 'max-w-lg' : ''}`}>
-          <div className={`flex items-center gap-2 px-4 py-1.5 md:py-2 rounded-xl border transition-all ${isSearchFocused ? 'bg-white border-indigo-400 shadow-lg ring-2 ring-indigo-50' : 'bg-slate-100/50 border-transparent'}`}>
-            <div className="text-slate-400 scale-75 md:scale-100"><ICONS.Search /></div>
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${isSearchFocused ? 'bg-white border-indigo-400 shadow-lg ring-2 ring-indigo-50' : 'bg-slate-100/50 border-transparent'}`}>
+            <div className="text-slate-400 scale-90"><ICONS.Search /></div>
             <input 
               type="text" 
-              placeholder="Search..." 
+              placeholder="Search Network..." 
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setIsSearchFocused(false)}
               className="bg-transparent border-none focus:ring-0 w-full text-slate-800 placeholder:text-slate-400 font-medium text-xs md:text-sm"
@@ -66,15 +66,15 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Precision Controls */}
-        <div className="flex items-center gap-2 md:gap-4">
-          <button className="hidden md:flex p-2 text-slate-400 hover:text-slate-900 transition-all">
+        <div className="flex items-center gap-2 md:gap-4 pr-[max(0px,var(--sar)-1rem)]">
+          <button className="hidden md:flex p-2.5 text-slate-400 hover:text-slate-900 transition-all rounded-xl hover:bg-slate-50">
             <ICONS.Bell />
           </button>
           
           <div className="relative">
             <button 
               onClick={() => setIsSystemMenuOpen(!isSystemMenuOpen)}
-              className="flex items-center gap-2 p-0.5 rounded-xl hover:bg-slate-100 transition-all touch-active ring-1 ring-slate-200"
+              className="flex items-center gap-2 p-0.5 rounded-xl hover:bg-white transition-all touch-active ring-1 ring-slate-100 bg-slate-50/50"
             >
               <img src={userData?.avatarUrl} className="w-8 h-8 md:w-9 md:h-9 rounded-lg object-cover" alt="System" />
               <div className="hidden md:block pr-2 text-left">

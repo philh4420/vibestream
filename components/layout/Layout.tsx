@@ -47,8 +47,8 @@ export const Layout: React.FC<LayoutProps> = ({
         title={collapsed ? label : undefined}
         className={`flex items-center transition-all duration-300 touch-active group relative ${
           collapsed 
-            ? 'p-3 justify-center' 
-            : 'gap-3 px-4 py-3'
+            ? 'p-3.5 justify-center' 
+            : 'gap-3 px-4 py-3.5'
         } ${
           isActive 
             ? 'text-indigo-600' 
@@ -60,7 +60,7 @@ export const Layout: React.FC<LayoutProps> = ({
         </div>
         {!collapsed && <span className="text-[10px] font-black uppercase tracking-[0.2em]">{label}</span>}
         {isActive && collapsed && (
-          <div className="absolute left-0 w-1 h-6 bg-indigo-600 rounded-r-full" />
+          <div className="absolute left-0 w-1.5 h-6 bg-indigo-600 rounded-r-full" />
         )}
         {isActive && !collapsed && (
           <div className="absolute inset-y-2 left-2 right-2 bg-indigo-50 -z-0 rounded-xl" />
@@ -83,8 +83,8 @@ export const Layout: React.FC<LayoutProps> = ({
 
       <div className="flex flex-1 overflow-hidden">
         
-        {/* Navigation Sidebar: Expanded (Desktop Lg) */}
-        <aside className="hidden lg:flex flex-col w-64 shrink-0 border-r border-precision bg-white/50 backdrop-blur-xl p-4 gap-6 pt-[calc(var(--sat)+5rem)]">
+        {/* Desktop Sidebar: Expanded */}
+        <aside className="hidden lg:flex flex-col w-64 shrink-0 border-r border-precision bg-white/50 backdrop-blur-xl p-4 gap-6 pt-[calc(var(--header-h)+1.5rem)]">
           <div className="space-y-1">
             <p className="px-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] mb-4 font-mono">Core_Systems</p>
             <NavItem route={AppRoute.FEED} icon={ICONS.Home} label="Central" />
@@ -96,17 +96,16 @@ export const Layout: React.FC<LayoutProps> = ({
 
           <button 
             onClick={onOpenCreate}
-            className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl shadow-xl hover:bg-black transition-all flex items-center justify-center gap-2 touch-active group"
+            className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl shadow-xl hover:bg-black transition-all flex items-center justify-center gap-3 touch-active group"
           >
             <div className="scale-90 group-hover:rotate-90 transition-transform"><ICONS.Create /></div>
             <span className="uppercase tracking-[0.3em] text-[10px]">New_Signal</span>
           </button>
         </aside>
 
-        {/* Navigation Rail: Collapsed (Tablets & Mobile Landscape) */}
-        {/* Added rail-safe-left to prevent landscape notch collision */}
-        <aside className="hidden md:flex lg:hidden flex-col w-[calc(5rem+var(--sal))] shrink-0 border-r border-precision bg-white/50 backdrop-blur-xl py-6 items-center gap-8 pt-[calc(var(--sat)+5rem)] rail-safe-left">
-          <div className="flex flex-col gap-2 w-full">
+        {/* Tablet Navigation Rail */}
+        <aside className="hidden md:flex lg:hidden flex-col w-[calc(5.5rem+var(--sal))] shrink-0 border-r border-precision bg-white/50 backdrop-blur-xl py-6 items-center gap-8 pt-[calc(var(--header-h)+1.5rem)]" style={{ paddingLeft: 'var(--sal)' }}>
+          <div className="flex flex-col gap-3 w-full items-center">
             <NavItem route={AppRoute.FEED} icon={ICONS.Home} label="Central" collapsed />
             <NavItem route={AppRoute.EXPLORE} icon={ICONS.Explore} label="Discover" collapsed />
             <NavItem route={AppRoute.MESSAGES} icon={ICONS.Messages} label="Neural" collapsed />
@@ -116,23 +115,23 @@ export const Layout: React.FC<LayoutProps> = ({
           
           <button 
             onClick={onOpenCreate}
-            className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg hover:shadow-indigo-100 hover:bg-black transition-all touch-active group"
+            className="w-13 h-13 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg hover:shadow-indigo-100 hover:bg-black transition-all touch-active group"
           >
             <ICONS.Create />
           </button>
         </aside>
 
         {/* Main Content Viewport */}
-        <main className="flex-1 relative overflow-hidden flex flex-col pt-[calc(var(--sat)+4.5rem)]">
-          <div className="flex-1 scroll-container px-4 sm:px-6 md:px-10 lg:px-14 py-6">
-            <div className="max-w-4xl mx-auto w-full pb-[calc(var(--sab)+5rem)] md:pb-8">
+        <main className="flex-1 relative overflow-hidden flex flex-col pt-[var(--header-h)]">
+          <div className="flex-1 scroll-container px-4 sm:px-6 md:px-10 lg:px-14 py-6" style={{ paddingLeft: 'max(1rem, var(--sal))', paddingRight: 'max(1rem, var(--sar))' }}>
+            <div className="max-w-4xl mx-auto w-full pb-[calc(var(--bottom-nav-h)+2rem)] md:pb-12">
               {children}
             </div>
           </div>
         </main>
 
-        {/* Info Rail (Ultra Wide Desktop Only) */}
-        <aside className="hidden xl:flex flex-col w-80 shrink-0 border-l border-precision bg-white/30 p-6 gap-6 pt-[calc(var(--sat)+5.5rem)]">
+        {/* Wide Desktop Info Rail */}
+        <aside className="hidden xl:flex flex-col w-80 shrink-0 border-l border-precision bg-white/30 p-6 gap-6 pt-[calc(var(--header-h)+1.5rem)] pr-[max(1.5rem,var(--sar))]">
            <div className="bg-white/50 border-precision rounded-3xl p-6 backdrop-blur-sm shadow-sm">
               <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] mb-6 font-mono">Grid_Resonance</h4>
               <div className="space-y-6">
@@ -150,9 +149,9 @@ export const Layout: React.FC<LayoutProps> = ({
         </aside>
       </div>
 
-      {/* Portrait Mobile Tab Bar - respects Home Indicator (SAB) */}
-      <nav className={`${orientation === 'landscape' ? 'hidden' : 'md:hidden'} fixed bottom-0 left-0 right-0 glass-panel border-t border-precision z-[150] tab-safe-bottom`}>
-        <div className="flex items-center justify-around py-2 px-2">
+      {/* Portrait Mobile Tab Bar - Safe Area Aware */}
+      <nav className={`${orientation === 'landscape' ? 'hidden' : 'md:hidden'} fixed bottom-0 left-0 right-0 glass-panel border-t border-precision z-[150]`} style={{ height: 'var(--bottom-nav-h)', paddingBottom: 'var(--sab)' }}>
+        <div className="flex items-center justify-around h-full px-2">
           <button onClick={() => onNavigate(AppRoute.FEED)} className={`p-3 rounded-xl transition-all touch-active ${activeRoute === AppRoute.FEED ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
             <ICONS.Home />
           </button>
@@ -176,9 +175,9 @@ export const Layout: React.FC<LayoutProps> = ({
         </div>
       </nav>
 
-      {/* Compact Landscape Rail (Floating) - respects Side Notch (SAL) */}
+      {/* Mobile Landscape Floating Navigation - Notch Resilient */}
       {orientation === 'landscape' && (
-        <div className="md:hidden fixed left-[calc(var(--sal)+1rem)] top-1/2 -translate-y-1/2 flex flex-col gap-4 z-[300]">
+        <div className="md:hidden fixed top-1/2 -translate-y-1/2 flex flex-col gap-4 z-[300]" style={{ left: 'max(1rem, var(--sal))' }}>
            <div className="glass-panel p-2 rounded-2xl flex flex-col gap-1 border-precision shadow-2xl">
               <button onClick={() => onNavigate(AppRoute.FEED)} className={`p-2.5 rounded-xl transition-all touch-active ${activeRoute === AppRoute.FEED ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
                 <ICONS.Home />
@@ -195,7 +194,7 @@ export const Layout: React.FC<LayoutProps> = ({
            </div>
            <button 
             onClick={onOpenCreate}
-            className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-200 active:scale-90 transition-transform"
+            className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-100 active:scale-90 transition-transform"
           >
             <ICONS.Create />
           </button>

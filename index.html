@@ -11,16 +11,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-bg: rgba(255, 255, 255, 0.75);
             --glass-border: rgba(0, 0, 0, 0.08);
             --accent: #4F46E5;
             --app-height: 100dvh;
             
-            /* Modern Hardware Safe Area Proxies */
+            /* Precision Hardware Variables */
             --sat: env(safe-area-inset-top);
             --sar: env(safe-area-inset-right);
             --sab: env(safe-area-inset-bottom);
             --sal: env(safe-area-inset-left);
+
+            /* Tiered Content Spacing */
+            --header-h: calc(4.5rem + var(--sat));
+            --bottom-nav-h: calc(4rem + var(--sab));
         }
 
         html, body {
@@ -62,37 +66,44 @@
             border: 0.5px solid var(--glass-border);
         }
 
+        /* 4K+ Scaling Logic */
         @media (min-width: 1920px) { html { font-size: 18px; } }
         @media (min-width: 2560px) { html { font-size: 22px; } }
-        @media (min-width: 3840px) { html { font-size: 28px; } }
 
         .glass-panel {
             background: var(--glass-bg);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
             border: 0.5px solid var(--glass-border);
         }
 
+        /* Interactive Micro-feedback */
         .touch-active {
-            transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .touch-active:active {
             transform: scale(0.96);
-            opacity: 0.9;
+            opacity: 0.8;
+            filter: brightness(1.05);
         }
         
-        /* Notch & Dynamic Island Buffer */
-        .header-safe {
-            padding-top: var(--sat);
-            height: calc(4.5rem + var(--sat));
+        /* Edge Protection Utilities */
+        .safe-bleed-top {
+            padding-top: max(0.5rem, var(--sat));
+        }
+        
+        .safe-bleed-bottom {
+            padding-bottom: max(0.5rem, var(--sab));
         }
 
-        .rail-safe-left {
-            padding-left: var(--sal);
+        /* Animation Keyframes */
+        .route-transition {
+            animation: view-fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .tab-safe-bottom {
-            padding-bottom: calc(var(--sab) + 0.5rem);
+        @keyframes view-fade-up {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 <script type="importmap">
