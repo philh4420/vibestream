@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { ICONS } from '../../constants';
-import { UserRole, Region, User as VibeUser, AppRoute } from '../../types';
+import { UserRole, Region, User as VibeUser, AppRoute, PresenceStatus } from '../../types';
 
 interface HeaderProps {
   userRole: UserRole;
@@ -12,6 +12,16 @@ interface HeaderProps {
   activeRoute: AppRoute;
   onNavigate: (route: AppRoute) => void;
 }
+
+const PRESENCE_DOTS: Record<PresenceStatus, string> = {
+  'Online': 'bg-emerald-500',
+  'Focus': 'bg-amber-500',
+  'Deep Work': 'bg-rose-600',
+  'In-Transit': 'bg-indigo-600',
+  'Away': 'bg-slate-400',
+  'Invisible': 'bg-slate-700',
+  'Syncing': 'bg-blue-400'
+};
 
 export const Header: React.FC<HeaderProps> = ({ 
   userRole, 
@@ -44,7 +54,7 @@ export const Header: React.FC<HeaderProps> = ({
     >
       <div className="flex items-center justify-between w-full max-w-[2560px] mx-auto gap-4 md:gap-8 mb-0.5">
         
-        {/* Branding - Aggressive Notch Protection */}
+        {/* Branding */}
         <div className="flex items-center gap-3 shrink-0 cursor-pointer group" onClick={() => onNavigate(AppRoute.FEED)}>
           <div className="w-9 h-9 md:w-10 md:h-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-lg ring-1 ring-white/10 group-active:scale-90 transition-transform">
             <span className="text-white font-black italic text-xl">V</span>
@@ -81,12 +91,16 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="relative">
             <button 
               onClick={() => setIsSystemMenuOpen(!isSystemMenuOpen)}
-              className="flex items-center gap-2 p-0.5 rounded-xl hover:bg-white transition-all touch-active ring-1 ring-slate-100 bg-slate-50/50"
+              className="flex items-center gap-2 p-0.5 rounded-xl hover:bg-white transition-all touch-active ring-1 ring-slate-100 bg-slate-50/50 relative"
             >
-              <img src={userData?.avatarUrl} className="w-8 h-8 md:w-9 md:h-9 rounded-lg object-cover" alt="System" />
+              <div className="relative">
+                <img src={userData?.avatarUrl} className="w-8 h-8 md:w-9 md:h-9 rounded-lg object-cover" alt="System" />
+                {/* Presence Dot on Avatar */}
+                <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${PRESENCE_DOTS[userData?.presenceStatus || 'Online']}`} />
+              </div>
               <div className="hidden md:block pr-2 text-left">
                 <p className="text-[10px] font-bold text-slate-900 leading-none">@{userData?.username}</p>
-                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{userRole}</p>
+                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{userData?.presenceStatus || 'Online'}</p>
               </div>
             </button>
 

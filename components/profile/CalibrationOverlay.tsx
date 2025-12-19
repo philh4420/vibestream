@@ -96,7 +96,7 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
            {(['core', 'visuals', 'social', 'professional'] as const).map(tab => (
              <button key={tab} onClick={() => setActiveSubTab(tab)} className={`pb-4 text-[10px] font-black uppercase tracking-[0.3em] font-mono transition-all relative whitespace-nowrap ${activeSubTab === tab ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>
                {tab}
-               {activeSubTab === tab && <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-indigo-600 rounded-full" />}
+               {activeSubTab === tab && <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-600 rounded-full" />}
              </button>
            ))}
         </div>
@@ -105,9 +105,9 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
           {activeSubTab === 'core' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
               
-              {/* Refined Identity Message Segment */}
+              {/* Identity Overlay Segment */}
               <div className="p-8 bg-indigo-50/50 rounded-[2.5rem] border border-indigo-100 space-y-6">
-                 <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest font-mono mb-4">Identity Signal</h4>
+                 <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest font-mono mb-4">Identity Signal Overlay</h4>
                  <div className="flex flex-wrap gap-4">
                     {STATUS_EMOJIS.map(emoji => (
                       <button 
@@ -123,7 +123,7 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
                    label="Status Message Overlay" 
                    value={form.statusMessage} 
                    onChange={(e: any) => setForm({...form, statusMessage: e.target.value})} 
-                   placeholder="Signal context..." 
+                   placeholder="Update overlay text..." 
                  />
                  <div className="space-y-2">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Biometric ID Preference</label>
