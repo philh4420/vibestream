@@ -50,9 +50,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
     }
   };
 
-  const signalQuality = useMemo(() => 
-    Math.min(99, ((userData.followers || 0) / 10) + (userPosts.length * 2)).toFixed(1), 
-  [userData.followers, userPosts.length]);
+  const signalQuality = useMemo(() => {
+    const base = ((userData.followers || 0) / 10) + (userPosts.length * 2);
+    const eventBonus = (userData.lifeEvents?.length || 0) * 5;
+    return Math.min(99.9, base + eventBonus).toFixed(1);
+  }, [userData.followers, userPosts.length, userData.lifeEvents]);
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -77,22 +79,27 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
       case 'chronology':
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {[
-              { title: 'Node Established', date: userData.joinedAt, icon: '🚀' },
-              { title: 'Alpha Trust Verification', date: '2026-01-15', icon: '🛡️' },
-              { title: 'Signal Burst Peak', date: '2026-03-22', icon: '⚡' }
-            ].map((event, idx) => (
-              <div key={idx} className="flex gap-6 group">
-                <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-xl shadow-sm group-hover:scale-110 transition-transform">{event.icon}</div>
-                  <div className="flex-1 w-px bg-slate-100 mt-2" />
+            {userData.lifeEvents && userData.lifeEvents.length > 0 ? (
+              [...userData.lifeEvents].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((event, idx) => (
+                <div key={event.id} className="flex gap-6 group">
+                  <div className="flex flex-col items-center">
+                    <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-2xl shadow-sm group-hover:scale-110 transition-transform z-10">{event.icon}</div>
+                    {idx < (userData.lifeEvents?.length || 0) - 1 && <div className="flex-1 w-0.5 bg-slate-100 mt-2" />}
+                  </div>
+                  <div className="pb-12 pt-3">
+                    <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest font-mono mb-1">
+                      {new Date(event.date).toLocaleDateString(locale)}
+                    </p>
+                    <h4 className="text-xl font-black text-slate-900 tracking-tight">{event.title}</h4>
+                  </div>
                 </div>
-                <div className="pb-8 pt-2">
-                  <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest font-mono mb-1">{new Date(event.date).toLocaleDateString(locale)}</p>
-                  <h4 className="text-lg font-black text-slate-900 tracking-tight">{event.title}</h4>
-                </div>
+              ))
+            ) : (
+              <div className="glass-panel rounded-[3rem] py-32 text-center border-dashed border-2 border-slate-100">
+                 <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] font-mono mb-4">Null Chronology Logs</p>
+                 <button onClick={() => setIsEditModalOpen(true)} className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline">Initialise Event Mesh →</button>
               </div>
-            ))}
+            )}
           </div>
         );
       default: // broadcasting
