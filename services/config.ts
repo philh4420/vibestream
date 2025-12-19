@@ -1,12 +1,20 @@
 
 /**
  * Configuration Service
- * Handles environment variables with multi-environment support.
+ * Handles environment variables safely across different runtime environments.
  */
 const getEnv = (key: string): string => {
-  // @ts-ignore
-  const val = process.env[key] || import.meta.env?.[key] || '';
-  return val.trim();
+  try {
+    // Safely check for process or import.meta.env to prevent ReferenceErrors in browser
+    // @ts-ignore
+    const processVal = typeof process !== 'undefined' ? process.env[key] : undefined;
+    // @ts-ignore
+    const viteVal = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env[key] : undefined;
+    
+    return (processVal || viteVal || '').trim();
+  } catch (e) {
+    return '';
+  }
 };
 
 export const CONFIG = {
@@ -21,10 +29,11 @@ export const CONFIG = {
   CLOUDINARY: {
     cloudName: getEnv('VITE_CLOUDINARY_CLOUD_NAME'),
     uploadPreset: getEnv('VITE_CLOUDINARY_UPLOAD_PRESET') || 'ml_default',
-  }
+  },
+  REGION: 'en-GB'
 };
 
-// Validate critical config
-if (!CONFIG.FIREBASE.apiKey) {
-  console.error("CRITICAL: Firebase API Key is missing. Verification will fail.");
+// Internal validation
+if (!CONFIG.FIREBASE.apiKey && typeof window !== 'undefined') {
+  console.warn("VibeStream Alert: Authentication environment variables not detected.");
 }

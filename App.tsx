@@ -98,7 +98,7 @@ const App: React.FC = () => {
 
   const handleCreatePost = async () => {
     if (!newPostText.trim() && !selectedFile) {
-      addToast('Please enter some text or add a file', 'error');
+      addToast('Please enter some text or add a media file', 'error');
       return;
     }
 
@@ -139,7 +139,7 @@ const App: React.FC = () => {
       setIsCreateModalOpen(false);
       addToast('Post published successfully!', 'success');
     } catch (error) {
-      addToast('Error creating post. Please try again.', 'error');
+      addToast('Upload failed. Check environment variables.', 'error');
       console.error(error);
     } finally {
       setIsUploading(false);
@@ -156,13 +156,13 @@ const App: React.FC = () => {
       onNavigate={setActiveRoute}
       onOpenCreate={() => setIsCreateModalOpen(true)}
     >
-      <div className="space-y-6">
+      <div className="space-y-6 pb-20">
         {posts.map(post => (
           <PostCard key={post.id} post={post} onLike={handleLike} />
         ))}
       </div>
 
-      <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 items-center pointer-events-none">
+      <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[300] flex flex-col gap-2 items-center pointer-events-none">
         {toasts.map(toast => (
           <div key={toast.id} className="pointer-events-auto">
             <Toast toast={toast} onClose={removeToast} />
@@ -171,37 +171,57 @@ const App: React.FC = () => {
       </div>
 
       {isCreateModalOpen && (
-        /* Create Modal Code here - Keeping logic minimal per request */
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => !isUploading && setIsCreateModalOpen(false)}></div>
-          <div className="relative bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden p-8">
-            <h2 className="text-xl font-bold mb-4">Create New Post</h2>
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-xl animate-in fade-in duration-300" onClick={() => !isUploading && setIsCreateModalOpen(false)}></div>
+          <div className="relative bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden p-8 md:p-12 animate-in zoom-in-95 duration-300">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-3xl font-black text-slate-900 tracking-tight">Post Your Vibe</h2>
+              <button onClick={() => setIsCreateModalOpen(false)} className="p-3 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+
             <textarea 
               value={newPostText}
               onChange={(e) => setNewPostText(e.target.value)}
-              className="w-full h-32 p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-100 mb-4"
-              placeholder="What's happening?"
+              className="w-full h-48 p-6 bg-slate-50 rounded-[2rem] border-none focus:ring-2 focus:ring-indigo-100 text-xl placeholder:text-slate-300 mb-6 resize-none"
+              placeholder="What's happening, Oliver?"
             />
+
+            {filePreview && (
+              <div className="relative rounded-3xl overflow-hidden mb-6 bg-slate-100 aspect-video">
+                <img src={filePreview} className="w-full h-full object-cover" alt="Preview" />
+                <button 
+                  onClick={() => { setSelectedFile(null); setFilePreview(null); }}
+                  className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black/70"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </div>
+            )}
+
             <div className="flex justify-between items-center">
-               <input 
+              <div className="flex gap-3">
+                <input 
                   type="file" 
                   ref={fileInputRef} 
                   onChange={handleFileChange} 
                   className="hidden" 
                   accept="image/*,video/*"
                 />
-              <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="p-3 bg-slate-100 rounded-xl"
-              >
-                Media
-              </button>
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-100 transition-all active:scale-90"
+                >
+                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </button>
+              </div>
               <button 
                 onClick={handleCreatePost}
                 disabled={isUploading}
-                className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl"
+                className="px-12 py-5 bg-indigo-600 text-white font-black rounded-[1.5rem] shadow-xl shadow-indigo-200 hover:bg-indigo-700 disabled:opacity-50 transition-all active:scale-95"
               >
-                {isUploading ? 'Uploading...' : 'Publish'}
+                {isUploading ? 'SYNCHRONISING...' : 'PUBLISH POST'}
               </button>
             </div>
           </div>
