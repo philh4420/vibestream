@@ -2,7 +2,6 @@
 import React, { useState, useRef } from 'react';
 import { User } from '../../types';
 import { uploadToCloudinary } from '../../services/cloudinary';
-import { ICONS } from '../../constants';
 
 interface CalibrationOverlayProps {
   userData: User;
@@ -38,11 +37,10 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
     education: userData.education || '',
     relationshipStatus: userData.relationshipStatus || 'Single',
     website: userData.website || '',
+    pronouns: userData.pronouns || 'Not Specified',
     tags: (userData.tags || []).join(', '),
     skills: (userData.skills || []).join(', '),
     hobbies: (userData.hobbies || []).join(', '),
-    lifeEvents: userData.lifeEvents || [],
-    socialLinks: userData.socialLinks || []
   });
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -104,7 +102,10 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
                 className="w-full h-32 bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold resize-none outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all placeholder:text-slate-300" 
                 placeholder="Identity Bio Signature..."
               />
-              <InputField label="Encoded Status (Relationship)" value={form.relationshipStatus} onChange={(e: any) => setForm({...form, relationshipStatus: e.target.value})} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <InputField label="Encoded Status (Relationship)" value={form.relationshipStatus} onChange={(e: any) => setForm({...form, relationshipStatus: e.target.value})} />
+                <InputField label="Biometric ID (Pronouns)" value={form.pronouns} onChange={(e: any) => setForm({...form, pronouns: e.target.value})} />
+              </div>
             </div>
           )}
 
