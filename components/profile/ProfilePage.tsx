@@ -47,12 +47,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [activeTile, setActiveTile] = useState<string | null>(null);
   
   const [editForm, setEditForm] = useState({
     displayName: userData.displayName,
     bio: userData.bio,
-    location: userData.location
+    location: userData.location,
+    dob: userData.dob || '2000-01-01',
+    pronouns: userData.pronouns || '',
+    website: userData.website || '',
+    tags: userData.tags?.join(', ') || ''
   });
 
   useEffect(() => {
@@ -70,8 +73,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
   const handleSaveProfile = async () => {
     if (!db) return;
     try {
-      await updateDoc(doc(db, 'users', userData.id), editForm);
-      onUpdateProfile(editForm);
+      const updatedData = {
+        ...editForm,
+        tags: editForm.tags.split(',').map(t => t.trim()).filter(t => t !== '')
+      };
+      await updateDoc(doc(db, 'users', userData.id), updatedData);
+      onUpdateProfile(updatedData);
       setIsEditModalOpen(false);
       addToast('Identity Synchronised', 'success');
     } catch (e) { addToast('Sync Error: Connection Refused', 'error'); }
@@ -81,6 +88,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
   const trustScore = userData.verifiedHuman ? 98.4 : 65.2;
   const signalQuality = Math.min(99, (userData.followers / 10) + (userPosts.length * 2)).toFixed(1);
   const identityHash = `VIBE-ID-${userData.id.substring(0, 8).toUpperCase()}`;
+
+  // DOB Formatter
+  const formattedDob = userData.dob 
+    ? new Date(userData.dob).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })
+    : 'Unknown Date';
 
   return (
     <div className="space-y-8 animate-in fade-in duration-1000">
@@ -140,6 +152,38 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
           </div>
         </div>
 
+        {/* Bio-Vault Tile (DOB & Pronouns) */}
+        <BentoTile title="Identity_Data">
+           <div className="flex flex-col justify-center h-full gap-4">
+              <div className="space-y-1">
+                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Origins</p>
+                 <p className="text-sm font-bold text-slate-800">{formattedDob}</p>
+              </div>
+              <div className="space-y-1">
+                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Pronouns</p>
+                 <p className="text-sm font-bold text-indigo-600 uppercase tracking-widest">{userData.pronouns || 'N/A'}</p>
+              </div>
+           </div>
+        </BentoTile>
+
+        {/* Link-Node Tile */}
+        <BentoTile title="Neural_Links" onClick={() => userData.website && window.open(userData.website, '_blank')}>
+          <div className="flex flex-col justify-center h-full">
+             <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">
+                   <ICONS.Globe />
+                </div>
+                <div className="overflow-hidden">
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono truncate">External Node</p>
+                   <p className="text-xs font-bold text-slate-900 truncate">{userData.website ? userData.website.replace('https://', '') : 'No links established'}</p>
+                </div>
+             </div>
+             <div className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em] font-mono group-hover:translate-x-1 transition-transform">
+                Open_Connection →
+             </div>
+          </div>
+        </BentoTile>
+
         {/* Resonance Tile */}
         <BentoTile title="Resonance_Vector" onClick={() => addToast('Network Mapping...', 'info')}>
           <div className="flex flex-col justify-center h-full gap-1">
@@ -154,17 +198,16 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
           </div>
         </BentoTile>
 
-        {/* Uptime Tile */}
-        <BentoTile title="Uptime_Pulse" className="bg-slate-900 text-white border-white/5 shadow-2xl shadow-indigo-500/10">
-          <div className="flex flex-col justify-center h-full">
-             <div className="flex items-end gap-1 mb-2">
-                <div className="w-1 h-3 bg-indigo-400 rounded-full animate-[pulse_1s_infinite_0ms]"></div>
-                <div className="w-1 h-6 bg-indigo-500 rounded-full animate-[pulse_1s_infinite_200ms]"></div>
-                <div className="w-1 h-4 bg-indigo-600 rounded-full animate-[pulse_1s_infinite_400ms]"></div>
-                <div className="w-1 h-8 bg-indigo-400 rounded-full animate-[pulse_1s_infinite_600ms]"></div>
-             </div>
-             <div className="text-3xl font-black tracking-tighter mb-1">99.8%</div>
-             <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest font-mono">Real-time Node Status</p>
+        {/* Interest-Mesh Tile */}
+        <BentoTile title="Interest_Mesh">
+          <div className="flex flex-wrap gap-2 content-center h-full">
+             {userData.tags && userData.tags.length > 0 ? userData.tags.map(tag => (
+               <span key={tag} className="px-2 py-1 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest rounded-md border border-white/10">
+                  {tag}
+               </span>
+             )) : (
+               <p className="text-[10px] text-slate-400 font-medium italic">Mesh undefined...</p>
+             )}
           </div>
         </BentoTile>
 
@@ -193,7 +236,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
                     <div className="text-[9px] font-black text-emerald-500 uppercase tracking-widest font-mono">Verified_Human</div>
                  </div>
               </div>
-              <p className="text-[10px] text-slate-400 font-medium leading-relaxed">Neural biometric link secured and validated via GB-Node.</p>
+              <p className="text-[10px] text-slate-400 font-medium leading-relaxed">Biometric link secured: {userData.trustTier || 'Alpha'}-Class</p>
            </div>
         </BentoTile>
 
@@ -232,53 +275,125 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
         )}
       </div>
 
-      {/* Identity Calibration Overlay */}
+      {/* Identity Calibration Overlay - EXTENDED 2026 EDITION */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-[600] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-xl" onClick={() => setIsEditModalOpen(false)}></div>
-          <div className="relative bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-8 md:p-12 border-precision animate-in slide-in-from-bottom-12 duration-500">
-            <div className="flex justify-between items-start mb-10">
+          <div className="relative bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border-precision animate-in slide-in-from-bottom-12 duration-500">
+            
+            {/* Modal Header */}
+            <div className="shrink-0 p-8 md:p-12 pb-0 flex justify-between items-start">
                <div>
                   <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter mb-2">Node_Calibration</h2>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono">Modify identity parameters</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono">Synchronise personal identity clusters</p>
                </div>
                <button onClick={() => setIsEditModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-xl transition-all">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" /></svg>
                </button>
             </div>
             
-            <div className="space-y-8">
-              <div className="space-y-3">
-                <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1 font-mono">Public Label</label>
-                <input 
-                   type="text" 
-                   value={editForm.displayName} 
-                   onChange={e => setEditForm(prev => ({...prev, displayName: e.target.value}))} 
-                   className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none font-bold transition-all" 
-                />
+            {/* Scrollable Form Body */}
+            <div className="flex-1 overflow-y-auto p-8 md:p-12 space-y-10 scroll-container">
+              
+              {/* Profile Section */}
+              <div className="space-y-6">
+                 <h3 className="text-[11px] font-black text-indigo-500 uppercase tracking-[0.3em] font-mono border-b border-slate-100 pb-2">Surface_Metadata</h3>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest font-mono ml-1">Label</label>
+                       <input 
+                          type="text" 
+                          value={editForm.displayName} 
+                          onChange={e => setEditForm(prev => ({...prev, displayName: e.target.value}))} 
+                          className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none font-bold transition-all" 
+                       />
+                    </div>
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest font-mono ml-1">Geo Node</label>
+                       <input 
+                          type="text" 
+                          value={editForm.location} 
+                          onChange={e => setEditForm(prev => ({...prev, location: e.target.value}))} 
+                          className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none font-bold transition-all" 
+                       />
+                    </div>
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest font-mono ml-1">Neural Bio Signature</label>
+                    <textarea 
+                       value={editForm.bio} 
+                       onChange={e => setEditForm(prev => ({...prev, bio: e.target.value}))} 
+                       className="w-full h-32 bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none resize-none font-medium leading-relaxed transition-all" 
+                    />
+                 </div>
               </div>
-              <div className="space-y-3">
-                <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1 font-mono">Neural Bio Signature</label>
-                <textarea 
-                   value={editForm.bio} 
-                   onChange={e => setEditForm(prev => ({...prev, bio: e.target.value}))} 
-                   className="w-full h-32 bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none resize-none font-medium leading-relaxed transition-all" 
-                />
+
+              {/* Bio-Vault Section */}
+              <div className="space-y-6">
+                 <h3 className="text-[11px] font-black text-indigo-500 uppercase tracking-[0.3em] font-mono border-b border-slate-100 pb-2">Identity_Clusters</h3>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest font-mono ml-1">Origins (DOB)</label>
+                       <input 
+                          type="date" 
+                          value={editForm.dob} 
+                          onChange={e => setEditForm(prev => ({...prev, dob: e.target.value}))} 
+                          className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none font-bold transition-all" 
+                       />
+                    </div>
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest font-mono ml-1">Pronouns</label>
+                       <input 
+                          type="text" 
+                          placeholder="e.g. they/them"
+                          value={editForm.pronouns} 
+                          onChange={e => setEditForm(prev => ({...prev, pronouns: e.target.value}))} 
+                          className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none font-bold transition-all" 
+                       />
+                    </div>
+                 </div>
               </div>
-              <div className="flex gap-4 pt-6">
-                <button 
-                   onClick={() => setIsEditModalOpen(false)} 
-                   className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-slate-200 transition-all"
-                >
-                  Abort
-                </button>
-                <button 
-                   onClick={handleSaveProfile} 
-                   className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-2xl shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95"
-                >
-                  Synchronise
-                </button>
+
+              {/* Network Linkage Section */}
+              <div className="space-y-6">
+                 <h3 className="text-[11px] font-black text-indigo-500 uppercase tracking-[0.3em] font-mono border-b border-slate-100 pb-2">Network_Connectivity</h3>
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest font-mono ml-1">Hyperlink Node (Website)</label>
+                    <input 
+                       type="url" 
+                       placeholder="https://your-node.com"
+                       value={editForm.website} 
+                       onChange={e => setEditForm(prev => ({...prev, website: e.target.value}))} 
+                       className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none font-bold transition-all" 
+                    />
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest font-mono ml-1">Interest Mesh (Comma separated)</label>
+                    <input 
+                       type="text" 
+                       placeholder="Web3, Design, AI, London"
+                       value={editForm.tags} 
+                       onChange={e => setEditForm(prev => ({...prev, tags: e.target.value}))} 
+                       className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none font-bold transition-all" 
+                    />
+                 </div>
               </div>
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="shrink-0 p-8 md:p-12 pt-0 flex gap-4">
+              <button 
+                 onClick={() => setIsEditModalOpen(false)} 
+                 className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-slate-200 transition-all"
+              >
+                Abort
+              </button>
+              <button 
+                 onClick={handleSaveProfile} 
+                 className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-2xl shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95"
+              >
+                Synchronise
+              </button>
             </div>
           </div>
         </div>

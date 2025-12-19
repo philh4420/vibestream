@@ -1,7 +1,6 @@
 
-// Fixed: Using modular imports for firebase/app to ensure reliable symbol resolution in 2026+ TypeScript environments
-// Added namespace import to resolve 'no exported member' errors occurring in specific bundler/TS configurations
-import * as firebase from 'firebase/app';
+// Fixed: Using named imports for firebase/app to ensure reliable symbol resolution in 2026+ environments
+import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
@@ -25,8 +24,8 @@ if (!firebaseConfig.apiKey) {
   console.warn("Firebase API Key is missing. Check your environment variables.");
 }
 
-// Fixed: Utilizing modular initializeApp via namespace for reliable instance creation, resolving "no exported member" errors
-const app = firebase.initializeApp(firebaseConfig);
+// Fixed: Utilizing named initializeApp for reliable instance creation, resolving "no exported member" errors
+const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export default app;

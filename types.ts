@@ -18,6 +18,13 @@ export interface User {
   badges: string[];
   isSuspended?: boolean;
   verifiedHuman?: boolean;
+  
+  // 2026 Identity Extensions
+  dob?: string;
+  pronouns?: string;
+  website?: string;
+  tags?: string[];
+  trustTier?: 'Alpha' | 'Beta' | 'Gamma';
 }
 
 export interface Post {

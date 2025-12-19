@@ -44,7 +44,7 @@ const App: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [chats, setChats] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [toasts, setUserToasts] = useState<ToastMessage[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newPostText, setNewPostText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -55,11 +55,11 @@ const App: React.FC = () => {
 
   const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = Math.random().toString(36).substring(2, 9);
-    setToasts(prev => [...prev, { id, message, type }]);
+    setUserToasts(prev => [...prev, { id, message, type }]);
   };
 
   const removeToast = (id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
+    setUserToasts(prev => prev.filter(t => t.id !== id));
   };
 
   const handleRegionChange = (newRegion: Region) => {
@@ -114,7 +114,13 @@ const App: React.FC = () => {
                 badges: isFirstUser ? ['Admin'] : ['Citizen'],
                 verifiedHuman: isFirstUser,
                 isSuspended: false,
-                geoNode: 'UK' 
+                geoNode: 'UK',
+                // 2026 Default Data
+                dob: '2000-01-01',
+                pronouns: 'they/them',
+                website: '',
+                tags: ['Pioneer'],
+                trustTier: 'Alpha'
               };
               await setDoc(userDocRef, newProfile);
               setUserData({ id: user.uid, ...newProfile } as VibeUser);
@@ -231,7 +237,7 @@ const App: React.FC = () => {
   const renderRoute = () => {
     switch(activeRoute) {
       case AppRoute.ADMIN: return <AdminPanel addToast={addToast} locale="en-GB" />;
-      case AppRoute.PROFILE: return userData ? <ProfilePage userData={userData} onUpdateProfile={(d) => setUserData(p => p ? ({ ...p, ...d }) : null)} addToast={addToast} locale="en-GB" /> : null;
+      case AppRoute.PROFILE: return userData ? <ProfilePage userData={userData} onUpdateProfile={(d) => setUserData(p => p ? ({ ...p, ...d }) : null)} addToast={addToast} locale={userRegion} /> : null;
       case AppRoute.EXPLORE:
         return (
           <div className="space-y-6 route-transition">
