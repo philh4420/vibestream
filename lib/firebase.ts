@@ -1,6 +1,6 @@
 
-// Fixed: Using modular named imports for Firebase v9+ to ensure correct member resolution
-import { initializeApp } from 'firebase/app';
+// Fixed: Using namespace import for Firebase v9+ to resolve "no exported member" errors in certain environments
+import * as firebase from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
@@ -24,8 +24,8 @@ if (!firebaseConfig.apiKey) {
   console.warn("Firebase API Key is missing. Check your environment variables.");
 }
 
-// Fixed: Utilizing the modular initializeApp function directly to resolve property access errors
-const app = initializeApp(firebaseConfig);
+// Fixed: Utilizing the initializeApp function via the firebase namespace to ensure correct resolution
+const app = firebase.initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export default app;

@@ -51,9 +51,25 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
 
   const signalQuality = useMemo(() => {
     const base = ((userData.followers || 0) / 10) + (userPosts.length * 2);
-    const eventCount = userData.lifeEvents?.length || 0;
+    const eventCount = (userData.lifeEvents?.length || 0) + 1; // +1 for Joined
     return Math.min(99.9, base + (eventCount * 5)).toFixed(1);
   }, [userData.followers, userPosts.length, userData.lifeEvents]);
+
+  const chronologyLogs = useMemo(() => {
+    const logs = [...(userData.lifeEvents || [])];
+    
+    // Add "Joined" event from DB automatically
+    if (userData.joinedAt) {
+      logs.push({
+        id: 'origin-node',
+        title: 'Neural Node Established',
+        date: userData.joinedAt,
+        icon: '🚀'
+      });
+    }
+
+    return logs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [userData.lifeEvents, userData.joinedAt]);
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -63,12 +79,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
         return <ProfileMedia posts={userPosts} />;
       case 'chronology':
         return (
-          <div className="max-w-2xl mx-auto space-y-0 relative animate-in fade-in slide-in-from-bottom-8 duration-700">
-            {/* Central Timeline Thread */}
+          <div className="max-w-2xl mx-auto space-y-0 relative animate-in fade-in slide-in-from-bottom-8 duration-700 pb-20">
             <div className="absolute left-[31px] top-8 bottom-8 w-px bg-slate-100 z-0" />
             
-            {userData.lifeEvents && userData.lifeEvents.length > 0 ? (
-              [...userData.lifeEvents].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((event) => (
+            {chronologyLogs.length > 0 ? (
+              chronologyLogs.map((event) => (
                 <div key={event.id} className="relative flex items-start gap-8 group mb-12 last:mb-0">
                   <div className="relative z-10 shrink-0">
                     <div className="w-16 h-16 rounded-[1.4rem] bg-white border border-slate-100 shadow-xl shadow-slate-200/50 flex items-center justify-center text-3xl transition-transform group-hover:scale-110 duration-500">
@@ -77,18 +92,20 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
                   </div>
                   <div className="pt-2">
                     <p className="text-[11px] font-black text-indigo-500 uppercase tracking-[0.2em] font-mono mb-2">
-                      {new Date(event.date).toLocaleDateString(locale)}
+                      {new Date(event.date).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })}
                     </p>
                     <h4 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter leading-tight">
                       {event.title}
                     </h4>
+                    {event.id === 'origin-node' && (
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 font-mono">System Automated Log</p>
+                    )}
                   </div>
                 </div>
               ))
             ) : (
               <div className="glass-panel rounded-[3rem] py-32 text-center border-dashed border-2 border-slate-100">
-                 <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] font-mono mb-6">Null Chronology Logs Detected</p>
-                 <button onClick={() => setIsEditModalOpen(true)} className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-indigo-700 transition-all">Initialise Neural History</button>
+                 <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] font-mono">Initialising Chronology...</p>
               </div>
             )}
           </div>
