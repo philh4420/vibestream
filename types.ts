@@ -3,7 +3,7 @@ export type UserRole = 'member' | 'verified' | 'creator' | 'admin';
 
 export type Region = 'en-GB' | 'en-US' | 'de-DE' | 'fr-FR' | 'ja-JP';
 
-export type PresenceStatus = 'Online' | 'Focus' | 'Invisible' | 'Away' | 'In-Transit';
+export type PresenceStatus = 'Online' | 'Focus' | 'Invisible' | 'Away' | 'In-Transit' | 'Deep Work' | 'Syncing';
 
 export interface WeatherInfo {
   temp: number;
@@ -51,6 +51,8 @@ export interface User {
   hobbies?: string[];
   skills?: string[];
   presenceStatus?: PresenceStatus;
+  statusMessage?: string;
+  statusEmoji?: string;
   socialLinks?: {
     platform: string;
     url: string;
