@@ -45,19 +45,22 @@ export const ProfileAboutSection: React.FC<ProfileAboutSectionProps> = ({ userDa
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
+      
+      {/* Core Operational Cluster */}
       <DataCluster title="Core_Professional">
-        <InfoItem label="Current Function" value={userData.occupation || 'Awaiting Sync...'} />
-        <InfoItem label="Training Path" value={userData.education || 'Self-Initialised'} />
+        <InfoItem label="Operational Function" value={userData.occupation || 'Awaiting Synchronization...'} />
+        <InfoItem label="Neural Training" value={userData.education || 'Self-Initialised'} />
         <InfoItem label="Geospatial Node" value={userData.location} icon={ICONS.Globe} />
       </DataCluster>
 
+      {/* Biometric Cluster */}
       <DataCluster title="Biometric_Identity">
         <InfoItem label="Temporal Origin" value={formattedDob} />
-        <InfoItem label="Identity Label (Pronouns)" value={userData.pronouns || 'Default'} />
-        <InfoItem label="Encoded Status" value={userData.relationshipStatus || 'Independent'} />
+        <InfoItem label="Identity Label (Pronouns)" value={userData.pronouns || 'Not Specified'} />
+        <InfoItem label="Social Status" value={userData.relationshipStatus || 'Independent'} />
       </DataCluster>
 
-      {/* Social Uplinks */}
+      {/* Social Mesh Hub */}
       {userData.socialLinks && userData.socialLinks.length > 0 && (
         <DataCluster title="Neural_Social_Hub" className="md:col-span-2">
            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -76,7 +79,7 @@ export const ProfileAboutSection: React.FC<ProfileAboutSectionProps> = ({ userDa
                     </div>
                     <div className="flex-1 overflow-hidden">
                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">{link.platform}</p>
-                      <p className="text-xs font-bold text-slate-900 truncate">{link.url.replace(/^https?:\/\/(www\.)?/, '') || 'Establish Link...'}</p>
+                      <p className="text-xs font-bold text-slate-900 truncate">{link.url.replace(/^https?:\/\/(www\.)?/, '')}</p>
                     </div>
                   </a>
                 );
@@ -85,12 +88,12 @@ export const ProfileAboutSection: React.FC<ProfileAboutSectionProps> = ({ userDa
         </DataCluster>
       )}
 
-      {/* Skills Matrix */}
+      {/* Skills Capability Matrix */}
       {(userData.skills?.length || 0) > 0 && (
         <DataCluster title="Capability_Matrix">
           <div className="flex flex-wrap gap-3">
             {userData.skills?.map((skill) => (
-              <span key={skill} className="px-5 py-2.5 bg-indigo-50 text-indigo-700 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-indigo-100 shadow-sm">
+              <span key={skill} className="px-5 py-2.5 bg-indigo-50 text-indigo-700 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-indigo-100 shadow-sm hover:bg-indigo-100 transition-colors">
                 {skill}
               </span>
             ))}
@@ -98,12 +101,12 @@ export const ProfileAboutSection: React.FC<ProfileAboutSectionProps> = ({ userDa
         </DataCluster>
       )}
 
-      {/* Passions/Hobbies */}
+      {/* Passions Grid */}
       {(userData.hobbies?.length || 0) > 0 && (
         <DataCluster title="Passions_Grid">
           <div className="flex flex-wrap gap-3">
             {userData.hobbies?.map((hobby) => (
-              <span key={hobby} className="px-5 py-2.5 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl border border-white/10 shadow-lg">
+              <span key={hobby} className="px-5 py-2.5 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl border border-white/10 shadow-lg hover:bg-indigo-600 transition-colors">
                 {hobby}
               </span>
             ))}
@@ -111,7 +114,7 @@ export const ProfileAboutSection: React.FC<ProfileAboutSectionProps> = ({ userDa
         </DataCluster>
       )}
 
-      {/* Identity Tags */}
+      {/* Identity Mesh Tags */}
       {(userData.tags?.length || 0) > 0 && (
         <DataCluster title="Resonance_Mesh" className="md:col-span-2">
           <div className="flex flex-wrap gap-4">
@@ -124,20 +127,20 @@ export const ProfileAboutSection: React.FC<ProfileAboutSectionProps> = ({ userDa
         </DataCluster>
       )}
 
-      {/* Life Chronology */}
+      {/* Identity Chronology Timeline */}
       {userData.lifeEvents && userData.lifeEvents.length > 0 && (
-        <DataCluster title="Life_Chronology" className="md:col-span-2">
+        <DataCluster title="Identity_Chronology" className="md:col-span-2">
            <div className="space-y-6 relative before:absolute before:left-6 before:top-2 before:bottom-2 before:w-px before:bg-slate-100">
               {userData.lifeEvents.map((event) => (
                 <div key={event.id} className="flex gap-10 items-start relative group/event">
                   <div className="w-12 h-12 rounded-full bg-white border border-slate-100 shadow-xl flex items-center justify-center text-xl z-10 group-hover/event:scale-110 transition-transform">
                     {event.icon || '🌟'}
                   </div>
-                  <div className="flex-1 pb-6 border-b border-slate-50 last:border-none">
+                  <div className="flex-1 pb-8 border-b border-slate-50 last:border-none">
                     <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest font-mono mb-1">
-                      {new Date(event.date).toLocaleDateString(locale, { month: 'long', year: 'numeric' })}
+                      {event.date ? new Date(event.date).toLocaleDateString(locale, { month: 'long', year: 'numeric' }) : 'TBD'}
                     </p>
-                    <h4 className="text-lg font-black text-slate-900 tracking-tight">{event.title}</h4>
+                    <h4 className="text-xl font-black text-slate-900 tracking-tight leading-tight">{event.title}</h4>
                   </div>
                 </div>
               ))}
