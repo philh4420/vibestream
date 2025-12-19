@@ -13,13 +13,13 @@ interface ProfileHeaderProps {
 }
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ userData, onEdit, postCount = 0, addToast, isOwnProfile }) => {
-  const [time, setTime] = useState<string>(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+  const [time, setTime] = useState<string>(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
   const [weather, setWeather] = useState<WeatherInfo | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTime(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-    }, 1000);
+      setTime(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+    }, 60000);
     return () => clearInterval(timer);
   }, []);
 
@@ -34,123 +34,101 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ userData, onEdit, 
   const currentPresence = PRESENCE_CONFIG[userData.presenceStatus || 'Online'];
 
   return (
-    <div className="relative rounded-[4rem] overflow-hidden mb-12 shadow-[0_40px_100px_rgba(0,0,0,0.12)] bg-white border border-slate-100 group/header">
-      {/* Immersive Cover Area */}
-      <div className="h-[45rem] md:h-[55rem] relative overflow-hidden bg-slate-950">
-        {/* Dynamic Abstract Background Elements */}
-        <div className="absolute inset-0 pointer-events-none opacity-40">
-          <div className="absolute -top-20 -left-20 w-[60rem] h-[60rem] bg-indigo-600/10 rounded-full blur-[150px] animate-pulse" />
-          <div className="absolute -bottom-40 -right-40 w-[50rem] h-[50rem] bg-emerald-600/10 rounded-full blur-[150px]" />
-          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.15] mix-blend-overlay" />
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 mb-12">
+      
+      {/* Primary Identity Bento Tile */}
+      <div className="md:col-span-7 lg:col-span-8 bg-white border border-slate-100 rounded-[3rem] p-8 md:p-10 shadow-sm relative overflow-hidden flex flex-col justify-between group">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[80px] rounded-full -translate-y-1/2 translate-x-1/2" />
+        
+        <div className="flex flex-col md:flex-row gap-8 items-start md:items-center relative z-10">
+          <div className="relative group/avatar">
+            <div className={`absolute -inset-2 rounded-[2.5rem] opacity-20 blur-xl ${currentPresence.pulse}`} />
+            <img 
+              src={userData.avatarUrl} 
+              className="w-32 h-32 md:w-40 md:h-40 rounded-[2.2rem] object-cover border-4 border-white shadow-2xl relative z-10" 
+              alt="" 
+            />
+            <div className={`absolute -bottom-2 -right-2 w-10 h-10 bg-white rounded-2xl p-2 shadow-xl z-20 border border-slate-50`}>
+              <div className={`w-full h-full rounded-lg ${currentPresence.color}`} />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter italic">{userData.displayName}</h1>
+              {userData.verifiedHuman && <div className="text-blue-500 scale-125"><ICONS.Verified /></div>}
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <span className="px-4 py-1.5 bg-slate-100 text-[10px] font-black uppercase tracking-widest rounded-xl text-slate-500 font-mono">@{userData.username}</span>
+              <span className="px-4 py-1.5 bg-indigo-50 text-[10px] font-black uppercase tracking-widest rounded-xl text-indigo-600 font-mono">{userData.role?.toUpperCase() || 'MEMBER'}</span>
+              <span className="px-4 py-1.5 bg-emerald-50 text-[10px] font-black uppercase tracking-widest rounded-xl text-emerald-600 font-mono italic">TIER_{userData.trustTier || 'ALPHA'}</span>
+            </div>
+            <p className="text-slate-500 text-sm font-medium leading-relaxed max-w-lg line-clamp-2">
+              {userData.bio || 'Neural signal awaiting broadcast...'}
+            </p>
+          </div>
         </div>
 
-        {userData.coverUrl && (
-          <img 
-            src={userData.coverUrl} 
-            className="w-full h-full object-cover mix-blend-soft-light opacity-50 transition-transform duration-[20s] group-hover/header:scale-105" 
-            alt="" 
-          />
-        )}
+        <div className="mt-10 flex gap-4 relative z-10">
+          {isOwnProfile && (
+            <button 
+              onClick={onEdit}
+              className="px-10 py-5 bg-slate-950 text-white rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.3em] shadow-xl hover:bg-black transition-all active:scale-95 flex items-center gap-4 group/btn"
+            >
+              <div className="group-hover/btn:rotate-180 transition-transform duration-500"><ICONS.Settings /></div>
+              Calibrate_ID
+            </button>
+          )}
+          <button className="p-5 bg-indigo-50 text-indigo-600 rounded-[1.8rem] hover:bg-indigo-100 transition-all active:scale-95 border border-indigo-100">
+            <ICONS.Messages />
+          </button>
+        </div>
+      </div>
+
+      {/* Stats & Environment Column */}
+      <div className="md:col-span-5 lg:col-span-4 flex flex-col gap-4 md:gap-6">
         
-        {/* Top Floating Telemetry Hub */}
-        <div className="absolute top-10 right-10 md:top-16 md:right-16 z-20 flex gap-4">
-          <div className="glass-panel bg-black/20 border-white/10 px-8 py-5 rounded-[2.5rem] flex items-center gap-8 shadow-2xl">
-            <div className="flex flex-col border-r border-white/10 pr-8">
-              <span className="text-xl font-black text-white tracking-widest font-mono leading-none">{time}</span>
-              <span className="text-[9px] font-black text-white/40 uppercase tracking-[0.4em] mt-3 font-mono flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
-                {userData.location?.toUpperCase() || 'NODE_OFFLINE'}
-              </span>
+        {/* Metric Cluster */}
+        <div className="bg-slate-950 rounded-[3rem] p-8 md:p-10 text-white flex justify-between items-center group relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+          {[
+            { label: 'Trans', val: postCount },
+            { label: 'Conn', val: userData.followers },
+            { label: 'Flow', val: userData.following }
+          ].map(stat => (
+            <div key={stat.label} className="text-center relative z-10">
+              <p className="text-3xl font-black tracking-tighter mb-1">{stat.val.toLocaleString('en-GB')}</p>
+              <p className="text-[8px] font-black text-slate-500 uppercase tracking-[0.4em] font-mono">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Telemetry Hub */}
+        <div className="bg-white border border-slate-100 rounded-[3rem] p-8 md:p-10 flex-1 flex flex-col justify-between group hover:border-indigo-500/20 transition-all shadow-sm">
+          <div className="flex justify-between items-start mb-6">
+            <div className="space-y-1">
+              <p className="text-4xl font-black text-slate-900 tracking-tighter">{time}</p>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono">{userData.location?.toUpperCase() || 'NODE_OFFLINE'}</p>
             </div>
             {weather && (
-              <div className="flex items-center gap-6">
-                <div>
-                  <p className="text-3xl font-black text-white tracking-tighter leading-none">{weather.temp}°</p>
-                  <p className="text-[8px] font-black text-indigo-400 uppercase tracking-[0.3em] mt-2 font-mono">{weather.condition}</p>
-                </div>
+              <div className="text-right">
+                <p className="text-2xl font-black text-indigo-600 tracking-tighter">{weather.temp}°C</p>
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] font-mono">{weather.condition}</p>
               </div>
             )}
           </div>
-        </div>
-
-        {/* Identity Typography (The Hero Look) */}
-        <div className="absolute left-12 md:left-24 bottom-32 md:bottom-48 z-10 max-w-4xl space-y-10">
-          <div className="space-y-4">
-             <div className="flex items-center gap-6 animate-in fade-in slide-in-from-left-10 duration-1000">
-                <div className="px-6 py-2 bg-white text-slate-900 rounded-full font-black text-[10px] uppercase tracking-[0.3em] italic shadow-2xl">
-                  {userData.role?.toUpperCase() || 'MEMBER'}
-                </div>
-                {userData.verifiedHuman && <div className="text-blue-400 drop-shadow-lg"><ICONS.Verified /></div>}
-             </div>
-             <h1 className="text-8xl md:text-[12rem] font-black text-white tracking-tighter leading-[0.85] drop-shadow-[0_20px_60px_rgba(0,0,0,0.6)] animate-in fade-in slide-in-from-bottom-12 duration-1000">
-               {userData.displayName.split(' ').map((part, i) => (
-                 <React.Fragment key={i}>
-                   {part}{i === 0 && <br />}
-                 </React.Fragment>
-               ))}
-             </h1>
-          </div>
-
-          <div className="flex items-center gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
-            <div className="flex items-center gap-4 bg-white/5 backdrop-blur-3xl border border-white/10 pl-5 pr-8 py-4 rounded-2xl shadow-2xl">
-              <span className="text-2xl">{userData.statusEmoji || '⚡'}</span>
-              <div>
-                <p className="text-[11px] font-black text-white tracking-widest uppercase leading-none mb-1">Status_Signal</p>
-                <p className="text-[10px] font-bold text-white/60 uppercase tracking-wider line-clamp-1">{userData.statusMessage || 'AWAITING INPUT...'}</p>
-              </div>
+          
+          <div className="pt-6 border-t border-slate-50">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-xl">{userData.statusEmoji || '⚡'}</span>
+              <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest font-mono">Current_Signal</p>
             </div>
+            <p className="text-xs font-bold text-slate-500 line-clamp-1 italic">"{userData.statusMessage || 'Awaiting synchronization...'}"</p>
           </div>
         </div>
+
       </div>
 
-      {/* Profile Metrics & Actions */}
-      <div className="px-12 md:px-24 py-16 flex flex-col md:flex-row justify-between items-end gap-12 relative bg-white">
-        
-        {/* Floating Pro Avatar */}
-        <div className="absolute left-12 md:left-24 -top-32 md:-top-56 z-30 group/avatar">
-           <div className="relative">
-              <div className={`absolute -inset-10 rounded-[6.5rem] transition-all duration-[1.5s] ${currentPresence.pulse}`} />
-              <div className="w-64 h-64 md:w-96 md:h-96 bg-white rounded-[6rem] p-4 shadow-[0_60px_120px_rgba(0,0,0,0.2)] border border-slate-50 transition-all hover:scale-[1.02] cursor-pointer ring-1 ring-slate-100/50">
-                 <img src={userData.avatarUrl} className="w-full h-full rounded-[5.2rem] object-cover" alt="" />
-                 
-                 {/* Precision Status Dot */}
-                 <div className="absolute bottom-10 right-10 w-20 h-20 bg-white rounded-full p-3 shadow-2xl border border-slate-50">
-                    <div className={`w-full h-full rounded-full ${currentPresence.color} shadow-inner transition-colors duration-500`} />
-                 </div>
-              </div>
-           </div>
-        </div>
-
-        {/* Dynamic Stats Row */}
-        <div className="flex-1 flex flex-col md:flex-row gap-12 md:gap-20 md:ml-[28rem] mb-6">
-           {[
-             { label: 'Transmissions', value: postCount },
-             { label: 'Connections', value: userData.followers },
-             { label: 'Following', value: userData.following }
-           ].map(stat => (
-             <div key={stat.label} className="space-y-1">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] font-mono leading-none">{stat.label}</p>
-                <p className="text-4xl font-black text-slate-950 tracking-tighter">{stat.value.toLocaleString('en-GB')}</p>
-             </div>
-           ))}
-        </div>
-
-        {/* Global Action Interface */}
-        <div className="flex items-center gap-6 pb-4">
-           {isOwnProfile && (
-             <button 
-                onClick={onEdit}
-                className="px-14 py-6 bg-slate-950 text-white rounded-[2.5rem] font-black text-[11px] uppercase tracking-[0.4em] shadow-2xl hover:bg-black transition-all active:scale-95 flex items-center gap-6 group/btn"
-             >
-               <div className="group-hover/btn:rotate-180 transition-transform duration-700"><ICONS.Settings /></div>
-               Calibrate_ID
-             </button>
-           )}
-           <button className="p-7 bg-indigo-50 text-indigo-600 rounded-[2.5rem] hover:bg-indigo-100 transition-all active:scale-95 shadow-lg border border-indigo-100/50">
-             <ICONS.Messages />
-           </button>
-        </div>
-      </div>
     </div>
   );
 };
