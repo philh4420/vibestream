@@ -5,6 +5,7 @@ import { PostCard } from './components/feed/PostCard';
 import { Toast } from './components/ui/Toast';
 import { LandingPage } from './components/landing/LandingPage';
 import { AdminPanel } from './components/admin/AdminPanel';
+import { ProfilePage } from './components/profile/ProfilePage';
 import { AppRoute, Post, ToastMessage, UserRole, Region, User as VibeUser } from './types';
 import { db, auth } from './services/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -61,7 +62,6 @@ const App: React.FC = () => {
     addToast(`Neural Node Switched: ${newRegion}`, 'info');
   };
 
-  // Real Auth Observer & Profile Sync
   useEffect(() => {
     if (!auth) {
       setIsLoading(false);
@@ -74,16 +74,20 @@ const App: React.FC = () => {
         setIsAuthenticated(true);
         localStorage.setItem(SESSION_KEY, 'active');
         
-        // Fetch or create profile in Firestore
         if (db) {
           try {
             const userDocRef = doc(db, 'users', user.uid);
             const userDoc = await getDoc(userDocRef);
             
             if (userDoc.exists()) {
-              setUserData({ id: userDoc.id, ...userDoc.data() } as VibeUser);
+              const data = userDoc.data() as VibeUser;
+              if (data.isSuspended) {
+                 await signOut(auth);
+                 addToast("Protocol Breach: Node Suspended", "error");
+                 return;
+              }
+              setUserData({ id: userDoc.id, ...data } as VibeUser);
             } else {
-              // Create default profile for new user
               const newProfile: Partial<VibeUser> = {
                 username: user.email?.split('@')[0] || `user_${user.uid.slice(0, 5)}`,
                 displayName: user.displayName || user.email?.split('@')[0] || 'Unknown Node',
@@ -95,7 +99,9 @@ const App: React.FC = () => {
                 role: 'member',
                 location: 'London, UK',
                 joinedAt: new Date().toISOString(),
-                badges: ['New Citizen']
+                badges: ['New Citizen'],
+                verifiedHuman: false,
+                isSuspended: false
               };
               await setDoc(userDocRef, newProfile);
               setUserData({ id: user.uid, ...newProfile } as VibeUser);
@@ -104,7 +110,7 @@ const App: React.FC = () => {
             console.warn("Profile Sync Offline:", e);
           }
         }
-        addToast(`Neural Link Active: ${user.email}`, 'success');
+        addToast(`Neural Link Active`, 'success');
       } else {
         setIsAuthenticated(false);
         setCurrentUser(null);
@@ -117,7 +123,6 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  // Real-time Posts Stream
   useEffect(() => {
     if (!isAuthenticated || !db) return;
 
@@ -143,7 +148,6 @@ const App: React.FC = () => {
   const handleLike = async (postId: string) => {
     if (!db || !currentUser) return;
     
-    // Optimistic UI
     setPosts(prev => prev.map(p => {
       if (p.id === postId) {
         const isLiked = !p.isLiked;
@@ -261,6 +265,15 @@ const App: React.FC = () => {
     switch(activeRoute) {
       case AppRoute.ADMIN:
         return <AdminPanel addToast={addToast} locale={userRegion} />;
+      case AppRoute.PROFILE:
+        return userData ? (
+          <ProfilePage 
+            userData={userData} 
+            onUpdateProfile={(newData) => setUserData(prev => prev ? ({ ...prev, ...newData }) : null)}
+            addToast={addToast}
+            locale={userRegion}
+          />
+        ) : null;
       default:
         return (
           <div className="space-y-6 md:space-y-10 pb-32 md:pb-12 max-w-2xl mx-auto">

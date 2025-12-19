@@ -16,6 +16,8 @@ export interface User {
   location: string;
   joinedAt: string;
   badges: string[];
+  isSuspended?: boolean;
+  verifiedHuman?: boolean;
 }
 
 export interface Post {
@@ -34,6 +36,7 @@ export interface Post {
   shares: number;
   createdAt: string;
   isLiked?: boolean;
+  timestamp?: any;
 }
 
 export interface Message {
