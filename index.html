@@ -15,14 +15,10 @@
             --glass-border: rgba(0, 0, 0, 0.08);
             --accent: #4F46E5;
             --app-height: 100dvh;
-            
-            /* Precision Hardware Variables */
             --sat: env(safe-area-inset-top);
             --sar: env(safe-area-inset-right);
             --sab: env(safe-area-inset-bottom);
             --sal: env(safe-area-inset-left);
-
-            /* Tiered Content Spacing */
             --header-h: calc(4.5rem + var(--sat));
             --bottom-nav-h: calc(4rem + var(--sab));
         }
@@ -40,13 +36,19 @@
             overscroll-behavior: none;
         }
 
+        /* 2026+ Universal Resolution Scaling */
+        @media (min-width: 1280px) { html { font-size: 16px; } }
+        @media (min-width: 1920px) { html { font-size: 18px; } }
+        @media (min-width: 2560px) { html { font-size: 22px; } }
+        @media (min-width: 3840px) { html { font-size: 32px; } } /* 4K Scaling */
+        @media (min-width: 7680px) { html { font-size: 64px; } } /* 8K Scaling */
+
         #root {
             height: 100%;
             display: flex;
             flex-direction: column;
         }
 
-        /* High-Fidelity Momentum Scrolling */
         .scroll-container {
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
@@ -66,10 +68,6 @@
             border: 0.5px solid var(--glass-border);
         }
 
-        /* 4K+ Scaling Logic */
-        @media (min-width: 1920px) { html { font-size: 18px; } }
-        @media (min-width: 2560px) { html { font-size: 22px; } }
-
         .glass-panel {
             background: var(--glass-bg);
             backdrop-filter: blur(30px) saturate(180%);
@@ -77,81 +75,21 @@
             border: 0.5px solid var(--glass-border);
         }
 
-        /* Neural Pulse Animations */
         @keyframes pulse-emerald {
             0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
             70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
             100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
-        @keyframes pulse-amber {
-            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.3); }
-            70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
-        }
-        @keyframes pulse-indigo {
-            0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.3); }
-            70% { box-shadow: 0 0 0 12px rgba(79, 70, 229, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
-        }
-
         .pulse-active-emerald { animation: pulse-emerald 2s infinite; }
-        .pulse-active-amber { animation: pulse-amber 3s infinite; }
-        .pulse-active-indigo { animation: pulse-indigo 2.5s infinite; }
 
-        /* Glass Shimmer Overlay */
-        @keyframes shimmer-move {
-            0% { transform: translateX(-150%) skewX(-20deg); }
-            100% { transform: translateX(150%) skewX(-20deg); }
-        }
-        .glass-shimmer::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 50%;
-            height: 100%;
-            background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
-            animation: shimmer-move 4s infinite linear;
-            pointer-events: none;
-        }
-
-        /* Interactive Micro-feedback */
-        .touch-active {
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        }
         .touch-active:active {
             transform: scale(0.96);
             opacity: 0.8;
             filter: brightness(1.05);
         }
         
-        /* Edge Protection Utilities */
-        .safe-bleed-top {
-            padding-top: max(0.5rem, var(--sat));
-        }
-        
-        .safe-bleed-bottom {
-            padding-bottom: max(0.5rem, var(--sab));
-        }
-
-        /* Animation Keyframes */
-        .route-transition {
-            animation: view-fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        @keyframes view-fade-up {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* No scrollbar utility */
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 <script type="importmap">
 {

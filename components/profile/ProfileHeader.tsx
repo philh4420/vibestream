@@ -34,10 +34,10 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ userData, onEdit, 
   const currentPresence = PRESENCE_CONFIG[userData.presenceStatus || 'Online'];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-5 lg:gap-6 mb-10 max-w-[2560px] mx-auto">
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 lg:gap-8 mb-10 max-w-[2560px] mx-auto">
       
       {/* Identity Bento Cluster (Primary) */}
-      <div className="md:col-span-12 lg:col-span-8 2xl:col-span-9 bg-white border border-precision rounded-[3rem] p-6 md:p-12 shadow-sm relative overflow-hidden flex flex-col justify-between group">
+      <div className="md:col-span-12 lg:col-span-8 xl:col-span-9 bg-white border border-precision rounded-[3rem] p-6 md:p-12 shadow-sm relative overflow-hidden flex flex-col justify-between group">
         <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
         
         <div className="flex flex-col sm:flex-row gap-8 md:gap-12 items-start sm:items-center relative z-10">
@@ -66,7 +66,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ userData, onEdit, 
               {userData.pronouns && <span className="px-4 py-2 bg-slate-900 text-[11px] font-black uppercase tracking-widest rounded-xl text-white font-mono">{userData.pronouns.toUpperCase()}</span>}
             </div>
 
-            <p className="text-slate-500 text-base md:text-lg font-medium leading-relaxed max-w-3xl line-clamp-2">
+            <p className="text-slate-500 text-base md:text-lg font-medium leading-relaxed max-w-4xl line-clamp-2">
               {userData.bio || "No identity signature established for this node."}
             </p>
           </div>
@@ -89,7 +89,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ userData, onEdit, 
       </div>
 
       {/* Telemetry Strip Bento Tile */}
-      <div className="md:col-span-12 lg:col-span-4 2xl:col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 md:gap-5">
+      <div className="md:col-span-12 lg:col-span-4 xl:col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 md:gap-6">
         
         {/* Metric Hub */}
         <div className="bg-slate-950 rounded-[3rem] p-10 text-white flex justify-around items-center shadow-2xl relative overflow-hidden group">
@@ -138,7 +138,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ userData, onEdit, 
            <div>
               <p className="text-[10px] font-black text-indigo-200 uppercase tracking-[0.4em] font-mono mb-2">Neural_Signal</p>
               <p className="text-2xl font-black italic tracking-tight leading-none text-white/95">
-                "{userData.statusMessage || 'System online. Tracking core resonance...'}"
+                "{userData.statusMessage || 'Tracking core resonance...'}"
               </p>
            </div>
         </div>

@@ -32,34 +32,36 @@ export const ProfileBroadcastingSection: React.FC<ProfileBroadcastingSectionProp
   }, [sessionStartTime]);
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 auto-rows-min gap-4 md:gap-6">
-        <BentoTile title="Signal_Quality" className="bg-slate-950 text-white">
-          <div className="text-4xl font-black tracking-tighter mb-2">99.8%</div>
-          <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-            <div className="h-full bg-indigo-500 w-[99.8%]" />
+    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-[2560px] mx-auto">
+      {/* High-Density Telemetry Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 auto-rows-min gap-6 md:gap-8">
+        <BentoTile title="Signal_Quality" className="bg-slate-950 text-white p-10">
+          <div className="text-5xl font-black tracking-tighter mb-4 italic">99.9%</div>
+          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+            <div className="h-full bg-indigo-500 w-[99.9%] shadow-[0_0_15px_rgba(79,70,229,1)]" />
           </div>
         </BentoTile>
-        <BentoTile title="Uptime">
-          <div className="text-3xl font-black text-slate-900 tracking-tighter">{uptime}</div>
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1 font-mono">Continuous Sync</p>
+        <BentoTile title="Uptime" className="p-10">
+          <div className="text-4xl font-black text-slate-900 tracking-tighter italic">{uptime}</div>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 font-mono">Continuous Grid Sync</p>
         </BentoTile>
-        <BentoTile title="Trust_Tier">
-          <div className="text-2xl font-black text-indigo-600 tracking-tighter uppercase italic">{userData.trustTier || 'Alpha'}</div>
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1 font-mono">Verification Cluster</p>
+        <BentoTile title="Trust_Tier" className="p-10">
+          <div className="text-3xl font-black text-indigo-600 tracking-tighter uppercase italic">{userData.trustTier || 'Alpha'}</div>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 font-mono">Neural Cluster Verified</p>
         </BentoTile>
-        <BentoTile title="Node_Stability">
-          <div className="text-3xl font-black text-slate-900 tracking-tighter">8ms</div>
-          <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest mt-1 font-mono italic">GB_NODE_STABLE</p>
+        <BentoTile title="Node_Stability" className="p-10">
+          <div className="text-4xl font-black text-slate-900 tracking-tighter italic">4ms</div>
+          <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mt-2 font-mono italic">GB_FAST_NODE</p>
         </BentoTile>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 pt-6">
+      {/* Broadcasting Stream */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 lg:gap-12 pt-8">
         {posts.length > 0 ? (
           posts.map(post => <PostCard key={post.id} post={post} onLike={() => {}} locale={locale} />)
         ) : (
-          <div className="py-20 text-center glass-panel rounded-[2.5rem] border-dashed">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono">Awaiting initial transmission...</p>
+          <div className="xl:col-span-2 py-40 text-center glass-panel rounded-[3.5rem] border-2 border-dashed border-slate-100">
+            <p className="text-[12px] font-black text-slate-300 uppercase tracking-[0.4em] font-mono italic">Awaiting primary transmission sequence establishment...</p>
           </div>
         )}
       </div>
