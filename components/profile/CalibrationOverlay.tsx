@@ -10,13 +10,6 @@ interface CalibrationOverlayProps {
   onSave: (newData: any) => void;
 }
 
-const PRONOUN_OPTIONS = [
-  'Not Specified', 'They/Them', 'He/Him', 'She/Her', 'He/They', 'She/They',
-  'Fluid', 'Private/Encrypted'
-];
-
-const STATUS_EMOJIS = ['⚡', '🔋', '🚀', '🧠', '🎧', '✈️', '💻', '☕', '🌟', '🛡️', '🛰️'];
-
 const InputField = ({ label, type = "text", value, onChange, placeholder }: any) => (
   <div className="space-y-2 group">
     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 font-mono group-focus-within:text-indigo-500 transition-colors">{label}</label>
@@ -41,7 +34,6 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
     avatarUrl: userData.avatarUrl || '',
     coverUrl: userData.coverUrl || '',
     dob: userData.dob || '',
-    pronouns: userData.pronouns || 'Not Specified',
     occupation: userData.occupation || '',
     education: userData.education || '',
     relationshipStatus: userData.relationshipStatus || 'Single',
@@ -49,8 +41,6 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
     tags: (userData.tags || []).join(', '),
     skills: (userData.skills || []).join(', '),
     hobbies: (userData.hobbies || []).join(', '),
-    statusMessage: userData.statusMessage || '',
-    statusEmoji: userData.statusEmoji || '⚡',
     lifeEvents: userData.lifeEvents || [],
     socialLinks: userData.socialLinks || []
   });
@@ -104,35 +94,6 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
         <div className="flex-1 overflow-y-auto p-8 md:p-10 space-y-8 scroll-container">
           {activeSubTab === 'core' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
-              
-              {/* Identity Overlay Segment */}
-              <div className="p-8 bg-indigo-50/50 rounded-[2.5rem] border border-indigo-100 space-y-6">
-                 <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest font-mono mb-4">Identity Signal Overlay</h4>
-                 <div className="flex flex-wrap gap-4">
-                    {STATUS_EMOJIS.map(emoji => (
-                      <button 
-                        key={emoji} 
-                        onClick={() => setForm({...form, statusEmoji: emoji})}
-                        className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${form.statusEmoji === emoji ? 'bg-indigo-600 shadow-lg scale-110' : 'bg-white hover:bg-slate-50'}`}
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                 </div>
-                 <InputField 
-                   label="Status Message Overlay" 
-                   value={form.statusMessage} 
-                   onChange={(e: any) => setForm({...form, statusMessage: e.target.value})} 
-                   placeholder="Update overlay text..." 
-                 />
-                 <div className="space-y-2">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Biometric ID Preference</label>
-                    <select value={form.pronouns} onChange={e => setForm({...form, pronouns: e.target.value})} className="w-full bg-white border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold outline-none">
-                      {PRONOUN_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
-                    </select>
-                 </div>
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <InputField label="Identity Name" value={form.displayName} onChange={(e: any) => setForm({...form, displayName: e.target.value})} />
                 <InputField label="Location Relay" value={form.location} onChange={(e: any) => setForm({...form, location: e.target.value})} />
@@ -143,6 +104,7 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
                 className="w-full h-32 bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold resize-none outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all placeholder:text-slate-300" 
                 placeholder="Identity Bio Signature..."
               />
+              <InputField label="Encoded Status (Relationship)" value={form.relationshipStatus} onChange={(e: any) => setForm({...form, relationshipStatus: e.target.value})} />
             </div>
           )}
 
