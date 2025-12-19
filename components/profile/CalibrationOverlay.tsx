@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { User, PresenceStatus } from '../../types';
+import { User } from '../../types';
 import { uploadToCloudinary } from '../../services/cloudinary';
 import { ICONS } from '../../constants';
 
@@ -14,8 +14,6 @@ const PRONOUN_OPTIONS = [
   'Not Specified', 'They/Them', 'He/Him', 'She/Her', 'He/They', 'She/They',
   'Fluid', 'Private/Encrypted'
 ];
-
-const PRESENCE_OPTIONS: PresenceStatus[] = ['Online', 'Focus', 'Deep Work', 'Invisible', 'Away', 'In-Transit', 'Syncing'];
 
 const STATUS_EMOJIS = ['⚡', '🔋', '🚀', '🧠', '🎧', '✈️', '💻', '☕', '🌟', '🛡️', '🛰️'];
 
@@ -51,7 +49,6 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
     tags: (userData.tags || []).join(', '),
     skills: (userData.skills || []).join(', '),
     hobbies: (userData.hobbies || []).join(', '),
-    presenceStatus: userData.presenceStatus || 'Online',
     statusMessage: userData.statusMessage || '',
     statusEmoji: userData.statusEmoji || '⚡',
     lifeEvents: userData.lifeEvents || [],
@@ -108,9 +105,9 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
           {activeSubTab === 'core' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
               
-              {/* Presence & Status Segment */}
+              {/* Refined Identity Message Segment */}
               <div className="p-8 bg-indigo-50/50 rounded-[2.5rem] border border-indigo-100 space-y-6">
-                 <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest font-mono mb-4">Real-time Presence</h4>
+                 <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest font-mono mb-4">Identity Signal</h4>
                  <div className="flex flex-wrap gap-4">
                     {STATUS_EMOJIS.map(emoji => (
                       <button 
@@ -123,24 +120,16 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
                     ))}
                  </div>
                  <InputField 
-                   label="Status Message" 
+                   label="Status Message Overlay" 
                    value={form.statusMessage} 
                    onChange={(e: any) => setForm({...form, statusMessage: e.target.value})} 
-                   placeholder="What are you thinking, Node?" 
+                   placeholder="Signal context..." 
                  />
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Presence State</label>
-                       <select value={form.presenceStatus} onChange={e => setForm({...form, presenceStatus: e.target.value as any})} className="w-full bg-white border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold outline-none">
-                         {PRESENCE_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
-                       </select>
-                    </div>
-                    <div className="space-y-2">
-                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Biometric ID</label>
-                       <select value={form.pronouns} onChange={e => setForm({...form, pronouns: e.target.value})} className="w-full bg-white border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold outline-none">
-                         {PRONOUN_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
-                       </select>
-                    </div>
+                 <div className="space-y-2">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Biometric ID Preference</label>
+                    <select value={form.pronouns} onChange={e => setForm({...form, pronouns: e.target.value})} className="w-full bg-white border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold outline-none">
+                      {PRONOUN_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
                  </div>
               </div>
 
@@ -159,13 +148,13 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
 
           {activeSubTab === 'visuals' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
-              <div className="relative h-44 w-full rounded-3xl overflow-hidden bg-slate-100 group border-2 border-dashed border-slate-200" onClick={() => coverInputRef.current?.click()}>
+              <div className="relative h-44 w-full rounded-3xl overflow-hidden bg-slate-100 group border-2 border-dashed border-slate-200 cursor-pointer" onClick={() => coverInputRef.current?.click()}>
                 <img src={form.coverUrl} className="w-full h-full object-cover" alt="" />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"><span className="bg-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase">Update Environment</span></div>
                 <input type="file" ref={coverInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'cover')} />
               </div>
               <div className="flex items-center gap-8 bg-slate-50/50 p-6 rounded-[2.5rem] border border-slate-100">
-                <div className="relative w-32 h-32 rounded-[2.2rem] overflow-hidden bg-white border-2 border-dashed border-slate-200" onClick={() => avatarInputRef.current?.click()}>
+                <div className="relative w-32 h-32 rounded-[2.2rem] overflow-hidden bg-white border-2 border-dashed border-slate-200 cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
                   <img src={form.avatarUrl} className="w-full h-full object-cover" alt="" />
                   <input type="file" ref={avatarInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'avatar')} />
                 </div>
