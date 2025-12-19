@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { ICONS } from '../../constants';
 import { AppRoute, UserRole, Region, User as VibeUser } from '../../types';
 import { Header } from './Header';
@@ -26,27 +27,50 @@ export const Layout: React.FC<LayoutProps> = ({
   currentRegion,
   onRegionChange
 }) => {
-  const NavItem = ({ route, icon: Icon, label }: { route: AppRoute, icon: React.FC, label: string }) => {
+  const [orientation, setOrientation] = useState<'portrait' | 'landscape'>(
+    window.innerHeight > window.innerWidth ? 'portrait' : 'landscape'
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setOrientation(window.innerHeight > window.innerWidth ? 'portrait' : 'landscape');
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const NavItem = ({ route, icon: Icon, label, collapsed = false }: { route: AppRoute, icon: React.FC, label: string, collapsed?: boolean }) => {
     const isActive = activeRoute === route;
     return (
       <button 
         onClick={() => onNavigate(route)}
-        className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 touch-active group ${
+        title={collapsed ? label : undefined}
+        className={`flex items-center transition-all duration-300 touch-active group relative ${
+          collapsed 
+            ? 'p-3 justify-center' 
+            : 'gap-3 px-4 py-3'
+        } ${
           isActive 
-            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' 
-            : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900'
+            ? 'text-indigo-600' 
+            : 'text-slate-400 hover:text-slate-900'
         }`}
       >
-        <div className={`${isActive ? 'scale-110' : 'group-hover:scale-105'} transition-transform`}>
+        <div className={`relative z-10 ${isActive ? 'scale-110' : 'group-hover:scale-105'} transition-transform`}>
           <Icon />
         </div>
-        <span className="text-[10px] font-black uppercase tracking-[0.2em]">{label}</span>
+        {!collapsed && <span className="text-[10px] font-black uppercase tracking-[0.2em]">{label}</span>}
+        {isActive && collapsed && (
+          <div className="absolute left-0 w-1 h-6 bg-indigo-600 rounded-r-full" />
+        )}
+        {isActive && !collapsed && (
+          <div className="absolute inset-y-2 left-2 right-2 bg-indigo-50 -z-0 rounded-xl" />
+        )}
       </button>
     );
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-[#fcfcfd] overflow-hidden">
+    <div className="flex flex-col h-full w-full bg-[#fcfcfd] overflow-hidden safe-left safe-right">
       <Header 
         userRole={userRole} 
         userData={userData}
@@ -58,7 +82,8 @@ export const Layout: React.FC<LayoutProps> = ({
       />
 
       <div className="flex flex-1 overflow-hidden pt-16 md:pt-20">
-        {/* Navigation Sidebar (Desktop Only) */}
+        
+        {/* Navigation Sidebar: Expanded (Desktop Lg) */}
         <aside className="hidden lg:flex flex-col w-64 shrink-0 border-r border-precision bg-white/50 backdrop-blur-xl p-4 gap-6">
           <div className="space-y-1">
             <p className="px-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] mb-4 font-mono">Core_Systems</p>
@@ -78,55 +103,75 @@ export const Layout: React.FC<LayoutProps> = ({
           </button>
         </aside>
 
-        {/* Viewport Content Container */}
+        {/* Navigation Rail: Collapsed (Tablets & Mobile Landscape) */}
+        <aside className="hidden md:flex lg:hidden flex-col w-20 shrink-0 border-r border-precision bg-white/50 backdrop-blur-xl py-6 items-center gap-8">
+          <div className="flex flex-col gap-2 w-full">
+            <NavItem route={AppRoute.FEED} icon={ICONS.Home} label="Central" collapsed />
+            <NavItem route={AppRoute.EXPLORE} icon={ICONS.Explore} label="Discover" collapsed />
+            <NavItem route={AppRoute.MESSAGES} icon={ICONS.Messages} label="Neural" collapsed />
+            <NavItem route={AppRoute.PROFILE} icon={ICONS.Profile} label="Identity" collapsed />
+            {userRole === 'admin' && <NavItem route={AppRoute.ADMIN} icon={ICONS.Admin} label="Citadel" collapsed />}
+          </div>
+          
+          <button 
+            onClick={onOpenCreate}
+            className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg hover:shadow-indigo-100 hover:bg-black transition-all touch-active group"
+          >
+            <ICONS.Create />
+          </button>
+        </aside>
+
+        {/* Main Content Viewport */}
         <main className="flex-1 relative overflow-hidden flex flex-col">
-          <div className="flex-1 scroll-container px-4 md:px-10 lg:px-14 py-6">
-            <div className="max-w-3xl mx-auto w-full pb-24 md:pb-8">
+          <div className="flex-1 scroll-container px-4 sm:px-6 md:px-10 lg:px-14 py-6">
+            <div className="max-w-4xl mx-auto w-full pb-24 md:pb-8">
               {children}
             </div>
           </div>
         </main>
 
-        {/* Resilience Rail (Large Desktop Only) */}
-        <aside className="hidden xl:flex flex-col w-72 shrink-0 border-l border-precision bg-white/30 p-6 gap-6">
-           <div className="bg-white/50 border-precision rounded-2xl p-5 backdrop-blur-sm">
-              <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] mb-5 font-mono">Grid_Resonance</h4>
-              <div className="space-y-4">
+        {/* Info Rail (Ultra Wide Desktop Only) */}
+        <aside className="hidden xl:flex flex-col w-80 shrink-0 border-l border-precision bg-white/30 p-6 gap-6">
+           <div className="bg-white/50 border-precision rounded-3xl p-6 backdrop-blur-sm shadow-sm">
+              <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] mb-6 font-mono">Grid_Resonance</h4>
+              <div className="space-y-6">
                 {[1,2,3].map(i => (
-                  <div key={i} className="flex gap-4 items-center group cursor-pointer hover:translate-x-1 transition-transform">
-                    <div className="w-9 h-9 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600 font-black text-[11px] font-mono border-precision">#{i}</div>
-                    <div>
-                      <p className="text-[11px] font-black text-slate-900 leading-none tracking-tight">Protocol_Delt_0{i}</p>
-                      <p className="text-[9px] text-slate-400 font-bold uppercase mt-1.5 font-mono">1.{i}k Nodes Active</p>
+                  <div key={i} className="flex gap-4 items-start group cursor-pointer hover:translate-x-1 transition-transform">
+                    <div className="shrink-0 w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 font-black text-[11px] font-mono border-precision">0{i}</div>
+                    <div className="overflow-hidden">
+                      <p className="text-[11px] font-black text-slate-900 truncate tracking-tight">Signal_Burst_TX-0{i}</p>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase mt-1.5 font-mono">Encrypted Feed</p>
                     </div>
                   </div>
                 ))}
               </div>
            </div>
            
-           <div className="mt-auto p-4 bg-indigo-600 rounded-2xl text-white shadow-xl shadow-indigo-100 relative overflow-hidden group cursor-help">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 blur-2xl rounded-full -translate-y-1/2 translate-x-1/2 transition-transform group-hover:scale-150" />
-              <p className="text-[9px] font-black uppercase tracking-[0.3em] mb-1 font-mono">System_Status</p>
-              <p className="text-xs font-bold leading-tight">All GB-LON nodes operating at optimal latency.</p>
+           <div className="mt-auto p-5 bg-slate-900 rounded-3xl text-white shadow-2xl relative overflow-hidden group cursor-help border border-white/10">
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500/20 blur-3xl rounded-full transition-transform group-hover:scale-150 duration-1000" />
+              <p className="text-[9px] font-black uppercase tracking-[0.4em] mb-2 font-mono text-indigo-400">Node_Status</p>
+              <p className="text-xs font-bold leading-relaxed text-slate-300">Synchronised with Global Mesh. Uplink established at 4ms.</p>
            </div>
         </aside>
       </div>
 
-      {/* High-Fidelity Mobile Navigation Tab-Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 glass-panel border-t border-precision z-[150] safe-bottom">
-        <div className="flex items-center justify-around py-2.5 px-2">
+      {/* Portrait Mobile Tab Bar (Hidden in Landscape or tablets) */}
+      <nav className={`${orientation === 'landscape' ? 'hidden' : 'md:hidden'} fixed bottom-0 left-0 right-0 glass-panel border-t border-precision z-[150] safe-bottom`}>
+        <div className="flex items-center justify-around py-3 px-2">
           <button onClick={() => onNavigate(AppRoute.FEED)} className={`p-3 rounded-xl transition-all touch-active ${activeRoute === AppRoute.FEED ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
             <ICONS.Home />
           </button>
           <button onClick={() => onNavigate(AppRoute.EXPLORE)} className={`p-3 rounded-xl transition-all touch-active ${activeRoute === AppRoute.EXPLORE ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
             <ICONS.Explore />
           </button>
+          
           <button 
             onClick={onOpenCreate}
-            className="w-12 h-12 bg-slate-900 text-white rounded-xl flex items-center justify-center shadow-2xl active:scale-90 transition-transform -translate-y-3 ring-[6px] ring-white"
+            className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-2xl active:scale-90 transition-transform -translate-y-5 ring-[6px] ring-[#fcfcfd]"
           >
             <ICONS.Create />
           </button>
+
           <button onClick={() => onNavigate(AppRoute.MESSAGES)} className={`p-3 rounded-xl transition-all touch-active ${activeRoute === AppRoute.MESSAGES ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
             <ICONS.Messages />
           </button>
@@ -135,6 +180,32 @@ export const Layout: React.FC<LayoutProps> = ({
           </button>
         </div>
       </nav>
+
+      {/* Compact Landscape Rail (Floating) - Only for Mobile Landscape to maximize content area */}
+      {orientation === 'landscape' && (
+        <div className="md:hidden fixed left-4 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-[300]">
+           <div className="glass-panel p-2 rounded-2xl flex flex-col gap-1 border-precision shadow-2xl">
+              <button onClick={() => onNavigate(AppRoute.FEED)} className={`p-2.5 rounded-xl transition-all touch-active ${activeRoute === AppRoute.FEED ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
+                <ICONS.Home />
+              </button>
+              <button onClick={() => onNavigate(AppRoute.EXPLORE)} className={`p-2.5 rounded-xl transition-all touch-active ${activeRoute === AppRoute.EXPLORE ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
+                <ICONS.Explore />
+              </button>
+              <button onClick={() => onNavigate(AppRoute.MESSAGES)} className={`p-2.5 rounded-xl transition-all touch-active ${activeRoute === AppRoute.MESSAGES ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
+                <ICONS.Messages />
+              </button>
+              <button onClick={() => onNavigate(AppRoute.PROFILE)} className={`p-2.5 rounded-xl transition-all touch-active ${activeRoute === AppRoute.PROFILE ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
+                <ICONS.Profile />
+              </button>
+           </div>
+           <button 
+            onClick={onOpenCreate}
+            className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-200 active:scale-90 transition-transform"
+          >
+            <ICONS.Create />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
