@@ -29,6 +29,7 @@ import { uploadToCloudinary } from './services/cloudinary';
 import { ICONS } from './constants';
 
 const SESSION_KEY = 'vibestream_session_2026';
+const ROUTE_KEY = 'vibestream_active_route';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -40,9 +41,16 @@ const App: React.FC = () => {
   
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userData, setUserData] = useState<VibeUser | null>(null);
-  const [activeRoute, setActiveRoute] = useState<AppRoute>(AppRoute.FEED);
+  
+  const [activeRoute, setActiveRoute] = useState<AppRoute>(() => {
+    if (typeof window !== 'undefined') {
+      const savedRoute = localStorage.getItem(ROUTE_KEY) as AppRoute;
+      return Object.values(AppRoute).includes(savedRoute) ? savedRoute : AppRoute.FEED;
+    }
+    return AppRoute.FEED;
+  });
+
   const [posts, setPosts] = useState<Post[]>([]);
-  const [chats, setChats] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toasts, setUserToasts] = useState<ToastMessage[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -60,6 +68,11 @@ const App: React.FC = () => {
 
   const removeToast = (id: string) => {
     setUserToasts(prev => prev.filter(t => t.id !== id));
+  };
+
+  const handleNavigate = (route: AppRoute) => {
+    setActiveRoute(route);
+    localStorage.setItem(ROUTE_KEY, route);
   };
 
   const handleRegionChange = (newRegion: Region) => {
@@ -115,7 +128,6 @@ const App: React.FC = () => {
                 verifiedHuman: isFirstUser,
                 isSuspended: false,
                 geoNode: 'UK',
-                // 2026 Default Data
                 dob: '2000-01-01',
                 pronouns: 'they/them',
                 website: '',
@@ -177,6 +189,7 @@ const App: React.FC = () => {
     try {
       if (auth) await signOut(auth);
       localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(ROUTE_KEY);
       setIsAuthenticated(false);
       setUserData(null);
       setActiveRoute(AppRoute.FEED);
@@ -272,7 +285,7 @@ const App: React.FC = () => {
   return (
     <Layout 
       activeRoute={activeRoute} 
-      onNavigate={setActiveRoute}
+      onNavigate={handleNavigate}
       onOpenCreate={() => setIsCreateModalOpen(true)}
       onLogout={handleLogout}
       userRole={userData?.role || 'member'}
@@ -282,12 +295,10 @@ const App: React.FC = () => {
     >
       {renderRoute()}
 
-      {/* TOAST SYSTEM (Precision Location) */}
       <div className="fixed bottom-6 right-6 md:bottom-12 md:right-12 z-[500] flex flex-col gap-2 items-end pointer-events-none">
         {toasts.map(t => <div key={t.id} className="pointer-events-auto"><Toast toast={t} onClose={removeToast} /></div>)}
       </div>
 
-      {/* MODAL SYSTEM (Ultra Sharp) */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-[600] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-md" onClick={() => !isUploading && setIsCreateModalOpen(false)}></div>

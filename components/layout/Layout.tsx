@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { ICONS } from '../../constants';
 import { AppRoute, UserRole, Region, User as VibeUser } from '../../types';
 import { Header } from './Header';
+import { RightSidebar } from './RightSidebar';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -28,7 +29,7 @@ export const Layout: React.FC<LayoutProps> = ({
   onRegionChange
 }) => {
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>(
-    window.innerHeight > window.innerWidth ? 'portrait' : 'landscape'
+    typeof window !== 'undefined' ? (window.innerHeight > window.innerWidth ? 'portrait' : 'landscape') : 'portrait'
   );
 
   useEffect(() => {
@@ -103,7 +104,7 @@ export const Layout: React.FC<LayoutProps> = ({
           </button>
         </aside>
 
-        {/* Tablet/Landscape Navigation Rail - Forcefully offset from Notch */}
+        {/* Tablet Rail */}
         <aside 
           className="hidden md:flex lg:hidden flex-col shrink-0 border-r border-precision bg-white/50 backdrop-blur-xl py-6 items-center gap-8 pt-[calc(var(--header-h)+1.5rem)]" 
           style={{ 
@@ -137,26 +138,11 @@ export const Layout: React.FC<LayoutProps> = ({
           </div>
         </main>
 
-        {/* Wide Desktop Info Rail */}
-        <aside className="hidden xl:flex flex-col w-80 shrink-0 border-l border-precision bg-white/30 p-6 gap-6 pt-[calc(var(--header-h)+1.5rem)] pr-[max(1.5rem,var(--sar))]">
-           <div className="bg-white/50 border-precision rounded-3xl p-6 backdrop-blur-sm shadow-sm">
-              <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] mb-6 font-mono">Grid_Resonance</h4>
-              <div className="space-y-6">
-                {[1,2,3].map(i => (
-                  <div key={i} className="flex gap-4 items-start group cursor-pointer hover:translate-x-1 transition-transform">
-                    <div className="shrink-0 w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 font-black text-[11px] font-mono border-precision">0{i}</div>
-                    <div className="overflow-hidden">
-                      <p className="text-[11px] font-black text-slate-900 truncate tracking-tight">Signal_Burst_TX-0{i}</p>
-                      <p className="text-[9px] text-slate-400 font-bold uppercase mt-1.5 font-mono">Encrypted Feed</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-           </div>
-        </aside>
+        {/* Improved Right Sidebar */}
+        <RightSidebar userData={userData} />
       </div>
 
-      {/* Portrait Mobile Tab Bar - Safe Area Aware */}
+      {/* Portrait Mobile Tab Bar */}
       <nav className={`${orientation === 'landscape' ? 'hidden' : 'md:hidden'} fixed bottom-0 left-0 right-0 glass-panel border-t border-precision z-[150]`} style={{ height: 'var(--bottom-nav-h)', paddingBottom: 'var(--sab)' }}>
         <div className="flex items-center justify-around h-full px-2">
           <button onClick={() => onNavigate(AppRoute.FEED)} className={`p-3 rounded-xl transition-all touch-active ${activeRoute === AppRoute.FEED ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
@@ -182,7 +168,7 @@ export const Layout: React.FC<LayoutProps> = ({
         </div>
       </nav>
 
-      {/* Mobile Landscape Floating Navigation - Deep Notch Protection */}
+      {/* Mobile Landscape Floating Navigation */}
       {orientation === 'landscape' && (
         <div className="md:hidden fixed top-1/2 -translate-y-1/2 flex flex-col gap-4 z-[300]" style={{ left: 'max(1.25rem, var(--sal))' }}>
            <div className="glass-panel p-2.5 rounded-2xl flex flex-col gap-2 border-precision shadow-2xl">

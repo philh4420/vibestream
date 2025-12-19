@@ -1,6 +1,6 @@
 
-// Fixed: Using namespace import to resolve "no exported member" errors for initializeApp, getApps, getApp, and FirebaseApp
-import * as firebase from 'firebase/app';
+// Fixed: Using named imports to resolve "no exported member" errors for initializeApp, getApps, and getApp in Firebase v9+
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth';
 import { CONFIG } from './config';
@@ -9,13 +9,13 @@ import { CONFIG } from './config';
 let app: any;
 
 try {
-  // Fixed: Accessing functions via the namespace to ensure they are found during compilation
-  const apps = firebase.getApps();
+  // Fixed: Accessing functions directly via named imports for correct resolution
+  const apps = getApps();
   if (apps.length > 0) {
-    app = firebase.getApp();
+    app = getApp();
   } else {
     // Standard initialization pattern for Firebase v9+
-    app = firebase.initializeApp(CONFIG.FIREBASE);
+    app = initializeApp(CONFIG.FIREBASE);
   }
 } catch (error) {
   console.error("Firebase Initialization Critical Error:", error);
