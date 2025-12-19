@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { ICONS, MOCK_USER } from '../../constants';
-import { AppRoute, UserRole, Region } from '../../types';
+import { ICONS } from '../../constants';
+import { AppRoute, UserRole, Region, User as VibeUser } from '../../types';
 import { Header } from './Header';
 
 interface LayoutProps {
@@ -11,6 +11,7 @@ interface LayoutProps {
   onOpenCreate: () => void;
   onLogout?: () => void;
   userRole?: UserRole;
+  userData: VibeUser | null;
   currentRegion: Region;
   onRegionChange: (region: Region) => void;
 }
@@ -22,6 +23,7 @@ export const Layout: React.FC<LayoutProps> = ({
   onOpenCreate, 
   onLogout,
   userRole = 'member',
+  userData,
   currentRegion,
   onRegionChange
 }) => {
@@ -42,16 +44,15 @@ export const Layout: React.FC<LayoutProps> = ({
 
   return (
     <div className="flex flex-col h-full w-full max-w-[2560px] mx-auto overflow-hidden bg-white">
-      {/* High-Fidelity Header Integration */}
       <Header 
         userRole={userRole} 
+        userData={userData}
         currentRegion={currentRegion} 
         onRegionChange={onRegionChange} 
         onLogout={onLogout || (() => {})} 
       />
 
       <div className="flex-1 flex overflow-hidden pt-20 md:pt-24">
-        {/* Desktop Sidebar Sidebar - Optimised Padding for 2026 */}
         <aside className="hidden lg:flex flex-col w-80 border-r border-slate-100 bg-white p-8 gap-3 shrink-0">
           <div className="mb-6">
             <h4 className="px-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Neural Navigation</h4>
@@ -76,7 +77,7 @@ export const Layout: React.FC<LayoutProps> = ({
           <div className="mt-auto pt-6 border-t border-slate-100">
             <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 mb-6">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Current Sync</p>
-              <p className="text-xs font-bold text-slate-700">London High-Speed Hub</p>
+              <p className="text-xs font-bold text-slate-700">Infrastructure Node: {currentRegion}</p>
               <div className="mt-3 w-full bg-slate-200 h-1 rounded-full overflow-hidden">
                 <div className="w-[85%] h-full bg-indigo-500 animate-pulse"></div>
               </div>
@@ -94,7 +95,6 @@ export const Layout: React.FC<LayoutProps> = ({
           </div>
         </aside>
 
-        {/* Main Content Area - Optimized for 4K/8K displays */}
         <main className="flex-1 h-full overflow-y-auto scroll-smooth bg-slate-50 pb-24 lg:pb-12">
           <div className="max-w-5xl mx-auto px-4 md:px-12 lg:px-16 py-8 md:py-12">
             {children}
@@ -102,7 +102,6 @@ export const Layout: React.FC<LayoutProps> = ({
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation - Visual Consistency with Header */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-[24px] border-t border-slate-200 z-50 safe-bottom">
         <div className="flex items-center justify-around py-4 px-2">
           <NavItem route={AppRoute.FEED} icon={ICONS.Home} label="Home" />

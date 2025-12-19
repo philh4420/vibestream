@@ -5,8 +5,7 @@ import { PostCard } from './components/feed/PostCard';
 import { Toast } from './components/ui/Toast';
 import { LandingPage } from './components/landing/LandingPage';
 import { AdminPanel } from './components/admin/AdminPanel';
-import { AppRoute, Post, ToastMessage, UserRole, Region } from './types';
-import { MOCK_POSTS, MOCK_USER } from './constants';
+import { AppRoute, Post, ToastMessage, UserRole, Region, User as VibeUser } from './types';
 import { db, auth } from './services/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { 
@@ -19,7 +18,8 @@ import {
   updateDoc,
   doc,
   increment,
-  getDoc
+  getDoc,
+  setDoc
 } from 'firebase/firestore';
 import { uploadToCloudinary } from './services/cloudinary';
 
@@ -34,7 +34,7 @@ const App: React.FC = () => {
   });
   
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [userRole, setUserRole] = useState<UserRole>('member');
+  const [userData, setUserData] = useState<VibeUser | null>(null);
   const [activeRoute, setActiveRoute] = useState<AppRoute>(AppRoute.FEED);
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,7 +61,7 @@ const App: React.FC = () => {
     addToast(`Neural Node Switched: ${newRegion}`, 'info');
   };
 
-  // Real Auth Observer
+  // Real Auth Observer & Profile Sync
   useEffect(() => {
     if (!auth) {
       setIsLoading(false);
@@ -74,25 +74,41 @@ const App: React.FC = () => {
         setIsAuthenticated(true);
         localStorage.setItem(SESSION_KEY, 'active');
         
-        // Fetch role from Firestore
+        // Fetch or create profile in Firestore
         if (db) {
           try {
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            const userDocRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userDocRef);
+            
             if (userDoc.exists()) {
-              setUserRole(userDoc.data().role as UserRole || 'member');
+              setUserData({ id: userDoc.id, ...userDoc.data() } as VibeUser);
             } else {
-              setUserRole('member');
+              // Create default profile for new user
+              const newProfile: Partial<VibeUser> = {
+                username: user.email?.split('@')[0] || `user_${user.uid.slice(0, 5)}`,
+                displayName: user.displayName || user.email?.split('@')[0] || 'Unknown Node',
+                bio: 'New VibeStream citizen.',
+                avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`,
+                coverUrl: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop',
+                followers: 0,
+                following: 0,
+                role: 'member',
+                location: 'London, UK',
+                joinedAt: new Date().toISOString(),
+                badges: ['New Citizen']
+              };
+              await setDoc(userDocRef, newProfile);
+              setUserData({ id: user.uid, ...newProfile } as VibeUser);
             }
           } catch (e) {
-            console.warn("Role detection offline.");
+            console.warn("Profile Sync Offline:", e);
           }
         }
-
         addToast(`Neural Link Active: ${user.email}`, 'success');
       } else {
         setIsAuthenticated(false);
         setCurrentUser(null);
-        setUserRole('member');
+        setUserData(null);
         localStorage.removeItem(SESSION_KEY);
       }
       setIsLoading(false);
@@ -101,17 +117,9 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
+  // Real-time Posts Stream
   useEffect(() => {
-    if (!isAuthenticated) {
-      setIsLoading(false);
-      return;
-    }
-
-    if (!db) {
-      setPosts(MOCK_POSTS);
-      setIsLoading(false);
-      return;
-    }
+    if (!isAuthenticated || !db) return;
 
     try {
       const q = query(collection(db, 'posts'), orderBy('timestamp', 'desc'));
@@ -121,22 +129,21 @@ const App: React.FC = () => {
           ...doc.data()
         })) as Post[];
         
-        setPosts(fetchedPosts.length > 0 ? fetchedPosts : MOCK_POSTS);
-        setIsLoading(false);
+        setPosts(fetchedPosts);
       }, (error) => {
         addToast("Network Syncing...", "info");
-        setPosts(MOCK_POSTS);
-        setIsLoading(false);
       });
 
       return () => unsubscribe();
     } catch (e) {
-      setPosts(MOCK_POSTS);
-      setIsLoading(false);
+      console.error("Feed error:", e);
     }
   }, [isAuthenticated]);
 
   const handleLike = async (postId: string) => {
+    if (!db || !currentUser) return;
+    
+    // Optimistic UI
     setPosts(prev => prev.map(p => {
       if (p.id === postId) {
         const isLiked = !p.isLiked;
@@ -145,8 +152,6 @@ const App: React.FC = () => {
       }
       return p;
     }));
-
-    if (!db) return;
 
     try {
       const postRef = doc(db, 'posts', postId);
@@ -165,6 +170,7 @@ const App: React.FC = () => {
       }
       localStorage.removeItem(SESSION_KEY);
       setIsAuthenticated(false);
+      setUserData(null);
       setActiveRoute(AppRoute.FEED);
       addToast('Neural Link Terminated', 'info');
     } catch (error) {
@@ -189,6 +195,11 @@ const App: React.FC = () => {
       return;
     }
 
+    if (!userData) {
+      addToast('Identity Sync Required', 'error');
+      return;
+    }
+
     setIsUploading(true);
     let mediaUrl = '';
     let mediaType: 'image' | 'video' | 'file' = 'image';
@@ -200,9 +211,9 @@ const App: React.FC = () => {
       }
 
       const postData = {
-        authorId: currentUser?.uid || MOCK_USER.id,
-        authorName: currentUser?.displayName || currentUser?.email?.split('@')[0] || MOCK_USER.displayName,
-        authorAvatar: MOCK_USER.avatarUrl,
+        authorId: userData.id,
+        authorName: userData.displayName,
+        authorAvatar: userData.avatarUrl,
         content: newPostText,
         media: mediaUrl ? [{ type: mediaType, url: mediaUrl }] : [],
         likes: 0,
@@ -220,8 +231,6 @@ const App: React.FC = () => {
 
       if (db) {
         await addDoc(collection(db, 'posts'), postData);
-      } else {
-        setPosts(prev => [{ id: `m-${Date.now()}`, ...postData, timestamp: null } as any, ...prev]);
       }
       
       setNewPostText('');
@@ -255,7 +264,15 @@ const App: React.FC = () => {
       default:
         return (
           <div className="space-y-6 md:space-y-10 pb-32 md:pb-12 max-w-2xl mx-auto">
-            {posts.map(post => (
+            {posts.length === 0 ? (
+              <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-100 shadow-sm">
+                 <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-slate-300">
+                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path></svg>
+                 </div>
+                 <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">No signals found</h3>
+                 <p className="text-slate-400 font-medium mt-2">Be the first to broadcast on the network.</p>
+              </div>
+            ) : posts.map(post => (
               <PostCard 
                 key={post.id} 
                 post={post} 
@@ -274,7 +291,8 @@ const App: React.FC = () => {
       onNavigate={setActiveRoute}
       onOpenCreate={() => setIsCreateModalOpen(true)}
       onLogout={handleLogout}
-      userRole={userRole}
+      userRole={userData?.role || 'member'}
+      userData={userData}
       currentRegion={userRegion}
       onRegionChange={handleRegionChange}
     >

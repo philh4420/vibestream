@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { User, Post } from './types';
 
 export const ICONS = {
   Home: () => (
@@ -60,49 +59,3 @@ export const ICONS = {
     </svg>
   )
 };
-
-export const MOCK_USER: User = {
-  id: 'u1',
-  username: 'design_ninja',
-  displayName: 'Oliver Bennett',
-  bio: 'Crafting digital experiences for 2026. Living in London, UK. 🇬🇧 #Tech #Design',
-  avatarUrl: 'https://picsum.photos/200/200?random=1',
-  coverUrl: 'https://picsum.photos/1200/400?random=2',
-  followers: 12800,
-  following: 420,
-  role: 'creator',
-  location: 'London, UK',
-  joinedAt: 'January 2024',
-  badges: ['Early Adopter', 'Top Contributor']
-};
-
-export const MOCK_POSTS: Post[] = [
-  {
-    id: 'p1',
-    authorId: 'u1',
-    authorName: 'Oliver Bennett',
-    authorAvatar: 'https://picsum.photos/200/200?random=1',
-    content: "The future of social media is decentralized, interactive, and hyper-personalized. What feature are you most excited about for 2026? 🚀 #VibeStream",
-    media: [
-      { type: 'image', url: 'https://picsum.photos/800/600?random=3' }
-    ],
-    likes: 1240,
-    comments: 84,
-    shares: 32,
-    createdAt: '2h ago'
-  },
-  {
-    id: 'p2',
-    authorId: 'u2',
-    authorName: 'Elena Richards',
-    authorAvatar: 'https://picsum.photos/200/200?random=4',
-    content: "Just finished the marathon in Manchester! The atmosphere was incredible. 🏃‍♀️✨",
-    media: [
-      { type: 'image', url: 'https://picsum.photos/800/600?random=5' }
-    ],
-    likes: 3450,
-    comments: 120,
-    shares: 15,
-    createdAt: '5h ago'
-  }
-];
