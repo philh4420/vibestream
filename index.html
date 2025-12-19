@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
@@ -14,24 +15,28 @@
         }
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            overscroll-behavior-y: contain;
-            -webkit-tap-highlight-color: transparent;
             background-color: #020617;
             height: 100dvh;
             width: 100vw;
-            overflow: hidden;
+            overflow: hidden; /* Lock the body to prevent double-scrolling */
+            -webkit-font-smoothing: antialiased;
         }
         h1, h2, h3, .font-outfit {
             font-family: 'Outfit', sans-serif;
         }
-        ::-webkit-scrollbar {
-            width: 0px;
-            background: transparent;
+        /* Native-like scrolling for the main container */
+        .scroll-container {
+            overflow-y: scroll;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none;  /* IE and Edge */
+        }
+        .scroll-container::-webkit-scrollbar {
+            display: none; /* Chrome, Safari and Opera */
         }
         * {
-            scrollbar-width: none;
-            -ms-overflow-style: none;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
         .safe-bottom {
             padding-bottom: env(safe-area-inset-bottom);
@@ -39,10 +44,24 @@
         .safe-top {
             padding-top: env(safe-area-inset-top);
         }
+        /* Liquid UI Glassmorphism */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        /* Mobile-First Transitions */
+        .page-transition {
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* High-Res Screen Adjustments */
+        @media (min-width: 2560px) {
+            body { font-size: 1.25rem; }
         }
     </style>
 <script type="importmap">

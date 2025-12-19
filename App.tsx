@@ -23,6 +23,7 @@ import {
   setDoc
 } from 'firebase/firestore';
 import { uploadToCloudinary } from './services/cloudinary';
+import { ICONS } from './constants';
 
 const SESSION_KEY = 'vibestream_session_2026';
 
@@ -86,7 +87,6 @@ const App: React.FC = () => {
                  addToast("Protocol Breach: Node Suspended", "error");
                  return;
               }
-              // Normalise data to ensure no undefined crashes on map/toLocaleString
               setUserData({ 
                 id: userDoc.id, 
                 ...data,
@@ -284,9 +284,59 @@ const App: React.FC = () => {
             locale={userRegion}
           />
         ) : null;
+      case AppRoute.EXPLORE:
+        return (
+          <div className="space-y-8 page-transition">
+            <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">Discovery Hub</h1>
+            <div className="flex gap-4 overflow-x-auto pb-4 scroll-container">
+              {['Trending', 'Neural Art', 'UK Tech', 'London Live', 'Creator Hub'].map(tag => (
+                <button key={tag} className="px-6 py-3 bg-white border border-slate-100 rounded-2xl whitespace-nowrap font-bold text-slate-600 hover:border-indigo-400 hover:text-indigo-600 transition-all shadow-sm">
+                  {tag}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="relative group rounded-[2.5rem] overflow-hidden aspect-video shadow-xl border border-slate-100">
+                  <img src={`https://picsum.photos/800/600?random=${i+20}`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent p-8 flex flex-col justify-end">
+                    <p className="text-white font-black text-2xl tracking-tight mb-2">Neural Cluster #{i*100}</p>
+                    <p className="text-white/70 text-sm font-bold uppercase tracking-widest">Active Signal from GB-LON</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      case AppRoute.MESSAGES:
+        return (
+          <div className="space-y-6 page-transition">
+             <div className="flex justify-between items-center px-2">
+                <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">Neural Comms</h1>
+                <button className="p-4 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-100"><ICONS.Create /></button>
+             </div>
+             <div className="space-y-4">
+               {[1, 2, 3, 4, 5].map(i => (
+                 <div key={i} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 hover:shadow-md transition-all cursor-pointer">
+                    <div className="relative">
+                       <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i+50}`} className="w-16 h-16 rounded-[1.5rem] object-cover" alt="" />
+                       <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-4 border-white rounded-full"></div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center mb-1">
+                        <h4 className="font-black text-slate-900 text-lg tracking-tight">Node Identity #{i+1000}</h4>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">2m ago</span>
+                      </div>
+                      <p className="text-slate-500 text-sm font-medium line-clamp-1">Incoming encrypted transmission: Handshake requested...</p>
+                    </div>
+                 </div>
+               ))}
+             </div>
+          </div>
+        );
       default:
         return (
-          <div className="space-y-6 md:space-y-10 pb-32 md:pb-12 max-w-2xl mx-auto">
+          <div className="space-y-6 md:space-y-10 max-w-2xl mx-auto page-transition">
             {posts.length === 0 ? (
               <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-100 shadow-sm">
                  <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-slate-300">

@@ -53,12 +53,14 @@ export const Layout: React.FC<LayoutProps> = ({
       />
 
       <div className="flex-1 flex overflow-hidden pt-20 md:pt-24">
+        {/* Desktop Sidebar */}
         <aside className="hidden lg:flex flex-col w-80 border-r border-slate-100 bg-white p-8 gap-3 shrink-0">
           <div className="mb-6">
             <h4 className="px-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Neural Navigation</h4>
             <div className="space-y-1">
               <NavItem route={AppRoute.FEED} icon={ICONS.Home} label="Central Feed" />
               <NavItem route={AppRoute.EXPLORE} icon={ICONS.Explore} label="Discovery Hub" />
+              <NavItem route={AppRoute.MESSAGES} icon={ICONS.Messages} label="Neural Comms" />
               <NavItem route={AppRoute.PROFILE} icon={ICONS.Profile} label="Neural Identity" />
               {isAdmin && <NavItem route={AppRoute.ADMIN} icon={ICONS.Admin} label="Citadel Command" />}
             </div>
@@ -95,37 +97,27 @@ export const Layout: React.FC<LayoutProps> = ({
           </div>
         </aside>
 
-        <main className="flex-1 h-full overflow-y-auto scroll-smooth bg-slate-50 pb-24 lg:pb-12">
+        {/* MAIN SCROLLABLE AREA */}
+        <main className="flex-1 h-full scroll-container bg-slate-50 pb-32 lg:pb-12">
           <div className="max-w-5xl mx-auto px-4 md:px-12 lg:px-16 py-8 md:py-12">
             {children}
           </div>
         </main>
       </div>
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-[24px] border-t border-slate-200 z-50 safe-bottom">
+      {/* Mobile Bottom Nav */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-[24px] border-t border-slate-200 z-[150] safe-bottom">
         <div className="flex items-center justify-around py-4 px-2">
           <NavItem route={AppRoute.FEED} icon={ICONS.Home} label="Home" />
-          <NavItem route={AppRoute.EXPLORE} icon={ICONS.Explore} label="Search" />
+          <NavItem route={AppRoute.EXPLORE} icon={ICONS.Explore} label="Explore" />
           <button 
             onClick={onOpenCreate}
             className="w-14 h-14 bg-indigo-600 text-white rounded-[1.5rem] flex items-center justify-center shadow-2xl shadow-indigo-200 active:scale-90 transition-transform -translate-y-4 border-4 border-white"
           >
             <ICONS.Create />
           </button>
-          {isAdmin ? (
-            <NavItem route={AppRoute.ADMIN} icon={ICONS.Admin} label="Citadel" />
-          ) : (
-            <NavItem route={AppRoute.PROFILE} icon={ICONS.Profile} label="Identity" />
-          )}
-          <button 
-            onClick={onLogout}
-            className="flex flex-col items-center gap-1 p-2 text-slate-400 active:text-rose-500"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
-            </svg>
-            <span className="text-[10px] font-black uppercase tracking-widest">Exit</span>
-          </button>
+          <NavItem route={AppRoute.MESSAGES} icon={ICONS.Messages} label="Comms" />
+          <NavItem route={AppRoute.PROFILE} icon={ICONS.Profile} label="Identity" />
         </div>
       </nav>
     </div>
