@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { User, Post, Region } from '../../types';
 import { PostCard } from '../feed/PostCard';
@@ -13,7 +12,6 @@ import {
   doc 
 } from 'firebase/firestore';
 import { ICONS } from '../../constants';
-import { Input } from '../ui/Input';
 
 interface ProfilePageProps {
   userData: User;
@@ -36,19 +34,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
     const fetchUserPosts = async () => {
       if (!db || !userData.id) return;
       try {
-        const q = query(
-          collection(db, 'posts'), 
-          where('authorId', '==', userData.id),
-          orderBy('timestamp', 'desc')
-        );
+        const q = query(collection(db, 'posts'), where('authorId', '==', userData.id), orderBy('timestamp', 'desc'));
         const snap = await getDocs(q);
-        const posts = snap.docs.map(d => ({ id: d.id, ...d.data() } as Post));
-        setUserPosts(posts);
-      } catch (e) {
-        console.error("Profile feed error:", e);
-      } finally {
-        setIsLoading(false);
-      }
+        setUserPosts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Post)));
+      } catch (e) { console.error(e); } finally { setIsLoading(false); }
     };
     fetchUserPosts();
   }, [userData.id]);
@@ -56,174 +45,110 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
   const handleSaveProfile = async () => {
     if (!db) return;
     try {
-      const userRef = doc(db, 'users', userData.id);
-      await updateDoc(userRef, editForm);
+      await updateDoc(doc(db, 'users', userData.id), editForm);
       onUpdateProfile(editForm);
       setIsEditModalOpen(false);
-      addToast('Identity Updated', 'success');
-    } catch (e) {
-      addToast('Sync Failed', 'error');
-    }
+      addToast('Identity Synchronised', 'success');
+    } catch (e) { addToast('Sync Error: Connection Refused', 'error'); }
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Cover & Avatar Header */}
-      <div className="relative group">
-        <div className="h-64 md:h-80 w-full rounded-[3rem] overflow-hidden relative shadow-2xl">
-          <img src={userData.coverUrl} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="Cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 to-transparent" />
+    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700 max-w-4xl mx-auto">
+      {/* Identity Command Header */}
+      <div className="bg-white border-precision rounded-2xl overflow-hidden shadow-sm">
+        <div className="h-40 md:h-56 bg-slate-100 relative">
+          <img src={userData.coverUrl} className="w-full h-full object-cover opacity-80" alt="" />
+          <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent" />
         </div>
         
-        <div className="absolute -bottom-16 left-8 md:left-12 flex items-end gap-6">
-          <div className="relative">
-            <div className="absolute -inset-1.5 bg-white rounded-[2.5rem] shadow-xl"></div>
-            <img 
-              src={userData.avatarUrl} 
-              className="relative w-32 h-32 md:w-40 md:h-40 rounded-[2.2rem] object-cover border-4 border-white shadow-2xl" 
-              alt="Avatar" 
-            />
-            {userData.role === 'admin' && (
-              <div className="absolute -top-2 -right-2 bg-rose-500 text-white p-2 rounded-xl shadow-lg ring-4 ring-white">
-                <ICONS.Admin />
+        <div className="px-6 md:px-10 pb-8 -mt-16 md:-mt-20 relative z-10">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="flex items-end gap-5">
+              <div className="relative">
+                <img src={userData.avatarUrl} className="w-28 h-28 md:w-40 md:h-40 rounded-2xl object-cover border-4 border-white shadow-2xl ring-1 ring-slate-100" alt="" />
+                <div className="absolute -bottom-2 -right-2 bg-indigo-600 text-white p-1.5 rounded-lg shadow-lg border-2 border-white">
+                  <ICONS.Verified />
+                </div>
               </div>
-            )}
-          </div>
-          <div className="mb-4 pb-2">
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-3xl md:text-4xl font-black text-white tracking-tighter drop-shadow-md">
-                {userData.displayName}
-              </h1>
-              {(userData.verifiedHuman || userData.role === 'verified') && <ICONS.Verified />}
+              <div className="mb-2">
+                <h1 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter">{userData.displayName}</h1>
+                <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">UID: {userData.username}</p>
+              </div>
             </div>
-            <p className="text-white/80 font-bold text-sm tracking-widest uppercase">@{userData.username}</p>
+            <button 
+              onClick={() => setIsEditModalOpen(true)}
+              className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-black transition-all active:scale-95 flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 12H13.5" /></svg>
+              Calibrate
+            </button>
           </div>
-        </div>
-
-        <button 
-          onClick={() => setIsEditModalOpen(true)}
-          className="absolute -bottom-12 right-8 bg-white text-slate-900 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-indigo-50 transition-all active:scale-95 border border-slate-100"
-        >
-          Calibrate Identity
-        </button>
-      </div>
-
-      {/* Profile Info & Stats */}
-      <div className="mt-20 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Identity Matrix</h3>
-            <p className="text-slate-700 font-medium leading-relaxed mb-6 whitespace-pre-wrap">{userData.bio}</p>
+          
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-8 pt-8 border-t border-precision">
+            <div className="md:col-span-2 space-y-4">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] font-mono">System Bio</p>
+              <p className="text-slate-700 text-sm md:text-base leading-relaxed font-medium">{userData.bio}</p>
+              <div className="flex flex-wrap gap-4 text-slate-400 text-[10px] font-bold uppercase tracking-widest font-mono">
+                <span className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-md border-precision"><ICONS.Globe /> {userData.location}</span>
+                <span className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-md border-precision"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> Active Since {new Date(userData.joinedAt).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}</span>
+              </div>
+            </div>
             
-            <div className="space-y-4 pt-6 border-t border-slate-50">
-              <div className="flex items-center gap-3 text-slate-500">
-                <ICONS.Globe />
-                <span className="text-sm font-bold">{userData.location}</span>
-              </div>
-              <div className="flex items-center gap-3 text-slate-500">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                <span className="text-sm font-bold">Joined {new Date(userData.joinedAt).toLocaleDateString(locale, { month: 'long', year: 'numeric' })}</span>
-              </div>
-            </div>
-
-            <div className="mt-8 flex flex-wrap gap-2">
-              {userData.badges?.map(badge => (
-                <span key={badge} className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-indigo-100/50">
-                  {badge}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl shadow-indigo-200/20 text-white">
-            <div className="grid grid-cols-2 gap-4 text-center">
+            <div className="flex justify-around md:flex-col md:justify-center md:gap-6 bg-slate-50 rounded-2xl p-6 border-precision">
               <div>
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Resonance</p>
-                <p className="text-2xl font-black">{userData.followers.toLocaleString(locale)}</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1 font-mono">Resonance</p>
+                <p className="text-2xl font-black text-slate-900 tracking-tight">{userData.followers.toLocaleString(locale)}</p>
               </div>
               <div>
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Signals</p>
-                <p className="text-2xl font-black">{userData.following.toLocaleString(locale)}</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1 font-mono">Transmissions</p>
+                <p className="text-2xl font-black text-slate-900 tracking-tight">{userPosts.length.toLocaleString(locale)}</p>
               </div>
             </div>
           </div>
-        </div>
-
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between px-4">
-            <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">Broadcast History</h2>
-            <div className="flex gap-2">
-              <button className="p-3 bg-white rounded-xl shadow-sm text-indigo-600">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
-              </button>
-            </div>
-          </div>
-
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[3rem] border border-slate-100">
-              <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-4" />
-              <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Syncing Archives...</p>
-            </div>
-          ) : userPosts.length === 0 ? (
-            <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-100 shadow-sm">
-               <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-slate-300">
-                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path></svg>
-               </div>
-               <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">No transmissions yet</h3>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {userPosts.map(post => (
-                <PostCard key={post.id} post={post} onLike={() => {}} locale={locale} />
-              ))}
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Edit Identity Modal */}
+      {/* Transmission Log */}
+      <div className="space-y-4">
+        <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] px-2 font-mono flex items-center gap-2">
+           <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+           Signal Log
+        </h2>
+        {isLoading ? (
+          <div className="py-20 flex justify-center"><div className="w-6 h-6 border-2 border-indigo-500/20 border-t-indigo-600 rounded-full animate-spin" /></div>
+        ) : userPosts.length === 0 ? (
+          <div className="bg-white border-precision rounded-2xl py-24 text-center">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono opacity-50">Empty Archive: Node hasn't broadcasted yet.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {userPosts.map(post => <PostCard key={post.id} post={post} onLike={() => {}} locale={locale} />)}
+          </div>
+        )}
+      </div>
+
+      {/* Identity Calibration Overlay */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 z-[500] flex items-end md:items-center justify-center p-0 md:p-6">
-          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-2xl" onClick={() => setIsEditModalOpen(false)}></div>
-          <div className="relative bg-white w-full max-w-xl rounded-t-[2.5rem] md:rounded-[3rem] shadow-2xl p-8 md:p-12 animate-in slide-in-from-bottom-12 duration-500">
-            <h2 className="text-3xl font-black text-slate-900 tracking-tighter mb-8 uppercase">Calibrate Identity</h2>
-            
+        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-md" onClick={() => setIsEditModalOpen(false)}></div>
+          <div className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl p-8 border-precision animate-in slide-in-from-bottom-6 duration-300">
+            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter mb-8 flex items-center gap-3">
+              <span className="w-2 h-2 bg-indigo-600 rounded-full"></span>
+              Calibration Mode
+            </h2>
             <div className="space-y-6">
-              <Input 
-                label="Display Name" 
-                value={editForm.displayName} 
-                onChange={e => setEditForm(prev => ({ ...prev, displayName: e.target.value }))} 
-                className="!text-slate-900 !bg-slate-50 !border-slate-200"
-              />
-              <div className="space-y-3">
-                <label className="text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] ml-1">Bio Signature</label>
-                <textarea 
-                  value={editForm.bio}
-                  onChange={e => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
-                  className="w-full h-32 p-6 bg-slate-50 rounded-[1.5rem] border border-slate-200 focus:ring-2 focus:ring-indigo-100 text-slate-900 font-semibold resize-none"
-                />
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 font-mono">Identity Label</label>
+                <input type="text" value={editForm.displayName} onChange={e => setEditForm(prev => ({...prev, displayName: e.target.value}))} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-indigo-500 outline-none font-medium" />
               </div>
-              <Input 
-                label="Location Node" 
-                value={editForm.location} 
-                onChange={e => setEditForm(prev => ({ ...prev, location: e.target.value }))}
-                className="!text-slate-900 !bg-slate-50 !border-slate-200"
-              />
-            </div>
-
-            <div className="mt-10 flex gap-4">
-              <button 
-                onClick={() => setIsEditModalOpen(false)}
-                className="flex-1 py-5 bg-slate-100 text-slate-500 font-black rounded-2xl hover:bg-slate-200 transition-all uppercase tracking-widest text-xs"
-              >
-                Abort
-              </button>
-              <button 
-                onClick={handleSaveProfile}
-                className="flex-1 py-5 bg-indigo-600 text-white font-black rounded-2xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all uppercase tracking-widest text-xs"
-              >
-                Sync Changes
-              </button>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 font-mono">Neural Bio Signature</label>
+                <textarea value={editForm.bio} onChange={e => setEditForm(prev => ({...prev, bio: e.target.value}))} className="w-full h-32 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-indigo-500 outline-none resize-none font-medium leading-relaxed" />
+              </div>
+              <div className="flex gap-4 pt-4">
+                <button onClick={() => setIsEditModalOpen(false)} className="flex-1 py-3.5 bg-slate-100 text-slate-500 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all">Abort</button>
+                <button onClick={handleSaveProfile} className="flex-1 py-3.5 bg-indigo-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all">Synchronise</button>
+              </div>
             </div>
           </div>
         </div>
