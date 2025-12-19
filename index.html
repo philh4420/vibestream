@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
@@ -13,7 +14,7 @@
             --app-height: 100%;
         }
         html, body {
-            min-height: 100%;
+            height: 100%;
             width: 100%;
             margin: 0;
             padding: 0;
@@ -22,21 +23,17 @@
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             scroll-behavior: smooth;
+            /* Prevent pull-to-refresh and bounce effects */
+            overscroll-behavior-y: none;
+            overflow-x: hidden;
         }
         #root {
-            min-height: 100vh;
+            height: 100%;
             display: flex;
             flex-direction: column;
         }
         h1, h2, h3, .font-outfit {
             font-family: 'Outfit', sans-serif;
-        }
-        /* Native-feeling scroll area */
-        .scroll-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow-y: visible;
         }
         * {
             box-sizing: border-box;
@@ -48,21 +45,13 @@
         .safe-top {
             padding-top: env(safe-area-inset-top);
         }
-        /* High-Res Screen Adjustments */
-        @media (min-width: 2560px) {
-            body { font-size: 1.1rem; }
-        }
-        /* Orientation adjustments */
-        @media (orientation: landscape) and (max-height: 500px) {
-            .mobile-hide-landscape { display: none; }
-        }
-        /* Custom scrollbar for desktop */
+        /* Custom scrollbar for professional look on desktop */
         @media (min-width: 1024px) {
           ::-webkit-scrollbar {
-              width: 8px;
+              width: 6px;
           }
           ::-webkit-scrollbar-track {
-              background: #f1f5f9;
+              background: transparent;
           }
           ::-webkit-scrollbar-thumb {
               background: #cbd5e1;
@@ -71,6 +60,14 @@
           ::-webkit-scrollbar-thumb:hover {
               background: #94a3b8;
           }
+        }
+        /* Page Transition Utility */
+        .page-transition {
+            animation: fadeIn 0.4s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 <script type="importmap">
