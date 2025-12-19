@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { ICONS } from '../../constants';
 import { UserRole, Region, User as VibeUser, AppRoute } from '../../types';
@@ -33,8 +34,8 @@ export const Header: React.FC<HeaderProps> = ({
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-[200] h-16 md:h-20 glass-panel border-b border-precision flex items-center px-4 md:px-8 transition-all">
-      <div className="flex items-center justify-between w-full max-w-[2560px] mx-auto gap-4 md:gap-8">
+    <header className="fixed top-0 left-0 right-0 z-[200] header-safe glass-panel border-b border-precision flex items-center transition-all">
+      <div className="flex items-center justify-between w-full max-w-[2560px] mx-auto px-4 md:px-8 gap-4 md:gap-8 h-full">
         
         {/* Branding */}
         <div className="flex items-center gap-3 shrink-0 cursor-pointer group" onClick={() => onNavigate(AppRoute.FEED)}>

@@ -70,7 +70,7 @@ export const Layout: React.FC<LayoutProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-[#fcfcfd] overflow-hidden safe-left safe-right">
+    <div className="flex flex-col h-full w-full bg-[#fcfcfd] overflow-hidden">
       <Header 
         userRole={userRole} 
         userData={userData}
@@ -81,10 +81,10 @@ export const Layout: React.FC<LayoutProps> = ({
         onNavigate={onNavigate}
       />
 
-      <div className="flex flex-1 overflow-hidden pt-16 md:pt-20">
+      <div className="flex flex-1 overflow-hidden">
         
         {/* Navigation Sidebar: Expanded (Desktop Lg) */}
-        <aside className="hidden lg:flex flex-col w-64 shrink-0 border-r border-precision bg-white/50 backdrop-blur-xl p-4 gap-6">
+        <aside className="hidden lg:flex flex-col w-64 shrink-0 border-r border-precision bg-white/50 backdrop-blur-xl p-4 gap-6 pt-[calc(var(--sat)+5rem)]">
           <div className="space-y-1">
             <p className="px-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] mb-4 font-mono">Core_Systems</p>
             <NavItem route={AppRoute.FEED} icon={ICONS.Home} label="Central" />
@@ -104,7 +104,8 @@ export const Layout: React.FC<LayoutProps> = ({
         </aside>
 
         {/* Navigation Rail: Collapsed (Tablets & Mobile Landscape) */}
-        <aside className="hidden md:flex lg:hidden flex-col w-20 shrink-0 border-r border-precision bg-white/50 backdrop-blur-xl py-6 items-center gap-8">
+        {/* Added rail-safe-left to prevent landscape notch collision */}
+        <aside className="hidden md:flex lg:hidden flex-col w-[calc(5rem+var(--sal))] shrink-0 border-r border-precision bg-white/50 backdrop-blur-xl py-6 items-center gap-8 pt-[calc(var(--sat)+5rem)] rail-safe-left">
           <div className="flex flex-col gap-2 w-full">
             <NavItem route={AppRoute.FEED} icon={ICONS.Home} label="Central" collapsed />
             <NavItem route={AppRoute.EXPLORE} icon={ICONS.Explore} label="Discover" collapsed />
@@ -122,16 +123,16 @@ export const Layout: React.FC<LayoutProps> = ({
         </aside>
 
         {/* Main Content Viewport */}
-        <main className="flex-1 relative overflow-hidden flex flex-col">
+        <main className="flex-1 relative overflow-hidden flex flex-col pt-[calc(var(--sat)+4.5rem)]">
           <div className="flex-1 scroll-container px-4 sm:px-6 md:px-10 lg:px-14 py-6">
-            <div className="max-w-4xl mx-auto w-full pb-24 md:pb-8">
+            <div className="max-w-4xl mx-auto w-full pb-[calc(var(--sab)+5rem)] md:pb-8">
               {children}
             </div>
           </div>
         </main>
 
         {/* Info Rail (Ultra Wide Desktop Only) */}
-        <aside className="hidden xl:flex flex-col w-80 shrink-0 border-l border-precision bg-white/30 p-6 gap-6">
+        <aside className="hidden xl:flex flex-col w-80 shrink-0 border-l border-precision bg-white/30 p-6 gap-6 pt-[calc(var(--sat)+5.5rem)]">
            <div className="bg-white/50 border-precision rounded-3xl p-6 backdrop-blur-sm shadow-sm">
               <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] mb-6 font-mono">Grid_Resonance</h4>
               <div className="space-y-6">
@@ -146,18 +147,12 @@ export const Layout: React.FC<LayoutProps> = ({
                 ))}
               </div>
            </div>
-           
-           <div className="mt-auto p-5 bg-slate-900 rounded-3xl text-white shadow-2xl relative overflow-hidden group cursor-help border border-white/10">
-              <div className="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500/20 blur-3xl rounded-full transition-transform group-hover:scale-150 duration-1000" />
-              <p className="text-[9px] font-black uppercase tracking-[0.4em] mb-2 font-mono text-indigo-400">Node_Status</p>
-              <p className="text-xs font-bold leading-relaxed text-slate-300">Synchronised with Global Mesh. Uplink established at 4ms.</p>
-           </div>
         </aside>
       </div>
 
-      {/* Portrait Mobile Tab Bar (Hidden in Landscape or tablets) */}
-      <nav className={`${orientation === 'landscape' ? 'hidden' : 'md:hidden'} fixed bottom-0 left-0 right-0 glass-panel border-t border-precision z-[150] safe-bottom`}>
-        <div className="flex items-center justify-around py-3 px-2">
+      {/* Portrait Mobile Tab Bar - respects Home Indicator (SAB) */}
+      <nav className={`${orientation === 'landscape' ? 'hidden' : 'md:hidden'} fixed bottom-0 left-0 right-0 glass-panel border-t border-precision z-[150] tab-safe-bottom`}>
+        <div className="flex items-center justify-around py-2 px-2">
           <button onClick={() => onNavigate(AppRoute.FEED)} className={`p-3 rounded-xl transition-all touch-active ${activeRoute === AppRoute.FEED ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
             <ICONS.Home />
           </button>
@@ -181,9 +176,9 @@ export const Layout: React.FC<LayoutProps> = ({
         </div>
       </nav>
 
-      {/* Compact Landscape Rail (Floating) - Only for Mobile Landscape to maximize content area */}
+      {/* Compact Landscape Rail (Floating) - respects Side Notch (SAL) */}
       {orientation === 'landscape' && (
-        <div className="md:hidden fixed left-4 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-[300]">
+        <div className="md:hidden fixed left-[calc(var(--sal)+1rem)] top-1/2 -translate-y-1/2 flex flex-col gap-4 z-[300]">
            <div className="glass-panel p-2 rounded-2xl flex flex-col gap-1 border-precision shadow-2xl">
               <button onClick={() => onNavigate(AppRoute.FEED)} className={`p-2.5 rounded-xl transition-all touch-active ${activeRoute === AppRoute.FEED ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
                 <ICONS.Home />
