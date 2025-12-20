@@ -103,7 +103,7 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
     onSave(processedData);
   };
 
-  const platforms = ['X', 'Instagram', 'LinkedIn', 'GitHub', 'Threads', 'TikTok'];
+  const platforms = ['X', 'Instagram', 'LinkedIn', 'GitHub', 'Threads', 'TikTok', 'Portfolio', 'Custom'];
 
   return (
     <div className="fixed inset-0 z-[600] flex items-center justify-center p-0 md:p-6 overflow-hidden">
@@ -113,7 +113,7 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
         <div className="shrink-0 p-6 md:p-10 flex justify-between items-center border-b border-slate-50 bg-white/50 backdrop-blur-md">
            <div>
               <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter uppercase italic">Neural_Calibration_Hub</h2>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono">Profile Control Suite v2.8</p>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono">Profile Control Suite v2.9</p>
            </div>
            <button onClick={onClose} className="p-4 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all active:scale-90">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -181,8 +181,20 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
 
             {activeSubTab === 'footprint' && (
               <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-300">
+                {/* Primary Website Integration */}
+                <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 mb-6">
+                  <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-6 font-mono">Primary_Uplink_Node</h4>
+                  <InputField 
+                    label="Primary Domain (Personal Website)" 
+                    value={form.website} 
+                    onChange={(e: any) => setForm({...form, website: e.target.value})} 
+                    icon={ICONS.Globe} 
+                    placeholder="https://yourdomain.com"
+                  />
+                </div>
+
                 <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100">
-                  <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-6 font-mono">Establish_External_Link</h4>
+                  <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-6 font-mono">Establish_External_Resonance</h4>
                   <div className="flex flex-col md:flex-row gap-4">
                     <select 
                       value={newSocial.platform} 
@@ -192,14 +204,14 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
                       {platforms.map(p => <option key={p} value={p}>{p}</option>)}
                     </select>
                     <input 
-                      type="url" placeholder="https://..." value={newSocial.url} onChange={e => setNewSocial({...newSocial, url: e.target.value})}
+                      type="url" placeholder="Paste ecosystem URL here..." value={newSocial.url} onChange={e => setNewSocial({...newSocial, url: e.target.value})}
                       className="flex-1 bg-white border border-slate-200 rounded-xl px-6 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-100 outline-none h-14"
                     />
                     <button 
                       onClick={handleAddSocial}
                       className="px-8 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all h-14"
                     >
-                      Add_Node
+                      Inject_Node
                     </button>
                   </div>
                 </div>
@@ -226,7 +238,6 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
               </div>
             )}
 
-            {/* Other tabs remain similar but with consistent 2026 styling */}
             {activeSubTab === 'media' && (
               <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-300">
                 <div className="space-y-4">
