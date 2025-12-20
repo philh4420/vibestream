@@ -66,6 +66,9 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
     tags: (userData.tags || []).join(', '),
     skills: (userData.skills || []).join(', '),
     hobbies: (userData.hobbies || []).join(', '),
+    statusMessage: userData.statusMessage || '',
+    statusEmoji: userData.statusEmoji || '⚡',
+    trustTier: userData.trustTier || 'Gamma',
     socialLinks: userData.socialLinks || [],
     lifeEvents: userData.lifeEvents || []
   });
@@ -117,7 +120,7 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono">Neural Handshake Protocol v2.6.9_UNIVERSAL</p>
            </div>
            <button onClick={onClose} className="p-6 bg-slate-100 hover:bg-slate-200 rounded-2xl transition-all text-slate-500 active:scale-90">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M6 18L18 6M6 6l12 12" /></svg>
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
            </button>
         </div>
 
@@ -140,6 +143,12 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <InputField label="Identity Name" value={form.displayName} onChange={(e: any) => setForm({...form, displayName: e.target.value})} icon={ICONS.Profile} />
                 <InputField label="Geo Coordinate" value={form.location} onChange={(e: any) => setForm({...form, location: e.target.value})} icon={ICONS.Globe} />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="md:col-span-2">
+                  <InputField label="Status Signal (Message)" value={form.statusMessage} onChange={(e: any) => setForm({...form, statusMessage: e.target.value})} placeholder="Establishing uplink..." />
+                </div>
+                <InputField label="Status Emoji" value={form.statusEmoji} onChange={(e: any) => setForm({...form, statusEmoji: e.target.value})} placeholder="⚡" />
               </div>
               <div className="space-y-3 group">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 font-mono group-focus-within:text-indigo-500 transition-colors">Neural_Bio_Signature</label>
@@ -164,7 +173,15 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
                   options={['He/Him', 'She/Her', 'They/Them', 'Xe/Xem', 'Ze/Zir', 'Any/All', 'Not Disclosed']}
                 />
               </div>
-              <InputField label="Temporal_Origin (DOB)" type="date" value={form.dob} onChange={(e: any) => setForm({...form, dob: e.target.value})} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <InputField label="Temporal_Origin (DOB)" type="date" value={form.dob} onChange={(e: any) => setForm({...form, dob: e.target.value})} />
+                <SelectField 
+                  label="Neural Trust Tier" 
+                  value={form.trustTier} 
+                  onChange={(e: any) => setForm({...form, trustTier: e.target.value})} 
+                  options={['Alpha', 'Beta', 'Gamma']}
+                />
+              </div>
             </div>
           )}
 
@@ -176,12 +193,14 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
                    <div className="bg-white px-10 py-5 rounded-[1.5rem] text-[11px] font-black uppercase tracking-widest shadow-2xl">Update_Environment</div>
                 </div>
                 <input type="file" ref={coverInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'cover')} />
+                {isUploading === 'cover' && <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center text-white text-xs font-black uppercase tracking-widest">Uploading...</div>}
               </div>
               
               <div className="flex items-center gap-12 bg-slate-50/50 p-10 rounded-[3.5rem] border border-slate-100">
                 <div className="relative w-56 h-56 rounded-[3rem] overflow-hidden bg-white border-2 border-dashed border-slate-200 cursor-pointer group/avatar" onClick={() => avatarInputRef.current?.click()}>
                   <img src={form.avatarUrl} className="w-full h-full object-cover group-hover/avatar:scale-110 transition-transform duration-700" alt="" />
                   <input type="file" ref={avatarInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'avatar')} />
+                  {isUploading === 'avatar' && <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center text-white text-[10px] font-black uppercase tracking-widest">Uploading...</div>}
                 </div>
                 <div className="flex-1 space-y-4">
                    <p className="text-3xl font-black text-slate-900 tracking-tighter italic">Avatar Protocol</p>
