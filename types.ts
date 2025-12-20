@@ -120,7 +120,18 @@ export enum AppRoute {
   ADMIN = 'admin',
   PRIVACY = 'privacy',
   TERMS = 'terms',
-  COOKIES = 'cookies'
+  COOKIES = 'cookies',
+  
+  // 2026 Expanded Protocols
+  MESH = 'mesh',             // Friends
+  CLUSTERS = 'clusters',     // Groups
+  STREAM_GRID = 'streams',   // Watch/Video
+  TEMPORAL = 'temporal',     // Memories
+  SAVED = 'saved',           // Saved
+  VERIFIED_NODES = 'nodes',  // Pages
+  GATHERINGS = 'gatherings', // Events
+  SIMULATIONS = 'sims',      // Gaming
+  RESILIENCE = 'resilience'  // Fundraisers
 }
 
 export interface ToastMessage {

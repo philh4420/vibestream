@@ -61,6 +61,20 @@ const MaintenanceOverlay: React.FC = () => (
   </div>
 );
 
+const NodePlaceholder: React.FC<{ title: string, subtitle: string }> = ({ title, subtitle }) => (
+  <div className="py-32 px-10 text-center bg-white rounded-[3rem] border-precision shadow-sm animate-in fade-in slide-in-from-bottom-6 duration-700">
+     <div className="w-24 h-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner border border-slate-100">
+        <div className="w-3 h-3 bg-indigo-500 rounded-full animate-pulse" />
+     </div>
+     <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic mb-2">{title}</h2>
+     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono">{subtitle}</p>
+     <div className="mt-10 flex flex-wrap justify-center gap-4">
+        <div className="px-6 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest font-mono">Status: Initializing</div>
+        <div className="px-6 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-[9px] font-black uppercase tracking-widest font-mono border border-indigo-100">Layer: GB-Node-2.6</div>
+     </div>
+  </div>
+);
+
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -162,7 +176,6 @@ const App: React.FC = () => {
         }
 
         if (db) {
-          // Setup real-time listener for user data
           const userDocRef = doc(db, 'users', user.uid);
           userUnsubscribe = onSnapshot(userDocRef, async (userDoc) => {
             if (userDoc.exists()) {
@@ -174,7 +187,6 @@ const App: React.FC = () => {
               }
               setUserData({ id: userDoc.id, ...data } as VibeUser);
             } else {
-              // Only create if it doesn't exist
               const newProfile: any = {
                 username: `node_${user.uid.slice(0, 5)}`,
                 displayName: user.displayName || 'Unnamed Node',
@@ -289,8 +301,6 @@ const App: React.FC = () => {
     return <MaintenanceOverlay />;
   }
 
-  // CRITICAL: Ensure we only proceed if either we are not authenticated OR userData has successfully loaded.
-  // This prevents the application from attempting to access userData.id before it exists.
   if (isLoading || (isAuthenticated && !userData)) {
     return (
       <div className="h-full w-full bg-[#fcfcfd] flex items-center justify-center">
@@ -307,7 +317,6 @@ const App: React.FC = () => {
   }
 
   const renderContent = () => {
-    // We already checked for userData existence above, so it is safe to use here.
     const user = userData!;
     
     switch (activeRoute) {
@@ -325,6 +334,27 @@ const App: React.FC = () => {
         return <TermsPage />;
       case AppRoute.COOKIES:
         return <CookiesPage />;
+      
+      // New 2026 Expanded Route Handlers
+      case AppRoute.MESH:
+        return <NodePlaceholder title="Neural Mesh" subtitle="Synchronizing network identity bonds..." />;
+      case AppRoute.CLUSTERS:
+        return <NodePlaceholder title="Neural Clusters" subtitle="Calibrating group frequency protocols..." />;
+      case AppRoute.STREAM_GRID:
+        return <NodePlaceholder title="Stream Grid" subtitle="Buffering direct visual streams..." />;
+      case AppRoute.SAVED:
+        return <NodePlaceholder title="Saved Signals" subtitle="Retrieving fragments from temporal vault..." />;
+      case AppRoute.VERIFIED_NODES:
+        return <NodePlaceholder title="Verified Nodes" subtitle="Authenticating entity nodes..." />;
+      case AppRoute.GATHERINGS:
+        return <NodePlaceholder title="Gatherings" subtitle="Calculating localized pulse events..." />;
+      case AppRoute.SIMULATIONS:
+        return <NodePlaceholder title="Simulations" subtitle="Initializing neural entertainment environment..." />;
+      case AppRoute.RESILIENCE:
+        return <NodePlaceholder title="Resilience Support" subtitle="Establishing humanitarian resonance uplink..." />;
+      case AppRoute.TEMPORAL:
+        return <NodePlaceholder title="Temporal Fragments" subtitle="Accessing historical signal database..." />;
+
       default:
         return (
           <div className="space-y-6 animate-in fade-in duration-700">
