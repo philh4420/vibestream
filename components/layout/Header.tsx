@@ -117,10 +117,10 @@ export const Header: React.FC<HeaderProps> = ({
         {/* RIGHT: Status & Profile Dropdown */}
         <div className="flex items-center gap-3 md:gap-4 justify-end">
           
-          {/* Signal Node (Image 2 style: Status Message + Presence) - Always visible on small screens when sidebar is hidden */}
+          {/* Signal Node Pill (Image 1 Refined Positioning) */}
           <button 
             onClick={() => setIsHubOpen(true)}
-            className="flex xl:hidden items-center gap-3 p-1.5 pr-4 bg-white border border-slate-100 rounded-2xl hover:shadow-md transition-all active:scale-95 group shrink-0"
+            className="flex items-center gap-3 p-1.5 pr-4 bg-white border border-slate-100 rounded-2xl hover:shadow-md transition-all active:scale-95 group shrink-0"
           >
             <div className="relative">
               <div className="w-9 h-9 bg-slate-50 rounded-xl flex items-center justify-center text-xl shadow-inner">
@@ -128,8 +128,8 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
               <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${PRESENCE_DOTS[userData?.presenceStatus || 'Online']}`} />
             </div>
-            <div className="text-left hidden sm:block">
-              <p className="text-[11px] font-black text-slate-900 leading-tight truncate max-w-[80px] md:max-w-[120px]">
+            <div className="text-left hidden xs:block">
+              <p className="text-[11px] font-black text-[#1e293b] leading-tight truncate max-w-[80px] md:max-w-[120px]">
                 {userData?.statusMessage || 'Establish Signal'}
               </p>
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono mt-0.5">
@@ -139,7 +139,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           <div className="relative">
-            {/* PROFILE TRIGGER (Exact Pill Design: Image 3 'Phil' style) */}
+            {/* PROFILE TRIGGER PILL (Image 3 Style: 'Phil') */}
             <button 
               onClick={() => setIsSystemMenuOpen(!isSystemMenuOpen)}
               className="flex items-center gap-3 p-1.5 pr-4 rounded-full bg-white border border-slate-100 shadow-[0_2px_15px_rgba(0,0,0,0.03)] hover:shadow-md transition-all duration-300 active:scale-95"
@@ -163,7 +163,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <div className="fixed inset-0 z-10" onClick={() => setIsSystemMenuOpen(false)}></div>
                 <div className="absolute right-0 mt-3 w-80 bg-white rounded-[2.5rem] shadow-[0_30px_90px_-20px_rgba(0,0,0,0.25)] border border-precision overflow-hidden z-20 animate-in zoom-in-95 slide-in-from-top-4 duration-500">
                   <div className="p-5 space-y-3">
-                    {/* Status Header Block in Dropdown */}
+                    {/* Active Status Display in Dropdown (Visible when Right Sidebar is Hidden) */}
                     <button 
                       onClick={() => { setIsHubOpen(true); setIsSystemMenuOpen(false); }}
                       className="w-full flex items-center gap-4 p-4 bg-slate-50/50 rounded-2xl hover:bg-slate-50 transition-all text-left border border-slate-100 group"
@@ -177,7 +177,7 @@ export const Header: React.FC<HeaderProps> = ({
                       <div className="flex-1 min-w-0">
                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono mb-0.5">Active_Signal</p>
                          <p className="text-[12px] font-bold text-slate-900 truncate tracking-tight italic">
-                           {userData?.statusMessage || 'Updating features...'}
+                           {userData?.statusMessage || 'Establishing broadcast...'}
                          </p>
                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">
                            {userData?.presenceStatus}
@@ -195,13 +195,13 @@ export const Header: React.FC<HeaderProps> = ({
                       <img src={userData?.avatarUrl} className="w-10 h-10 rounded-xl object-cover border border-white/20" alt="" />
                       <div className="text-left overflow-hidden">
                         <p className="font-black text-sm tracking-tight truncate">{userData?.displayName}</p>
-                        <p className="text-[9px] font-bold uppercase tracking-widest font-mono opacity-80">Full Profile</p>
+                        <p className="text-[9px] font-bold uppercase tracking-widest font-mono opacity-80">Full Profile Access</p>
                       </div>
                     </button>
                   </div>
                   
                   <div className="px-5 pb-5 space-y-1">
-                    <div className="px-4 py-2 text-[10px] font-black text-slate-300 uppercase tracking-widest font-mono">Infrastructure</div>
+                    <div className="px-4 py-2 text-[10px] font-black text-slate-300 uppercase tracking-widest font-mono">Infrastructure Nodes</div>
                     <div className="space-y-1">
                       {regions.map(r => (
                         <button 
@@ -221,7 +221,7 @@ export const Header: React.FC<HeaderProps> = ({
                       onClick={() => { onLogout(); setIsSystemMenuOpen(false); }}
                       className="w-full flex items-center gap-3 px-4 py-4 text-rose-500 hover:bg-rose-50 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest"
                     >
-                      Log Out Session
+                      Terminate Grid Session
                     </button>
                   </div>
                 </div>
@@ -231,7 +231,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* NEURAL STATUS HUB (Matches Reference Screenshot Style) */}
+      {/* NEURAL STATUS HUB (Overlay UI - Matches Grid Modality Screenshot) */}
       {isHubOpen && (
         <div className="fixed inset-0 z-[600] flex items-center justify-center p-6 animate-in fade-in duration-400">
            <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-3xl" onClick={() => setIsHubOpen(false)}></div>
@@ -250,20 +250,20 @@ export const Header: React.FC<HeaderProps> = ({
                         value={localStatus.statusMessage}
                         onChange={(e) => setLocalStatus(prev => ({ ...prev, statusMessage: e.target.value }))}
                         onKeyDown={(e) => e.key === 'Enter' && setIsHubOpen(false)}
-                        placeholder="What's happening?"
+                        placeholder="Neural broadcast..."
                         className="w-full bg-transparent border-none p-0 text-2xl font-black text-slate-900 focus:ring-0 placeholder:text-slate-100 tracking-tighter"
                       />
                     </div>
                  </div>
 
-                 {/* Modality Section (Exact Screenshot Style) */}
+                 {/* Modality Section (Exact Image 4 Style) */}
                  <div className="space-y-6 mb-12">
-                    <h4 className="text-[11px] font-black text-slate-300 uppercase tracking-[0.4em] font-mono ml-1">Grid_Modality</h4>
+                    <h4 className="text-[11px] font-black text-[#94a3b8] uppercase tracking-[0.4em] font-mono ml-1">Grid_Modality</h4>
                     <div className="grid grid-cols-2 gap-4">
                       {(['Online', 'Focus', 'Deep Work', 'Invisible'] as const).map(status => (
                         <button 
                           key={status}
-                          onClick={() => updateNeuralStatus({ presenceStatus: status })}
+                          onClick={() => setLocalStatus(prev => ({ ...prev, presenceStatus: status }))}
                           className={`h-16 rounded-[2rem] border transition-all flex items-center gap-3 px-6 active:scale-95 ${localStatus.presenceStatus === status ? 'bg-[#0f172a] border-[#0f172a] text-white shadow-xl' : 'bg-white border-slate-100 text-[#94a3b8] hover:border-slate-200'}`}
                         >
                           <div className={`w-2.5 h-2.5 rounded-full ${PRESENCE_DOTS[status]}`} />
@@ -275,9 +275,9 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                  </div>
 
-                 {/* Confirm Button (Exact Screenshot Style) */}
+                 {/* Confirm Button (Exact Image 4 Style) */}
                  <button 
-                  onClick={() => { updateNeuralStatus({ statusMessage: localStatus.statusMessage }); setIsHubOpen(false); }}
+                  onClick={() => { updateNeuralStatus({ statusMessage: localStatus.statusMessage, presenceStatus: localStatus.presenceStatus as PresenceStatus }); setIsHubOpen(false); }}
                   className="w-full py-6 bg-[#4f46e5] text-white rounded-[2rem] font-black text-[12px] uppercase tracking-[0.4em] shadow-2xl hover:bg-indigo-700 transition-all active:scale-95"
                  >
                    {isUpdatingStatus ? 'Synchronising...' : 'Synchronise_Grid_State'}
