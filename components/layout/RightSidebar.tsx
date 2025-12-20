@@ -26,13 +26,16 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
 
   // System Time & Uptime Logic
   useEffect(() => {
-    const sessionStart = parseInt(localStorage.getItem('vibestream_session_start_timestamp') || Date.now().toString(), 10);
+    const sessionStartValue = localStorage.getItem('vibestream_session_start_timestamp');
+    const sessionStart = sessionStartValue ? parseInt(sessionStartValue, 10) : Date.now();
     
     const timer = setInterval(() => {
       const now = new Date();
       setSystemTime(now);
       
       const diff = Math.floor((now.getTime() - sessionStart) / 1000);
+      if (isNaN(diff)) return;
+
       const h = Math.floor(diff / 3600).toString().padStart(2, '0');
       const m = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
       const s = (diff % 60).toString().padStart(2, '0');
@@ -48,8 +51,13 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
     setIsLoading(true);
 
     const loadAtmosphericData = async () => {
-      const weatherData = await fetchWeather({ query: userData?.location || 'London' });
-      setWeather(weatherData);
+      try {
+        const weatherData = await fetchWeather({ query: userData?.location || 'London' });
+        setWeather(weatherData);
+      } catch (err) {
+        console.warn("Atmospheric sync interrupted");
+        setWeather(null);
+      }
     };
     loadAtmosphericData();
     
@@ -115,7 +123,14 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
               {weather ? (
                 <div className="flex items-center justify-center gap-2">
                   <span className="text-lg font-black text-white font-mono">{weather.temp}°C</span>
-                  <img src={`https://openweathermap.org/img/wn/${weather.icon}.png`} className="w-6 h-6 object-contain brightness-200" alt="" />
+                  {weather.icon && (
+                    <img 
+                      src={`https://openweathermap.org/img/wn/${weather.icon}.png`} 
+                      className="w-6 h-6 object-contain brightness-200" 
+                      alt="" 
+                      onError={(e) => (e.currentTarget.style.display = 'none')}
+                    />
+                  )}
                 </div>
               ) : (
                 <p className="text-xs font-bold text-slate-500 text-center animate-pulse">SYNCING...</p>
@@ -158,7 +173,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
                     </p>
                     <div className="flex items-center justify-between">
                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] font-mono">
-                         {post.likes.toLocaleString('en-GB')} PULSES
+                         {(post.likes || 0).toLocaleString('en-GB')} PULSES
                        </span>
                        <div className="flex -space-x-2">
                           <div className="w-5 h-5 rounded-full border-2 border-white bg-indigo-100" />
@@ -198,7 +213,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
                   <div className="flex items-center gap-4 overflow-hidden">
                     <div className="relative shrink-0">
                       <div className="p-1 bg-white rounded-2xl shadow-sm border border-slate-100 transition-transform group-hover:rotate-3">
-                        <img src={node.avatarUrl} className="w-11 h-11 rounded-xl object-cover" alt="" />
+                        <img src={node.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${node.id}`} className="w-11 h-11 rounded-xl object-cover" alt="" />
                       </div>
                       <div className="absolute -bottom-1 -right-1">
                          <div className={`w-3.5 h-3.5 rounded-full border-[3px] border-white shadow-sm ${node.presenceStatus ? PRESENCE_DOTS[node.presenceStatus] : 'bg-slate-300'} ${node.presenceStatus === 'Online' ? 'animate-pulse' : ''}`} />
@@ -206,7 +221,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
                     </div>
                     <div className="text-left overflow-hidden">
                        <p className="text-sm font-black text-slate-900 truncate tracking-tight group-hover:text-indigo-600 transition-colors">
-                         {node.displayName}
+                         {node.displayName || 'Unknown Node'}
                        </p>
                        <div className="flex items-center gap-1.5 mt-0.5">
                          <span className="text-[10px]">{node.statusEmoji || '⚡'}</span>
