@@ -47,127 +47,136 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ userData, onEdit, 
   const currentPresence = PRESENCE_CONFIG[userData.presenceStatus || 'Online'];
 
   return (
-    <div className="flex flex-col gap-6 w-full animate-in fade-in duration-1000">
+    <div className="flex flex-col gap-10 w-full max-w-[160rem] mx-auto animate-in fade-in duration-1000">
       
-      {/* Top Section: Main Identity + Telemetry Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+      {/* GRID_CORE: 12-Column Responsive Matrix */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-stretch">
         
-        {/* BLOCK 1: IDENTITY PANEL (Matches left side of image) */}
-        <div className="lg:col-span-8 bg-white border border-precision rounded-[4rem] p-10 md:p-16 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.04)] relative overflow-hidden flex flex-col justify-center">
-          <div className="flex flex-col md:flex-row gap-12 items-center md:items-start relative z-10">
-            {/* Avatar Cluster */}
+        {/* BLOCK_01: IDENTITY_CLUSTER (Col 1-8) */}
+        <div className="lg:col-span-8 bg-white border border-precision rounded-[4.5rem] p-12 md:p-20 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.06)] relative overflow-hidden flex flex-col justify-center min-h-[450px]">
+          {/* Subtle Neural Gradient Background */}
+          <div className="absolute top-0 right-0 w-[60%] h-[60%] bg-indigo-50/20 blur-[150px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+          
+          <div className="flex flex-col md:flex-row gap-16 items-center md:items-start relative z-10">
+            {/* Avatar Architecture */}
             <div className="relative shrink-0">
-              <div className="absolute -inset-4 bg-slate-100/50 rounded-[3.5rem] blur-xl opacity-50" />
+              <div className="absolute -inset-6 bg-slate-100/40 rounded-[4.5rem] blur-2xl opacity-50" />
               <img 
                 src={userData.avatarUrl} 
-                className="w-40 h-40 md:w-56 md:h-56 rounded-[3.2rem] object-cover border-8 border-white shadow-2xl relative z-10" 
+                className="w-48 h-48 md:w-64 md:h-64 rounded-[4rem] object-cover border-[10px] border-white shadow-2xl relative z-10" 
                 alt={userData.displayName} 
               />
-              <div className="absolute bottom-2 right-2 w-14 h-14 bg-slate-900 rounded-2xl p-1 shadow-2xl z-20 border-4 border-white flex items-center justify-center">
-                <div className={`w-3.5 h-3.5 rounded-full ${currentPresence.color} shadow-[0_0_10px_rgba(255,255,255,0.5)] animate-pulse`} />
+              <div className="absolute bottom-4 right-4 w-16 h-16 bg-slate-900 rounded-3xl p-1 shadow-2xl z-20 border-4 border-white flex items-center justify-center">
+                <div className={`w-4 h-4 rounded-full ${currentPresence.color} shadow-[0_0_15px_rgba(255,255,255,0.4)] animate-pulse`} />
               </div>
             </div>
 
-            {/* Identity Info */}
-            <div className="flex-1 space-y-8 text-center md:text-left">
-              <div className="space-y-4">
-                <div className="flex items-center justify-center md:justify-start gap-4 flex-wrap">
-                  <h1 className="text-5xl md:text-8xl font-black text-slate-900 tracking-tighter italic leading-none">
-                    {userData.displayName.split(' ').map((word, i) => (
-                      <span key={i} className="block">{word}</span>
-                    ))}
-                  </h1>
-                </div>
+            {/* Identity Typography */}
+            <div className="flex-1 space-y-10 text-center md:text-left">
+              <div className="space-y-6">
+                <h1 className="text-6xl md:text-[clamp(4rem,8vw,9rem)] font-black text-slate-950 tracking-[-0.04em] italic leading-[0.9] flex flex-col">
+                  {userData.displayName.split(' ').map((word, i) => (
+                    <span key={i}>{word}</span>
+                  ))}
+                </h1>
                 
-                <div className="flex flex-wrap justify-center md:justify-start gap-3 pt-2">
-                  <span className="px-5 py-2.5 bg-slate-50 text-[10px] font-black uppercase tracking-[0.3em] rounded-xl text-slate-400 font-mono border border-slate-100">@{userData.username}</span>
-                  <span className="px-5 py-2.5 bg-indigo-50 text-[10px] font-black uppercase tracking-[0.3em] rounded-xl text-indigo-500 font-mono italic border border-indigo-100/50">{userData.role?.toUpperCase()}</span>
-                  <span className="px-5 py-2.5 bg-slate-900 text-[10px] font-black uppercase tracking-[0.3em] rounded-xl text-white font-mono">{userData.pronouns?.toUpperCase() || 'HE/HIM'}</span>
+                <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-4">
+                  <span className="px-6 py-3 bg-slate-50 text-[11px] font-black uppercase tracking-[0.4em] rounded-2xl text-slate-400 font-mono border border-slate-100">@{userData.username.toUpperCase()}</span>
+                  <div className="relative group">
+                    <span className="px-6 py-3 bg-indigo-50 text-[11px] font-black uppercase tracking-[0.4em] rounded-2xl text-indigo-500 font-mono italic border border-indigo-100/50 flex items-center gap-2">
+                       {userData.role?.toUpperCase()}
+                       <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse" />
+                    </span>
+                  </div>
+                  <span className="px-6 py-3 bg-slate-950 text-[11px] font-black uppercase tracking-[0.4em] rounded-2xl text-white font-mono">{userData.pronouns?.toUpperCase() || 'HE/HIM'}</span>
                 </div>
               </div>
 
-              <p className="text-slate-500 text-xl md:text-2xl font-medium leading-relaxed italic max-w-xl mx-auto md:mx-0">
+              <p className="text-slate-500 text-2xl md:text-3xl font-medium leading-relaxed italic max-w-2xl mx-auto md:mx-0 opacity-80">
                 {userData.bio || "A aspiring frontend web designer that loves to learn new things"}
               </p>
 
-              <div className="flex items-center justify-center md:justify-start gap-5 pt-4">
+              <div className="flex items-center justify-center md:justify-start gap-6 pt-6">
                 {isOwnProfile && (
                   <button 
                     onClick={onEdit}
-                    className="h-20 px-12 bg-slate-950 text-white rounded-[2rem] font-black text-[11px] uppercase tracking-[0.4em] shadow-2xl shadow-slate-200 hover:bg-black transition-all active:scale-95 flex items-center gap-6 group"
+                    className="h-24 px-16 bg-slate-950 text-white rounded-[2.5rem] font-black text-xs uppercase tracking-[0.4em] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] hover:bg-black transition-all active:scale-95 flex items-center gap-8 group"
                   >
-                    <ICONS.Settings />
+                    <div className="scale-125 group-hover:rotate-90 transition-transform duration-700"><ICONS.Settings /></div>
                     CALIBRATE_ID
                   </button>
                 )}
-                <button className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-[2rem] hover:bg-indigo-100 transition-all active:scale-95 flex items-center justify-center border border-indigo-100 group">
-                  <div className="scale-125"><ICONS.Messages /></div>
+                <button className="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-[2.5rem] hover:bg-indigo-100 transition-all active:scale-95 flex items-center justify-center border border-indigo-100 group shadow-lg shadow-indigo-100/50">
+                  <div className="scale-[1.75] group-hover:scale-110 transition-transform"><ICONS.Messages /></div>
                 </button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* BLOCK 2 & 3: RIGHT TELEMETRY STACK */}
-        <div className="lg:col-span-4 flex flex-col gap-8">
+        {/* BLOCK_02 & BLOCK_03: TELEMETRY_STACK (Col 9-12) */}
+        <div className="lg:col-span-4 flex flex-col gap-10">
           
-          {/* STATS HUB (Matches Top-Right block) */}
-          <div className="bg-slate-950 rounded-[4rem] p-12 text-white flex justify-between items-center shadow-2xl relative overflow-hidden flex-1 min-h-[240px]">
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-transparent pointer-events-none" />
+          {/* STATS_NODE: Dark Minimalist (Matches Image) */}
+          <div className="bg-slate-950 rounded-[4.5rem] p-16 text-white flex justify-between items-center shadow-2xl relative overflow-hidden flex-1 min-h-[260px]">
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/15 via-transparent to-transparent pointer-events-none" />
             {[
               { label: 'SIGNALS', val: postCount },
               { label: 'CONN', val: userData.followers },
               { label: 'FOLLOW', val: userData.following }
             ].map((stat) => (
-              <div key={stat.label} className="flex flex-col items-center relative z-10 text-center flex-1">
-                <p className="text-6xl md:text-7xl font-black tracking-tighter leading-none mb-4">{stat.val}</p>
+              <div key={stat.label} className="flex flex-col items-center relative z-10 text-center flex-1 group/stat">
+                <p className="text-7xl md:text-8xl font-black tracking-[-0.05em] leading-none mb-4 group-hover/stat:scale-110 transition-transform duration-500">{stat.val}</p>
                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em] font-mono">{stat.label}</p>
               </div>
             ))}
           </div>
 
-          {/* ATMOSPHERIC LINK (Matches Bottom-Right block) */}
-          <div className="bg-white border border-precision rounded-[4rem] p-12 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.03)] overflow-hidden relative flex-1 min-h-[240px] flex flex-col justify-center">
+          {/* ATMOSPHERIC_LINK: Surgical Precision Weather (Matches Image) */}
+          <div className="bg-white border border-precision rounded-[4.5rem] p-16 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.04)] overflow-hidden relative flex-1 min-h-[320px] flex flex-col justify-center">
             
-            {/* Meta Labels - Precise Corner Anchoring */}
-            <p className="absolute top-12 left-12 text-[11px] font-black text-slate-300 uppercase tracking-[0.6em] font-mono leading-none">
+            {/* CORNER_ANCHORS: System Telemetry */}
+            <p className="absolute top-16 left-16 text-[11px] font-black text-slate-300 uppercase tracking-[0.6em] font-mono leading-none select-none">
               ATMOSPHERIC_LINK
             </p>
 
-            <p className="absolute bottom-12 left-12 text-[11px] font-black text-indigo-500 uppercase tracking-[0.4em] font-mono leading-none">
+            <p className="absolute bottom-16 left-16 text-[11px] font-black text-indigo-500 uppercase tracking-[0.5em] font-mono leading-none select-none">
               LOCAL_PRECISION
             </p>
 
             {weather && (
-              <p className="absolute bottom-12 right-12 text-[11px] font-black text-slate-300 uppercase tracking-[0.6em] font-mono leading-none">
+              <p className="absolute bottom-16 right-16 text-[11px] font-black text-slate-300 uppercase tracking-[0.6em] font-mono leading-none select-none">
                 {weather.condition.toUpperCase()}
               </p>
             )}
 
-            {/* Primary Telemetry */}
-            <div className="flex items-center justify-between w-full">
-              <div className="pt-2">
-                <p className="text-8xl md:text-9xl font-black text-slate-900 tracking-tighter italic leading-none select-none">
+            {/* CENTRAL_DATA: Time & Temperature (Fluid Scaling) */}
+            <div className="flex items-center justify-between w-full relative z-10">
+              <div className="pt-4">
+                <p className="text-8xl md:text-[clamp(5rem,10vw,11rem)] font-black text-slate-950 tracking-[-0.05em] italic leading-none select-none">
                   {time}
                 </p>
               </div>
               
-              <div className="flex flex-col items-end pt-2">
+              <div className="flex flex-col items-end pt-4">
                 {weather ? (
                   <>
+                    {/* Background Visual Artifact */}
                     <img 
                       src={`https://openweathermap.org/img/wn/${weather.icon}@4x.png`} 
-                      className="w-24 h-24 md:w-32 md:h-32 -mb-4 -mr-4 opacity-10 blur-[1px] absolute top-8 right-8" 
+                      className="w-32 h-32 md:w-48 md:h-48 -mb-6 -mr-6 opacity-[0.07] blur-[2px] absolute top-4 right-4 pointer-events-none select-none" 
                       alt="" 
                     />
-                    <div className="relative z-10 flex items-start">
-                      <span className="text-8xl md:text-9xl font-black text-slate-900 tracking-tighter leading-none">{weather.temp}</span>
-                      <span className="text-4xl md:text-5xl font-black text-slate-900 mt-2">°</span>
+                    <div className="relative flex items-start">
+                      <span className="text-8xl md:text-[clamp(5rem,10vw,10rem)] font-black text-slate-950 tracking-[-0.05em] leading-none select-none">
+                        {weather.temp}
+                      </span>
+                      <span className="text-5xl md:text-6xl font-black text-slate-950 mt-2 select-none">°</span>
                     </div>
                   </>
                 ) : (
-                  <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center animate-pulse border border-slate-100">
-                    <div className="w-8 h-8 border-4 border-slate-200 border-t-indigo-500 rounded-full animate-spin" />
+                  <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center animate-pulse border border-slate-100">
+                    <div className="w-10 h-10 border-4 border-slate-200 border-t-indigo-500 rounded-full animate-spin" />
                   </div>
                 )}
               </div>
@@ -176,29 +185,32 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ userData, onEdit, 
         </div>
       </div>
 
-      {/* Persistent Status Bar (Bottom Layout) */}
-      <div className="w-full bg-indigo-600 rounded-[3.5rem] p-8 md:p-10 text-white flex flex-col lg:flex-row items-center justify-between group shadow-2xl relative overflow-hidden mt-2">
-        <div className="absolute top-0 right-0 p-16 opacity-10 pointer-events-none scale-150"><ICONS.Globe /></div>
+      {/* FOOTER_PROTOCOL: Neural Status Bar (Matches Bottom Section) */}
+      <div className="w-full bg-indigo-600 rounded-[4.5rem] p-10 md:p-14 text-white flex flex-col lg:flex-row items-center justify-between group shadow-[0_50px_100px_-20px_rgba(79,70,229,0.3)] relative overflow-hidden">
+        {/* Aesthetic Background Artifacts */}
+        <div className="absolute top-0 right-0 p-24 opacity-10 pointer-events-none scale-[2] group-hover:rotate-12 transition-transform duration-[3s]"><ICONS.Globe /></div>
+        <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
         
-        <div className="flex items-center gap-8 md:gap-12 mb-8 lg:mb-0 w-full lg:w-auto">
-           <div className="w-20 h-20 md:w-24 md:h-24 bg-white/10 backdrop-blur-3xl rounded-[2rem] flex items-center justify-center text-5xl shadow-inner border border-white/20 shrink-0">
+        <div className="flex items-center gap-10 md:gap-14 mb-10 lg:mb-0 w-full lg:w-auto relative z-10">
+           <div className="w-24 h-24 md:w-32 md:h-32 bg-white/10 backdrop-blur-[60px] rounded-[3rem] flex items-center justify-center text-6xl shadow-inner border border-white/20 shrink-0 group-hover:scale-105 transition-all duration-700">
              {userData.statusEmoji || '⚡'}
            </div>
            <div className="flex-1">
-              <p className="text-[11px] font-black text-indigo-200 uppercase tracking-[0.5em] font-mono mb-3 opacity-80">NEURAL_SIGNAL</p>
-              <p className="text-2xl md:text-4xl font-black italic tracking-tight leading-none text-white selection:bg-white/20">
+              <p className="text-[12px] font-black text-indigo-200 uppercase tracking-[0.6em] font-mono mb-4 opacity-80">NEURAL_SIGNAL_OVR</p>
+              <p className="text-3xl md:text-5xl font-black italic tracking-[-0.02em] leading-none text-white selection:bg-white/20">
                 "{userData.statusMessage || 'Updating features on VibeStream'}"
               </p>
            </div>
         </div>
 
-        <div className="flex items-center gap-10 px-12 py-6 bg-black/15 rounded-[2.5rem] border border-white/10 backdrop-blur-md shadow-lg w-full lg:w-auto justify-between lg:justify-start">
-           <div className="flex items-center gap-5">
-              <div className={`w-4 h-4 rounded-full ${currentPresence.color} animate-pulse shadow-[0_0_25px_white]`} />
-              <span className="text-xs md:text-sm font-black uppercase tracking-[0.4em] font-mono">{userData.presenceStatus?.toUpperCase() || 'INVISIBLE'}</span>
+        {/* Status Telemetry Pod */}
+        <div className="flex items-center gap-12 px-14 py-8 bg-black/20 rounded-[3rem] border border-white/10 backdrop-blur-3xl shadow-2xl w-full lg:w-auto justify-between lg:justify-start relative z-10 group/pod hover:bg-black/30 transition-colors">
+           <div className="flex items-center gap-6">
+              <div className={`w-5 h-5 rounded-full ${currentPresence.color} animate-pulse shadow-[0_0_30px_white]`} />
+              <span className="text-sm md:text-base font-black uppercase tracking-[0.5em] font-mono">{userData.presenceStatus?.toUpperCase() || 'INVISIBLE'}</span>
            </div>
-           <div className="w-px h-10 bg-white/20 hidden md:block" />
-           <p className="text-[11px] font-black uppercase tracking-[0.4em] opacity-80 font-mono hidden md:block">NODE_STABLE_GB</p>
+           <div className="w-px h-12 bg-white/20 hidden md:block" />
+           <p className="text-[11px] font-black uppercase tracking-[0.5em] opacity-80 font-mono hidden md:block">NODE_STABLE_GB_v2.6</p>
         </div>
       </div>
 
