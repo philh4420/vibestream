@@ -147,7 +147,9 @@ const App: React.FC = () => {
       return;
     }
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    let userUnsubscribe: (() => void) | null = null;
+
+    const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setCurrentUser(user);
         setIsAuthenticated(true);
@@ -160,10 +162,9 @@ const App: React.FC = () => {
         }
 
         if (db) {
-          try {
-            const userDocRef = doc(db, 'users', user.uid);
-            const userDoc = await getDoc(userDocRef);
-            
+          // Setup real-time listener for user data
+          const userDocRef = doc(db, 'users', user.uid);
+          userUnsubscribe = onSnapshot(userDocRef, async (userDoc) => {
             if (userDoc.exists()) {
               const data = userDoc.data() as any;
               if (data.isSuspended) {
@@ -173,6 +174,7 @@ const App: React.FC = () => {
               }
               setUserData({ id: userDoc.id, ...data } as VibeUser);
             } else {
+              // Only create if it doesn't exist
               const newProfile: any = {
                 username: `node_${user.uid.slice(0, 5)}`,
                 displayName: user.displayName || 'Unnamed Node',
@@ -185,15 +187,14 @@ const App: React.FC = () => {
                 location: '',
                 joinedAt: new Date().toISOString(),
                 badges: [],
-                trustTier: 'Gamma'
+                trustTier: 'Gamma',
+                presenceStatus: 'Online',
+                statusEmoji: '⚡',
+                statusMessage: ''
               };
               await setDoc(doc(db, 'users', user.uid), newProfile);
-              setUserData({ id: user.uid, ...newProfile } as VibeUser);
-              addToast("Neural Profile Initialised", "success");
             }
-          } catch (e) {
-            console.error("User Data Sync Failure:", e);
-          }
+          });
         }
       } else {
         setIsAuthenticated(false);
@@ -201,11 +202,15 @@ const App: React.FC = () => {
         setUserData(null);
         localStorage.removeItem(SESSION_KEY);
         localStorage.removeItem(SESSION_START_KEY);
+        if (userUnsubscribe) userUnsubscribe();
       }
       setIsLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      authUnsubscribe();
+      if (userUnsubscribe) userUnsubscribe();
+    };
   }, []);
 
   useEffect(() => {

@@ -234,17 +234,17 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* NEURAL STATUS HUB (Fixed Position - Drops below header on Desktop & Mobile) */}
+      {/* NEURAL STATUS HUB (Fixed Position - Drops below header - Wider for No-Scroll) */}
       {isHubOpen && (
         <div className="fixed inset-0 z-[600] flex items-start justify-center p-6 pt-[calc(var(--header-h)+3.5rem)] animate-in fade-in duration-400">
            {/* Dismiss Backdrop */}
            <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-3xl" onClick={() => setIsHubOpen(false)}></div>
            
-           <div className="relative bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] border border-white animate-in zoom-in-95 slide-in-from-top-12 duration-500 overflow-hidden max-h-[82vh] flex flex-col">
-              <div className="relative z-10 overflow-y-auto no-scrollbar pb-4 flex-1">
+           <div className="relative bg-white w-full max-w-2xl rounded-[4rem] p-10 md:p-14 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] border border-white animate-in zoom-in-95 slide-in-from-top-12 duration-500 overflow-hidden max-h-[85vh] flex flex-col">
+              <div className="relative z-10 overflow-y-auto no-scrollbar pb-6 flex-1">
                  {/* Current Status Message Entry */}
-                 <div className="flex items-center gap-6 mb-12 pt-4">
-                    <div className="w-20 h-20 bg-slate-50 border border-slate-100 rounded-[2.2rem] flex items-center justify-center text-5xl shadow-inner shrink-0 transition-transform active:scale-90">
+                 <div className="flex items-center gap-8 mb-12 pt-4">
+                    <div className="w-24 h-24 bg-slate-50 border border-slate-100 rounded-[2.5rem] flex items-center justify-center text-6xl shadow-inner shrink-0 transition-transform active:scale-90">
                       {localStatus.statusEmoji}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -253,29 +253,29 @@ export const Header: React.FC<HeaderProps> = ({
                         type="text"
                         value={localStatus.statusMessage}
                         onChange={(e) => setLocalStatus(prev => ({ ...prev, statusMessage: e.target.value }))}
-                        onKeyDown={(e) => e.key === 'Enter' && setIsHubOpen(false)}
+                        onKeyDown={(e) => e.key === 'Enter' && updateNeuralStatus({})}
                         placeholder="Update neural broadcast..."
-                        className="w-full bg-transparent border-none p-0 text-2xl font-black text-slate-900 focus:ring-0 placeholder:text-slate-100 tracking-tighter"
+                        className="w-full bg-transparent border-none p-0 text-3xl font-black text-slate-900 focus:ring-0 placeholder:text-slate-100 tracking-tighter"
                       />
                     </div>
                  </div>
 
-                 {/* GRID MODALITY (Exact reproduction of 'Focus' Screenshot) */}
+                 {/* GRID MODALITY (Wider Grid to Avoid Scroll) */}
                  <div className="space-y-6 mb-14">
                     <h4 className="text-[12px] font-black text-[#94a3b8] uppercase tracking-[0.4em] font-mono ml-1">Grid_Modality</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      {(['Online', 'Focus', 'Deep Work', 'Invisible'] as const).map(status => (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {(['Online', 'Focus', 'Deep Work', 'Away', 'In-Transit', 'Invisible', 'Syncing'] as const).map(status => (
                         <button 
                           key={status}
                           onClick={() => setLocalStatus(prev => ({ 
                             ...prev, 
                             presenceStatus: status,
-                            statusEmoji: STATUS_EMOJI_MAP[status]
+                            statusEmoji: STATUS_EMOJI_MAP[status] || prev.statusEmoji
                           }))}
-                          className={`h-16 rounded-[2.2rem] border transition-all flex items-center gap-3 px-6 active:scale-95 ${localStatus.presenceStatus === status ? 'bg-[#0f172a] border-[#0f172a] text-white shadow-xl' : 'bg-white border-slate-100 text-[#94a3b8] hover:border-slate-200 shadow-sm'}`}
+                          className={`h-16 rounded-[2.2rem] border transition-all flex items-center gap-3 px-5 active:scale-95 ${localStatus.presenceStatus === status ? 'bg-[#0f172a] border-[#0f172a] text-white shadow-xl' : 'bg-white border-slate-100 text-[#94a3b8] hover:border-slate-200 shadow-sm'}`}
                         >
                           <div className={`w-2.5 h-2.5 rounded-full ${PRESENCE_DOTS[status]}`} />
-                          <span className="text-[11px] font-black uppercase tracking-widest font-mono">
+                          <span className="text-[10px] font-black uppercase tracking-widest font-mono">
                             {status}
                           </span>
                         </button>
@@ -283,15 +283,15 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                  </div>
 
-                 {/* Signal Cortex (Emoji Grid) */}
-                 <div className="space-y-5 mb-14 pt-8 border-t border-slate-50">
+                 {/* Signal cortex (Emoji Grid - Wider) */}
+                 <div className="space-y-6 mb-14 pt-8 border-t border-slate-50">
                     <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] font-mono ml-1">Signal_Cortex</h4>
-                    <div className="grid grid-cols-6 gap-3">
+                    <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-11 gap-4">
                       {IDENTITY_SIGNALS.map(signal => (
                         <button 
                           key={signal}
                           onClick={() => setLocalStatus(prev => ({ ...prev, statusEmoji: signal }))}
-                          className={`aspect-square rounded-full flex items-center justify-center text-xl transition-all active:scale-90 ${localStatus.statusEmoji === signal ? 'bg-indigo-50 border-indigo-200 text-indigo-600 scale-110 ring-2 ring-indigo-500/20 shadow-md' : 'bg-white border border-slate-50 text-slate-400 hover:bg-slate-50 shadow-sm'}`}
+                          className={`aspect-square rounded-full flex items-center justify-center text-2xl transition-all active:scale-90 ${localStatus.statusEmoji === signal ? 'bg-indigo-50 border-indigo-200 text-indigo-600 scale-110 ring-2 ring-indigo-500/20 shadow-md' : 'bg-white border border-slate-50 text-slate-400 hover:bg-slate-50 shadow-sm'}`}
                         >
                           {signal}
                         </button>
@@ -299,10 +299,10 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                  </div>
 
-                 {/* SYNCHRONISE BUTTON (High Fidelity Reference Alignment) */}
+                 {/* SYNCHRONISE BUTTON */}
                  <button 
-                  onClick={() => { updateNeuralStatus({ statusMessage: localStatus.statusMessage, presenceStatus: localStatus.presenceStatus as PresenceStatus, statusEmoji: localStatus.statusEmoji }); setIsHubOpen(false); }}
-                  className="w-full py-6 bg-[#4f46e5] text-white rounded-[2.5rem] font-black text-[12px] uppercase tracking-[0.35em] shadow-[0_15px_45px_rgba(79,70,229,0.35)] hover:bg-[#4338ca] transition-all active:scale-95 mt-4"
+                  onClick={() => { updateNeuralStatus({}); setIsHubOpen(false); }}
+                  className="w-full py-6 bg-[#4f46e5] text-white rounded-[2.5rem] font-black text-[13px] uppercase tracking-[0.4em] shadow-[0_20px_50px_rgba(79,70,229,0.35)] hover:bg-[#4338ca] transition-all active:scale-95 mt-4"
                  >
                    {isUpdatingStatus ? 'Synchronising...' : 'Synchronise_Grid_State'}
                  </button>
