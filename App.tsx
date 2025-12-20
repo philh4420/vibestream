@@ -35,7 +35,7 @@ const SESSION_KEY = 'vibestream_session_2026';
 const SESSION_START_KEY = 'vibestream_session_start_timestamp';
 const ROUTE_KEY = 'vibestream_active_route';
 
-const MaintenanceOverlay: React.FC = () => (
+const MaintenanceOverlay: React.FC<{ type?: 'system' | 'feature' }> = ({ type = 'system' }) => (
   <div className="fixed inset-0 z-[9999] bg-slate-950 flex flex-col items-center justify-center p-6 text-center overflow-hidden">
     <div className="absolute inset-0 opacity-10 pointer-events-none">
       <div className="grid grid-cols-[repeat(20,minmax(0,1fr))] w-full h-full">
@@ -49,12 +49,16 @@ const MaintenanceOverlay: React.FC = () => (
         <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
       </div>
       <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase leading-none italic">
-        Infrastructure<br />Maintenance
+        {type === 'system' ? 'Infrastructure' : 'Protocol'}<br />Maintenance
       </h1>
       <div className="space-y-4">
-        <p className="text-slate-400 font-mono text-xs uppercase tracking-[0.3em]">Protocol_Interrupted • GB_NODE_OVR</p>
+        <p className="text-slate-400 font-mono text-xs uppercase tracking-[0.3em]">
+          {type === 'system' ? 'Protocol_Interrupted • GB_NODE_OVR' : 'Module_Recalibration • GB_SYNC_WAIT'}
+        </p>
         <p className="text-slate-500 text-sm font-medium leading-relaxed max-w-sm mx-auto">
-          The VibeStream Neural Grid is currently undergoing scheduled synchronization. All nodes are temporarily suspended.
+          {type === 'system' 
+            ? 'The VibeStream Neural Grid is currently undergoing scheduled synchronization. All nodes are temporarily suspended.'
+            : 'This specific module is currently undergoing performance calibration. Normal service will resume shortly.'}
         </p>
       </div>
     </div>
@@ -98,7 +102,8 @@ const App: React.FC = () => {
     registrationDisabled: false,
     minTrustTier: 'Gamma',
     lastUpdatedBy: '',
-    updatedAt: ''
+    updatedAt: '',
+    featureFlags: {}
   });
   
   const [activeRoute, setActiveRoute] = useState<AppRoute>(() => {
@@ -132,7 +137,6 @@ const App: React.FC = () => {
   const handleNavigate = (route: AppRoute) => {
     setActiveRoute(route);
     localStorage.setItem(ROUTE_KEY, route);
-    addToast(`Navigating: ${route.toUpperCase()}`, 'info');
   };
 
   const handleLogout = async () => {
@@ -298,7 +302,7 @@ const App: React.FC = () => {
   };
 
   if (systemSettings.maintenanceMode && userData?.role !== 'admin') {
-    return <MaintenanceOverlay />;
+    return <MaintenanceOverlay type="system" />;
   }
 
   if (isLoading || (isAuthenticated && !userData)) {
@@ -319,6 +323,12 @@ const App: React.FC = () => {
   const renderContent = () => {
     const user = userData!;
     
+    // Feature Toggle Logic: Redirect non-admins if a feature is disabled
+    const isFeatureDisabled = systemSettings.featureFlags && systemSettings.featureFlags[activeRoute] === false;
+    if (isFeatureDisabled && user.role !== 'admin') {
+      return <MaintenanceOverlay type="feature" />;
+    }
+
     switch (activeRoute) {
       case AppRoute.ADMIN:
         return user.role === 'admin' ? <AdminPanel addToast={addToast} locale={userRegion} systemSettings={systemSettings} /> : <div className="text-center py-20 font-black">UNAUTHORISED ACCESS</div>;

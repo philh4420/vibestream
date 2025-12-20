@@ -19,6 +19,8 @@ export interface SystemSettings {
   minTrustTier: 'Alpha' | 'Beta' | 'Gamma';
   lastUpdatedBy: string;
   updatedAt: string;
+  // 2026 Feature Control Matrix
+  featureFlags: Record<string, boolean>;
 }
 
 export interface User {
