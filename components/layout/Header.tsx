@@ -88,6 +88,24 @@ export const Header: React.FC<HeaderProps> = ({
     { code: 'ja-JP', name: 'Tokyo Node', flag: '🇯🇵' },
   ];
 
+  const DropdownNavItem = ({ route, icon: Icon, label, badge }: { route: AppRoute, icon: React.FC, label: string, badge?: string }) => {
+    const isActive = activeRoute === route;
+    return (
+      <button 
+        onClick={() => { onNavigate(route); setIsSystemMenuOpen(false); }}
+        className={`flex items-center gap-3 p-3 rounded-2xl transition-all active:scale-95 ${isActive ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-slate-50 text-slate-600 border border-transparent hover:bg-slate-100'}`}
+      >
+        <div className={`shrink-0 ${isActive ? 'scale-110' : ''}`}>
+          <Icon />
+        </div>
+        <div className="flex-1 text-left flex items-center justify-between min-w-0">
+          <span className="text-[11px] font-black uppercase tracking-tight truncate">{label}</span>
+          {badge && <span className="text-[7px] font-black bg-rose-500 text-white px-1 py-0.5 rounded-md leading-none">{badge}</span>}
+        </div>
+      </button>
+    );
+  };
+
   return (
     <header 
       className="fixed top-0 left-0 right-0 z-[200] glass-panel border-b border-precision flex items-center shadow-sm" 
@@ -164,62 +182,96 @@ export const Header: React.FC<HeaderProps> = ({
             {isSystemMenuOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setIsSystemMenuOpen(false)}></div>
-                <div className="absolute right-0 mt-3 w-80 bg-white rounded-[2.5rem] shadow-[0_30px_90px_-20px_rgba(0,0,0,0.25)] border border-precision overflow-hidden z-20 animate-in zoom-in-95 slide-in-from-top-4 duration-500">
-                  <div className="p-5 space-y-3">
-                    {/* Integrated Status Toggle Block */}
-                    <button 
-                      onClick={() => { setIsHubOpen(true); setIsSystemMenuOpen(false); }}
-                      className="w-full flex items-center gap-4 p-5 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-all text-left border border-slate-200 group"
-                    >
-                      <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center text-4xl shadow-sm border border-slate-100 shrink-0">
-                         {userData?.statusEmoji || '⚡'}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono mb-0.5">Neural_Broadcast</p>
-                         <p className="text-[13px] font-bold text-slate-900 truncate tracking-tight italic">
-                           "{userData?.statusMessage || 'Establishing broadcast...'}"
-                         </p>
-                         <div className="flex items-center gap-1.5 mt-1.5">
-                            <span className={`w-2 h-2 rounded-full ${PRESENCE_DOTS[userData?.presenceStatus || 'Online']}`} />
-                            <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest font-mono leading-none">
-                              {userData?.presenceStatus || 'OFFLINE'}
-                            </p>
-                         </div>
-                      </div>
-                      <div className="p-2 bg-white rounded-lg shadow-sm border border-slate-100 text-indigo-600 group-hover:scale-110 transition-transform">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                      </div>
-                    </button>
+                <div className="absolute right-0 mt-3 w-[min(90vw,380px)] bg-white rounded-[2.5rem] shadow-[0_30px_90px_-20px_rgba(0,0,0,0.25)] border border-precision overflow-hidden z-20 animate-in zoom-in-95 slide-in-from-top-4 duration-500 flex flex-col max-h-[85vh]">
+                  
+                  {/* SCROLLABLE CONTENT */}
+                  <div className="flex-1 overflow-y-auto no-scrollbar py-5">
                     
-                    <button 
-                      onClick={() => { onNavigate(AppRoute.PROFILE); setIsSystemMenuOpen(false); }}
-                      className="w-full flex items-center gap-3 p-4 bg-[#4f46e5] text-white rounded-2xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all group"
-                    >
-                      <img src={userData?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${auth.currentUser?.uid}`} className="w-10 h-10 rounded-xl object-cover border border-white/20" alt="" />
-                      <div className="text-left overflow-hidden">
-                        <p className="font-black text-sm tracking-tight truncate">{userData?.displayName || 'Unknown Node'}</p>
-                        <p className="text-[9px] font-bold uppercase tracking-widest font-mono opacity-80">Full Control Node</p>
+                    {/* Integrated Status Toggle Block */}
+                    <div className="px-5 mb-6">
+                      <button 
+                        onClick={() => { setIsHubOpen(true); setIsSystemMenuOpen(false); }}
+                        className="w-full flex items-center gap-4 p-5 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-all text-left border border-slate-200 group"
+                      >
+                        <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center text-4xl shadow-sm border border-slate-100 shrink-0">
+                           {userData?.statusEmoji || '⚡'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono mb-0.5">Neural_Broadcast</p>
+                           <p className="text-[13px] font-bold text-slate-900 truncate tracking-tight italic">
+                             "{userData?.statusMessage || 'Establishing broadcast...'}"
+                           </p>
+                           <div className="flex items-center gap-1.5 mt-1.5">
+                              <span className={`w-2 h-2 rounded-full ${PRESENCE_DOTS[userData?.presenceStatus || 'Online']}`} />
+                              <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest font-mono leading-none">
+                                {userData?.presenceStatus || 'OFFLINE'}
+                              </p>
+                           </div>
+                        </div>
+                        <div className="p-2 bg-white rounded-lg shadow-sm border border-slate-100 text-indigo-600 group-hover:scale-110 transition-transform">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                        </div>
+                      </button>
+                    </div>
+
+                    {/* MOBILE-ONLY NAVIGATION GRID (SIDEBAR MIRROR) */}
+                    <div className="lg:hidden px-5 pb-8 space-y-4">
+                      <div className="px-4 py-2 text-[9px] font-black text-slate-300 uppercase tracking-[0.4em] font-mono border-t border-slate-50 pt-6 mb-2">Grid_Protocols</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <DropdownNavItem route={AppRoute.FEED} icon={ICONS.Home} label="Central Hub" />
+                        <DropdownNavItem route={AppRoute.EXPLORE} icon={ICONS.Explore} label="Discover" />
+                        <DropdownNavItem route={AppRoute.MESSAGES} icon={ICONS.Messages} label="Neural Comms" />
+                        <DropdownNavItem route={AppRoute.MESH} icon={ICONS.Profile} label="Your Mesh" />
+                        <DropdownNavItem route={AppRoute.CLUSTERS} icon={ICONS.Clusters} label="Clusters" />
+                        <DropdownNavItem route={AppRoute.VERIFIED_NODES} icon={ICONS.Verified} label="Nodes" />
+                        <DropdownNavItem route={AppRoute.STREAM_GRID} icon={ICONS.Streams} label="Streams" badge="LIVE" />
+                        <DropdownNavItem route={AppRoute.TEMPORAL} icon={ICONS.Temporal} label="Temporal" />
+                        <DropdownNavItem route={AppRoute.GATHERINGS} icon={ICONS.Gatherings} label="Gatherings" />
+                        <DropdownNavItem route={AppRoute.SAVED} icon={ICONS.Saved} label="Saved Signals" />
+                        <DropdownNavItem route={AppRoute.SIMULATIONS} icon={ICONS.Simulations} label="Sims" />
+                        <DropdownNavItem route={AppRoute.RESILIENCE} icon={ICONS.Resilience} label="Resilience" />
+                        {userRole === 'admin' && (
+                          <div className="col-span-2 mt-2">
+                             <DropdownNavItem route={AppRoute.ADMIN} icon={ICONS.Admin} label="Citadel Command" />
+                          </div>
+                        )}
                       </div>
-                    </button>
+                    </div>
+                    
+                    {/* SHARED ACTIONS */}
+                    <div className="px-5 pb-5">
+                      <button 
+                        onClick={() => { onNavigate(AppRoute.PROFILE); setIsSystemMenuOpen(false); }}
+                        className="w-full flex items-center gap-3 p-4 bg-[#4f46e5] text-white rounded-2xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all group"
+                      >
+                        <img src={userData?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${auth.currentUser?.uid}`} className="w-10 h-10 rounded-xl object-cover border border-white/20" alt="" />
+                        <div className="text-left overflow-hidden">
+                          <p className="font-black text-sm tracking-tight truncate">{userData?.displayName || 'Unknown Node'}</p>
+                          <p className="text-[9px] font-bold uppercase tracking-widest font-mono opacity-80">Full Control Node</p>
+                        </div>
+                      </button>
+                    </div>
+                    
+                    <div className="px-5 pb-5 space-y-1">
+                      <div className="px-4 py-2 text-[10px] font-black text-slate-300 uppercase tracking-widest font-mono border-t border-slate-50 pt-6 mb-2">Region_Infrastructure</div>
+                      <div className="space-y-1">
+                        {regions.map(r => (
+                          <button 
+                            key={r.code}
+                            onClick={() => { onRegionChange(r.code); setIsSystemMenuOpen(false); }}
+                            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs transition-all ${currentRegion === r.code ? 'bg-indigo-50 text-indigo-700 font-extrabold' : 'hover:bg-slate-50 text-slate-600'}`}
+                          >
+                            <span className="flex items-center gap-3"><span>{r.flag}</span> {r.name}</span>
+                            {currentRegion === r.code && <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                   </div>
                   
-                  <div className="px-5 pb-5 space-y-1">
-                    <div className="px-4 py-2 text-[10px] font-black text-slate-300 uppercase tracking-widest font-mono">Region_Infrastructure</div>
-                    <div className="space-y-1">
-                      {regions.map(r => (
-                        <button 
-                          key={r.code}
-                          onClick={() => { onRegionChange(r.code); setIsSystemMenuOpen(false); }}
-                          className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs transition-all ${currentRegion === r.code ? 'bg-indigo-50 text-indigo-700 font-extrabold' : 'hover:bg-slate-50 text-slate-600'}`}
-                        >
-                          <span className="flex items-center gap-3"><span>{r.flag}</span> {r.name}</span>
-                          {currentRegion === r.code && <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full" />}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="p-3 border-t border-slate-50">
+                  {/* STICKY FOOTER */}
+                  <div className="p-3 border-t border-slate-50 bg-white shrink-0">
                     <button 
                       onClick={() => { onLogout(); setIsSystemMenuOpen(false); }}
                       className="w-full flex items-center gap-3 px-4 py-4 text-rose-500 hover:bg-rose-50 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest"
@@ -234,7 +286,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* NEURAL STATUS HUB (Fixed Position - Drops below header - Wider for No-Scroll) */}
+      {/* NEURAL STATUS HUB */}
       {isHubOpen && (
         <div className="fixed inset-0 z-[600] flex items-start justify-center p-6 pt-[calc(var(--header-h)+3.5rem)] animate-in fade-in duration-400">
            {/* Dismiss Backdrop */}
@@ -260,7 +312,7 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                  </div>
 
-                 {/* GRID MODALITY (Wider Grid to Avoid Scroll) */}
+                 {/* GRID MODALITY */}
                  <div className="space-y-6 mb-14">
                     <h4 className="text-[12px] font-black text-[#94a3b8] uppercase tracking-[0.4em] font-mono ml-1">Grid_Modality</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -283,7 +335,7 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                  </div>
 
-                 {/* Signal cortex (Emoji Grid - Wider) */}
+                 {/* Signal cortex */}
                  <div className="space-y-6 mb-14 pt-8 border-t border-slate-50">
                     <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] font-mono ml-1">Signal_Cortex</h4>
                     <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-11 gap-4">
