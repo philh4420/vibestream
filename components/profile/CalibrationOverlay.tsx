@@ -1,8 +1,8 @@
 
 import React, { useState, useRef } from 'react';
-import { User } from '../../types';
+import { User, PresenceStatus } from '../../types';
 import { uploadToCloudinary } from '../../services/cloudinary';
-import { ICONS } from '../../constants';
+import { ICONS, IDENTITY_SIGNALS, PRESENCE_CONFIG } from '../../constants';
 
 interface CalibrationOverlayProps {
   userData: User;
@@ -69,6 +69,7 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
     statusMessage: userData.statusMessage || '',
     statusEmoji: userData.statusEmoji || '⚡',
     trustTier: userData.trustTier || 'Gamma',
+    presenceStatus: userData.presenceStatus || 'Online',
     socialLinks: userData.socialLinks || [],
     lifeEvents: userData.lifeEvents || []
   });
@@ -150,6 +151,20 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
                 </div>
                 <InputField label="Status Emoji" value={form.statusEmoji} onChange={(e: any) => setForm({...form, statusEmoji: e.target.value})} placeholder="⚡" />
               </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <label className="col-span-full text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Neural_Status_Cluster</label>
+                {Object.keys(PRESENCE_CONFIG).map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => setForm({...form, presenceStatus: status as PresenceStatus})}
+                    className={`p-4 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${form.presenceStatus === status ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-indigo-200'}`}
+                  >
+                    {status}
+                  </button>
+                ))}
+              </div>
+
               <div className="space-y-3 group">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 font-mono group-focus-within:text-indigo-500 transition-colors">Neural_Bio_Signature</label>
                 <textarea 

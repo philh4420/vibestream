@@ -136,10 +136,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
 
       {/* RIGHT COLUMN: POST FEED (The "Wall") */}
       <div className="lg:col-span-7 space-y-4">
+        {/* Fixed: Removed unused userData and sessionStartTime props to resolve type error */}
         <ProfileBroadcastingSection 
-          userData={profileData} 
           posts={userPosts} 
-          sessionStartTime={sessionStartTime} 
           locale={locale} 
         />
       </div>

@@ -9,8 +9,8 @@ interface ProfileChronologySectionProps {
 
 export const ProfileChronologySection: React.FC<ProfileChronologySectionProps> = ({ userData, locale }) => {
   return (
-    <div className="glass-panel rounded-[3rem] p-8 md:p-14 animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-[2560px] mx-auto">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-14 border-b border-slate-100 pb-10 gap-6">
+    <div className="bg-white border-precision rounded-[3.5rem] p-10 md:p-14 animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-[2560px] mx-auto shadow-sm">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-14 border-b border-slate-50 pb-10 gap-6">
         <h3 className="text-[12px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono flex items-center gap-4">
           <span className="w-3 h-3 bg-indigo-500 rounded-full animate-pulse shadow-[0_0_15px_rgba(79,70,229,0.5)]" /> System_Identity_Logs
         </h3>
@@ -21,7 +21,7 @@ export const ProfileChronologySection: React.FC<ProfileChronologySectionProps> =
         <div className="space-y-12 relative before:absolute before:left-[47px] before:top-8 before:bottom-8 before:w-px before:bg-slate-100">
           {userData.lifeEvents.map((event) => (
             <div key={event.id} className="flex gap-12 md:gap-16 items-start relative group/event">
-              <div className="w-24 h-24 min-w-[96px] md:w-28 md:h-28 md:min-w-[112px] rounded-[2.2rem] bg-white border border-slate-100 shadow-2xl flex items-center justify-center text-4xl md:text-5xl z-10 group-hover/event:scale-110 transition-transform shadow-indigo-100/40 border-precision ring-1 ring-slate-50/50">
+              <div className="w-24 h-24 min-w-[96px] md:w-28 md:h-28 md:min-w-[112px] rounded-[2.5rem] bg-white border border-slate-100 shadow-2xl flex items-center justify-center text-4xl md:text-5xl z-10 group-hover/event:scale-110 transition-transform shadow-indigo-100/40 border-precision ring-1 ring-slate-50/50">
                 {event.icon || '🌟'}
               </div>
               <div className="flex-1 pb-12 border-b border-slate-50 last:border-none group-last/event:pb-0">

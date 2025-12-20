@@ -18,9 +18,9 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({ activeTab, onTabChange
   ];
 
   return (
-    <div className="sticky top-[var(--header-h)] z-[40] glass-panel border-x-0 border-t-0 -mx-4 sm:-mx-6 md:-mx-10 lg:-mx-14 px-4 sm:px-6 md:px-10 lg:px-14">
+    <div className="sticky top-[var(--header-h)] z-[40] glass-panel border-x-0 border-t-0 -mx-4 sm:-mx-6 md:-mx-10 lg:-mx-14 px-4 sm:px-6 md:px-10 lg:px-14 shadow-sm">
       <div className="max-w-4xl mx-auto overflow-x-auto no-scrollbar">
-        <div className="flex items-center gap-8 py-4">
+        <div className="flex items-center gap-8 py-4 md:py-6">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -31,7 +31,7 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({ activeTab, onTabChange
             >
               {tab.label}
               {activeTab === tab.id && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-600 rounded-full animate-in fade-in zoom-in duration-300" />
+                <div className="absolute bottom-[-4px] left-0 right-0 h-1 bg-indigo-600 rounded-full animate-in fade-in zoom-in duration-300" />
               )}
             </button>
           ))}
