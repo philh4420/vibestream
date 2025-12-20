@@ -117,7 +117,10 @@ export enum AppRoute {
   MESSAGES = 'messages',
   PROFILE = 'profile',
   COMMUNITIES = 'communities',
-  ADMIN = 'admin'
+  ADMIN = 'admin',
+  PRIVACY = 'privacy',
+  TERMS = 'terms',
+  COOKIES = 'cookies'
 }
 
 export interface ToastMessage {

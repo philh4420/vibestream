@@ -8,6 +8,9 @@ import { AdminPanel } from './components/admin/AdminPanel';
 import { ProfilePage } from './components/profile/ProfilePage';
 import { ExplorePage } from './components/explore/ExplorePage';
 import { MessagesPage } from './components/messages/MessagesPage';
+import { PrivacyPage } from './components/legal/PrivacyPage';
+import { TermsPage } from './components/legal/TermsPage';
+import { CookiesPage } from './components/legal/CookiesPage';
 import { AppRoute, Post, ToastMessage, UserRole, Region, User as VibeUser, SystemSettings } from './types';
 import { db, auth } from './services/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -306,6 +309,12 @@ const App: React.FC = () => {
         return <ExplorePage posts={posts} onLike={handleLike} locale={userRegion} />;
       case AppRoute.MESSAGES:
         return <MessagesPage currentUser={userData!} locale={userRegion} addToast={addToast} />;
+      case AppRoute.PRIVACY:
+        return <PrivacyPage />;
+      case AppRoute.TERMS:
+        return <TermsPage />;
+      case AppRoute.COOKIES:
+        return <CookiesPage />;
       default:
         return (
           <div className="space-y-6 animate-in fade-in duration-700">

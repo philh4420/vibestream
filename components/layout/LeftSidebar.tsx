@@ -19,17 +19,21 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   userData
 }) => {
   
-  const NavItem = ({ route, icon: Icon, label, customIcon, collapsed = false }: { 
+  const NavItem = ({ route, icon: Icon, label, customIcon, collapsed = false, onClick }: { 
     route?: AppRoute, 
     icon?: React.FC, 
     label: string, 
     customIcon?: React.ReactNode,
-    collapsed?: boolean 
+    collapsed?: boolean,
+    onClick?: () => void
   }) => {
     const isActive = route && activeRoute === route;
     return (
       <button 
-        onClick={() => route && onNavigate(route)}
+        onClick={() => {
+          if (onClick) onClick();
+          if (route) onNavigate(route);
+        }}
         title={collapsed ? label : undefined}
         className={`flex items-center transition-all duration-200 touch-active group relative w-full rounded-xl ${
           collapsed 
@@ -114,11 +118,6 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           customIcon={<div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center text-[10px] font-black">GP</div>} 
         />
         <NavItem 
-          label="Marketplace" 
-          collapsed={collapsed}
-          customIcon={<div className="w-6 h-6 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center text-[10px] font-black">MP</div>} 
-        />
-        <NavItem 
           label="Saved Signals" 
           collapsed={collapsed}
           customIcon={<div className="w-6 h-6 bg-rose-100 text-rose-600 rounded-lg flex items-center justify-center text-[10px] font-black">SV</div>} 
@@ -153,11 +152,11 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
 
         {/* Sidebar Footer */}
         <div className="mt-auto pt-8 px-3">
-          <div className="space-y-3 opacity-40">
+          <div className="space-y-3 opacity-60">
             <div className="flex flex-wrap gap-x-3 gap-y-1 text-[9px] font-bold text-slate-500 uppercase tracking-widest font-mono">
-              <span>Privacy</span>
-              <span>Terms</span>
-              <span>Cookies</span>
+              <button onClick={() => onNavigate(AppRoute.PRIVACY)} className="hover:text-indigo-600 transition-colors">Privacy</button>
+              <button onClick={() => onNavigate(AppRoute.TERMS)} className="hover:text-indigo-600 transition-colors">Terms</button>
+              <button onClick={() => onNavigate(AppRoute.COOKIES)} className="hover:text-indigo-600 transition-colors">Cookies</button>
               <span>Infrastructure</span>
             </div>
             <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono">VibeStream Node 2.6 © 2026</p>
