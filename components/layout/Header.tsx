@@ -16,13 +16,23 @@ interface HeaderProps {
 }
 
 const PRESENCE_DOTS: Record<PresenceStatus, string> = {
-  'Online': 'bg-[#10b981]',
-  'Focus': 'bg-[#f59e0b]',
-  'Deep Work': 'bg-[#e11d48]',
-  'In-Transit': 'bg-[#6366f1]',
-  'Away': 'bg-[#94a3b8]',
-  'Invisible': 'bg-[#334155]',
-  'Syncing': 'bg-[#60a5fa]'
+  'Online': 'bg-[#10b981]',      // Emerald
+  'Focus': 'bg-[#f59e0b]',       // Amber
+  'Deep Work': 'bg-[#e11d48]',   // Rose
+  'In-Transit': 'bg-[#6366f1]',  // Indigo
+  'Away': 'bg-[#94a3b8]',        // Slate
+  'Invisible': 'bg-[#334155]',   // Dark
+  'Syncing': 'bg-[#60a5fa]'      // Sky
+};
+
+const STATUS_EMOJI_MAP: Record<PresenceStatus, string> = {
+  'Online': '⚡',
+  'Focus': '🎯',
+  'Deep Work': '🧱',
+  'In-Transit': '✈️',
+  'Away': '☕',
+  'Invisible': '👻',
+  'Syncing': '🛰️'
 };
 
 export const Header: React.FC<HeaderProps> = ({ 
@@ -105,7 +115,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
               <input 
                 type="text" 
-                placeholder="Search Grid..." 
+                placeholder="Find..." 
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setIsSearchFocused(false)}
                 className={`bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-900 placeholder:text-slate-400 transition-all ${isSearchFocused ? 'w-full opacity-100' : 'hidden md:block w-full'}`}
@@ -114,10 +124,10 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* RIGHT: Profile & Status Unified Pill */}
+        {/* RIGHT: Master Pill (Unified Status & Identity) */}
         <div className="flex items-center gap-4 justify-end">
           <div className="relative">
-            {/* MASTER PILL (Matches Image 3 'Phil' + Integrated Status Image 2) */}
+            {/* MASTER PILL - Adhering to 'Phil' and status-info requirements */}
             <button 
               onClick={() => setIsSystemMenuOpen(!isSystemMenuOpen)}
               className="flex items-center gap-3.5 p-1.5 pr-5 rounded-full bg-white border border-slate-100 shadow-[0_2px_15px_rgba(0,0,0,0.03)] hover:shadow-md transition-all duration-300 active:scale-95 group"
@@ -132,15 +142,20 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
               
               <div className="hidden xs:flex flex-col text-left overflow-hidden">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[14px] font-black text-[#0f172a] tracking-tight leading-none">
+                <div className="flex items-center gap-1.5 leading-none">
+                  <span className="text-[14px] font-black text-[#0f172a] tracking-tight">
                     {userData?.displayName.split(' ')[0]}
                   </span>
-                  <span className="text-[11px] opacity-80">{userData?.statusEmoji || '⚡'}</span>
+                  <span className="text-[11px] mb-0.5">{userData?.statusEmoji || '⚡'}</span>
                 </div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono truncate max-w-[120px] mt-0.5">
-                  {userData?.statusMessage || userData?.presenceStatus || 'Broadcasting'}
-                </p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-[9px] font-bold text-slate-400 truncate max-w-[120px] leading-none">
+                    {userData?.statusMessage || 'Establish signal...'}
+                  </p>
+                  <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest font-mono leading-none border-l border-slate-100 pl-2">
+                    {userData?.presenceStatus}
+                  </span>
+                </div>
               </div>
 
               <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-300 ${isSystemMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M19 9l-7 7-7-7" /></svg>
@@ -151,22 +166,26 @@ export const Header: React.FC<HeaderProps> = ({
                 <div className="fixed inset-0 z-10" onClick={() => setIsSystemMenuOpen(false)}></div>
                 <div className="absolute right-0 mt-3 w-80 bg-white rounded-[2.5rem] shadow-[0_30px_90px_-20px_rgba(0,0,0,0.25)] border border-precision overflow-hidden z-20 animate-in zoom-in-95 slide-in-from-top-4 duration-500">
                   <div className="p-5 space-y-3">
-                    {/* Status Management Row (Anchors to Popover) */}
+                    {/* Integrated Status Toggle Block */}
                     <button 
                       onClick={() => { setIsHubOpen(true); setIsSystemMenuOpen(false); }}
-                      className="w-full flex items-center gap-4 p-5 bg-slate-50/50 rounded-2xl hover:bg-slate-50 transition-all text-left border border-slate-100 group"
+                      className="w-full flex items-center gap-4 p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-all text-left border border-slate-200 group"
                     >
-                      <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-3xl shadow-sm border border-slate-200 shrink-0">
+                      <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-3xl shadow-sm border border-slate-100 shrink-0">
                          {userData?.statusEmoji}
                       </div>
                       <div className="flex-1 min-w-0">
-                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono mb-0.5">Neural_State</p>
-                         <p className="text-[13px] font-bold text-slate-900 truncate tracking-tight italic">
-                           {userData?.statusMessage || 'Updating signal...'}
+                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono mb-0.5">Neural_Broadcasting</p>
+                         <p className="text-[12px] font-bold text-slate-900 truncate tracking-tight italic">
+                           "{userData?.statusMessage || 'Establishing broadcast...'}"
+                         </p>
+                         <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest font-mono mt-1 flex items-center gap-1.5">
+                            <span className={`w-1.5 h-1.5 rounded-full ${PRESENCE_DOTS[userData?.presenceStatus || 'Online']}`} />
+                            {userData?.presenceStatus}
                          </p>
                       </div>
                       <div className="p-2 bg-white rounded-lg shadow-sm border border-slate-100 text-indigo-600 group-hover:scale-110 transition-transform">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                       </div>
                     </button>
                     
@@ -177,13 +196,13 @@ export const Header: React.FC<HeaderProps> = ({
                       <img src={userData?.avatarUrl} className="w-10 h-10 rounded-xl object-cover border border-white/20" alt="" />
                       <div className="text-left overflow-hidden">
                         <p className="font-black text-sm tracking-tight truncate">{userData?.displayName}</p>
-                        <p className="text-[9px] font-bold uppercase tracking-widest font-mono opacity-80">Full Node Identity</p>
+                        <p className="text-[9px] font-bold uppercase tracking-widest font-mono opacity-80">Profile Command Center</p>
                       </div>
                     </button>
                   </div>
                   
                   <div className="px-5 pb-5 space-y-1">
-                    <div className="px-4 py-2 text-[10px] font-black text-slate-300 uppercase tracking-widest font-mono">Region_Nodes</div>
+                    <div className="px-4 py-2 text-[10px] font-black text-slate-300 uppercase tracking-widest font-mono">Infrastructure</div>
                     <div className="space-y-1">
                       {regions.map(r => (
                         <button 
@@ -203,7 +222,7 @@ export const Header: React.FC<HeaderProps> = ({
                       onClick={() => { onLogout(); setIsSystemMenuOpen(false); }}
                       className="w-full flex items-center gap-3 px-4 py-4 text-rose-500 hover:bg-rose-50 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest"
                     >
-                      Terminate_Session
+                      Log Out
                     </button>
                   </div>
                 </div>
@@ -213,16 +232,16 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* NEURAL STATUS HUB (Contextual Popover / Modal Interface) */}
+      {/* NEURAL STATUS HUB (The 'Status Pop' - Adhering to Grid Modality Screenshot) */}
       {isHubOpen && (
         <div className="fixed inset-0 z-[600] flex items-center justify-center p-6 animate-in fade-in duration-400">
            {/* Dismiss Backdrop */}
-           <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-2xl" onClick={() => setIsHubOpen(false)}></div>
+           <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-3xl" onClick={() => setIsHubOpen(false)}></div>
            
-           <div className="relative bg-white w-full max-w-sm rounded-[3.5rem] p-8 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] border border-white animate-in zoom-in-95 slide-in-from-bottom-12 duration-500 overflow-hidden">
+           <div className="relative bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] border border-white animate-in zoom-in-95 slide-in-from-bottom-12 duration-500 overflow-hidden">
               <div className="relative z-10">
-                 {/* Status Entry Section */}
-                 <div className="flex items-center gap-6 mb-12 pt-4">
+                 {/* Current Status Message Display */}
+                 <div className="flex items-center gap-6 mb-12">
                     <div className="w-20 h-20 bg-slate-50 border border-slate-100 rounded-[2.2rem] flex items-center justify-center text-5xl shadow-inner shrink-0">
                       {localStatus.statusEmoji}
                     </div>
@@ -233,20 +252,24 @@ export const Header: React.FC<HeaderProps> = ({
                         value={localStatus.statusMessage}
                         onChange={(e) => setLocalStatus(prev => ({ ...prev, statusMessage: e.target.value }))}
                         onKeyDown={(e) => e.key === 'Enter' && setIsHubOpen(false)}
-                        placeholder="Neural signal..."
+                        placeholder="Neural broadcast..."
                         className="w-full bg-transparent border-none p-0 text-2xl font-black text-slate-900 focus:ring-0 placeholder:text-slate-100 tracking-tighter"
                       />
                     </div>
                  </div>
 
-                 {/* GRID MODALITY (Direct adhesion to image reference) */}
-                 <div className="space-y-6 mb-12">
+                 {/* GRID MODALITY (Exact visual reproduction of provided image) */}
+                 <div className="space-y-6 mb-14">
                     <h4 className="text-[12px] font-black text-[#94a3b8] uppercase tracking-[0.4em] font-mono ml-1">Grid_Modality</h4>
                     <div className="grid grid-cols-2 gap-4">
                       {(['Online', 'Focus', 'Deep Work', 'Invisible'] as const).map(status => (
                         <button 
                           key={status}
-                          onClick={() => setLocalStatus(prev => ({ ...prev, presenceStatus: status }))}
+                          onClick={() => setLocalStatus(prev => ({ 
+                            ...prev, 
+                            presenceStatus: status,
+                            statusEmoji: STATUS_EMOJI_MAP[status] // Resonant emoji update
+                          }))}
                           className={`h-16 rounded-[2.2rem] border transition-all flex items-center gap-3 px-6 active:scale-95 ${localStatus.presenceStatus === status ? 'bg-[#0f172a] border-[#0f172a] text-white shadow-xl' : 'bg-white border-slate-100 text-[#94a3b8] hover:border-slate-200'}`}
                         >
                           <div className={`w-2.5 h-2.5 rounded-full ${PRESENCE_DOTS[status]}`} />
@@ -258,15 +281,15 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                  </div>
 
-                 {/* Emoji Selection Grid */}
-                 <div className="space-y-5 mb-12 pt-8 border-t border-slate-50">
-                    <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] font-mono ml-1">Signal_Cortex</h4>
+                 {/* Signal Context Selection */}
+                 <div className="space-y-5 mb-14 pt-8 border-t border-slate-50">
+                    <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] font-mono ml-1">Identity_Markers</h4>
                     <div className="grid grid-cols-6 gap-3">
                       {IDENTITY_SIGNALS.map(signal => (
                         <button 
                           key={signal}
                           onClick={() => setLocalStatus(prev => ({ ...prev, statusEmoji: signal }))}
-                          className={`aspect-square rounded-full flex items-center justify-center text-xl transition-all active:scale-90 ${localStatus.statusEmoji === signal ? 'bg-indigo-50 border-indigo-200 text-indigo-600 scale-110 ring-2 ring-indigo-500/20' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                          className={`aspect-square rounded-full flex items-center justify-center text-xl transition-all active:scale-90 ${localStatus.statusEmoji === signal ? 'bg-indigo-50 border-indigo-200 text-indigo-600 scale-110 ring-2 ring-indigo-500/20 shadow-md' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
                         >
                           {signal}
                         </button>
@@ -274,10 +297,10 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                  </div>
 
-                 {/* SYNCHRONISE BUTTON (Matches Image Reference) */}
+                 {/* SYNCHRONISE BUTTON (Exact style from reference) */}
                  <button 
                   onClick={() => { updateNeuralStatus({ statusMessage: localStatus.statusMessage, presenceStatus: localStatus.presenceStatus as PresenceStatus, statusEmoji: localStatus.statusEmoji }); setIsHubOpen(false); }}
-                  className="w-full py-6 bg-[#4f46e5] text-white rounded-[2.2rem] font-black text-[12px] uppercase tracking-[0.4em] shadow-2xl hover:bg-indigo-700 transition-all active:scale-95"
+                  className="w-full py-6 bg-[#4f46e5] text-white rounded-[2.2rem] font-black text-[12px] uppercase tracking-[0.4em] shadow-[0_15px_40px_rgba(79,70,229,0.3)] hover:bg-[#4338ca] transition-all active:scale-95"
                  >
                    {isUpdatingStatus ? 'Synchronising...' : 'Synchronise_Grid_State'}
                  </button>
