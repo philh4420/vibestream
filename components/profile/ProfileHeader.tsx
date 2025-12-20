@@ -52,12 +52,11 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ userData, onEdit, 
       {/* Top Grid: Identity Cluster + Metrics + Telemetry */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
         
-        {/* Main Identity Panel (Matches Top Left in Image) */}
+        {/* Main Identity Panel */}
         <div className="lg:col-span-8 bg-white border border-precision rounded-[3rem] p-8 md:p-12 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.05)] relative overflow-hidden flex flex-col justify-center min-h-[340px] md:min-h-[420px]">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-50/30 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
           
           <div className="flex flex-col md:flex-row gap-8 md:gap-14 items-center md:items-start relative z-10">
-            {/* Profile Image & Presence Overlay */}
             <div className="relative group shrink-0">
               <div className={`absolute -inset-4 rounded-[3.2rem] opacity-20 blur-2xl transition-all duration-700 ${currentPresence.pulse}`} />
               <div className="relative">
@@ -112,11 +111,11 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ userData, onEdit, 
           </div>
         </div>
 
-        {/* Right Column Stack (Matches Image Layout) */}
-        <div className="lg:col-span-4 flex flex-col gap-6 h-full">
+        {/* Right Column Stack */}
+        <div className="lg:col-span-4 flex flex-col gap-6">
           
-          {/* Stats Hub (Dark Block in Image) */}
-          <div className="bg-slate-950 rounded-[3rem] p-10 text-white flex justify-between items-center shadow-2xl relative overflow-hidden h-[180px] md:h-1/2">
+          {/* Stats Hub */}
+          <div className="bg-slate-950 rounded-[3rem] p-10 text-white flex justify-between items-center shadow-2xl relative overflow-hidden min-h-[160px] flex-1">
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-transparent pointer-events-none" />
             {[
               { label: 'Signals', val: postCount },
@@ -130,37 +129,59 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ userData, onEdit, 
             ))}
           </div>
 
-          {/* Time & Weather Node (White Block in Image) */}
-          <div className="bg-white border border-precision rounded-[3rem] p-10 flex justify-between items-center group shadow-sm hover:border-indigo-500/15 transition-all overflow-hidden relative h-[180px] md:h-1/2">
-            <div className="space-y-2 relative z-10">
-              <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.4em] font-mono leading-none mb-3">ATMOSPHERIC_LINK</p>
-              <p className="text-6xl md:text-7xl font-black text-slate-900 tracking-tighter italic leading-none select-none">{time}</p>
-              <p className="text-[10px] font-black text-indigo-600 font-mono tracking-widest uppercase">LOCAL_PRECISION</p>
+          {/* Atmospheric Link Node - EXACT MATCH TO IMAGE */}
+          <div className="bg-white border border-precision rounded-[3rem] p-10 shadow-sm hover:border-indigo-500/15 transition-all overflow-hidden relative min-h-[220px] flex-1 flex flex-col justify-center">
+            {/* Header Text */}
+            <p className="absolute top-10 left-10 text-[10px] md:text-[11px] font-black text-slate-300 uppercase tracking-[0.5em] font-mono leading-none">
+              ATMOSPHERIC_LINK
+            </p>
+
+            <div className="flex items-center justify-between w-full mt-4">
+              {/* Time & Sub-label */}
+              <div className="space-y-4">
+                <p className="text-7xl md:text-8xl font-black text-slate-900 tracking-tighter italic leading-none select-none">
+                  {time}
+                </p>
+                <p className="text-[11px] font-black text-indigo-500 font-mono tracking-[0.3em] uppercase">
+                  LOCAL_PRECISION
+                </p>
+              </div>
+              
+              {/* Weather Data */}
+              {weather ? (
+                <div className="flex flex-col items-end relative pr-2">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-amber-500/10 blur-2xl rounded-full scale-150 animate-pulse" />
+                    <img 
+                      src={`https://openweathermap.org/img/wn/${weather.icon}@2x.png`} 
+                      className="w-24 h-24 md:w-32 md:h-32 relative z-10 -mr-4" 
+                      alt="" 
+                    />
+                  </div>
+                  <div className="relative z-10">
+                    <p className="text-6xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none flex items-start">
+                      {weather.temp}<span className="text-3xl md:text-4xl mt-1">°</span>
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center animate-pulse border border-slate-100">
+                  <div className="w-8 h-8 border-4 border-slate-200 border-t-indigo-500 rounded-full animate-spin" />
+                </div>
+              )}
             </div>
-            
+
+            {/* Footer Condition Text (e.g., CLOUDY / CLEAR) */}
             {weather && (
-              <div className="text-right relative z-10 shrink-0 flex flex-col items-end">
-                 <div className="relative">
-                   <div className="absolute inset-0 bg-amber-500/10 blur-xl rounded-full scale-150 animate-pulse" />
-                   <img src={`https://openweathermap.org/img/wn/${weather.icon}@2x.png`} className="w-20 h-20 md:w-24 md:h-24 relative z-10" alt="" />
-                 </div>
-                 <div className="mt-2">
-                   <p className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none">{weather.temp}°C</p>
-                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] font-mono mt-2">{weather.condition.toUpperCase()}</p>
-                 </div>
-              </div>
-            )}
-            
-            {!weather && (
-              <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center animate-pulse border border-slate-100">
-                <div className="w-8 h-8 border-4 border-slate-200 border-t-indigo-500 rounded-full animate-spin" />
-              </div>
+              <p className="absolute bottom-10 right-10 text-[10px] md:text-[11px] font-black text-slate-300 uppercase tracking-[0.4em] font-mono">
+                {weather.condition.toUpperCase()}
+              </p>
             )}
           </div>
         </div>
       </div>
 
-      {/* Persistent Neural Status Bar (Bottom Blue Bar in Image) */}
+      {/* Persistent Neural Status Bar */}
       <div className="w-full bg-indigo-600 rounded-[3rem] p-6 md:p-8 text-white flex flex-col lg:flex-row items-center justify-between group shadow-2xl relative overflow-hidden min-h-[120px]">
         <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none scale-150"><ICONS.Globe /></div>
         
