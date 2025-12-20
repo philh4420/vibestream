@@ -61,6 +61,7 @@ export const Layout: React.FC<LayoutProps> = ({
           onNavigate={onNavigate}
           onOpenCreate={onOpenCreate}
           userRole={userRole}
+          userData={userData}
         />
 
         {/* Main Content Viewport */}
