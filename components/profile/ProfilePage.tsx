@@ -65,69 +65,72 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
   const isOwnProfile = auth.currentUser?.uid === userData.id;
 
   const renderTimelineLayout = () => (
-    <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 max-w-[120rem] mx-auto">
-      {/* LEFT COLUMN: INTRO / ABOUT PREVIEWS */}
-      <div className="xl:col-span-5 space-y-8">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-5xl mx-auto">
+      {/* LEFT COLUMN: INTRO / ABOUT PREVIEWS (FB Style) */}
+      <div className="lg:col-span-5 space-y-4">
         
-        {/* Intro Block */}
-        <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100">
-           <h3 className="text-xl font-black text-slate-900 tracking-tighter mb-8 italic">Intro</h3>
-           <p className="text-slate-500 text-center font-medium italic mb-10 leading-relaxed">
-             "{profileData.bio || 'Establishing primary neural uplink...'}"
-           </p>
-           <div className="space-y-6">
-              {profileData.location && (
-                <div className="flex items-center gap-4 text-slate-600">
-                  <div className="scale-110 opacity-40"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6"><path d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /><path d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" /></svg></div>
-                  <span className="font-bold text-sm">Lives in <span className="text-slate-900">{profileData.location}</span></span>
-                </div>
-              )}
-              {profileData.website && (
-                <div className="flex items-center gap-4 text-slate-600">
-                  <div className="scale-110 opacity-40"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6"><path d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3" /></svg></div>
-                  <a href={profileData.website} target="_blank" className="font-bold text-sm text-indigo-600 hover:underline">{profileData.website.replace(/^https?:\/\//, '')}</a>
-                </div>
-              )}
-              <div className="flex items-center gap-4 text-slate-600">
-                <div className="scale-110 opacity-40"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6"><path d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg></div>
-                <span className="font-bold text-sm">Joined <span className="text-slate-900">{new Date(profileData.joinedAt).toLocaleDateString(locale, { month: 'long', year: 'numeric' })}</span></span>
+        {/* Intro Card */}
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+           <h3 className="text-xl font-bold text-slate-900 mb-4">Intro</h3>
+           <div className="space-y-4">
+              <p className="text-slate-700 text-center text-sm font-medium py-2 leading-relaxed">
+                {profileData.bio || 'Initialising neural uplink...'}
+              </p>
+              <div className="h-px bg-slate-100" />
+              <div className="space-y-4 py-2">
+                 {profileData.occupation && (
+                    <div className="flex items-center gap-3 text-slate-600">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 opacity-40"><path d="M20.25 14.15v4.25c0 .621-.504 1.125-1.125 1.125H4.875c-.621 0-1.125-.504-1.125-1.125v-4.25m16.5 0a2.25 2.25 0 0 0-1.883-2.212c-3.13-.51-6.947-.51-10.084 0A2.25 2.25 0 0 0 3.75 14.15m16.5 0V9.25c0-.621-.504-1.125-1.125-1.125H4.875c-.621 0-1.125.504-1.125 1.125v4.9m16.5 0a2.25 2.25 0 0 1-2.25 2.25H5.25a2.25 2.25 0 0 1-2.25-2.25m13.5-12.25h-3c-.621 0-1.125.504-1.125 1.125v.75c0 .621.504 1.125 1.125 1.125h3c.621 0 1.125-.504 1.125-1.125v-.75c0-.621-.504-1.125-1.125-1.125Z" /></svg>
+                      <span className="text-sm">Works at <span className="font-bold text-slate-900">{profileData.occupation}</span></span>
+                    </div>
+                 )}
+                 {profileData.location && (
+                    <div className="flex items-center gap-3 text-slate-600">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 opacity-40"><path d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /><path d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" /></svg>
+                      <span className="text-sm">From <span className="font-bold text-slate-900">{profileData.location}</span></span>
+                    </div>
+                 )}
+                 <div className="flex items-center gap-3 text-slate-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 opacity-40"><path d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                    <span className="text-sm">Joined <span className="font-bold text-slate-900">{new Date(profileData.joinedAt).toLocaleDateString(locale, { month: 'long', year: 'numeric' })}</span></span>
+                 </div>
               </div>
+              {isOwnProfile && (
+                <button onClick={() => setIsEditModalOpen(true)} className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-sm transition-all">Edit Details</button>
+              )}
            </div>
-           {isOwnProfile && (
-             <button onClick={() => setIsEditModalOpen(true)} className="w-full py-4 mt-8 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all">Edit Details</button>
-           )}
         </div>
 
-        {/* Photos Preview */}
-        <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100">
-           <div className="flex justify-between items-center mb-8">
-             <h3 className="text-xl font-black text-slate-900 tracking-tighter italic">Photos</h3>
-             <button onClick={() => setActiveTab('visuals')} className="text-sm font-bold text-indigo-600 hover:underline">See All</button>
+        {/* Photos Preview Card */}
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+           <div className="flex justify-between items-center mb-4">
+             <h3 className="text-xl font-bold text-slate-900">Photos</h3>
+             <button onClick={() => setActiveTab('visuals')} className="text-sm font-bold text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded">See All Photos</button>
            </div>
-           <div className="grid grid-cols-3 gap-2 rounded-2xl overflow-hidden">
+           <div className="grid grid-cols-3 gap-1 rounded-lg overflow-hidden">
              {userPosts.filter(p => p.media?.length > 0).slice(0, 9).map((post, i) => (
                <img key={i} src={post.media[0].url} className="aspect-square object-cover w-full hover:opacity-90 cursor-pointer transition-opacity" alt="" />
              ))}
            </div>
         </div>
 
-        {/* Resonance Preview (Skills/Tags) */}
-        <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100">
-           <div className="flex justify-between items-center mb-8">
-             <h3 className="text-xl font-black text-slate-900 tracking-tighter italic">Resonance</h3>
-             <button onClick={() => setActiveTab('resonance')} className="text-sm font-bold text-indigo-600 hover:underline">Full Mesh</button>
+        {/* Resonance/Tags Card */}
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+           <div className="flex justify-between items-center mb-4">
+             <h3 className="text-xl font-bold text-slate-900">Resonance</h3>
+             <button onClick={() => setActiveTab('resonance')} className="text-sm font-bold text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded">View Mesh</button>
            </div>
            <div className="flex flex-wrap gap-2">
-             {profileData.tags?.slice(0, 8).map(tag => (
-               <span key={tag} className="px-4 py-2 bg-slate-50 text-slate-600 text-[10px] font-black uppercase tracking-widest rounded-xl border border-slate-100">#{tag}</span>
+             {profileData.tags?.slice(0, 10).map(tag => (
+               <span key={tag} className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full border border-slate-200">#{tag}</span>
              ))}
            </div>
         </div>
 
       </div>
 
-      {/* RIGHT COLUMN: POST FEED */}
-      <div className="xl:col-span-7">
+      {/* RIGHT COLUMN: POST FEED (FB style "Wall") */}
+      <div className="lg:col-span-7 space-y-4">
         <ProfileBroadcastingSection 
           userData={profileData} 
           posts={userPosts} 
@@ -141,13 +144,13 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
   const renderTabContent = () => {
     switch (activeTab) {
       case 'identity':
-        return <div className="max-w-[120rem] mx-auto"><ProfileAboutSection userData={profileData} locale={locale} /></div>;
+        return <div className="max-w-5xl mx-auto"><ProfileAboutSection userData={profileData} locale={locale} /></div>;
       case 'visuals':
-        return <div className="max-w-[120rem] mx-auto"><ProfileVisualsSection posts={userPosts} /></div>;
+        return <div className="max-w-5xl mx-auto"><ProfileVisualsSection posts={userPosts} /></div>;
       case 'resonance':
-        return <div className="max-w-[120rem] mx-auto"><ProfileResonanceSection userData={profileData} /></div>;
+        return <div className="max-w-5xl mx-auto"><ProfileResonanceSection userData={profileData} /></div>;
       case 'chronology':
-        return <div className="max-w-[120rem] mx-auto"><ProfileChronologySection userData={profileData} locale={locale} /></div>;
+        return <div className="max-w-5xl mx-auto"><ProfileChronologySection userData={profileData} locale={locale} /></div>;
       default:
         return renderTimelineLayout();
     }
@@ -165,7 +168,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
         onTabChange={setActiveTab}
       />
       
-      <div className="mt-8 px-4 sm:px-6 md:px-10 lg:px-14">
+      <div className="mt-4 md:mt-6 px-4 sm:px-6 md:px-10 lg:px-14">
         {renderTabContent()}
       </div>
 

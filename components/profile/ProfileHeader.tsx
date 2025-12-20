@@ -1,8 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
-import { User, WeatherInfo, Region } from '../../types';
+import React from 'react';
+import { User, Region, PresenceStatus } from '../../types';
 import { ICONS, PRESENCE_CONFIG } from '../../constants';
-import { fetchWeather } from '../../services/weather';
 
 interface ProfileHeaderProps {
   userData: User;
@@ -14,43 +13,24 @@ interface ProfileHeaderProps {
   onTabChange: (tab: any) => void;
 }
 
+const PRESENCE_DOTS: Record<PresenceStatus, string> = {
+  'Online': 'bg-emerald-500',
+  'Focus': 'bg-amber-500',
+  'Deep Work': 'bg-rose-600',
+  'In-Transit': 'bg-indigo-600',
+  'Away': 'bg-slate-400',
+  'Invisible': 'bg-slate-700',
+  'Syncing': 'bg-blue-400'
+};
+
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ 
   userData, 
   onEdit, 
   postCount = 0, 
-  addToast, 
   isOwnProfile,
   activeTab,
   onTabChange
 }) => {
-  const [time, setTime] = useState<string>(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }));
-  const [weather, setWeather] = useState<WeatherInfo | null>(null);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTime(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }));
-    }, 10000);
-    return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    const getAtmosphere = async () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            const weatherData = await fetchWeather({ coords: { lat: position.coords.latitude, lon: position.coords.longitude } });
-            if (weatherData) setWeather(weatherData);
-          },
-          async () => {
-            const weatherData = await fetchWeather({ query: userData.location || 'London' });
-            setWeather(weatherData);
-          }
-        );
-      }
-    };
-    getAtmosphere();
-  }, [userData.location]);
-
   const currentPresence = PRESENCE_CONFIG[userData.presenceStatus || 'Online'];
 
   const navTabs = [
@@ -62,122 +42,112 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   ];
 
   return (
-    <div className="w-full bg-white shadow-sm border-b border-slate-200">
-      <div className="max-w-[120rem] mx-auto relative">
+    <div className="w-full bg-white shadow-sm">
+      {/* 1. COVER PHOTO SECTION */}
+      <div className="max-w-6xl mx-auto relative h-[25vh] md:h-[400px] bg-slate-100 md:rounded-b-2xl overflow-hidden group">
+        <img 
+          src={userData.coverUrl || 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80'} 
+          className="w-full h-full object-cover transition-transform duration-[5s] group-hover:scale-105" 
+          alt="Cover" 
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
         
-        {/* COVER PHOTO ARCHITECTURE */}
-        <div className="relative h-64 md:h-[450px] w-full overflow-hidden rounded-b-[2rem] bg-slate-100 group">
-          <img 
-            src={userData.coverUrl || 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80'} 
-            className="w-full h-full object-cover transition-transform duration-[3s] group-hover:scale-105" 
-            alt="Cover" 
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
-          
-          {/* Floating Atmospheric Telemetry (Top Right Overlay) */}
-          <div className="absolute top-8 right-8 flex gap-4 animate-in fade-in slide-in-from-right-4 duration-1000">
-            <div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-2xl px-6 py-3 flex items-center gap-4 text-white shadow-2xl">
-              <span className="text-2xl font-black italic tracking-tighter font-mono">{time}</span>
-              <div className="w-px h-6 bg-white/20" />
-              {weather ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-xl font-bold">{weather.temp}°</span>
-                  <span className="text-[10px] font-black uppercase tracking-widest opacity-60">{weather.condition}</span>
-                </div>
-              ) : (
-                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-              )}
+        {isOwnProfile && (
+          <button className="absolute bottom-4 right-4 bg-white hover:bg-slate-50 text-slate-900 px-4 py-2 rounded-xl flex items-center gap-2 transition-all font-bold text-xs shadow-xl active:scale-95">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+            </svg>
+            Edit Cover
+          </button>
+        )}
+      </div>
+
+      {/* 2. IDENTITY & ACTIONS OVERLAY */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-8">
+        <div className="flex flex-col md:flex-row items-center md:items-end gap-4 md:gap-6 -mt-12 md:-mt-20 pb-6 border-b border-slate-100">
+          {/* Avatar Container */}
+          <div className="relative group">
+            <div className="p-1 bg-white rounded-full shadow-lg">
+              <img 
+                src={userData.avatarUrl} 
+                className="w-32 h-32 md:w-44 md:h-44 rounded-full object-cover border-4 border-white transition-transform duration-500 group-hover:scale-[1.02]" 
+                alt={userData.displayName} 
+              />
+            </div>
+            <div className="absolute bottom-2 right-2 w-8 h-8 md:w-10 md:h-10 bg-white rounded-full p-1 shadow-xl flex items-center justify-center border-4 border-white">
+              <div className={`w-full h-full rounded-full ${PRESENCE_DOTS[userData.presenceStatus || 'Online']} animate-pulse`} />
             </div>
           </div>
 
-          {isOwnProfile && (
-            <button className="absolute bottom-6 right-8 bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 text-white px-6 py-3 rounded-2xl flex items-center gap-3 transition-all font-black text-[10px] uppercase tracking-widest shadow-xl">
-              <ICONS.Create /> Edit Cover Photo
-            </button>
-          )}
-        </div>
-
-        {/* IDENTITY ANCHOR (Avatar Overlap) */}
-        <div className="px-6 md:px-12 pb-6">
-          <div className="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-10 -mt-16 md:-mt-24 relative z-20">
-            {/* Massive Avatar */}
-            <div className="relative shrink-0">
-              <div className="p-1.5 bg-white rounded-[4.5rem] shadow-2xl">
-                <img 
-                  src={userData.avatarUrl} 
-                  className="w-40 h-40 md:w-56 md:h-56 rounded-[4rem] object-cover border-4 border-slate-50 shadow-inner group-hover:scale-[1.02] transition-transform duration-700" 
-                  alt={userData.displayName} 
-                />
-              </div>
-              <div className="absolute bottom-4 right-4 w-12 h-12 bg-white rounded-2xl p-1 shadow-2xl flex items-center justify-center border-4 border-white z-30">
-                <div className={`w-4 h-4 rounded-full ${currentPresence.color} animate-pulse shadow-[0_0_15px_rgba(0,0,0,0.1)]`} />
-              </div>
+          {/* User Details */}
+          <div className="flex-1 text-center md:text-left md:pb-4">
+            <div className="flex flex-col md:flex-row items-center gap-2 mb-1">
+              <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
+                {userData.displayName}
+              </h1>
+              {userData.verifiedHuman && <ICONS.Verified />}
             </div>
-
-            {/* Identity Info */}
-            <div className="flex-1 text-center md:text-left md:pb-6">
-              <div className="flex flex-col md:flex-row items-center md:items-end gap-4 mb-2">
-                <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">
-                  {userData.displayName}
-                </h1>
-                {userData.verifiedHuman && <div className="scale-150 mb-1"><ICONS.Verified /></div>}
-              </div>
-              <div className="flex items-center justify-center md:justify-start gap-3 mb-4">
-                <p className="text-lg font-bold text-slate-400">@{userData.username}</p>
-                <span className="w-1.5 h-1.5 bg-slate-200 rounded-full" />
-                <p className="text-lg font-black text-indigo-600 uppercase tracking-widest italic">{userData.followers} Signals</p>
-              </div>
+            <div className="flex items-center justify-center md:justify-start gap-2">
+              <p className="text-slate-500 font-bold text-sm">@{userData.username}</p>
+              <span className="text-slate-300">•</span>
+              <p className="text-slate-500 font-bold text-sm">{userData.followers.toLocaleString('en-GB')} Signals</p>
             </div>
+          </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-4 md:pb-6">
-              {isOwnProfile ? (
+          {/* Action Hub */}
+          <div className="flex items-center gap-2 md:pb-4 w-full md:w-auto">
+            {isOwnProfile ? (
+              <>
                 <button 
                   onClick={onEdit}
-                  className="h-16 px-10 bg-slate-950 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.4em] shadow-xl hover:bg-black transition-all flex items-center gap-4 group active:scale-95"
+                  className="flex-1 md:flex-none h-10 px-6 bg-indigo-600 text-white rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all active:scale-95"
                 >
-                  <div className="group-hover:rotate-90 transition-transform duration-700"><ICONS.Settings /></div>
-                  Calibrate_ID
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                  </svg>
+                  Edit Profile
                 </button>
-              ) : (
-                <>
-                  <button className="h-16 px-10 bg-indigo-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.4em] shadow-xl hover:bg-indigo-700 transition-all flex items-center gap-4 active:scale-95">
-                    <ICONS.Create /> Follow Node
-                  </button>
-                  <button className="h-16 w-16 bg-slate-100 text-slate-900 rounded-2xl flex items-center justify-center hover:bg-slate-200 transition-all active:scale-95 border border-slate-200">
-                    <ICONS.Messages />
-                  </button>
-                </>
+              </>
+            ) : (
+              <>
+                <button className="flex-1 md:flex-none h-10 px-6 bg-indigo-600 text-white rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all active:scale-95">
+                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  Follow
+                </button>
+                <button className="flex-1 md:flex-none h-10 px-6 bg-slate-100 text-slate-900 rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-200 transition-all active:scale-95">
+                  <ICONS.Messages />
+                  Message
+                </button>
+              </>
+            )}
+            <button className="h-10 w-10 flex items-center justify-center bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-all">
+               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* 3. NAVIGATION TABS SECTION */}
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+          {navTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => onTabChange(tab.id)}
+              className={`px-4 md:px-6 py-4 text-sm font-bold transition-all relative whitespace-nowrap ${
+                activeTab === tab.id ? 'text-indigo-600' : 'text-slate-500 hover:bg-slate-50'
+              }`}
+            >
+              {tab.label}
+              {activeTab === tab.id && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-600 rounded-t-full" />
               )}
-            </div>
-          </div>
+            </button>
+          ))}
         </div>
-
-        {/* TABS ARCHITECTURE (Integrated Nav) */}
-        <div className="border-t border-slate-100 px-6 md:px-12 flex items-center justify-between">
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-            {navTabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => onTabChange(tab.id)}
-                className={`px-8 py-8 text-[11px] font-black uppercase tracking-[0.4em] font-mono transition-all relative whitespace-nowrap ${
-                  activeTab === tab.id ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
-                }`}
-              >
-                {tab.label}
-                {activeTab === tab.id && (
-                  <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-indigo-600 rounded-full" />
-                )}
-              </button>
-            ))}
-          </div>
-          
-          <button className="hidden xl:flex items-center gap-3 px-6 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
-             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest font-mono">Grid_Status: Sync_OK</span>
-          </button>
-        </div>
-
       </div>
     </div>
   );
