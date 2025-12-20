@@ -43,112 +43,143 @@ export const Header: React.FC<HeaderProps> = ({
     { code: 'ja-JP', name: 'Tokyo Node', flag: '🇯🇵' },
   ];
 
+  const NavButton = ({ route, icon: Icon, label }: { route: AppRoute, icon: any, label: string }) => {
+    const isActive = activeRoute === route;
+    return (
+      <button 
+        onClick={() => onNavigate(route)}
+        className={`relative flex flex-col items-center justify-center h-full px-8 md:px-10 transition-all group ${isActive ? 'text-indigo-600' : 'text-slate-500 hover:bg-slate-50 hover:rounded-xl'}`}
+        title={label}
+      >
+        <div className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+          <Icon />
+        </div>
+        {isActive && (
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-600 rounded-t-full shadow-[0_-2px_8px_rgba(79,70,229,0.3)] animate-in slide-in-from-bottom-1" />
+        )}
+      </button>
+    );
+  };
+
   return (
     <header 
-      className="fixed top-0 left-0 right-0 z-[200] glass-panel border-b border-precision flex items-end transition-all pb-4 shadow-sm" 
+      className="fixed top-0 left-0 right-0 z-[200] glass-panel border-b border-precision flex items-center shadow-sm" 
       style={{ 
         height: 'var(--header-h)',
-        paddingLeft: 'max(1.5rem, var(--sal))',
-        paddingRight: 'max(1.5rem, var(--sar))'
+        paddingLeft: 'max(1rem, var(--sal))',
+        paddingRight: 'max(1rem, var(--sar))'
       }}
     >
-      <div className="flex items-center justify-between w-full max-w-[2560px] mx-auto gap-4 md:gap-12 mb-0.5">
+      <div className="flex items-center justify-between w-full max-w-[2560px] mx-auto h-full">
         
-        {/* Branding Cluster */}
-        <div className="flex items-center gap-4 shrink-0 cursor-pointer group" onClick={() => onNavigate(AppRoute.FEED)}>
-          <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-900 rounded-[1.25rem] flex items-center justify-center shadow-xl ring-2 ring-white group-active:scale-90 transition-all duration-300">
-            <span className="text-white font-black italic text-2xl">V</span>
+        {/* LEFT: Branding & Search (FB Style) */}
+        <div className="flex items-center gap-2 md:gap-4 flex-1">
+          <div 
+            className="w-10 h-10 md:w-11 md:h-11 bg-slate-900 rounded-full flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition-all shrink-0"
+            onClick={() => onNavigate(AppRoute.FEED)}
+          >
+            <span className="text-white font-black italic text-xl">V</span>
           </div>
-          <div className="hidden sm:flex flex-col">
-            <span className="text-base md:text-lg font-black tracking-tighter text-slate-900 leading-none">VibeStream</span>
-            <span className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.4em] mt-1.5 flex items-center gap-2 font-mono">
-              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
-              NODE_{currentRegion.split('-')[1]}
-            </span>
-          </div>
-        </div>
 
-        {/* Neural Search Hub */}
-        <div className={`relative flex-1 max-w-lg transition-all duration-500 ${isSearchFocused ? 'max-w-xl' : ''}`}>
-          <div className={`flex items-center gap-4 px-6 py-3 rounded-2xl border transition-all ${isSearchFocused ? 'bg-white border-indigo-400 shadow-2xl ring-4 ring-indigo-50' : 'bg-slate-100/50 border-transparent'}`}>
-            <div className={`transition-colors duration-300 ${isSearchFocused ? 'text-indigo-600' : 'text-slate-400'}`}>
-              <ICONS.Search />
-            </div>
-            <input 
-              type="text" 
-              placeholder="Search Grid..." 
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setIsSearchFocused(false)}
-              className="bg-transparent border-none focus:ring-0 w-full text-slate-900 placeholder:text-slate-400 font-bold text-sm md:text-base tracking-tight"
-            />
-            <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 bg-slate-200/50 rounded-lg text-[10px] font-black text-slate-400 font-mono">
-              ⌘K
+          <div className={`relative flex items-center transition-all duration-300 rounded-full ${isSearchFocused ? 'w-full max-w-sm' : 'w-10 h-10 md:w-auto'}`}>
+            <div className={`flex items-center gap-2 px-3 py-2.5 rounded-full transition-all ${isSearchFocused ? 'bg-white border-indigo-400 shadow-xl ring-4 ring-indigo-50 w-full' : 'bg-slate-100 md:w-64'}`}>
+              <div className={`shrink-0 transition-colors ${isSearchFocused ? 'text-indigo-600' : 'text-slate-400'}`}>
+                <ICONS.Search />
+              </div>
+              <input 
+                type="text" 
+                placeholder="Search Grid..." 
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
+                className={`bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-900 placeholder:text-slate-400 transition-all ${isSearchFocused ? 'w-full opacity-100' : 'hidden md:block w-full'}`}
+              />
             </div>
           </div>
         </div>
 
-        {/* Global Controls */}
-        <div className="flex items-center gap-3 md:gap-6">
-          <button className="hidden md:flex p-3 text-slate-400 hover:text-indigo-600 transition-all rounded-2xl hover:bg-indigo-50 group">
-            <div className="group-hover:rotate-12 transition-transform duration-300">
+        {/* CENTER: Primary Navigation (Hidden on Mobile/Portrait) */}
+        <div className="hidden lg:flex items-center justify-center h-full flex-1">
+          <div className="flex items-center h-full">
+            <NavButton route={AppRoute.FEED} icon={ICONS.Home} label="Home" />
+            <NavButton route={AppRoute.EXPLORE} icon={ICONS.Explore} label="Explore" />
+            <NavButton route={AppRoute.MESSAGES} icon={ICONS.Messages} label="Messenger" />
+            <NavButton route={AppRoute.PROFILE} icon={ICONS.Profile} label="Profile" />
+            {userRole === 'admin' && <NavButton route={AppRoute.ADMIN} icon={ICONS.Admin} label="Admin" />}
+          </div>
+        </div>
+
+        {/* RIGHT: Controls & Profile */}
+        <div className="flex items-center gap-2 md:gap-3 flex-1 justify-end">
+          {/* Action Icons */}
+          <div className="hidden sm:flex items-center gap-2 mr-2">
+            <button className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full transition-all active:scale-90" title="Notifications">
               <ICONS.Bell />
-            </div>
-          </button>
-          
+            </button>
+            <button 
+              onClick={() => onNavigate(AppRoute.MESSAGES)}
+              className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full transition-all active:scale-90" title="Messenger"
+            >
+              <ICONS.Messages />
+            </button>
+          </div>
+
+          {/* Account Dropdown */}
           <div className="relative">
             <button 
               onClick={() => setIsSystemMenuOpen(!isSystemMenuOpen)}
-              className="flex items-center gap-3 p-1 rounded-2xl hover:bg-white transition-all duration-300 touch-active ring-1 ring-slate-100 bg-slate-50 relative pr-4 shadow-sm"
+              className="flex items-center gap-2 p-1 pl-1 pr-3 rounded-full hover:bg-slate-100 transition-all duration-300 active:scale-95 border border-slate-100 shadow-sm"
             >
-              <div className="relative">
-                <img src={userData?.avatarUrl} className="w-10 h-10 md:w-11 md:h-11 rounded-xl object-cover ring-2 ring-white shadow-md" alt="User" />
-                <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-[3px] border-white shadow-lg ${PRESENCE_DOTS[userData?.presenceStatus || 'Online']}`} />
+              <div className="relative shrink-0">
+                <img src={userData?.avatarUrl} className="w-8 h-8 md:w-9 md:h-9 rounded-full object-cover shadow-sm ring-1 ring-white" alt="User" />
+                <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${PRESENCE_DOTS[userData?.presenceStatus || 'Online']}`} />
               </div>
-              <div className="hidden md:block text-left">
-                <p className="text-[11px] font-black text-slate-900 leading-none">@{userData?.username.toLowerCase()}</p>
-                <p className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-1 font-mono">{userData?.presenceStatus || 'Online'}</p>
-              </div>
+              <p className="hidden md:block text-[11px] font-black text-slate-800 tracking-tight truncate max-w-[80px]">
+                {userData?.displayName.split(' ')[0]}
+              </p>
+              <svg className={`w-3 h-3 text-slate-400 transition-transform ${isSystemMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
             </button>
 
             {/* System Context Menu */}
             {isSystemMenuOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setIsSystemMenuOpen(false)}></div>
-                <div className="absolute right-0 mt-4 w-72 bg-white rounded-[2rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.15)] border border-precision overflow-hidden z-20 animate-in zoom-in-95 slide-in-from-top-4 duration-300">
-                  <div className="p-6 border-b border-precision bg-slate-50/50">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] mb-2 font-mono">SYSTEM_IDENTITY_NODE</p>
-                    <p className="text-lg font-black text-slate-900 tracking-tighter leading-none italic">{userData?.displayName}</p>
+                <div className="absolute right-0 mt-3 w-80 bg-white rounded-[1.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.2)] border border-precision overflow-hidden z-20 animate-in zoom-in-95 slide-in-from-top-4 duration-300">
+                  <div className="p-4 bg-slate-50/50">
+                    <button 
+                      onClick={() => { onNavigate(AppRoute.PROFILE); setIsSystemMenuOpen(false); }}
+                      className="w-full flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm hover:shadow-md transition-all border border-slate-100"
+                    >
+                      <img src={userData?.avatarUrl} className="w-12 h-12 rounded-full object-cover" alt="" />
+                      <div className="text-left">
+                        <p className="font-black text-slate-900 text-sm tracking-tight">{userData?.displayName}</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest font-mono">See your profile</p>
+                      </div>
+                    </button>
                   </div>
                   
-                  <div className="p-3">
-                    <p className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] font-mono">Region_Routing</p>
-                    <div className="grid grid-cols-1 gap-1">
+                  <div className="p-2 space-y-1">
+                    <div className="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono">Region Settings</div>
+                    <div className="grid grid-cols-1">
                       {regions.map(r => (
                         <button 
                           key={r.code}
                           onClick={() => { onRegionChange(r.code); setIsSystemMenuOpen(false); }}
-                          className={`flex items-center justify-between px-4 py-3 rounded-xl text-[12px] transition-all duration-300 ${currentRegion === r.code ? 'bg-indigo-600 text-white font-black shadow-lg shadow-indigo-100' : 'hover:bg-slate-50 text-slate-600 font-bold'}`}
+                          className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs transition-all ${currentRegion === r.code ? 'bg-indigo-50 text-indigo-700 font-bold' : 'hover:bg-slate-50 text-slate-600'}`}
                         >
                           <span className="flex items-center gap-3"><span>{r.flag}</span> {r.name}</span>
-                          {currentRegion === r.code && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                          {currentRegion === r.code && <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full" />}
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  <div className="p-3 border-t border-precision bg-slate-50/20">
-                    <button 
-                      onClick={() => { onNavigate(AppRoute.PROFILE); setIsSystemMenuOpen(false); }}
-                      className="w-full flex items-center gap-4 px-4 py-4 text-slate-700 hover:bg-white hover:shadow-sm rounded-xl transition-all font-black text-[11px] uppercase tracking-[0.2em] font-mono"
-                    >
-                      <ICONS.Profile /> CALIBRATE_ID
-                    </button>
+                  <div className="p-2 border-t border-precision">
                     <button 
                       onClick={() => { onLogout(); setIsSystemMenuOpen(false); }}
-                      className="w-full flex items-center gap-4 px-4 py-4 text-rose-500 hover:bg-rose-50 rounded-xl transition-all font-black text-[11px] uppercase tracking-[0.2em] font-mono"
+                      className="w-full flex items-center gap-3 px-3 py-3 text-rose-500 hover:bg-rose-50 rounded-lg transition-all font-bold text-xs"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" /></svg>
-                      TERMINATE_SESSION
+                      Log Out
                     </button>
                   </div>
                 </div>
