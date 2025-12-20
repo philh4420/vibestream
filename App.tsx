@@ -1,11 +1,13 @@
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from './components/layout/Layout';
 import { PostCard } from './components/feed/PostCard';
 import { Toast } from './components/ui/Toast';
 import { LandingPage } from './components/landing/LandingPage';
 import { AdminPanel } from './components/admin/AdminPanel';
 import { ProfilePage } from './components/profile/ProfilePage';
+import { ExplorePage } from './components/explore/ExplorePage';
+import { MessagesPage } from './components/messages/MessagesPage';
 import { AppRoute, Post, ToastMessage, UserRole, Region, User as VibeUser, SystemSettings } from './types';
 import { db, auth } from './services/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -21,9 +23,7 @@ import {
   increment,
   getDoc,
   setDoc,
-  getDocs,
-  limit,
-  where
+  limit
 } from 'firebase/firestore';
 import { uploadToCloudinary } from './services/cloudinary';
 import { ICONS } from './constants';
@@ -54,14 +54,6 @@ const MaintenanceOverlay: React.FC = () => (
           The VibeStream Neural Grid is currently undergoing scheduled synchronization. All nodes are temporarily suspended.
         </p>
       </div>
-      <div className="pt-8 flex justify-center gap-4">
-        <div className="px-5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">
-          ETA: 14:00 GMT
-        </div>
-        <div className="px-5 py-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-[9px] font-black text-indigo-400 uppercase tracking-widest font-mono">
-          Priority Sync
-        </div>
-      </div>
     </div>
   </div>
 );
@@ -76,8 +68,6 @@ const App: React.FC = () => {
   
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userData, setUserData] = useState<VibeUser | null>(null);
-  
-  // Persistent Session Start Time
   const [sessionStartTime, setSessionStartTime] = useState<number>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(SESSION_START_KEY);
@@ -125,6 +115,7 @@ const App: React.FC = () => {
   const handleNavigate = (route: AppRoute) => {
     setActiveRoute(route);
     localStorage.setItem(ROUTE_KEY, route);
+    addToast(`Navigating: ${route.toUpperCase()}`, 'info');
   };
 
   const handleLogout = async () => {
@@ -132,12 +123,11 @@ const App: React.FC = () => {
       await signOut(auth);
       setIsAuthenticated(false);
       localStorage.removeItem(SESSION_KEY);
-      localStorage.removeItem(SESSION_START_KEY); // Reset duration on logout
+      localStorage.removeItem(SESSION_START_KEY);
       addToast("Session Terminated", "info");
     }
   };
 
-  // Real-time System Control Sync
   useEffect(() => {
     if (!db) return;
     const unsub = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
@@ -160,7 +150,6 @@ const App: React.FC = () => {
         setIsAuthenticated(true);
         localStorage.setItem(SESSION_KEY, 'active');
         
-        // Handle Session Start Persistence
         if (!localStorage.getItem(SESSION_START_KEY)) {
           const now = Date.now();
           localStorage.setItem(SESSION_START_KEY, now.toString());
@@ -182,21 +171,22 @@ const App: React.FC = () => {
               setUserData({ id: userDoc.id, ...data } as VibeUser);
             } else {
               const newProfile: any = {
-                username: user.email?.split('@')[0] || `node_${user.uid.slice(0, 5)}`,
-                displayName: user.displayName || user.email?.split('@')[0] || 'Member',
-                bio: 'Citadel User.',
+                username: `node_${user.uid.slice(0, 5)}`,
+                displayName: user.displayName || 'Unnamed Node',
+                bio: '',
                 avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`,
                 coverUrl: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80',
                 followers: 0,
                 following: 0,
                 role: 'member',
-                location: 'London',
+                location: '',
                 joinedAt: new Date().toISOString(),
                 badges: [],
                 trustTier: 'Gamma'
               };
               await setDoc(doc(db, 'users', user.uid), newProfile);
               setUserData({ id: user.uid, ...newProfile } as VibeUser);
+              addToast("Neural Profile Initialised", "success");
             }
           } catch (e) {
             console.error("User Data Sync Failure:", e);
@@ -215,7 +205,6 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  // Real-time Posts Stream
   useEffect(() => {
     if (!db || !isAuthenticated) return;
     const q = query(collection(db, 'posts'), orderBy('timestamp', 'desc'), limit(50));
@@ -235,25 +224,17 @@ const App: React.FC = () => {
       const postRef = doc(db, 'posts', postId);
       const postSnap = await getDoc(postRef);
       if (postSnap.exists()) {
-        const isLiked = postSnap.data().likedBy?.includes(userData.id);
+        const likedBy = postSnap.data().likedBy || [];
+        const isLiked = likedBy.includes(userData.id);
         await updateDoc(postRef, {
           likes: increment(isLiked ? -1 : 1),
           likedBy: isLiked 
-            ? postSnap.data().likedBy.filter((id: string) => id !== userData.id)
-            : [...(postSnap.data().likedBy || []), userData.id]
+            ? likedBy.filter((id: string) => id !== userData.id)
+            : [...likedBy, userData.id]
         });
+        addToast(isLiked ? "Pulse Removed" : "Pulse Synchronised", "info");
       }
     } catch (e) { addToast("Sync Error: Pulse Interrupted", "error"); }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setFilePreview(reader.result as string);
-      reader.readAsDataURL(file);
-    }
   };
 
   const handleCreatePost = async () => {
@@ -279,7 +260,7 @@ const App: React.FC = () => {
         likes: 0,
         comments: 0,
         shares: 0,
-        createdAt: 'Just now',
+        createdAt: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
         timestamp: serverTimestamp(),
         likedBy: []
       });
@@ -296,7 +277,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Global Maintenance Lock
   if (systemSettings.maintenanceMode && userData?.role !== 'admin') {
     return <MaintenanceOverlay />;
   }
@@ -322,6 +302,10 @@ const App: React.FC = () => {
         return userData?.role === 'admin' ? <AdminPanel addToast={addToast} locale={userRegion} systemSettings={systemSettings} /> : <div className="text-center py-20 font-black">UNAUTHORISED ACCESS</div>;
       case AppRoute.PROFILE:
         return <ProfilePage userData={userData!} onUpdateProfile={(d) => setUserData({...userData!, ...d})} addToast={addToast} locale={userRegion} sessionStartTime={sessionStartTime} />;
+      case AppRoute.EXPLORE:
+        return <ExplorePage posts={posts} onLike={handleLike} locale={userRegion} />;
+      case AppRoute.MESSAGES:
+        return <MessagesPage currentUser={userData!} locale={userRegion} addToast={addToast} />;
       default:
         return (
           <div className="space-y-6 animate-in fade-in duration-700">
@@ -329,9 +313,15 @@ const App: React.FC = () => {
               <h1 className="text-3xl font-black text-slate-900 tracking-tighter">CENTRAL_HUB</h1>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Infrastructure Relay Active • GB-LON</p>
             </div>
-            {posts.map(post => (
-              <PostCard key={post.id} post={post} onLike={handleLike} locale={userRegion} />
-            ))}
+            {posts.length > 0 ? (
+              posts.map(post => (
+                <PostCard key={post.id} post={post} onLike={handleLike} locale={userRegion} />
+              ))
+            ) : (
+              <div className="py-20 text-center bg-white rounded-[3rem] border border-slate-100">
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No signals detected in local buffer</p>
+              </div>
+            )}
           </div>
         );
     }
@@ -341,21 +331,19 @@ const App: React.FC = () => {
     <Layout 
       activeRoute={activeRoute} 
       onNavigate={handleNavigate} 
-      onOpenCreate={() => setIsCreateModalOpen(true)}
+      onOpenCreate={() => { setIsCreateModalOpen(true); addToast("Opening Neural Uplink", "info"); }}
       onLogout={handleLogout}
       userData={userData}
       userRole={userData?.role}
       currentRegion={userRegion}
-      onRegionChange={setUserRegion}
+      onRegionChange={(r) => { setUserRegion(r); addToast(`Region Switched: ${r}`, 'success'); }}
     >
       {renderContent()}
 
-      {/* Toasts System */}
       <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[1000] flex flex-col gap-3 pointer-events-none w-full max-w-sm px-4">
         {toasts.map(toast => <Toast key={toast.id} toast={toast} onClose={removeToast} />)}
       </div>
 
-      {/* Create Transmission Modal */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-[500] flex items-end md:items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-xl" onClick={() => !isUploading && setIsCreateModalOpen(false)}></div>
@@ -398,7 +386,15 @@ const App: React.FC = () => {
                 <div className="group-hover:rotate-12 transition-transform duration-500"><ICONS.Create /></div>
                 <span className="text-[10px] font-black uppercase tracking-widest">Attach Media</span>
               </button>
-              <input type="file" ref={fileInputRef} className="hidden" accept="image/*,video/*" onChange={handleFileChange} />
+              <input type="file" ref={fileInputRef} className="hidden" accept="image/*,video/*" onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setSelectedFile(file);
+                  const reader = new FileReader();
+                  reader.onloadend = () => setFilePreview(reader.result as string);
+                  reader.readAsDataURL(file);
+                }
+              }} />
               
               <button 
                 onClick={handleCreatePost}

@@ -11,8 +11,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.85);
-            --glass-border: rgba(0, 0, 0, 0.05);
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --glass-border: rgba(0, 0, 0, 0.04);
             --accent: #4F46E5;
             --app-height: 100dvh;
             --sat: env(safe-area-inset-top);
@@ -34,37 +34,29 @@
             -webkit-font-smoothing: antialiased;
             overflow: hidden;
             overscroll-behavior: none;
+            touch-action: manipulation;
         }
 
-        /* High-Definition Responsive Typography Scaling */
         @media (min-width: 1280px) { html { font-size: 16px; } }
         @media (min-width: 1920px) { html { font-size: 18px; } }
         @media (min-width: 2560px) { html { font-size: 22px; } }
         @media (min-width: 3840px) { html { font-size: 32px; } }
-        @media (min-width: 7680px) { html { font-size: 64px; } }
 
         #root {
             height: 100%;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
 
         .scroll-container {
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(79, 70, 229, 0.1) transparent;
+            scrollbar-width: none;
         }
 
         .scroll-container::-webkit-scrollbar {
-            width: 6px;
-        }
-        .scroll-container::-webkit-scrollbar-thumb {
-            background: rgba(79, 70, 229, 0.1);
-            border-radius: 20px;
-        }
-        .scroll-container::-webkit-scrollbar-thumb:hover {
-            background: rgba(79, 70, 229, 0.2);
+            display: none;
         }
 
         .border-precision {
@@ -73,30 +65,23 @@
 
         .glass-panel {
             background: var(--glass-bg);
-            backdrop-filter: blur(40px) saturate(200%);
-            -webkit-backdrop-filter: blur(40px) saturate(200%);
+            backdrop-filter: blur(50px) saturate(200%);
+            -webkit-backdrop-filter: blur(50px) saturate(200%);
             border: 1px solid var(--glass-border);
         }
 
-        @keyframes pulse-emerald {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
-            70% { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
-        .pulse-active-emerald { animation: pulse-emerald 2s infinite; }
-
         .touch-active:active {
-            transform: scale(0.97) translateY(2px);
-            opacity: 0.9;
-            transition: transform 0.15s ease-out;
+            transform: scale(0.96) translateY(2px);
+            opacity: 0.8;
+            transition: transform 0.1s ease-out;
         }
         
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Neural Aesthetic Classes */
-        .neural-text-glow {
-            text-shadow: 0 0 15px rgba(79, 70, 229, 0.3);
+        @keyframes slide-up {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
         }
     </style>
 <script type="importmap">

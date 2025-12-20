@@ -82,13 +82,22 @@ export interface Post {
   createdAt: string;
   isLiked?: boolean;
   timestamp?: any;
+  likedBy?: string[];
+}
+
+export interface Chat {
+  id: string;
+  participants: string[];
+  participantData: Record<string, { displayName: string; avatarUrl: string }>;
+  lastMessage?: string;
+  lastMessageTimestamp?: any;
 }
 
 export interface Message {
   id: string;
   senderId: string;
   text: string;
-  timestamp: string;
+  timestamp: any;
   isRead: boolean;
 }
 
