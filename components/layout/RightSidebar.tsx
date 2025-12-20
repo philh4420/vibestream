@@ -23,6 +23,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [systemTime, setSystemTime] = useState(new Date());
   const [uptime, setUptime] = useState('00:00:00');
+  const [gpsLock, setGpsLock] = useState(false);
 
   // System Time & Uptime Logic
   useEffect(() => {
@@ -45,20 +46,40 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
     return () => clearInterval(timer);
   }, []);
 
-  // Weather & Data Fetching
+  // Weather & Geolocation Logic
   useEffect(() => {
     if (!db) return;
     setIsLoading(true);
 
     const loadAtmosphericData = async () => {
       try {
-        const weatherData = await fetchWeather({ query: userData?.location || 'London' });
-        setWeather(weatherData);
+        // First try precision GPS lock
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              const { latitude, longitude } = position.coords;
+              const weatherData = await fetchWeather({ coords: { lat: latitude, lon: longitude } });
+              setWeather(weatherData);
+              setGpsLock(true);
+            },
+            async (error) => {
+              // Fallback to profile location if GPS fails or is denied
+              const weatherData = await fetchWeather({ query: userData?.location || 'London' });
+              setWeather(weatherData);
+              setGpsLock(false);
+            },
+            { timeout: 10000 }
+          );
+        } else {
+          const weatherData = await fetchWeather({ query: userData?.location || 'London' });
+          setWeather(weatherData);
+        }
       } catch (err) {
         console.warn("Atmospheric sync interrupted");
         setWeather(null);
       }
     };
+    
     loadAtmosphericData();
     
     const usersQuery = query(collection(db, 'users'), limit(12), orderBy('joinedAt', 'desc'));
@@ -107,7 +128,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
             </div>
             <div className="text-right">
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] font-mono mb-1">Local_Node</p>
-              <p className="text-sm font-bold text-slate-200">GB-LON-026</p>
+              <p className="text-sm font-bold text-slate-200">{gpsLock ? 'GPS_LOCK_READY' : 'GB-LON-026'}</p>
             </div>
           </div>
 
@@ -123,14 +144,14 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
               {weather ? (
                 <div className="flex items-center justify-center gap-2">
                   <span className="text-lg font-black text-white font-mono">{weather.temp}°C</span>
-                  {weather.icon && (
+                  {weather.icon ? (
                     <img 
                       src={`https://openweathermap.org/img/wn/${weather.icon}.png`} 
                       className="w-6 h-6 object-contain brightness-200" 
                       alt="" 
                       onError={(e) => (e.currentTarget.style.display = 'none')}
                     />
-                  )}
+                  ) : null}
                 </div>
               ) : (
                 <p className="text-xs font-bold text-slate-500 text-center animate-pulse">SYNCING...</p>
@@ -140,8 +161,10 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
 
           <div className="mt-8 flex items-center justify-between border-t border-white/5 pt-6 relative z-10">
              <div className="flex items-center gap-2">
-               <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-               <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest font-mono">Kernel_Optimised</span>
+               <div className={`w-1.5 h-1.5 ${gpsLock ? 'bg-indigo-400' : 'bg-emerald-500'} rounded-full animate-pulse`} />
+               <span className={`text-[9px] font-black ${gpsLock ? 'text-indigo-400' : 'text-emerald-400'} uppercase tracking-widest font-mono`}>
+                 {gpsLock ? 'GPS_Precision_Active' : 'Kernel_Optimised'}
+               </span>
              </div>
              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest font-mono">v2.6.4_LTS</span>
           </div>

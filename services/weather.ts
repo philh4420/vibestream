@@ -4,15 +4,19 @@ import { WeatherInfo } from '../types';
 
 export const fetchWeather = async (params: { query?: string; coords?: { lat: number; lon: number } }): Promise<WeatherInfo | null> => {
   const apiKey = CONFIG.WEATHER.apiKey;
-  if (!apiKey) return null;
+  if (!apiKey || apiKey === 'undefined') {
+    console.debug('Weather API Key missing - skipping atmospheric sync');
+    return null;
+  }
 
   try {
     let url = '';
     
-    if (params.coords) {
+    if (params.coords && params.coords.lat !== undefined && params.coords.lon !== undefined) {
       url = `https://api.openweathermap.org/data/2.5/weather?lat=${params.coords.lat}&lon=${params.coords.lon}&units=metric&appid=${apiKey}`;
     } else {
       let query = (params.query || 'London').trim();
+      // Handle generic UK queries to focus on London for more accurate weather responses
       if (!query || query.toLowerCase() === 'united kingdom' || query.toLowerCase() === 'uk') {
         query = 'London';
       }
@@ -22,12 +26,14 @@ export const fetchWeather = async (params: { query?: string; coords?: { lat: num
     const response = await fetch(url);
     
     if (response.status === 404) {
+      console.debug('Weather station not found for location');
       return null;
     }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Weather fetch failed');
+      console.warn('Weather API error:', errorData.message || response.statusText);
+      return null;
     }
     
     const data = await response.json();
@@ -41,7 +47,7 @@ export const fetchWeather = async (params: { query?: string; coords?: { lat: num
       icon: data.weather[0].icon
     };
   } catch (error) {
-    console.debug('Atmospheric sync bypassed:', error instanceof Error ? error.message : 'Unknown error');
+    console.debug('Atmospheric sync bypassed:', error instanceof Error ? error.message : 'Network error');
     return null;
   }
 };
