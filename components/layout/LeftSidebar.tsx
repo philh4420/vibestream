@@ -2,6 +2,7 @@
 import React from 'react';
 import { ICONS } from '../../constants';
 import { AppRoute, UserRole, User as VibeUser } from '../../types';
+import { auth } from '../../services/firebase';
 
 interface LeftSidebarProps {
   activeRoute: AppRoute;
@@ -81,14 +82,14 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
         >
           <div className={`shrink-0 transition-transform duration-300 ${activeRoute === AppRoute.PROFILE ? 'scale-110' : 'group-hover:scale-110'}`}>
             <img 
-              src={userData?.avatarUrl} 
+              src={userData?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${auth.currentUser?.uid}`} 
               className={`rounded-full object-cover border-2 border-white shadow-sm ${collapsed ? 'w-10 h-10' : 'w-9 h-9'}`} 
               alt="Me" 
             />
           </div>
           {!collapsed && (
             <span className={`text-sm font-extrabold tracking-tight truncate ${activeRoute === AppRoute.PROFILE ? 'text-indigo-700' : 'text-slate-900'}`}>
-              {userData?.displayName.split(' ')[0]}
+              {(userData?.displayName || 'Node').split(' ')[0]}
             </span>
           )}
         </button>

@@ -289,7 +289,9 @@ const App: React.FC = () => {
     return <MaintenanceOverlay />;
   }
 
-  if (isLoading) {
+  // CRITICAL: Ensure we only proceed if either we are not authenticated OR userData has successfully loaded.
+  // This prevents the application from attempting to access userData.id before it exists.
+  if (isLoading || (isAuthenticated && !userData)) {
     return (
       <div className="h-full w-full bg-[#fcfcfd] flex items-center justify-center">
         <div className="flex flex-col items-center gap-6">
@@ -305,15 +307,18 @@ const App: React.FC = () => {
   }
 
   const renderContent = () => {
+    // We already checked for userData existence above, so it is safe to use here.
+    const user = userData!;
+    
     switch (activeRoute) {
       case AppRoute.ADMIN:
-        return userData?.role === 'admin' ? <AdminPanel addToast={addToast} locale={userRegion} systemSettings={systemSettings} /> : <div className="text-center py-20 font-black">UNAUTHORISED ACCESS</div>;
+        return user.role === 'admin' ? <AdminPanel addToast={addToast} locale={userRegion} systemSettings={systemSettings} /> : <div className="text-center py-20 font-black">UNAUTHORISED ACCESS</div>;
       case AppRoute.PROFILE:
-        return <ProfilePage userData={userData!} onUpdateProfile={(d) => setUserData({...userData!, ...d})} addToast={addToast} locale={userRegion} sessionStartTime={sessionStartTime} />;
+        return <ProfilePage userData={user} onUpdateProfile={(d) => setUserData({...user, ...d})} addToast={addToast} locale={userRegion} sessionStartTime={sessionStartTime} />;
       case AppRoute.EXPLORE:
         return <ExplorePage posts={posts} onLike={handleLike} locale={userRegion} />;
       case AppRoute.MESSAGES:
-        return <MessagesPage currentUser={userData!} locale={userRegion} addToast={addToast} />;
+        return <MessagesPage currentUser={user} locale={userRegion} addToast={addToast} />;
       case AppRoute.PRIVACY:
         return <PrivacyPage />;
       case AppRoute.TERMS:

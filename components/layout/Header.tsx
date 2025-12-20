@@ -134,7 +134,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <div className="relative shrink-0">
                 <img 
-                  src={userData?.avatarUrl} 
+                  src={userData?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${auth.currentUser?.uid}`} 
                   className="w-10 h-10 md:w-11 md:h-11 rounded-full object-cover shadow-sm ring-1 ring-slate-50" 
                   alt="User" 
                 />
@@ -144,7 +144,7 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="hidden xs:flex flex-col text-left overflow-hidden">
                 <div className="flex items-center gap-1.5 leading-none mb-0.5">
                   <span className="text-[15px] font-black text-[#0f172a] tracking-tight">
-                    {userData?.displayName.split(' ')[0]}
+                    {(userData?.displayName || 'Node').split(' ')[0]}
                   </span>
                   <span className="text-[12px]">{userData?.statusEmoji || '⚡'}</span>
                 </div>
@@ -153,7 +153,7 @@ export const Header: React.FC<HeaderProps> = ({
                     {userData?.statusMessage || 'Establish signal...'}
                   </p>
                   <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest font-mono leading-none border-l border-slate-100 pl-2">
-                    {userData?.presenceStatus}
+                    {userData?.presenceStatus || 'OFFLINE'}
                   </span>
                 </div>
               </div>
@@ -172,7 +172,7 @@ export const Header: React.FC<HeaderProps> = ({
                       className="w-full flex items-center gap-4 p-5 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-all text-left border border-slate-200 group"
                     >
                       <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center text-4xl shadow-sm border border-slate-100 shrink-0">
-                         {userData?.statusEmoji}
+                         {userData?.statusEmoji || '⚡'}
                       </div>
                       <div className="flex-1 min-w-0">
                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono mb-0.5">Neural_Broadcast</p>
@@ -182,7 +182,7 @@ export const Header: React.FC<HeaderProps> = ({
                          <div className="flex items-center gap-1.5 mt-1.5">
                             <span className={`w-2 h-2 rounded-full ${PRESENCE_DOTS[userData?.presenceStatus || 'Online']}`} />
                             <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest font-mono leading-none">
-                              {userData?.presenceStatus}
+                              {userData?.presenceStatus || 'OFFLINE'}
                             </p>
                          </div>
                       </div>
@@ -195,9 +195,9 @@ export const Header: React.FC<HeaderProps> = ({
                       onClick={() => { onNavigate(AppRoute.PROFILE); setIsSystemMenuOpen(false); }}
                       className="w-full flex items-center gap-3 p-4 bg-[#4f46e5] text-white rounded-2xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all group"
                     >
-                      <img src={userData?.avatarUrl} className="w-10 h-10 rounded-xl object-cover border border-white/20" alt="" />
+                      <img src={userData?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${auth.currentUser?.uid}`} className="w-10 h-10 rounded-xl object-cover border border-white/20" alt="" />
                       <div className="text-left overflow-hidden">
-                        <p className="font-black text-sm tracking-tight truncate">{userData?.displayName}</p>
+                        <p className="font-black text-sm tracking-tight truncate">{userData?.displayName || 'Unknown Node'}</p>
                         <p className="text-[9px] font-bold uppercase tracking-widest font-mono opacity-80">Full Control Node</p>
                       </div>
                     </button>
