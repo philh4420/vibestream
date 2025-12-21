@@ -6,7 +6,7 @@ import { LiveStream, Region } from '../../types';
 
 interface StreamGridPageProps {
   locale: Region;
-  onJoinStream: (id: string) => void;
+  onJoinStream: (stream: LiveStream) => void;
 }
 
 export const StreamGridPage: React.FC<StreamGridPageProps> = ({ locale, onJoinStream }) => {
@@ -61,7 +61,7 @@ export const StreamGridPage: React.FC<StreamGridPageProps> = ({ locale, onJoinSt
           {streams.map(stream => (
             <button 
               key={stream.id}
-              onClick={() => onJoinStream(stream.id)}
+              onClick={() => onJoinStream(stream)}
               className="group relative aspect-video rounded-[3rem] overflow-hidden bg-slate-900 shadow-xl transition-all hover:shadow-2xl hover:scale-[1.02] touch-active text-left"
             >
               <img 

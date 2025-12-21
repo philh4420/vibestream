@@ -2,16 +2,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../../services/firebase';
 import { collection, query, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
-import { User, Story } from '../../types';
+import { User, Story, LiveStream } from '../../types';
 
 interface StoriesStripProps {
   userData: User | null;
   onTransmit: (file: File) => void;
   onGoLive: () => void;
+  onJoinStream: (stream: LiveStream) => void;
 }
 
-export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData, onTransmit, onGoLive }) => {
+export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData, onTransmit, onGoLive, onJoinStream }) => {
   const [stories, setStories] = useState<Story[]>([]);
+  const [activeStreams, setActiveStreams] = useState<LiveStream[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSelectionOpen, setIsSelectionOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -19,29 +21,37 @@ export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData, onTransmit
   useEffect(() => {
     if (!db) return;
 
+    // Fetch Temporal Fragments (Stories)
     const yesterday = new Date();
     yesterday.setHours(yesterday.getHours() - 24);
-
-    const q = query(
+    const storyQ = query(
       collection(db, 'stories'),
       where('timestamp', '>=', yesterday),
       orderBy('timestamp', 'desc'),
       limit(20)
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const storyData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Story));
-      setStories(storyData);
-      setLoading(false);
-    }, (error) => {
-      console.error("Story Stream Interrupted:", error);
+    // Fetch Live Streams
+    const streamQ = query(
+      collection(db, 'streams'),
+      orderBy('startedAt', 'desc'),
+      limit(10)
+    );
+
+    const unsubStories = onSnapshot(storyQ, (snapshot) => {
+      setStories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Story)));
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    const unsubStreams = onSnapshot(streamQ, (snapshot) => {
+      setActiveStreams(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LiveStream)));
+    });
+
+    return () => {
+      // Fix: Corrected typo from unstories to unsubStories
+      unsubStories();
+      unsubStreams();
+    };
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,6 +66,7 @@ export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData, onTransmit
   return (
     <div className="relative">
       <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+        
         {/* 1. Universal Transmit Hub */}
         <div className="relative shrink-0">
           <button 
@@ -77,7 +88,37 @@ export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData, onTransmit
           </button>
         </div>
 
-        {/* 2. Real-Time Peer Fragments */}
+        {/* 2. LIVE SIGNALS (Priority Display) */}
+        {activeStreams.map(stream => (
+          <button 
+            key={stream.id} 
+            onClick={() => onJoinStream(stream)}
+            className="flex-shrink-0 w-32 h-44 md:w-40 md:h-56 rounded-[2.5rem] bg-slate-950 overflow-hidden relative group shadow-lg ring-4 ring-rose-500/20 transition-all hover:scale-[1.05] active:scale-95 touch-active"
+          >
+            <img 
+              src={stream.thumbnailUrl} 
+              className="w-full h-full object-cover opacity-60 transition-transform duration-[4s] group-hover:scale-125" 
+              alt="" 
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-rose-950/90 via-transparent to-transparent" />
+            
+            <div className="absolute top-4 left-4">
+              <div className="bg-rose-600 text-white px-2 py-0.5 rounded-md text-[7px] font-black uppercase tracking-widest flex items-center gap-1 shadow-lg">
+                <div className="w-1 h-1 bg-white rounded-full animate-pulse" />
+                Live
+              </div>
+            </div>
+
+            <div className="absolute bottom-5 left-5 right-5 text-left">
+               <p className="text-white text-[11px] font-black uppercase tracking-widest truncate italic">{stream.authorName}</p>
+               <div className="flex items-center gap-1.5 mt-1.5">
+                 <span className="text-[7px] font-black text-white/60 uppercase tracking-widest font-mono truncate">{stream.title}</span>
+               </div>
+            </div>
+          </button>
+        ))}
+
+        {/* 3. Temporal Peer Fragments */}
         {loading ? (
           [1, 2, 3].map(i => (
             <div key={i} className="flex-shrink-0 w-32 h-44 md:w-40 md:h-56 rounded-[2.5rem] bg-slate-100 animate-pulse border border-slate-50" />
@@ -110,14 +151,14 @@ export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData, onTransmit
           ))
         )}
 
-        {!loading && stories.length === 0 && (
+        {!loading && stories.length === 0 && activeStreams.length === 0 && (
           <div className="flex-shrink-0 flex flex-col items-center justify-center w-32 h-44 md:w-40 md:h-56 rounded-[2.5rem] bg-slate-50 border border-dashed border-slate-200 p-6 text-center">
-             <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest font-mono italic">No Active Peer Signals Detected</p>
+             <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest font-mono italic">No Active Signals Detected</p>
           </div>
         )}
       </div>
 
-      {/* Protocol Selection Modal (Outside the scroll container to prevent clipping) */}
+      {/* Protocol Selection Modal */}
       {isSelectionOpen && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6">
           <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl" onClick={() => setIsSelectionOpen(false)}></div>

@@ -10,10 +10,11 @@ import { ExplorePage } from './components/explore/ExplorePage';
 import { MessagesPage } from './components/messages/MessagesPage';
 import { StreamGridPage } from './components/streams/StreamGridPage';
 import { LiveBroadcastOverlay } from './components/streams/LiveBroadcastOverlay';
+import { LiveWatcherOverlay } from './components/streams/LiveWatcherOverlay';
 import { PrivacyPage } from './components/legal/PrivacyPage';
 import { TermsPage } from './components/legal/TermsPage';
 import { CookiesPage } from './components/legal/CookiesPage';
-import { AppRoute, Post, ToastMessage, Region, User as VibeUser, SystemSettings } from './types';
+import { AppRoute, Post, ToastMessage, Region, User as VibeUser, SystemSettings, LiveStream } from './types';
 import { db, auth } from './services/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { 
@@ -123,6 +124,7 @@ const App: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isLiveOverlayOpen, setIsLiveOverlayOpen] = useState(false);
   const [activeStreamId, setActiveStreamId] = useState<string | null>(null);
+  const [watchingStream, setWatchingStream] = useState<LiveStream | null>(null);
   const [newPostText, setNewPostText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -344,7 +346,7 @@ const App: React.FC = () => {
         authorAvatar: userData.avatarUrl,
         title: title || `${userData.displayName}'s Neural Broadcast`,
         thumbnailUrl: userData.avatarUrl, // Will be updated by screen capture in future
-        viewerCount: 0,
+        viewerCount: 1, // Broadcaster is the first viewer
         startedAt: serverTimestamp(),
         category: 'Live Signal'
       });
@@ -366,6 +368,32 @@ const App: React.FC = () => {
     } catch (e) {
       console.error(e);
       setIsLiveOverlayOpen(false);
+    }
+  };
+
+  const handleJoinStream = async (stream: LiveStream) => {
+    if (!db) return;
+    try {
+      addToast(`Synchronizing with Stream Node: ${stream.id.slice(0, 5)}`, 'info');
+      await updateDoc(doc(db, 'streams', stream.id), {
+        viewerCount: increment(1)
+      });
+      setWatchingStream(stream);
+    } catch (e) {
+      addToast("Signal Handshake Failed", "error");
+    }
+  };
+
+  const handleLeaveStream = async () => {
+    if (!db || !watchingStream) return;
+    try {
+      await updateDoc(doc(db, 'streams', watchingStream.id), {
+        viewerCount: increment(-1)
+      });
+      setWatchingStream(null);
+      addToast("Diverging from Signal", "info");
+    } catch (e) {
+      setWatchingStream(null);
     }
   };
 
@@ -406,7 +434,7 @@ const App: React.FC = () => {
       case AppRoute.MESSAGES:
         return <MessagesPage currentUser={user} locale={userRegion} addToast={addToast} />;
       case AppRoute.STREAM_GRID:
-        return <StreamGridPage locale={userRegion} onJoinStream={(id) => addToast(`Synchronising with Stream Node: ${id.slice(0, 5)}`, 'info')} />;
+        return <StreamGridPage locale={userRegion} onJoinStream={handleJoinStream} />;
       case AppRoute.PRIVACY:
         return <PrivacyPage />;
       case AppRoute.TERMS:
@@ -440,6 +468,7 @@ const App: React.FC = () => {
             onOpenCreate={() => setIsCreateModalOpen(true)}
             onTransmitStory={handleCreateStory}
             onGoLive={handleGoLive}
+            onJoinStream={handleJoinStream}
             locale={userRegion}
           />
         );
@@ -469,6 +498,13 @@ const App: React.FC = () => {
           onStart={handleStartStream} 
           onEnd={handleEndStream} 
           activeStreamId={activeStreamId}
+        />
+      )}
+
+      {watchingStream && (
+        <LiveWatcherOverlay 
+          stream={watchingStream} 
+          onLeave={handleLeaveStream} 
         />
       )}
 
