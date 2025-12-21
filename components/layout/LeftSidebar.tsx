@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { ICONS } from '../../constants';
-import { AppRoute, UserRole, User as VibeUser } from '../../types';
+import { AppRoute, UserRole, User as VibeUser, AppNotification } from '../../types';
 import { auth } from '../../services/firebase';
 
 interface LeftSidebarProps {
@@ -10,6 +10,7 @@ interface LeftSidebarProps {
   onOpenCreate: () => void;
   userRole: UserRole;
   userData: VibeUser | null;
+  notifications?: AppNotification[];
 }
 
 export const LeftSidebar: React.FC<LeftSidebarProps> = ({ 
@@ -17,16 +18,19 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   onNavigate, 
   onOpenCreate, 
   userRole,
-  userData
+  userData,
+  notifications = []
 }) => {
   
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
   const NavItem = ({ route, icon: Icon, label, customIcon, collapsed = false, badge }: { 
     route?: AppRoute, 
     icon?: React.FC, 
     label: string, 
     customIcon?: React.ReactNode,
     collapsed?: boolean,
-    badge?: string
+    badge?: string | number
   }) => {
     const isActive = route && activeRoute === route;
     return (
@@ -52,7 +56,11 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
             <span className={`text-[13px] font-bold tracking-tight truncate ${isActive ? 'text-indigo-800' : 'text-slate-700'}`}>
               {label}
             </span>
-            {badge && (
+            {/* 
+              Fix: Operator '>' cannot be applied to types 'string | number' and 'number'.
+              Safely checking type before comparison to support both numeric counts and string badges like "LIVE".
+            */}
+            {badge !== undefined && (typeof badge === 'number' ? badge > 0 : badge !== '') && (
               <span className="bg-rose-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md animate-pulse">
                 {badge}
               </span>
@@ -113,9 +121,10 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
         <NavItem route={AppRoute.FEED} icon={ICONS.Home} label="Central Hub" collapsed={collapsed} />
         <NavItem route={AppRoute.EXPLORE} icon={ICONS.Explore} label="Discover Grid" collapsed={collapsed} />
         <NavItem route={AppRoute.MESSAGES} icon={ICONS.Messages} label="Neural Comms" collapsed={collapsed} />
+        <NavItem route={AppRoute.NOTIFICATIONS} icon={ICONS.Bell} label="Alerts Center" collapsed={collapsed} badge={unreadCount} />
       </ProtocolGroup>
 
-      {/* 3. IDENTITY CLUSTERS (Friends/Groups/Pages) */}
+      {/* 3. IDENTITY CLUSTERS */}
       <ProtocolGroup title="Identity_Clusters" collapsed={collapsed}>
         <NavItem route={AppRoute.MESH} icon={ICONS.Profile} label="Your Mesh" collapsed={collapsed} />
         <NavItem route={AppRoute.CLUSTERS} icon={ICONS.Clusters} label="Neural Clusters" collapsed={collapsed} />
@@ -134,7 +143,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
         <NavItem route={AppRoute.GATHERINGS} icon={ICONS.Gatherings} label="Gatherings" collapsed={collapsed} />
       </ProtocolGroup>
 
-      {/* 6. COMPUTE NODES (Gaming/Fundraising/Admin) */}
+      {/* 6. COMPUTE NODES */}
       <ProtocolGroup title="Compute_Hub" collapsed={collapsed}>
         <NavItem route={AppRoute.SIMULATIONS} icon={ICONS.Simulations} label="Simulations" collapsed={collapsed} />
         <NavItem route={AppRoute.RESILIENCE} icon={ICONS.Resilience} label="Resilience Support" collapsed={collapsed} />
@@ -159,7 +168,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
         </div>
       )}
 
-      {/* SIDEBAR FOOTER (Pinned to Bottom) */}
+      {/* SIDEBAR FOOTER */}
       {!collapsed && (
         <div className="mt-auto pt-4 pb-2 px-4 border-t border-slate-50 opacity-40 hover:opacity-100 transition-opacity">
           <div className="flex flex-wrap gap-x-3 gap-y-1 text-[9px] font-black text-slate-800 uppercase tracking-widest font-mono">
@@ -176,7 +185,6 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
 
   return (
     <>
-      {/* Desktop Sidebar: Expanded (lg+) */}
       <aside 
         className="hidden lg:flex flex-col w-[300px] shrink-0 border-r border-precision bg-[#fcfcfd] p-4 pt-[calc(var(--header-h)+1.5rem)] overflow-y-auto no-scrollbar h-full sticky top-0"
         style={{ paddingLeft: 'max(1rem, var(--sal))' }}
@@ -184,7 +192,6 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
         {sidebarContent(false)}
       </aside>
 
-      {/* Tablet Rail: Compact (md to lg) */}
       <aside 
         className="hidden md:flex lg:hidden flex-col shrink-0 border-r border-precision bg-[#fcfcfd] py-6 items-center pt-[calc(var(--header-h)+1.5rem)] h-full overflow-y-auto no-scrollbar" 
         style={{ 
@@ -193,13 +200,6 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
         }}
       >
         {sidebarContent(true)}
-        
-        <button 
-          onClick={onOpenCreate}
-          className="mt-4 w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg hover:bg-black transition-all active:scale-90 group shrink-0"
-        >
-          <ICONS.Create />
-        </button>
       </aside>
     </>
   );

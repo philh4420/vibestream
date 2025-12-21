@@ -69,7 +69,7 @@ export type NotificationType = 'like' | 'comment' | 'follow' | 'mention' | 'broa
 export interface AppNotification {
   id: string;
   type: NotificationType;
-  pulseFrequency?: string; // New: Supports Pulse Spectrum
+  pulseFrequency?: string; 
   fromUserId: string;
   fromUserName: string;
   fromUserAvatar: string;
@@ -88,7 +88,7 @@ export interface InlineReaction {
 
 export interface Comment {
   id: string;
-  parentId?: string; // Support for nested frequency threads
+  parentId?: string; 
   authorId: string;
   authorName: string;
   authorAvatar: string;
@@ -124,13 +124,13 @@ export interface Post {
   audience?: SignalAudience;
   reactions?: Record<string, number>;
   bookmarkedBy?: string[];
-  inlineReactions?: Record<number, InlineReaction[]>; // Map of text block index to reactions
+  inlineReactions?: Record<number, InlineReaction[]>; 
   relaySource?: {
     postId: string;
     authorName: string;
     authorAvatar: string;
   };
-  pulseFrequency?: string; // The primary frequency reaction of the current user
+  pulseFrequency?: string; 
 }
 
 export interface Story {
@@ -184,6 +184,7 @@ export enum AppRoute {
   EXPLORE = 'explore',
   CREATE = 'create',
   MESSAGES = 'messages',
+  NOTIFICATIONS = 'notifications',
   PROFILE = 'profile',
   COMMUNITIES = 'communities',
   ADMIN = 'admin',

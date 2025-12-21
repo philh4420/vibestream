@@ -8,6 +8,7 @@ import { AdminPanel } from './components/admin/AdminPanel';
 import { ProfilePage } from './components/profile/ProfilePage';
 import { ExplorePage } from './components/explore/ExplorePage';
 import { MessagesPage } from './components/messages/MessagesPage';
+import { NotificationsPage } from './components/notifications/NotificationsPage';
 import { StreamGridPage } from './components/streams/StreamGridPage';
 import { LiveBroadcastOverlay } from './components/streams/LiveBroadcastOverlay';
 import { LiveWatcherOverlay } from './components/streams/LiveWatcherOverlay';
@@ -83,9 +84,7 @@ const App: React.FC = () => {
   const [postLocation, setPostLocation] = useState<string | null>(null);
   const [postAudience, setPostAudience] = useState<SignalAudience>('global');
   
-  // Collaborative authors state
   const [coAuthors, setCoAuthors] = useState<{ id: string, name: string, avatar: string }[]>([]);
-  
   const [userRegion, setUserRegion] = useState<Region>('en-GB');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -123,7 +122,7 @@ const App: React.FC = () => {
             if (userDoc.exists()) setUserData({ id: userDoc.id, ...userDoc.data() } as VibeUser);
           });
           
-          const qNotif = query(collection(db, 'notifications'), where('toUserId', '==', user.uid), orderBy('timestamp', 'desc'), limit(20));
+          const qNotif = query(collection(db, 'notifications'), where('toUserId', '==', user.uid), orderBy('timestamp', 'desc'), limit(50));
           onSnapshot(qNotif, (snap) => {
             setNotifications(snap.docs.map(d => ({ id: d.id, ...d.data() } as AppNotification)));
           });
@@ -325,6 +324,16 @@ const App: React.FC = () => {
 
       {activeRoute === AppRoute.EXPLORE && <ExplorePage posts={posts} onLike={handleLike} locale={userRegion} />}
       {activeRoute === AppRoute.MESSAGES && userData && <MessagesPage currentUser={userData} locale={userRegion} addToast={addToast} />}
+      {activeRoute === AppRoute.NOTIFICATIONS && (
+        <NotificationsPage 
+          notifications={notifications} 
+          onDelete={handleDeleteNotification} 
+          onMarkRead={handleMarkRead} 
+          addToast={addToast} 
+          locale={userRegion}
+          userData={userData}
+        />
+      )}
       {activeRoute === AppRoute.PROFILE && userData && (
         <ProfilePage 
           userData={userData} 
