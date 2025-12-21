@@ -95,9 +95,7 @@ const App: React.FC = () => {
   const [postAudience, setPostAudience] = useState<SignalAudience>('global');
   
   const [coAuthors, setCoAuthors] = useState<{ id: string, name: string, avatar: string }[]>([]);
-  const [isCoPilotSelectorOpen, setIsCoPilotSelectorOpen] = useState(false);
   const [availableFriends, setAvailableFriends] = useState<VibeUser[]>([]);
-  const [searchFriendQuery, setSearchFriendQuery] = useState('');
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [isGiphyPickerOpen, setIsGiphyPickerOpen] = useState(false);
 
@@ -461,11 +459,22 @@ const App: React.FC = () => {
           
           <div className="relative bg-white w-full max-w-2xl md:rounded-[4rem] h-[95vh] md:h-auto max-h-[95vh] flex flex-col shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-20 duration-700 overflow-hidden border border-white">
             
-            {/* Giphy Visual Buffer (Overlaid Positioning) */}
+            {/* Giphy Visual Buffer (Centered Focal Point Overlay) */}
             {isGiphyPickerOpen && (
               <div className="absolute inset-0 z-[2700] p-4 md:p-10 flex items-center justify-center bg-slate-950/20 backdrop-blur-md animate-in fade-in duration-500">
-                <div className="w-full max-w-lg">
+                <div className="absolute inset-0" onClick={() => setIsGiphyPickerOpen(false)} />
+                <div className="relative w-full max-w-lg shadow-2xl">
                    <GiphyPicker onSelect={handleGifSelect} onClose={() => setIsGiphyPickerOpen(false)} />
+                </div>
+              </div>
+            )}
+
+            {/* Emoji Protocol Hub (Centered Focal Point Overlay) */}
+            {isEmojiPickerOpen && (
+              <div className="absolute inset-0 z-[2700] p-4 md:p-10 flex items-center justify-center bg-slate-950/20 backdrop-blur-md animate-in fade-in duration-500">
+                <div className="absolute inset-0" onClick={() => setIsEmojiPickerOpen(false)} />
+                <div className="relative w-full max-w-lg shadow-2xl">
+                   <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />
                 </div>
               </div>
             )}
@@ -482,11 +491,6 @@ const App: React.FC = () => {
               <div className="flex items-start gap-6 mb-10">
                 <div className="relative shrink-0">
                   <img src={userData?.avatarUrl} className="w-14 h-14 md:w-16 md:h-16 rounded-[1.6rem] object-cover border-2 border-slate-50 shadow-md" alt="" />
-                  <div className="flex -space-x-4 absolute -bottom-3 -right-6">
-                    {coAuthors.map((ca) => (
-                      <img key={ca.id} src={ca.avatar} className="w-10 h-10 rounded-full border-4 border-white shadow-xl" alt="" />
-                    ))}
-                  </div>
                 </div>
                 <div className="flex-1">
                    <textarea 
@@ -512,15 +516,7 @@ const App: React.FC = () => {
             </div>
 
             <div className="p-10 md:p-14 pt-0 shrink-0 relative bg-white">
-               
-               {/* Emoji Picker Floating Node */}
-               {isEmojiPickerOpen && (
-                 <div className="absolute bottom-[calc(100%+2rem)] left-10 z-[2600]">
-                    <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />
-                 </div>
-               )}
-
-               {/* Stylized Button Bar */}
+               {/* Stylized Button Bar - UI 2026 Manifest */}
                <div className="flex items-center gap-4 mb-10">
                   <button 
                     onClick={() => fileInputRef.current?.click()} 
@@ -530,15 +526,15 @@ const App: React.FC = () => {
                   </button>
                   
                   <button 
-                    onClick={() => { setIsGiphyPickerOpen(!isGiphyPickerOpen); setIsEmojiPickerOpen(false); }}
-                    className={`w-16 h-16 border-2 rounded-2xl flex items-center justify-center text-xs font-black font-mono transition-all active:scale-90 shadow-sm ${isGiphyPickerOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-white border-slate-100 text-slate-400'}`}
+                    onClick={() => { setIsGiphyPickerOpen(true); setIsEmojiPickerOpen(false); }}
+                    className={`w-16 h-16 border-2 rounded-2xl flex items-center justify-center text-xs font-black font-mono transition-all active:scale-90 shadow-sm ${isGiphyPickerOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-white border-slate-100 text-slate-400 hover:border-indigo-200 hover:text-indigo-600'}`}
                   >
                     GIF
                   </button>
 
                   <button 
-                    onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }}
-                    className={`w-16 h-16 border-2 rounded-2xl flex items-center justify-center transition-all active:scale-90 shadow-sm ${isEmojiPickerOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-white border-slate-100 text-slate-400'}`}
+                    onClick={() => { setIsEmojiPickerOpen(true); setIsGiphyPickerOpen(false); }}
+                    className={`w-16 h-16 border-2 rounded-2xl flex items-center justify-center transition-all active:scale-90 shadow-sm ${isEmojiPickerOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-white border-slate-100 text-slate-400 hover:border-indigo-200 hover:text-indigo-600'}`}
                   >
                     <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" /></svg>
                   </button>
