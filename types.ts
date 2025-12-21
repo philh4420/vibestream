@@ -5,6 +5,8 @@ export type Region = 'en-GB' | 'en-US' | 'de-DE' | 'fr-FR' | 'ja-JP';
 
 export type PresenceStatus = 'Online' | 'Focus' | 'Invisible' | 'Away' | 'In-Transit' | 'Deep Work' | 'Syncing';
 
+export type SignalAudience = 'global' | 'mesh' | 'private';
+
 export interface WeatherInfo {
   temp: number;
   feelsLike: number;
@@ -119,6 +121,8 @@ export interface Post {
   isLiked?: boolean;
   timestamp?: any;
   likedBy?: string[];
+  location?: string;
+  audience?: SignalAudience;
 }
 
 export interface Chat {
