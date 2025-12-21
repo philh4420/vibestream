@@ -39,6 +39,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!db) return;
@@ -165,6 +166,14 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
 
   return (
     <div className="mt-8 pt-8 border-t border-slate-100 animate-in slide-in-from-top-4 duration-500">
+      {/* Background Focus Overlay when Picker is Open */}
+      {isEmojiPickerOpen && (
+        <div 
+          className="fixed inset-0 z-[1500] bg-slate-950/20 backdrop-blur-[2px] animate-in fade-in duration-300"
+          onClick={() => setIsEmojiPickerOpen(false)}
+        />
+      )}
+
       {focusedCommentId && (
         <div className="fixed inset-0 z-[550] flex items-center justify-center p-6 animate-in fade-in duration-500">
            <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-md" onClick={() => setFocusedCommentId(null)}></div>
@@ -190,6 +199,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
                className="w-full bg-transparent border-none px-5 py-3.5 text-sm font-bold outline-none placeholder:text-slate-300"
              />
              <button 
+               ref={buttonRef}
                type="button"
                onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
                className={`p-2 mr-2 rounded-lg transition-all active:scale-90 ${isEmojiPickerOpen ? 'text-indigo-600 bg-indigo-50' : 'text-slate-300 hover:text-indigo-500'}`}
@@ -198,7 +208,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
              </button>
 
              {isEmojiPickerOpen && (
-                <div className="absolute bottom-full right-0 mb-4 z-[1000]">
+                <div className="fixed z-[2000] bottom-[max(2rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 md:left-auto md:right-4 md:bottom-24 md:translate-x-0">
                   <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />
                 </div>
              )}
