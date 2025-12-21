@@ -64,7 +64,7 @@ export interface User {
   }[];
 }
 
-export type NotificationType = 'like' | 'comment' | 'follow' | 'mention' | 'broadcast' | 'system';
+export type NotificationType = 'like' | 'comment' | 'follow' | 'mention' | 'broadcast' | 'system' | 'relay';
 
 export interface AppNotification {
   id: string;
@@ -124,6 +124,12 @@ export interface Post {
   reactions?: Record<string, number>;
   bookmarkedBy?: string[];
   inlineReactions?: Record<number, InlineReaction[]>; // Map of text block index to reactions
+  relaySource?: {
+    postId: string;
+    authorName: string;
+    authorAvatar: string;
+  };
+  pulseFrequency?: string; // The primary frequency reaction of the current user
 }
 
 export interface Story {

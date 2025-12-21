@@ -12,6 +12,22 @@ export const PRESENCE_CONFIG: Record<PresenceStatus, { color: string, pulse: str
   'Syncing': { color: 'bg-[#60a5fa]', pulse: 'pulse-active-emerald', label: 'SYNCING' }
 };
 
+export interface PulseFrequency {
+  id: string;
+  emoji: string;
+  label: string;
+  color: string;
+  glow: string;
+}
+
+export const PULSE_FREQUENCIES: PulseFrequency[] = [
+  { id: 'pulse', emoji: '❤️', label: 'PULSE', color: 'text-rose-500', glow: 'shadow-rose-500/20' },
+  { id: 'intensity', emoji: '🔥', label: 'INTENSITY', color: 'text-orange-500', glow: 'shadow-orange-500/20' },
+  { id: 'cognition', emoji: '🧠', label: 'COGNITION', color: 'text-purple-500', glow: 'shadow-purple-500/20' },
+  { id: 'velocity', emoji: '🚀', label: 'VELOCITY', color: 'text-cyan-500', glow: 'shadow-cyan-500/20' },
+  { id: 'resilience', emoji: '🛡️', label: 'RESILIENCE', color: 'text-emerald-500', glow: 'shadow-emerald-500/20' }
+];
+
 export const IDENTITY_SIGNALS = ['⚡', '🔋', '🚀', '🧠', '🎧', '✈️', '💻', '☕', '🌟', '🛡️', '🛰️'];
 
 export const ICONS = {

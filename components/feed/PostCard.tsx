@@ -1,18 +1,22 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Post, User } from '../../types';
-import { ICONS } from '../../constants';
+import { ICONS, PULSE_FREQUENCIES } from '../../constants';
 import { db } from '../../services/firebase';
 import { 
   deleteDoc, 
   doc, 
-  updateDoc, 
+  updateDoc,
+  increment,
+  addDoc,
+  serverTimestamp,
+  collection
 } from 'firebase/firestore';
 import { CommentSection } from './CommentSection';
 
 interface PostCardProps {
   post: Post;
-  onLike: (id: string) => void;
+  onLike: (id: string, frequency?: string) => void;
   locale?: string;
   isAuthor?: boolean;
   userData: User | null;
@@ -26,6 +30,11 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [showComments, setShowComments] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(post.bookmarkedBy?.includes(userData?.id || '') || false);
+  
+  // Pulse Spectrum State
+  const [isPulseMenuOpen, setIsPulseMenuOpen] = useState(false);
+  const [rippleEffect, setRippleEffect] = useState<{ x: number, y: number, color: string } | null>(null);
+  const pulseTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const textChunks = useMemo(() => {
     return post.content.split(/([.!?]\s+)/).filter(Boolean).map((chunk, i, arr) => {
@@ -34,6 +43,16 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
        return chunk + (next || '');
     }).filter(Boolean);
   }, [post.content]);
+
+  // Signal Velocity Calculation
+  const signalVelocity = useMemo(() => {
+    if (!post.timestamp) return 0;
+    const postTime = post.timestamp.toDate ? post.timestamp.toDate().getTime() : new Date(post.createdAt).getTime();
+    const now = Date.now();
+    const hoursElapsed = Math.max((now - postTime) / (1000 * 60 * 60), 0.1);
+    const totalEngagement = post.likes + post.comments + post.shares;
+    return Math.round(totalEngagement / hoursElapsed * 10) / 10;
+  }, [post.likes, post.comments, post.shares, post.timestamp]);
 
   const handlePurgeSignal = async () => {
     if (!isAuthor || !db) return;
@@ -48,21 +67,64 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
     }
   };
 
-  const handleToggleBookmark = async () => {
+  const handlePulseStart = (e: React.MouseEvent | React.TouchEvent) => {
+    pulseTimerRef.current = setTimeout(() => {
+      setIsPulseMenuOpen(true);
+    }, 500);
+  };
+
+  const handlePulseEnd = (e: React.MouseEvent | React.TouchEvent) => {
+    if (pulseTimerRef.current) {
+      clearTimeout(pulseTimerRef.current);
+      if (!isPulseMenuOpen) {
+        onLike(post.id);
+        triggerRipple(e, 'rose');
+      }
+    }
+  };
+
+  const triggerRipple = (e: any, color: string) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
+    const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
+    setRippleEffect({ x, y, color });
+    setTimeout(() => setRippleEffect(null), 1000);
+  };
+
+  const selectFrequency = (freqId: string) => {
+    onLike(post.id, freqId);
+    setIsPulseMenuOpen(false);
+    addToast(`${freqId.toUpperCase()} Frequency Engaged`, 'success');
+  };
+
+  const handleRelay = async () => {
     if (!db || !userData) return;
-    const postRef = doc(db, 'posts', post.id);
-    const newBookmarked = !isBookmarked;
-    setIsBookmarked(newBookmarked);
-    
+    addToast("Initiating Signal Relay...", "info");
     try {
-      await updateDoc(postRef, {
-        bookmarkedBy: newBookmarked 
-          ? [...(post.bookmarkedBy || []), userData.id]
-          : (post.bookmarkedBy || []).filter(id => id !== userData.id)
+      // Fix: Added missing collection import from firebase/firestore
+      await addDoc(collection(db, 'posts'), {
+        authorId: userData.id,
+        authorName: userData.displayName,
+        authorAvatar: userData.avatarUrl,
+        content: post.content,
+        contentLengthTier: post.contentLengthTier,
+        media: post.media || [],
+        likes: 0,
+        comments: 0,
+        shares: 0,
+        createdAt: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+        timestamp: serverTimestamp(),
+        likedBy: [],
+        relaySource: {
+          postId: post.id,
+          authorName: post.authorName,
+          authorAvatar: post.authorAvatar
+        }
       });
-      addToast(newBookmarked ? "Signal archived in vault" : "Signal removed from vault", "info");
+      await updateDoc(doc(db, 'posts', post.id), { shares: increment(1) });
+      addToast("Signal Relayed successfully", "success");
     } catch (e) {
-      addToast("Vault sync failed", "error");
+      addToast("Relay failed: Grid interference", "error");
     }
   };
 
@@ -98,8 +160,33 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
   const isDeep = post.contentLengthTier === 'deep';
 
   return (
-    <div className={`group bg-white border-precision rounded-[2.5rem] overflow-hidden transition-all duration-500 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.08)] mb-8 ${isPulse ? 'border-l-8 border-l-indigo-600' : ''}`}>
+    <div className={`group bg-white border-precision rounded-[2.5rem] overflow-hidden transition-all duration-500 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.08)] mb-8 relative ${isPulse ? 'border-l-8 border-l-indigo-600' : ''}`}>
       
+      {/* Visual Ripple Effect */}
+      {rippleEffect && (
+        <div 
+          className={`absolute pointer-events-none rounded-full animate-ping opacity-20 bg-${rippleEffect.color}-500`}
+          style={{ 
+            left: rippleEffect.x, 
+            top: rippleEffect.y, 
+            width: '200px', 
+            height: '200px', 
+            marginLeft: '-100px', 
+            marginTop: '-100px' 
+          }}
+        />
+      )}
+
+      {/* Relay Lineage Header */}
+      {post.relaySource && (
+        <div className="px-6 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+           <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
+              <span className="text-[10px] font-black uppercase text-indigo-600 tracking-widest font-mono">Signal_Relay_From: {post.relaySource.authorName}</span>
+           </div>
+        </div>
+      )}
+
       <div className="p-6 md:p-8">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
@@ -131,6 +218,12 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
                  <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest font-mono">
                    {post.createdAt}
                  </p>
+                 {signalVelocity > 0.5 && (
+                   <div className="flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 rounded-md">
+                     <svg className="w-2.5 h-2.5 text-indigo-600 animate-pulse" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                     <span className="text-[8px] font-black text-indigo-600 font-mono">{signalVelocity} p/h</span>
+                   </div>
+                 )}
               </div>
             </div>
           </div>
@@ -195,19 +288,44 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-5 border-t border-slate-50">
+        <div className="flex items-center justify-between pt-5 border-t border-slate-50 relative">
           <div className="flex gap-6 md:gap-10">
-            <button 
-              onClick={(e) => { e.stopPropagation(); onLike(post.id); }} 
-              className={`flex items-center gap-2.5 transition-all touch-active group/btn ${post.isLiked ? 'text-rose-500' : 'text-slate-400'}`}
-            >
-              <div className={`p-2.5 rounded-full transition-all duration-300 ${post.isLiked ? 'bg-rose-50 shadow-lg' : 'group-hover/btn:bg-rose-50'}`}>
-                <svg xmlns="http://www.w3.org/2000/svg" fill={post.isLiked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
-                  <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
-                </svg>
-              </div>
-              <span className="text-sm font-black tracking-tighter">{post.likes.toLocaleString(locale)}</span>
-            </button>
+            {/* Pulse Spectrum Engagement */}
+            <div className="relative">
+              <button 
+                onMouseDown={handlePulseStart}
+                onMouseUp={handlePulseEnd}
+                onTouchStart={handlePulseStart}
+                onTouchEnd={handlePulseEnd}
+                className={`flex items-center gap-2.5 transition-all touch-active group/btn ${post.isLiked ? 'text-rose-500' : 'text-slate-400'}`}
+              >
+                <div className={`p-2.5 rounded-full transition-all duration-300 ${post.isLiked ? 'bg-rose-50 shadow-lg scale-110' : 'group-hover/btn:bg-rose-50'}`}>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill={post.isLiked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6 transition-transform group-active/btn:scale-75">
+                    <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                  </svg>
+                </div>
+                <span className="text-sm font-black tracking-tighter">{(post.likes || 0).toLocaleString(locale)}</span>
+              </button>
+
+              {/* Hold-to-Reveal Spectrum Menu */}
+              {isPulseMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-[100]" onClick={() => setIsPulseMenuOpen(false)} />
+                  <div className="absolute bottom-14 left-0 bg-white/80 backdrop-blur-3xl rounded-full p-2 border border-slate-100 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] flex gap-2 z-[110] animate-in slide-in-from-bottom-4 duration-300">
+                     {PULSE_FREQUENCIES.map(freq => (
+                       <button 
+                         key={freq.id}
+                         onClick={() => selectFrequency(freq.id)}
+                         className="w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center text-xl lg:text-2xl hover:scale-125 transition-transform bg-white shadow-sm border border-slate-50"
+                         title={freq.label}
+                       >
+                         {freq.emoji}
+                       </button>
+                     ))}
+                  </div>
+                </>
+              )}
+            </div>
 
             <button 
               onClick={() => setShowComments(!showComments)}
@@ -216,9 +334,26 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
               <div className={`p-2.5 rounded-full transition-all duration-300 ${showComments ? 'bg-indigo-50 shadow-lg' : 'group-hover/btn:bg-indigo-50'}`}>
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 0 1-.923 1.785 0.596.596 0 0 0 .21.685 0.59.59 0 0 0 .44.03 6.041 6.041 0 0 0 2.986-1.334c.451.06.91.09 1.378.09Z" /></svg>
               </div>
-              <span className="text-sm font-black tracking-tighter">{post.comments.toLocaleString(locale)}</span>
+              <span className="text-sm font-black tracking-tighter">{(post.comments || 0).toLocaleString(locale)}</span>
+            </button>
+
+            {/* Signal Relay Action */}
+            <button 
+              onClick={handleRelay}
+              className="flex items-center gap-2.5 transition-all touch-active group/btn text-slate-400"
+            >
+              <div className="p-2.5 rounded-full transition-all duration-300 group-hover/btn:bg-indigo-50 group-hover/btn:text-indigo-600">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
+              </div>
+              <span className="text-sm font-black tracking-tighter">{(post.shares || 0).toLocaleString(locale)}</span>
             </button>
           </div>
+
+          <button className="p-2.5 text-slate-300 hover:text-slate-900 hover:bg-slate-50 rounded-full transition-all duration-300">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0-10.628a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5m0 10.628a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5" />
+            </svg>
+          </button>
         </div>
 
         {showComments && (
