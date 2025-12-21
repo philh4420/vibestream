@@ -35,6 +35,19 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
   const [isPulseMenuOpen, setIsPulseMenuOpen] = useState(false);
   const [rippleEffect, setRippleEffect] = useState<{ x: number, y: number, color: string } | null>(null);
   const pulseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const optionsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (optionsRef.current && !optionsRef.current.contains(event.target as Node)) {
+        setShowOptions(false);
+      }
+    };
+    if (showOptions) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showOptions]);
 
   const textChunks = useMemo(() => {
     return post.content.split(/([.!?]\s+)/).filter(Boolean).map((chunk, i, arr) => {
@@ -60,7 +73,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
     setShowDeleteModal(false);
     try {
       await deleteDoc(doc(db, 'posts', post.id));
-      addToast("Signal purged from grid", "success");
+      addToast(post.relaySource ? "Relay terminated from grid" : "Signal purged from grid", "success");
     } catch (e) {
       addToast("Purge failed: Access denied", "error");
       setIsDeleting(false);
@@ -101,7 +114,6 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
     if (!db || !userData) return;
     addToast("Initiating Signal Relay...", "info");
     try {
-      // Fix: Added missing collection import from firebase/firestore
       await addDoc(collection(db, 'posts'), {
         authorId: userData.id,
         authorName: userData.displayName,
@@ -228,12 +240,39 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
             </div>
           </div>
           
-          <button 
-            onClick={() => setShowOptions(!showOptions)}
-            className="p-2.5 text-slate-300 hover:text-slate-900 transition-all hover:bg-slate-50 rounded-xl active:scale-90"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" /></svg>
-          </button>
+          <div className="relative" ref={optionsRef}>
+            <button 
+              onClick={() => setShowOptions(!showOptions)}
+              className={`p-2.5 transition-all rounded-xl active:scale-90 ${showOptions ? 'bg-indigo-50 text-indigo-600' : 'text-slate-300 hover:text-slate-900 hover:bg-slate-50'}`}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" /></svg>
+            </button>
+
+            {showOptions && (
+              <div className="absolute right-0 mt-2 w-56 bg-white/90 backdrop-blur-3xl border border-precision rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-2 duration-300">
+                <div className="p-2 space-y-1">
+                  <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 transition-all text-left">
+                    <div className="scale-75"><ICONS.Saved /></div>
+                    <span className="text-[10px] font-black uppercase tracking-widest font-mono">Bookmark_Signal</span>
+                  </button>
+                  <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 transition-all text-left">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
+                    <span className="text-[10px] font-black uppercase tracking-widest font-mono">Report_Violation</span>
+                  </button>
+                  
+                  {isAuthor && (
+                    <button 
+                      onClick={() => { setShowOptions(false); setShowDeleteModal(true); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-50 transition-all text-left border-t border-slate-50 mt-1"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
+                      <span className="text-[10px] font-black uppercase tracking-widest font-mono">{post.relaySource ? 'Terminate_Relay' : 'Purge_Signal'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className={`mb-6 ${isPulse ? 'text-center' : ''}`}>
@@ -369,14 +408,32 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
       {showDeleteModal && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-2xl" onClick={() => setShowDeleteModal(false)}></div>
-          <div className="relative bg-white w-full max-w-sm rounded-[3rem] p-10 shadow-2xl border border-white/10">
-             <div className="text-center space-y-3 mb-10">
+          <div className="relative bg-white w-full max-w-sm rounded-[3rem] p-10 shadow-2xl border border-white/10 overflow-hidden">
+             <div className="absolute top-0 left-0 w-full h-1.5 bg-rose-600" />
+             <div className="text-center space-y-4 mb-10">
+               <div className="w-16 h-16 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-2 shadow-sm">
+                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
+               </div>
                <h3 className="text-2xl font-black text-slate-950 tracking-tighter uppercase italic leading-none">PROTOCOL_ALERT</h3>
-               <p className="text-xs text-slate-500 font-bold leading-relaxed px-4">Terminate this transmission sequence? This action is immutable.</p>
+               <p className="text-xs text-slate-500 font-bold leading-relaxed px-4">
+                 {post.relaySource 
+                   ? "Terminate this signal relay? The connection to the original broadcast will be severed on your grid."
+                   : "Terminate this transmission sequence? This action is immutable and will purge the packet from all synced nodes."}
+               </p>
              </div>
              <div className="flex flex-col gap-3">
-                <button onClick={handlePurgeSignal} className="w-full py-5 bg-rose-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-xl">CONFIRM_PURGE</button>
-                <button onClick={() => setShowDeleteModal(false)} className="w-full py-5 bg-slate-50 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em]">ABORT_ACTION</button>
+                <button 
+                  onClick={handlePurgeSignal} 
+                  className="w-full py-5 bg-rose-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-xl hover:bg-rose-700 transition-all active:scale-95"
+                >
+                  {post.relaySource ? 'CONFIRM_TERMINATION' : 'CONFIRM_PURGE'}
+                </button>
+                <button 
+                  onClick={() => setShowDeleteModal(false)} 
+                  className="w-full py-5 bg-slate-50 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-slate-100 transition-all active:scale-95"
+                >
+                  ABORT_ACTION
+                </button>
              </div>
           </div>
         </div>
