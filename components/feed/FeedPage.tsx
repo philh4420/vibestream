@@ -11,7 +11,7 @@ interface FeedPageProps {
   userData: User | null;
   onLike: (id: string) => void;
   onViewPost: (post: Post) => void;
-  onOpenCreate: () => void;
+  onOpenCreate: (initialFiles?: File[]) => void;
   onTransmitStory: (file: File) => void;
   onGoLive: () => void;
   onJoinStream: (stream: LiveStream) => void;
@@ -53,7 +53,11 @@ export const FeedPage: React.FC<FeedPageProps> = ({
       </section>
 
       <section className="max-w-3xl mx-auto w-full">
-        <CreateSignalBox userData={userData} onOpen={onOpenCreate} />
+        <CreateSignalBox 
+          userData={userData} 
+          onOpen={() => onOpenCreate()} 
+          onFileSelect={(file) => onOpenCreate([file])} 
+        />
       </section>
 
       <section className="max-w-3xl mx-auto w-full">
@@ -79,7 +83,7 @@ export const FeedPage: React.FC<FeedPageProps> = ({
         ) : (
           <div className="py-48 text-center bg-white rounded-[4rem] border-precision shadow-sm flex flex-col items-center justify-center">
              <div className="w-24 h-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mb-10 text-slate-200 shadow-inner">
-                <svg className="w-10 h-10 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                <svg className="w-10 h-10 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
              </div>
              <p className="text-[12px] font-black text-slate-400 uppercase tracking-[0.5em] font-mono italic px-12 leading-loose max-w-sm"> No signals detected. </p>
           </div>

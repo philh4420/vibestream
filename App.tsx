@@ -109,6 +109,15 @@ const App: React.FC = () => {
     setUserToasts(prev => prev.filter(t => t.id !== id));
   };
 
+  // Global listener for toasts from children
+  useEffect(() => {
+    const handleGlobalToast = (e: any) => {
+      if (e.detail?.msg) addToast(e.detail.msg, e.detail.type);
+    };
+    window.addEventListener('vibe-toast', handleGlobalToast);
+    return () => window.removeEventListener('vibe-toast', handleGlobalToast);
+  }, []);
+
   const handleNavigate = (route: AppRoute) => {
     if (route !== AppRoute.SINGLE_POST) {
       setPreviousRoute(activeRoute);
@@ -122,6 +131,19 @@ const App: React.FC = () => {
     setSelectedPost(post);
     setPreviousRoute(activeRoute);
     setActiveRoute(AppRoute.SINGLE_POST);
+  };
+
+  const handleOpenCreate = (initialFiles?: File[]) => {
+    if (initialFiles && initialFiles.length > 0) {
+      const newFiles = [...selectedFiles, ...initialFiles];
+      setSelectedFiles(newFiles);
+      const newPreviews = initialFiles.map(f => ({
+        url: URL.createObjectURL(f),
+        type: f.type.startsWith('video/') ? 'video' : 'image'
+      }));
+      setFilePreviews([...filePreviews, ...newPreviews]);
+    }
+    setIsCreateModalOpen(true);
   };
 
   const handleLogout = async () => {
@@ -147,7 +169,6 @@ const App: React.FC = () => {
     setNewPostText(before + emoji + after);
     setIsEmojiPickerOpen(false);
     
-    // Focus back and set caret position after state update
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(start + emoji.length, start + emoji.length);
@@ -181,8 +202,6 @@ const App: React.FC = () => {
             isInitialLoad.current = false;
           });
 
-          // Fetch Synced Nodes (Following/Friends) for Co-Pilot
-          // Restriction: Only users you established a connection with (following) can be co-pilots
           const qFollowing = query(collection(db, 'users', user.uid, 'following'), limit(50));
           onSnapshot(qFollowing, (snap) => {
             setAvailableFriends(snap.docs.map(d => ({ 
@@ -355,7 +374,7 @@ const App: React.FC = () => {
   return (
     <Layout 
       activeRoute={activeRoute} onNavigate={handleNavigate} 
-      onOpenCreate={() => setIsCreateModalOpen(true)}
+      onOpenCreate={() => handleOpenCreate()}
       onLogout={handleLogout} userData={userData} notifications={notifications}
       onMarkRead={() => {}} onDeleteNotification={() => {}} userRole={userData?.role} currentRegion={userRegion}
       onRegionChange={setUserRegion}
@@ -363,7 +382,7 @@ const App: React.FC = () => {
       {activeRoute === AppRoute.FEED && (
         <FeedPage 
           posts={posts} userData={userData} onLike={handleLike} 
-          onOpenCreate={() => setIsCreateModalOpen(true)}
+          onOpenCreate={handleOpenCreate}
           onTransmitStory={() => {}} onGoLive={() => setIsLiveOverlayOpen(true)}
           onJoinStream={(s) => setWatchingStream(s)} locale={userRegion}
           onViewPost={handleOpenPost}
@@ -490,11 +509,10 @@ const App: React.FC = () => {
                  </div>
                )}
 
-               <input type="file" ref={fileInputRef} multiple className="hidden" accept="image/*,video/*" onChange={handleFileChange} />
+               <input type="file" ref={fileInputRef} multiple className="hidden" accept="image/*,video/*,.heic,.heif,.avif,.webp" onChange={handleFileChange} />
                <button onClick={handleCreatePost} disabled={isUploading || (!newPostText.trim() && selectedFiles.length === 0)} className="w-full py-6 md:py-8 bg-indigo-600 text-white rounded-[2rem] md:rounded-[2.5rem] font-black text-sm md:text-base uppercase tracking-[0.4em] shadow-2xl hover:bg-indigo-700 transition-all active:scale-[0.98] flex items-center justify-center gap-4 italic">{isUploading ? 'SYNCHRONIZING...' : 'Broadcast_Signal'}</button>
             </div>
 
-            {/* NEURAL CO-PILOT SELECTION OVERLAY */}
             {isCoPilotSelectorOpen && (
               <div className="absolute inset-0 z-[100] flex flex-col bg-white animate-in slide-in-from-right-10 duration-500">
                 <div className="p-8 border-b border-slate-50 flex items-center justify-between">

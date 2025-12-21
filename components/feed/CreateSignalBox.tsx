@@ -1,14 +1,25 @@
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { User } from '../../types';
 import { ICONS } from '../../constants';
 
 interface CreateSignalBoxProps {
   userData: User | null;
   onOpen: () => void;
+  onFileSelect?: (file: File) => void;
 }
 
-export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOpen }) => {
+export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOpen, onFileSelect }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onFileSelect) {
+      onFileSelect(file);
+      e.target.value = '';
+    }
+  };
+
   return (
     <div className="bg-white border-precision rounded-[3rem] p-7 md:p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)] hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.06)] transition-all duration-500 group">
       <div className="flex items-center gap-6 mb-7">
@@ -35,14 +46,33 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
       </div>
 
       <div className="grid grid-cols-3 gap-3 border-t border-slate-50 pt-6">
+        <button 
+          onClick={() => fileInputRef.current?.click()} 
+          className="flex flex-col md:flex-row items-center justify-center gap-3 py-4 hover:bg-indigo-50/50 rounded-2xl transition-all duration-300 text-slate-500 group/btn touch-active"
+        >
+          <div className="text-indigo-500 group-hover/btn:scale-125 transition-transform duration-500 scale-90 md:scale-100">
+            <ICONS.Create />
+          </div>
+          <span className="text-[9px] font-black uppercase tracking-[0.2em] font-mono leading-none">
+            Visual_Artifact
+          </span>
+        </button>
+        
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          className="hidden" 
+          accept="image/*,video/*,.heic,.heif,.avif,.webp" 
+          onChange={handleFileChange} 
+        />
+
         {[
-          { icon: <ICONS.Create />, label: 'Visual_Artifact', color: 'text-indigo-500', bg: 'hover:bg-indigo-50/50' },
-          { icon: <ICONS.Streams />, label: 'Broadcast_Live', color: 'text-rose-500', bg: 'hover:bg-rose-50/50' },
-          { icon: <ICONS.Explore />, label: 'Neural_Update', color: 'text-emerald-500', bg: 'hover:bg-emerald-50/50' }
+          { icon: <ICONS.Streams />, label: 'Broadcast_Live', color: 'text-rose-500', bg: 'hover:bg-rose-50/50', action: onOpen },
+          { icon: <ICONS.Explore />, label: 'Neural_Update', color: 'text-emerald-500', bg: 'hover:bg-emerald-50/50', action: onOpen }
         ].map((action, i) => (
           <button 
             key={i}
-            onClick={onOpen} 
+            onClick={action.action} 
             className={`flex flex-col md:flex-row items-center justify-center gap-3 py-4 ${action.bg} rounded-2xl transition-all duration-300 text-slate-500 group/btn touch-active`}
           >
             <div className={`${action.color} group-hover/btn:scale-125 transition-transform duration-500 scale-90 md:scale-100`}>

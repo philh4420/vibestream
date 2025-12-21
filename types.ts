@@ -97,6 +97,10 @@ export interface Comment {
   timestamp: any;
   likedBy?: string[];
   depth?: number;
+  media?: {
+    type: 'image' | 'video';
+    url: string;
+  }[];
 }
 
 export interface Post {
