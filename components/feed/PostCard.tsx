@@ -1,21 +1,57 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Post } from '../../types';
 import { ICONS } from '../../constants';
+import { db } from '../../services/firebase';
+import { deleteDoc, doc } from 'firebase/firestore';
 
 interface PostCardProps {
   post: Post;
   onLike: (id: string) => void;
   locale?: string;
+  isAuthor?: boolean;
 }
 
-export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-GB' }) => {
+export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-GB', isAuthor = false }) => {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
+
+  const handleDelete = async () => {
+    if (!isAuthor || !db) return;
+    if (!window.confirm("Terminate this signal from the grid permanently?")) return;
+    
+    setIsDeleting(true);
+    try {
+      await deleteDoc(doc(db, 'posts', post.id));
+      // Toast is handled via parent if we had a callback, but we'll assume the real-time sync removes it
+    } catch (e) {
+      console.error("Purge Error:", e);
+      setIsDeleting(false);
+    }
+  };
+
+  const handleShare = () => {
+    // In a real app, this would use the Web Share API
+    if (navigator.share) {
+      navigator.share({
+        title: 'VibeStream Signal',
+        text: post.content,
+        url: window.location.href,
+      }).catch(console.error);
+    } else {
+      navigator.clipboard.writeText(post.content);
+      // We would use addToast here if passed down, but for now we'll rely on the interaction feedback
+    }
+  };
+
+  if (isDeleting) return null;
+
   return (
     <div className="group bg-white border-precision rounded-[2rem] overflow-hidden transition-all hover:border-slate-300 hover:shadow-[0_20px_50px_rgb(0,0,0,0.04)] mb-6">
       <div className="p-6 md:p-8">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <div className="relative group/avatar">
+            <div className="relative group/avatar cursor-pointer">
               <img 
                 src={post.authorAvatar} 
                 alt={post.authorName} 
@@ -31,9 +67,39 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
               <p className="text-[9px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1.5 font-mono">{post.createdAt}</p>
             </div>
           </div>
-          <button className="p-2.5 text-slate-300 hover:text-slate-600 transition-colors hover:bg-slate-50 rounded-xl">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" /></svg>
-          </button>
+          
+          <div className="relative">
+            <button 
+              onClick={() => setShowOptions(!showOptions)}
+              className="p-2.5 text-slate-300 hover:text-slate-600 transition-colors hover:bg-slate-50 rounded-xl active:scale-90"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" /></svg>
+            </button>
+            
+            {showOptions && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowOptions(false)}></div>
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-slate-100 z-20 overflow-hidden animate-in zoom-in-95 duration-200">
+                  {isAuthor && (
+                    <button 
+                      onClick={() => { handleDelete(); setShowOptions(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-rose-500 hover:bg-rose-50 transition-all text-[10px] font-black uppercase tracking-widest"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="m14.74 9-.344 12.142m-4.762 0L9.26 9m9.968-3.21c.342.053.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
+                      Purge Signal
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => { handleShare(); setShowOptions(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 transition-all text-[10px] font-black uppercase tracking-widest border-t border-slate-50"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314" /></svg>
+                    Re-Broadcast
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         <p className="text-slate-800 text-base md:text-lg leading-relaxed mb-6 font-medium whitespace-pre-wrap">
@@ -83,7 +149,10 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
             </button>
           </div>
 
-          <button className="p-2.5 text-slate-300 hover:text-slate-900 transition-all touch-active hover:bg-slate-50 rounded-full">
+          <button 
+            onClick={handleShare}
+            className="p-2.5 text-slate-300 hover:text-slate-900 transition-all touch-active hover:bg-slate-50 rounded-full active:scale-90"
+          >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24"><path d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314" /></svg>
           </button>
         </div>

@@ -3,7 +3,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
     
     // =========================================================================
-    // VIBESTREAM CORE SECURITY PROTOCOL v5.5 [GLOBAL_EN_GB]
+    // VIBESTREAM CORE SECURITY PROTOCOL v5.6 [GLOBAL_EN_GB]
     // =========================================================================
     
     function isAuthenticated() {
@@ -79,6 +79,28 @@ service cloud.firestore {
       );
       
       allow delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isAdmin());
+    }
+
+    // =========================================================================
+    // TEMPORAL FRAGMENTS: STORIES
+    // =========================================================================
+
+    match /stories/{storyId} {
+      // Authenticated nodes can view the temporal fragment stream
+      allow read: if isAuthenticated();
+      
+      // Only the author can publish a new story fragment
+      allow create: if isAuthenticated() && 
+        request.resource.data.authorId == request.auth.uid;
+        
+      // Deletion restricted to author or admin control
+      allow delete: if isAuthenticated() && (
+        resource.data.authorId == request.auth.uid || 
+        isAdmin()
+      );
+
+      // Updates generally not permitted for immutable fragments, except by admin
+      allow update: if isAdmin();
     }
 
     // =========================================================================
