@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from './components/layout/Layout';
 import { FeedPage } from './components/feed/FeedPage'; 
@@ -180,13 +181,14 @@ const App: React.FC = () => {
             isInitialLoad.current = false;
           });
 
-          // Fetch Synced Nodes (Friends) for Co-Pilot
-          const qFriends = query(collection(db, 'users'), limit(50));
-          onSnapshot(qFriends, (snap) => {
-            setAvailableFriends(snap.docs
-              .map(d => ({ id: d.id, ...d.data() } as VibeUser))
-              .filter(u => u.id !== user.uid)
-            );
+          // Fetch Synced Nodes (Following/Friends) for Co-Pilot
+          // Restriction: Only users you established a connection with (following) can be co-pilots
+          const qFollowing = query(collection(db, 'users', user.uid, 'following'), limit(50));
+          onSnapshot(qFollowing, (snap) => {
+            setAvailableFriends(snap.docs.map(d => ({ 
+              id: d.id, 
+              ...d.data() 
+            } as VibeUser)));
           });
         }
       } else {
@@ -344,7 +346,7 @@ const App: React.FC = () => {
 
   const filteredFriends = availableFriends.filter(f => 
     f.displayName.toLowerCase().includes(searchFriendQuery.toLowerCase()) ||
-    f.username.toLowerCase().includes(searchFriendQuery.toLowerCase())
+    (f.username && f.username.toLowerCase().includes(searchFriendQuery.toLowerCase()))
   );
 
   if (isLoading) return <div className="h-full w-full flex items-center justify-center font-black animate-pulse text-indigo-600 uppercase italic">Syncing_Neural_Buffer...</div>;
@@ -544,6 +546,7 @@ const App: React.FC = () => {
                   {filteredFriends.length === 0 && (
                     <div className="py-20 text-center opacity-30">
                        <p className="text-[10px] font-black uppercase tracking-[0.4em] font-mono italic">No synchronized nodes found.</p>
+                       <p className="text-[8px] font-bold text-slate-400 uppercase mt-2">Establish connections in the discover grid first.</p>
                     </div>
                   )}
                 </div>
