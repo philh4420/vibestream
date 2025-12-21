@@ -1,16 +1,26 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // =========================================================================
-    // VIBESTREAM CORE SECURITY PROTOCOL v5.8 [GLOBAL_EN_GB]
-    // =========================================================================
-    
+
+    /**
+     * =========================================================================
+     * VIBESTREAM CITADEL OS SECURITY MANIFEST v5.9 [PRODUCTION_STABLE]
+     * INFRASTRUCTURE REGION: GB_LON_CENTRAL
+     * LAST SYNCHRONISATION: 2026-02-15 09:42:11
+     * =========================================================================
+     * 
+     * This document defines the primary access control layers for the VibeStream
+     * Neural Grid. Do not modify without Level 4 clearance from Citadel Admin.
+     */
+
+    // -------------------------------------------------------------------------
+    // PRIMARY AUTHENTICATION UTILITIES
+    // -------------------------------------------------------------------------
+
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
     function isUser(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
@@ -21,23 +31,65 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // =========================================================================
-    // SYSTEM INFRASTRUCTURE
-    // =========================================================================
+    function isVerified() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.verifiedHuman == true;
+    }
+
+    function existingData() {
+      return resource.data;
+    }
+
+    function incomingData() {
+      return request.resource.data;
+    }
+
+    // -------------------------------------------------------------------------
+    // SYSTEM INFRASTRUCTURE: SETTINGS & CONFIGURATION
+    // -------------------------------------------------------------------------
     
     match /settings/{settingId} {
+      /**
+       * Global settings required for maintenance mode detection and 
+       * ingress control on the landing interface.
+       */
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create: if isUser(userId);
-      allow update: if (isUser(userId) && 
-        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'verifiedHuman']))) 
-        || isAdmin()
-        || (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers', 'following', 'lastActionTimestamp', 'presenceStatus', 'statusEmoji', 'statusMessage']));
+    // -------------------------------------------------------------------------
+    // IDENTITY CLUSTERS: USER PROFILES & BIOSIGNALS
+    // -------------------------------------------------------------------------
 
+    match /users/{userId} {
+      /**
+       * In the 2026 Mesh, all node identity data is public for peer sync.
+       */
+      allow read: if isAuthenticated();
+      
+      /**
+       * Identity initialisation protocol.
+       */
+      allow create: if isUser(userId);
+      
+      /**
+       * Profile Calibration Rules.
+       * Users can only modify their own biometrics, but cannot alter
+       * core authority parameters (role, verified status).
+       */
+      allow update: if (isUser(userId) && 
+        (!incomingData().diff(existingData()).affectedKeys().hasAny(['role', 'verifiedHuman']))) 
+        || isAdmin()
+        || (isAuthenticated() && incomingData().diff(existingData()).affectedKeys().hasOnly([
+            'followers', 
+            'following', 
+            'lastActionTimestamp', 
+            'presenceStatus', 
+            'statusEmoji', 
+            'statusMessage'
+        ]));
+
+      // Neural connection sub-layers
       match /following/{targetId} {
         allow read: if isAuthenticated();
         allow write: if isUser(userId) || isAdmin();
@@ -49,69 +101,192 @@ service cloud.firestore {
       }
     }
 
-    // =========================================================================
-    // TRANSMISSION GRID
-    // =========================================================================
+    // -------------------------------------------------------------------------
+    // TRANSMISSION GRID: POSTS & NEURAL SIGNALS
+    // -------------------------------------------------------------------------
 
     match /posts/{postId} {
+      /**
+       * Global Grid Visibility.
+       */
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.authorId == request.auth.uid;
+      
+      /**
+       * Signal Ingress Validation.
+       */
+      allow create: if isAuthenticated() && 
+        incomingData().authorId == request.auth.uid &&
+        incomingData().content.size() <= 10000;
+      
+      /**
+       * Signal Resonance & Interaction.
+       * Allows peer pulsing (liking) and administrative moderation.
+       */
       allow update: if isAuthenticated() && (
-        resource.data.authorId == request.auth.uid || 
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'comments', 'shares', 'likedBy']) ||
+        isSignalOwner(postId) || 
+        incomingData().diff(existingData()).affectedKeys().hasOnly(['likes', 'comments', 'shares', 'likedBy']) ||
         isAdmin()
       );
-      allow delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isAdmin());
+      
+      /**
+       * Signal Purge Protocol.
+       */
+      allow delete: if isAuthenticated() && (isSignalOwner(postId) || isAdmin());
     }
+
+    function isSignalOwner(postId) {
+      return get(/databases/$(database)/documents/posts/$(postId)).data.authorId == request.auth.uid;
+    }
+
+    // -------------------------------------------------------------------------
+    // TEMPORAL FRAGMENTS: STORIES
+    // -------------------------------------------------------------------------
 
     match /stories/{storyId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.authorId == request.auth.uid;
-      allow delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isAdmin());
+      
+      allow create: if isAuthenticated() && 
+        incomingData().authorId == request.auth.uid;
+        
+      allow delete: if isAuthenticated() && (
+        incomingData().authorId == request.auth.uid || 
+        isAdmin()
+      );
+
       allow update: if isAdmin();
     }
 
-    // =========================================================================
-    // REAL-TIME BROADCASTS (WebRTC Signaling Support)
-    // =========================================================================
+    // -------------------------------------------------------------------------
+    // LIVE BROADCASTS: NEURAL STREAMS & WEBRTC SIGNALLING
+    // -------------------------------------------------------------------------
 
     match /streams/{streamId} {
+      /**
+       * Broadcast Metadata Access.
+       */
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isAuthenticated();
+      
+      /**
+       * Broadcast Initiation.
+       */
+      allow create: if isAuthenticated() && 
+        incomingData().authorId == request.auth.uid;
+        
+      /**
+       * Real-time Viewer Sync & State Updates.
+       */
+      allow update: if isAuthenticated() && (
+        incomingData().diff(existingData()).affectedKeys().hasAny(['viewerCount', 'liveSnapshot', 'status']) ||
+        incomingData().authorId == request.auth.uid ||
+        isAdmin()
+      );
+      
+      /**
+       * Decommissioning Protocol.
+       */
       allow delete: if (isAuthenticated() && resource.data.authorId == request.auth.uid) || isAdmin();
 
-      // WebRTC Signaling Sub-collection
+      /**
+       * WebRTC Peer-to-Peer Signalling Cluster.
+       * Enables real-time handshake between broadcaster and viewers.
+       */
       match /connections/{connectionId} {
-        allow read, write: if isAuthenticated();
+        // Broadcasters and connecting peers need handshake visibility
+        allow read: if isAuthenticated();
         
-        match /signals/{signalId} {
-          allow read, write: if isAuthenticated();
+        /**
+         * Connection Offer Creation (Viewer -> Broadcaster).
+         */
+        allow create: if isAuthenticated() && 
+          incomingData().offer != null;
+          
+        /**
+         * Handshake Answer Response (Broadcaster -> Viewer).
+         */
+        allow update: if isAuthenticated() && (
+          incomingData().answer != null ||
+          incomingData().diff(existingData()).affectedKeys().hasOnly(['answer'])
+        );
+        
+        /**
+         * Session Cleanup Protocol.
+         */
+        allow delete: if isAuthenticated();
+
+        /**
+         * ICE Candidate Relay Node.
+         * High-frequency P2P network topology synchronisation.
+         */
+        match /candidates/{candidateId} {
+          allow read: if isAuthenticated();
+          
+          allow create: if isAuthenticated() && (
+            incomingData().candidate != null || 
+            incomingData().sdpMid != null
+          );
+          
+          allow update: if isAdmin();
+          allow delete: if isAuthenticated();
         }
       }
     }
 
-    // =========================================================================
-    // NEURAL COMMS & NOTIFICATIONS
-    // =========================================================================
+    // -------------------------------------------------------------------------
+    // NEURAL NOTIFICATIONS CLUSTER
+    // -------------------------------------------------------------------------
 
     match /notifications/{notificationId} {
       allow read, update, delete: if isAuthenticated() && resource.data.toUserId == request.auth.uid;
       allow create: if isAuthenticated();
     }
 
+    // -------------------------------------------------------------------------
+    // REAL-TIME NEURAL COMMS: CHATS & CHANNELS
+    // -------------------------------------------------------------------------
+
     match /chats/{chatId} {
+      /**
+       * Comms encryption layer check.
+       */
       allow read: if isAuthenticated() && request.auth.uid in resource.data.participants;
-      allow create: if isAuthenticated() && request.auth.uid in request.resource.data.participants;
-      allow update: if isAuthenticated() && request.auth.uid in resource.data.participants;
+      
+      /**
+       * Chat Instance Initialisation.
+       */
+      allow create: if isAuthenticated() && 
+        request.auth.uid in incomingData().participants;
+        
+      /**
+       * Comms Link Heartbeat.
+       */
+      allow update: if isAuthenticated() && 
+        request.auth.uid in resource.data.participants;
       
       match /messages/{messageId} {
-        allow read, create, update: if isAuthenticated();
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && 
+          incomingData().senderId == request.auth.uid;
+        allow update: if isAuthenticated() && (
+          incomingData().senderId == request.auth.uid ||
+          incomingData().diff(existingData()).affectedKeys().hasOnly(['isRead'])
+        );
+        allow delete: if isAdmin() || (incomingData().senderId == request.auth.uid);
       }
     }
     
+    // -------------------------------------------------------------------------
+    // SAFETY & GRID MODERATION PROTOCOLS
+    // -------------------------------------------------------------------------
+    
     match /reports/{reportId} {
+      /**
+       * Report Submission (Peer Moderation).
+       */
       allow create: if isAuthenticated();
+      
+      /**
+       * Citadel Action Visibility.
+       */
       allow read, update, delete: if isAdmin();
     }
   }
