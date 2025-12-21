@@ -199,7 +199,8 @@ export enum AppRoute {
   VERIFIED_NODES = 'nodes',
   GATHERINGS = 'gatherings',
   SIMULATIONS = 'sims',
-  RESILIENCE = 'resilience'
+  RESILIENCE = 'resilience',
+  SINGLE_POST = 'single_post'
 }
 
 export interface ToastMessage {

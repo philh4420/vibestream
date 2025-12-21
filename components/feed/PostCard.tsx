@@ -81,6 +81,13 @@ export const PostCard: React.FC<PostCardProps> = ({
     setIsDeleting(true);
     setShowDeleteModal(false);
     try {
+      // 2026 UPDATE: If this is a relay, decrement parent share count (the "statue numbers")
+      if (post.relaySource && post.relaySource.postId) {
+        await updateDoc(doc(db, 'posts', post.relaySource.postId), { 
+          shares: increment(-1) 
+        });
+      }
+
       await deleteDoc(doc(db, 'posts', post.id));
       addToast(post.relaySource ? "Relay terminated from grid" : "Signal purged from grid", "success");
     } catch (e) {

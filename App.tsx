@@ -79,6 +79,7 @@ const App: React.FC = () => {
   const [activeStreamId, setActiveStreamId] = useState<string | null>(null);
   const [watchingStream, setWatchingStream] = useState<LiveStream | null>(null);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [previousRoute, setPreviousRoute] = useState<AppRoute | null>(null);
   
   const [newPostText, setNewPostText] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -102,9 +103,18 @@ const App: React.FC = () => {
   };
 
   const handleNavigate = (route: AppRoute) => {
+    if (route !== AppRoute.SINGLE_POST) {
+      setPreviousRoute(activeRoute);
+      setSelectedPost(null);
+    }
     setActiveRoute(route);
     localStorage.setItem(ROUTE_KEY, route);
-    setSelectedPost(null);
+  };
+
+  const handleOpenPost = (post: Post) => {
+    setSelectedPost(post);
+    setPreviousRoute(activeRoute);
+    setActiveRoute(AppRoute.SINGLE_POST);
   };
 
   const handleLogout = async () => {
@@ -354,11 +364,23 @@ const App: React.FC = () => {
           onOpenCreate={() => setIsCreateModalOpen(true)}
           onTransmitStory={() => {}} onGoLive={() => setIsLiveOverlayOpen(true)}
           onJoinStream={(s) => setWatchingStream(s)} locale={userRegion}
-          onViewPost={setSelectedPost}
+          onViewPost={handleOpenPost}
         />
       )}
 
-      {activeRoute === AppRoute.EXPLORE && <ExplorePage posts={posts} onLike={handleLike} locale={userRegion} onViewPost={setSelectedPost} />}
+      {activeRoute === AppRoute.EXPLORE && <ExplorePage posts={posts} onLike={handleLike} locale={userRegion} onViewPost={handleOpenPost} />}
+      
+      {activeRoute === AppRoute.SINGLE_POST && selectedPost && (
+        <SinglePostView 
+          post={selectedPost} 
+          userData={userData} 
+          locale={userRegion} 
+          onClose={() => handleNavigate(previousRoute || AppRoute.FEED)}
+          onLike={handleLike}
+          addToast={addToast}
+        />
+      )}
+
       {activeRoute === AppRoute.MESSAGES && userData && <MessagesPage currentUser={userData} locale={userRegion} addToast={addToast} />}
       {activeRoute === AppRoute.NOTIFICATIONS && (
         <NotificationsPage 
@@ -377,7 +399,7 @@ const App: React.FC = () => {
           addToast={addToast} 
           locale={userRegion} 
           sessionStartTime={Date.now()}
-          onViewPost={setSelectedPost}
+          onViewPost={handleOpenPost}
         />
       )}
       {activeRoute === AppRoute.STREAM_GRID && <StreamGridPage locale={userRegion} onJoinStream={setWatchingStream} onGoLive={() => setIsLiveOverlayOpen(true)} />}
@@ -448,23 +470,13 @@ const App: React.FC = () => {
                     <button onClick={fetchCurrentLocation} className={`p-4 border rounded-2xl transition-all active:scale-90 ${postLocation ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200 text-slate-500 hover:text-emerald-600'}`}><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 115 0z" /></svg></button>
                   </div>
                </div>
+               {/* Fixed: Removed duplicate type attribute and unused check-unused marker */}
                <input type="file" ref={fileInputRef} multiple className="hidden" accept="image/*,video/*" onChange={handleFileChange} />
                <button onClick={handleCreatePost} disabled={isUploading || (!newPostText.trim() && selectedFiles.length === 0)} className="w-full py-6 md:py-8 bg-indigo-600 text-white rounded-[2rem] md:rounded-[2.5rem] font-black text-sm md:text-base uppercase tracking-[0.4em] shadow-2xl hover:bg-indigo-700 transition-all active:scale-[0.98] flex items-center justify-center gap-4 italic">{isUploading ? 'SYNCHRONIZING...' : 'Broadcast_Signal'}</button>
             </div>
             {isUploading && <div className="absolute inset-x-0 bottom-0 h-1.5 bg-indigo-50 overflow-hidden"><div className="h-full bg-indigo-600 animate-[pulse_2s_infinite] w-full origin-left" /></div>}
           </div>
         </div>
-      )}
-
-      {selectedPost && (
-        <SinglePostView 
-          post={selectedPost} 
-          userData={userData} 
-          locale={userRegion} 
-          onClose={() => setSelectedPost(null)}
-          onLike={handleLike}
-          addToast={addToast}
-        />
       )}
 
       {isLiveOverlayOpen && userData && (
