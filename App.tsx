@@ -14,7 +14,7 @@ import { LiveWatcherOverlay } from './components/streams/LiveWatcherOverlay';
 import { PrivacyPage } from './components/legal/PrivacyPage';
 import { TermsPage } from './components/legal/TermsPage';
 import { CookiesPage } from './components/legal/CookiesPage';
-import { AppRoute, Post, ToastMessage, Region, User as VibeUser, SystemSettings, LiveStream } from './types';
+import { AppRoute, Post, ToastMessage, Region, User as VibeUser, SystemSettings, LiveStream, AppNotification } from './types';
 import { db, auth } from './services/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { 
@@ -30,7 +30,8 @@ import {
   getDoc,
   setDoc,
   limit,
-  deleteDoc
+  deleteDoc,
+  where
 } from 'firebase/firestore';
 import { uploadToCloudinary } from './services/cloudinary';
 import { ICONS } from './constants';
@@ -119,6 +120,7 @@ const App: React.FC = () => {
   });
 
   const [posts, setPosts] = useState<Post[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toasts, setUserToasts] = useState<ToastMessage[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -173,6 +175,7 @@ const App: React.FC = () => {
     }
 
     let userUnsubscribe: (() => void) | null = null;
+    let notifUnsubscribe: (() => void) | null = null;
 
     const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -218,14 +221,26 @@ const App: React.FC = () => {
               await setDoc(doc(db, 'users', user.uid), newProfile);
             }
           });
+
+          const notifQ = query(
+            collection(db, 'notifications'),
+            where('toUserId', '==', user.uid),
+            orderBy('timestamp', 'desc'),
+            limit(50)
+          );
+          notifUnsubscribe = onSnapshot(notifQ, (snap) => {
+            setNotifications(snap.docs.map(d => ({ id: d.id, ...d.data() } as AppNotification)));
+          });
         }
       } else {
         setIsAuthenticated(false);
         setCurrentUser(null);
         setUserData(null);
+        setNotifications([]);
         localStorage.removeItem(SESSION_KEY);
         localStorage.removeItem(SESSION_START_KEY);
         if (userUnsubscribe) userUnsubscribe();
+        if (notifUnsubscribe) notifUnsubscribe();
       }
       setIsLoading(false);
     });
@@ -233,6 +248,7 @@ const App: React.FC = () => {
     return () => {
       authUnsubscribe();
       if (userUnsubscribe) userUnsubscribe();
+      if (notifUnsubscribe) notifUnsubscribe();
     };
   }, []);
 
@@ -255,17 +271,73 @@ const App: React.FC = () => {
       const postRef = doc(db, 'posts', postId);
       const postSnap = await getDoc(postRef);
       if (postSnap.exists()) {
-        const likedBy = postSnap.data().likedBy || [];
+        const postData = postSnap.data();
+        const likedBy = postData.likedBy || [];
         const isLiked = likedBy.includes(userData.id);
+        
         await updateDoc(postRef, {
           likes: increment(isLiked ? -1 : 1),
           likedBy: isLiked 
             ? likedBy.filter((id: string) => id !== userData.id)
             : [...likedBy, userData.id]
         });
+
+        if (!isLiked && postData.authorId !== userData.id) {
+          await addDoc(collection(db, 'notifications'), {
+            type: 'like',
+            fromUserId: userData.id,
+            fromUserName: userData.displayName,
+            fromUserAvatar: userData.avatarUrl,
+            toUserId: postData.authorId,
+            targetId: postId,
+            text: `pulsed your transmission: "${postData.content.slice(0, 30)}..."`,
+            isRead: false,
+            timestamp: serverTimestamp()
+          });
+        }
+
         addToast(isLiked ? "Pulse Removed" : "Pulse Synchronised", "info");
       }
     } catch (e) { addToast("Sync Error: Pulse Interrupted", "error"); }
+  };
+
+  const handleFollow = async (targetUserId: string) => {
+    if (!db || !userData || targetUserId === userData.id) return;
+    try {
+      const userRef = doc(db, 'users', userData.id);
+      const targetRef = doc(db, 'users', targetUserId);
+      
+      const targetSnap = await getDoc(targetRef);
+      if (!targetSnap.exists()) return;
+
+      // This is a simplified follow toggle for 2026. In a full system we'd use subcollections.
+      // For this demo, we use counters and notifications.
+      await updateDoc(targetRef, { followers: increment(1) });
+      await updateDoc(userRef, { following: increment(1) });
+
+      await addDoc(collection(db, 'notifications'), {
+        type: 'follow',
+        fromUserId: userData.id,
+        fromUserName: userData.displayName,
+        fromUserAvatar: userData.avatarUrl,
+        toUserId: targetUserId,
+        text: `began synchronizing with your neural mesh.`,
+        isRead: false,
+        timestamp: serverTimestamp()
+      });
+
+      addToast("Neural Mesh Bond Established", "success");
+    } catch (e) {
+      addToast("Mesh Handshake Failed", "error");
+    }
+  };
+
+  const markNotificationsRead = async () => {
+    if (!db || !notifications.length) return;
+    const unread = notifications.filter(n => !n.isRead);
+    for (const n of unread) {
+      await updateDoc(doc(db, 'notifications', n.id), { isRead: true });
+    }
   };
 
   const handleCreatePost = async () => {
@@ -333,7 +405,6 @@ const App: React.FC = () => {
   };
 
   const handleGoLive = () => {
-    // CRITICAL: Ensure no stale ID is present when opening setup
     setActiveStreamId(null);
     setIsLiveOverlayOpen(true);
   };
@@ -352,7 +423,6 @@ const App: React.FC = () => {
         startedAt: serverTimestamp(),
         category: 'Live Signal'
       });
-      // Setting this triggers the transition to "Live" state in the child overlay
       setActiveStreamId(streamDoc.id);
       addToast("Grid Connection Established", "success");
     } catch (e) {
@@ -490,6 +560,8 @@ const App: React.FC = () => {
       onOpenCreate={() => { setIsCreateModalOpen(true); addToast("Opening Neural Uplink", "info"); }}
       onLogout={handleLogout}
       userData={userData}
+      notifications={notifications}
+      onMarkRead={markNotificationsRead}
       userRole={userData?.role}
       currentRegion={userRegion}
       onRegionChange={(r) => { setUserRegion(r); addToast(`Region Switched: ${r}`, 'success'); }}

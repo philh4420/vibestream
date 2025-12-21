@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ICONS } from '../../constants';
-import { AppRoute, UserRole, Region, User as VibeUser } from '../../types';
+import { AppRoute, UserRole, Region, User as VibeUser, AppNotification } from '../../types';
 import { Header } from './Header';
 import { RightSidebar } from './RightSidebar';
 import { LeftSidebar } from './LeftSidebar';
@@ -14,6 +14,8 @@ interface LayoutProps {
   onLogout: () => void;
   userRole?: UserRole;
   userData: VibeUser | null;
+  notifications: AppNotification[];
+  onMarkRead: () => void;
   currentRegion: Region;
   onRegionChange: (region: Region) => void;
 }
@@ -26,6 +28,8 @@ export const Layout: React.FC<LayoutProps> = ({
   onLogout,
   userRole = 'member',
   userData,
+  notifications,
+  onMarkRead,
   currentRegion,
   onRegionChange
 }) => {
@@ -46,6 +50,8 @@ export const Layout: React.FC<LayoutProps> = ({
       <Header 
         userRole={userRole} 
         userData={userData}
+        notifications={notifications}
+        onMarkRead={onMarkRead}
         currentRegion={currentRegion} 
         onRegionChange={onRegionChange} 
         onLogout={onLogout} 
@@ -53,7 +59,7 @@ export const Layout: React.FC<LayoutProps> = ({
         onNavigate={onNavigate}
       />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden">
         
         {/* Dynamic Left Navigation System */}
         <LeftSidebar 

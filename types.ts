@@ -62,6 +62,21 @@ export interface User {
   }[];
 }
 
+export type NotificationType = 'like' | 'follow' | 'mention' | 'broadcast' | 'system';
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  fromUserId: string;
+  fromUserName: string;
+  fromUserAvatar: string;
+  toUserId: string;
+  targetId?: string;
+  text: string;
+  isRead: boolean;
+  timestamp: any;
+}
+
 export interface Story {
   id: string;
   authorId: string;
@@ -83,7 +98,7 @@ export interface LiveStream {
   viewerCount: number;
   startedAt: any;
   category: string;
-  liveSnapshot?: string; // New: base64 frame for live grid transmission
+  liveSnapshot?: string; 
 }
 
 export interface Post {
