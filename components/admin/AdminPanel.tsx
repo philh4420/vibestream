@@ -56,64 +56,65 @@ const CompactToggle = ({ label, route, isActive, onToggle }: {
   isActive: boolean; 
   onToggle: (route: AppRoute, val: boolean) => void 
 }) => {
-  // Mock data for visual aesthetic (changes based on isActive)
-  const latency = isActive ? Math.floor(Math.random() * 20 + 5) : 0;
-  const load = isActive ? Math.floor(Math.random() * 40 + 10) : 0;
+  const latency = isActive ? Math.floor(Math.random() * 15 + 8) : 0;
+  const load = isActive ? Math.floor(Math.random() * 30 + 5) : 0;
 
   return (
-    <div className={`group p-6 rounded-[3rem] border transition-all duration-500 flex flex-col justify-between min-h-[190px] relative overflow-hidden ${isActive ? 'bg-white border-indigo-100 shadow-[0_20px_50px_rgba(79,70,229,0.05)]' : 'bg-slate-50/50 border-slate-200 grayscale opacity-60'}`}>
+    <div className={`group p-7 rounded-[3.5rem] border transition-all duration-700 flex flex-col justify-between min-h-[220px] relative overflow-hidden ${isActive ? 'bg-white border-slate-200 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.05)]' : 'bg-slate-50/50 border-slate-100 opacity-60'}`}>
       
-      {/* Background Technical Decoration */}
-      <div className={`absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-[60px] rounded-full transition-opacity duration-500 ${isActive ? 'opacity-100' : 'opacity-0'}`} />
+      {/* Dynamic Background Pulse */}
+      <div className={`absolute top-0 right-0 w-48 h-48 bg-indigo-500/5 blur-[80px] rounded-full transition-opacity duration-1000 ${isActive ? 'opacity-100' : 'opacity-0'}`} />
 
-      {/* 1. TOP SECTION: IDENTITY & ICON */}
-      <div className="grid grid-cols-[auto_1fr] gap-5 items-start relative z-10">
-        <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center shrink-0 transition-all duration-500 shadow-sm border ${isActive ? 'bg-slate-950 text-white border-slate-800 rotate-3' : 'bg-white text-slate-300 border-slate-100'}`}>
+      {/* 1. TOP SECTION: CORE IDENTITY */}
+      <div className="flex items-start gap-6 relative z-10">
+        <div className={`w-16 h-16 rounded-[1.8rem] flex items-center justify-center shrink-0 transition-all duration-500 shadow-xl border ${isActive ? 'bg-slate-950 text-white border-slate-800 rotate-1' : 'bg-white text-slate-200 border-slate-100'}`}>
           <ICONS.Settings />
         </div>
-        <div className="min-w-0 flex flex-col justify-center h-16">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono leading-none">LAYER_{route.slice(0, 3).toUpperCase()}</p>
-            <span className="text-[7px] font-mono text-slate-300 font-bold">[{Math.random().toString(16).slice(2, 6).toUpperCase()}]</span>
+        <div className="min-w-0 flex-1 py-1">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono leading-none">LAYER_{route.slice(0, 3).toUpperCase()}</p>
+            <span className="text-[8px] font-mono text-slate-300 font-bold tracking-widest">[#{Math.floor(Math.random() * 8999 + 1000)}]</span>
           </div>
-          <h4 className="text-[18px] font-black text-slate-950 uppercase tracking-tighter leading-none italic">{label.replace('_', ' ')}</h4>
+          <h4 className="text-[22px] font-black text-slate-900 uppercase tracking-tighter leading-none italic truncate">{label.replace('_', ' ')}</h4>
         </div>
       </div>
 
-      {/* 2. MIDDLE SECTION: LIVE TELEMETRY */}
-      <div className="grid grid-cols-2 gap-4 mt-6 mb-4 relative z-10">
-         <div className="p-3 bg-slate-50/50 rounded-2xl border border-slate-100">
-            <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest font-mono mb-1">Latency</p>
-            <p className={`text-[11px] font-black font-mono ${isActive ? 'text-indigo-600' : 'text-slate-300'}`}>{latency}ms</p>
+      {/* 2. MIDDLE SECTION: INSET TELEMETRY MODULES */}
+      <div className="grid grid-cols-2 gap-4 mt-8 mb-4 relative z-10">
+         <div className="p-4 bg-slate-50/80 rounded-[1.5rem] border border-slate-100 shadow-inner group-hover:bg-white transition-colors duration-500">
+            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest font-mono mb-1.5 opacity-70">Latency</p>
+            <div className="flex items-center gap-2">
+              <p className={`text-[14px] font-black font-mono tracking-tighter ${isActive ? 'text-indigo-600' : 'text-slate-300'}`}>{latency}ms</p>
+              {isActive && <div className="w-1 h-1 bg-emerald-400 rounded-full animate-pulse" />}
+            </div>
          </div>
-         <div className="p-3 bg-slate-50/50 rounded-2xl border border-slate-100">
-            <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest font-mono mb-1">Packet_Load</p>
-            <p className={`text-[11px] font-black font-mono ${isActive ? 'text-indigo-600' : 'text-slate-300'}`}>{load}%</p>
+         <div className="p-4 bg-slate-50/80 rounded-[1.5rem] border border-slate-100 shadow-inner group-hover:bg-white transition-colors duration-500">
+            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest font-mono mb-1.5 opacity-70">Packet_Load</p>
+            <p className={`text-[14px] font-black font-mono tracking-tighter ${isActive ? 'text-indigo-600' : 'text-slate-300'}`}>{load}%</p>
          </div>
       </div>
       
-      {/* 3. BOTTOM SECTION: STATUS & TACTICAL TOGGLE */}
-      <div className="flex justify-between items-end pt-5 border-t border-slate-100/50 relative z-10">
+      {/* 3. BOTTOM SECTION: STATUS & TACTICAL SWITCH */}
+      <div className="flex justify-between items-end pt-6 border-t border-slate-50 relative z-10">
         <div className="flex flex-col">
-          <div className="flex items-center gap-2 mb-1">
-            <div className={`w-2 h-2 rounded-full transition-all duration-500 ${isActive ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]' : 'bg-slate-300'}`} />
-            <span className={`text-[9px] font-black uppercase tracking-[0.2em] font-mono transition-colors ${isActive ? 'text-emerald-600' : 'text-slate-400'}`}>
+          <div className="flex items-center gap-2.5 mb-1">
+            <div className={`w-2.5 h-2.5 rounded-full transition-all duration-700 ${isActive ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.7)]' : 'bg-slate-300'}`} />
+            <span className={`text-[10px] font-black uppercase tracking-[0.3em] font-mono transition-colors ${isActive ? 'text-emerald-600' : 'text-slate-400'}`}>
               {isActive ? 'NOMINAL' : 'OFFLINE'}
             </span>
           </div>
-          <span className="text-[7px] font-black text-slate-300 uppercase tracking-[0.2em] font-mono">NODE_UK_SYNCHRONISED</span>
+          <span className="text-[8px] font-black text-slate-300 uppercase tracking-[0.3em] font-mono">NODE_UK_SYNCHRONISED</span>
         </div>
 
-        {/* REFINED MECHANICAL TOGGLE */}
+        {/* TACTICAL GLOW SWITCH V2 */}
         <button 
           onClick={() => onToggle(route, !isActive)}
-          className={`group/btn relative inline-flex h-11 w-20 shrink-0 cursor-pointer rounded-[1rem] border-[4px] border-slate-100 p-0.5 transition-all duration-300 active:scale-90 ${isActive ? 'bg-slate-900 shadow-xl shadow-indigo-500/10' : 'bg-slate-200'}`}
+          className={`relative inline-flex h-11 w-[72px] shrink-0 cursor-pointer rounded-2xl border-[4px] border-slate-100/50 p-1 transition-all duration-500 active:scale-95 shadow-inner ${isActive ? 'bg-slate-900' : 'bg-slate-200'}`}
         >
-          <div className={`flex items-center justify-center h-full w-9 transform rounded-[0.7rem] bg-white shadow-lg transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isActive ? 'translate-x-8' : 'translate-x-0'}`}>
-             <div className={`w-2 h-2 rounded-full transition-all duration-500 ${isActive ? 'bg-indigo-600 shadow-[0_0_8px_rgba(79,70,229,1)] scale-110' : 'bg-slate-200'}`} />
+          <div className={`flex items-center justify-center h-full w-8 transform rounded-xl bg-white shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.68,-0.55,0.27,1.55)] ${isActive ? 'translate-x-7' : 'translate-x-0'}`}>
+             <div className={`w-2 h-2 rounded-full transition-all duration-500 ${isActive ? 'bg-indigo-600 shadow-[0_0_10px_rgba(79,70,229,1)]' : 'bg-slate-100'}`} />
           </div>
-          {/* Rail Indicator */}
-          <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 h-0.5 bg-slate-400/10 rounded-full" />
+          <div className="absolute inset-x-5 top-1/2 -translate-y-1/2 h-0.5 bg-white/5 rounded-full pointer-events-none" />
         </button>
       </div>
     </div>
@@ -257,16 +258,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale, system
 
       case 'features':
         return (
-          <div className="space-y-8 animate-in fade-in duration-300">
-            <div className="bg-slate-950 rounded-[3.5rem] p-12 text-white shadow-2xl flex items-center justify-between overflow-hidden relative border border-white/5">
-               <div className="absolute right-0 top-0 w-80 h-80 bg-indigo-600/10 blur-[150px] rounded-full translate-x-1/3 -translate-y-1/3" />
+          <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="bg-slate-950 rounded-[4rem] p-12 text-white shadow-2xl flex items-center justify-between overflow-hidden relative border border-white/5">
+               <div className="absolute right-0 top-0 w-96 h-96 bg-indigo-600/10 blur-[180px] rounded-full translate-x-1/3 -translate-y-1/3" />
                <div className="relative z-10">
                  <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none mb-3">Citadel_Matrix_Switchboard</h2>
-                 <p className="text-[11px] font-black font-mono uppercase tracking-[0.5em] text-indigo-400/80">Operational Module Access Grid</p>
+                 <p className="text-[11px] font-black font-mono uppercase tracking-[0.6em] text-indigo-400/70">Master Infrastructure Access Grid</p>
                </div>
                <div className="hidden md:flex flex-col items-end relative z-10">
-                  <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest font-mono mb-1">Active_Grid_Layers</span>
-                  <span className="text-4xl font-black text-indigo-400 font-mono leading-none tracking-tighter">{Object.values(AppRoute).length}</span>
+                  <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest font-mono mb-1">Active_Protocols</span>
+                  <span className="text-5xl font-black text-indigo-400 font-mono leading-none tracking-tighter">{Object.values(AppRoute).length}</span>
                </div>
             </div>
             
