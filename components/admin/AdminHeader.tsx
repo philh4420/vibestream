@@ -11,7 +11,7 @@ interface AdminHeaderProps {
 export const AdminHeader: React.FC<AdminHeaderProps> = ({ activeTab, setActiveTab, locale }) => {
   const tabs = [
     { id: 'overview', label: 'DASHBOARD', icon: ICONS.Home },
-    { id: 'users', label: 'IDENTITY', icon: ICONS.Profile },
+    { id: 'users', label: 'NODES', icon: ICONS.Profile },
     { id: 'content', label: 'SIGNALS', icon: ICONS.Explore },
     { id: 'features', label: 'PROTOCOLS', icon: ICONS.Settings },
     { id: 'system', label: 'KERNEL', icon: ICONS.Admin },
@@ -20,59 +20,57 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ activeTab, setActiveTa
   const currentTitle = tabs.find(t => t.id === activeTab)?.label || 'OVERVIEW';
 
   return (
-    <div className="w-full max-w-[1400px] mx-auto px-4 py-6 sticky top-0 z-[100] animate-in fade-in slide-in-from-top-2 duration-700">
-      <div className="bg-white/95 backdrop-blur-xl rounded-full border border-slate-100 shadow-[0_15px_50px_-15px_rgba(0,0,0,0.08)] px-5 py-2.5 flex items-center justify-between gap-4">
+    <div className="w-full px-4 md:px-6 lg:px-8 py-4 sticky top-0 z-[100] animate-in fade-in duration-500">
+      <div className="bg-white/95 backdrop-blur-xl rounded-[2rem] border border-slate-100 shadow-lg px-4 py-2.5 flex items-center justify-between gap-4">
         
-        {/* Branding & Title Section */}
-        <div className="flex items-center gap-6 shrink-0">
-          <div className="w-10 h-10 bg-slate-950 rounded-full flex items-center justify-center text-white font-black italic text-xl shadow-lg shrink-0 active:scale-95 transition-transform cursor-pointer">
+        {/* Branding */}
+        <div className="flex items-center gap-4 shrink-0">
+          <div className="w-9 h-9 bg-slate-950 rounded-full flex items-center justify-center text-white font-black italic text-lg shadow-lg shrink-0">
             V
           </div>
-          <div className="flex flex-col">
-            <h1 className="text-xl md:text-2xl font-black italic uppercase tracking-tighter text-slate-950 leading-none">
-              {activeTab === 'overview' ? 'OVERVIEW' : currentTitle}
+          <div className="hidden sm:flex flex-col">
+            <h1 className="text-lg font-black italic uppercase tracking-tighter text-slate-950 leading-none">
+              CITADEL_OS
             </h1>
-            <p className="text-[7px] md:text-[8px] font-mono font-bold text-slate-300 uppercase tracking-[0.4em] mt-1.5 leading-none whitespace-nowrap">
-              VIBESTREAM_CITADEL_OS_V5.2.LTS
+            <p className="text-[7px] font-mono font-bold text-slate-300 uppercase tracking-widest mt-1 leading-none">
+              GRID_ADMIN_V5.2
             </p>
           </div>
         </div>
 
-        {/* Navigation Section */}
-        <div className="flex items-center gap-4 overflow-x-auto no-scrollbar">
-          <nav className="flex items-center p-1 bg-slate-50 rounded-full border border-slate-100/50">
-            {tabs.map(tab => {
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2.5 px-4 md:px-6 py-2 md:py-2.5 rounded-full transition-all duration-300 relative active:scale-95 shrink-0 group ${
-                    isActive 
-                      ? 'bg-slate-950 text-white shadow-xl shadow-slate-200' 
-                      : 'text-slate-400 hover:text-slate-900'
-                  }`}
-                >
-                  <div className={`shrink-0 transition-transform duration-300 ${isActive ? 'scale-100' : 'scale-90 opacity-60 group-hover:opacity-100'}`}>
-                    <tab.icon />
-                  </div>
-                  <span className={`text-[8px] md:text-[9px] font-black italic tracking-[0.2em] hidden lg:block ${isActive ? 'opacity-100' : 'opacity-60'}`}>
-                    {tab.label}
-                  </span>
-                  
-                  {isActive && (
-                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-1 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(79,70,229,0.5)]" />
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-          
-          <div className="w-px h-6 bg-slate-100 mx-1 hidden sm:block" />
-          
-          <button className="p-3 text-slate-300 hover:text-slate-950 transition-all hover:bg-slate-50 rounded-full active:scale-90 shrink-0">
-            <ICONS.Search />
-          </button>
+        {/* Navigation */}
+        <nav className="flex items-center gap-1.5 p-1 bg-slate-50/50 rounded-2xl border border-slate-100/50 overflow-x-auto no-scrollbar">
+          {tabs.map(tab => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2.5 px-4 py-2 rounded-xl transition-all duration-300 relative active:scale-95 shrink-0 group ${
+                  isActive 
+                    ? 'bg-slate-950 text-white shadow-md' 
+                    : 'text-slate-400 hover:text-slate-900'
+                }`}
+              >
+                <div className={`shrink-0 transition-transform ${isActive ? 'scale-100' : 'scale-90 opacity-60'}`}>
+                  <tab.icon />
+                </div>
+                <span className={`text-[9px] font-black italic tracking-widest hidden lg:block ${isActive ? 'opacity-100' : 'opacity-60'}`}>
+                  {tab.label}
+                </span>
+                {isActive && (
+                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-1 bg-indigo-500 rounded-full" />
+                )}
+              </button>
+            );
+          })}
+        </nav>
+        
+        <div className="flex items-center gap-2">
+           <div className="hidden md:flex px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100 items-center gap-2">
+             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+             <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest font-mono">{locale.toUpperCase()}</span>
+           </div>
         </div>
       </div>
     </div>

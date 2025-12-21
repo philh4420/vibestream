@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { db, auth } from '../../services/firebase';
+import { db } from '../../services/firebase';
 import { 
   collection, 
   query, 
@@ -11,7 +11,6 @@ import {
   onSnapshot 
 } from 'firebase/firestore';
 import { Post, User, SystemSettings, AppRoute, Region } from '../../types';
-import { ICONS } from '../../constants';
 
 // Refactored Sub-Components
 import { AdminOverview } from './AdminOverview';
@@ -63,12 +62,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale, system
     } catch (e) { addToast('Uplink failed: Buffer locked', 'error'); }
   };
 
+  const handleManageUser = async (userId: string, updates: Partial<User>) => {
+    try {
+      await updateDoc(doc(db, 'users', userId), updates);
+      addToast(`Node ${userId.slice(0, 5)} updated`, 'success');
+    } catch (e) {
+      addToast('Update failed: Node authority clash', 'error');
+    }
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'overview':
         return <AdminOverview metrics={metrics} />;
       case 'users':
-        return <AdminUsers nodes={nodes} searchQuery={searchQuery} setSearchQuery={setSearchQuery} />;
+        return <AdminUsers nodes={nodes} searchQuery={searchQuery} setSearchQuery={setSearchQuery} onManage={handleManageUser} />;
       case 'content':
         return <AdminContent signals={signals} addToast={addToast} />;
       case 'features':
@@ -81,22 +89,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale, system
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col pb-12 overflow-x-hidden selection:bg-indigo-500 selection:text-white">
-      
-      {/* 1. MASTER COMMAND HEADER */}
+    <div className="min-h-full bg-[#f8fafc] flex flex-col pb-12 overflow-hidden selection:bg-indigo-500 selection:text-white">
       <AdminHeader 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
         locale={locale} 
       />
 
-      {/* 2. OPERATIONAL DATA VIEWPORT */}
-      <div className="flex-1 overflow-y-auto no-scrollbar scroll-container px-4 md:px-8">
-        <div className="max-w-[1440px] mx-auto w-full">
+      <div className="flex-1 overflow-y-auto no-scrollbar scroll-container px-4 md:px-6 lg:px-8">
+        <div className="max-w-[1920px] mx-auto w-full pt-4">
           {renderContent()}
         </div>
       </div>
-
     </div>
   );
 };
