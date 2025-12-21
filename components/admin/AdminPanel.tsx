@@ -55,42 +55,70 @@ const CompactToggle = ({ label, route, isActive, onToggle }: {
   route: AppRoute; 
   isActive: boolean; 
   onToggle: (route: AppRoute, val: boolean) => void 
-}) => (
-  <div className={`group p-6 rounded-[2.5rem] border transition-all duration-500 flex flex-col justify-between min-h-[160px] hover:shadow-2xl hover:border-indigo-500/30 ${isActive ? 'bg-white border-slate-100 shadow-sm' : 'bg-slate-50 border-slate-200 opacity-60'}`}>
-    {/* Internal Sub-Grid Layout */}
-    <div className="grid grid-cols-[auto_1fr] gap-5 items-start">
-      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300 shadow-sm group-hover:scale-110 ${isActive ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-200 text-slate-400'}`}>
-        <ICONS.Settings />
-      </div>
-      <div className="min-w-0 flex flex-col justify-center h-14">
-        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] font-mono leading-none mb-2.5">PROTOCOL_LAYER</p>
-        <h4 className="text-[16px] font-black text-slate-950 uppercase tracking-tighter leading-tight whitespace-normal break-words italic">{label.replace('_', ' ')}</h4>
-      </div>
-    </div>
-    
-    <div className="flex justify-between items-center mt-6 pt-5 border-t border-slate-100/50">
-      <div className="flex flex-col">
-        <div className="flex items-center gap-1.5 mb-1">
-          <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse' : 'bg-slate-300'}`} />
-          <span className={`text-[8px] font-black uppercase tracking-widest font-mono ${isActive ? 'text-emerald-600' : 'text-slate-400'}`}>
-            {isActive ? 'NOMINAL' : 'OFFLINE'}
-          </span>
+}) => {
+  // Mock data for visual aesthetic (changes based on isActive)
+  const latency = isActive ? Math.floor(Math.random() * 20 + 5) : 0;
+  const load = isActive ? Math.floor(Math.random() * 40 + 10) : 0;
+
+  return (
+    <div className={`group p-6 rounded-[3rem] border transition-all duration-500 flex flex-col justify-between min-h-[190px] relative overflow-hidden ${isActive ? 'bg-white border-indigo-100 shadow-[0_20px_50px_rgba(79,70,229,0.05)]' : 'bg-slate-50/50 border-slate-200 grayscale opacity-60'}`}>
+      
+      {/* Background Technical Decoration */}
+      <div className={`absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-[60px] rounded-full transition-opacity duration-500 ${isActive ? 'opacity-100' : 'opacity-0'}`} />
+
+      {/* 1. TOP SECTION: IDENTITY & ICON */}
+      <div className="grid grid-cols-[auto_1fr] gap-5 items-start relative z-10">
+        <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center shrink-0 transition-all duration-500 shadow-sm border ${isActive ? 'bg-slate-950 text-white border-slate-800 rotate-3' : 'bg-white text-slate-300 border-slate-100'}`}>
+          <ICONS.Settings />
         </div>
-        <span className="text-[7px] font-black text-slate-300 uppercase tracking-[0.2em] font-mono">NODE_UK_LTS</span>
+        <div className="min-w-0 flex flex-col justify-center h-16">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono leading-none">LAYER_{route.slice(0, 3).toUpperCase()}</p>
+            <span className="text-[7px] font-mono text-slate-300 font-bold">[{Math.random().toString(16).slice(2, 6).toUpperCase()}]</span>
+          </div>
+          <h4 className="text-[18px] font-black text-slate-950 uppercase tracking-tighter leading-none italic">{label.replace('_', ' ')}</h4>
+        </div>
       </div>
 
-      {/* RUGGED TACTICAL TOGGLE SWITCH */}
-      <button 
-        onClick={() => onToggle(route, !isActive)}
-        className={`relative inline-flex h-9 w-[64px] shrink-0 cursor-pointer rounded-2xl border-[4px] border-transparent transition-all duration-300 active:scale-90 ${isActive ? 'bg-slate-900 shadow-lg' : 'bg-slate-200'}`}
-      >
-        <div className={`pointer-events-none flex items-center justify-center h-7 w-7 transform rounded-xl bg-white shadow-xl transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isActive ? 'translate-x-7' : 'translate-x-0'}`}>
-           <div className={`w-1.5 h-1.5 rounded-full transition-colors duration-500 ${isActive ? 'bg-indigo-600' : 'bg-slate-200'}`} />
+      {/* 2. MIDDLE SECTION: LIVE TELEMETRY */}
+      <div className="grid grid-cols-2 gap-4 mt-6 mb-4 relative z-10">
+         <div className="p-3 bg-slate-50/50 rounded-2xl border border-slate-100">
+            <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest font-mono mb-1">Latency</p>
+            <p className={`text-[11px] font-black font-mono ${isActive ? 'text-indigo-600' : 'text-slate-300'}`}>{latency}ms</p>
+         </div>
+         <div className="p-3 bg-slate-50/50 rounded-2xl border border-slate-100">
+            <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest font-mono mb-1">Packet_Load</p>
+            <p className={`text-[11px] font-black font-mono ${isActive ? 'text-indigo-600' : 'text-slate-300'}`}>{load}%</p>
+         </div>
+      </div>
+      
+      {/* 3. BOTTOM SECTION: STATUS & TACTICAL TOGGLE */}
+      <div className="flex justify-between items-end pt-5 border-t border-slate-100/50 relative z-10">
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2 mb-1">
+            <div className={`w-2 h-2 rounded-full transition-all duration-500 ${isActive ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]' : 'bg-slate-300'}`} />
+            <span className={`text-[9px] font-black uppercase tracking-[0.2em] font-mono transition-colors ${isActive ? 'text-emerald-600' : 'text-slate-400'}`}>
+              {isActive ? 'NOMINAL' : 'OFFLINE'}
+            </span>
+          </div>
+          <span className="text-[7px] font-black text-slate-300 uppercase tracking-[0.2em] font-mono">NODE_UK_SYNCHRONISED</span>
         </div>
-      </button>
+
+        {/* REFINED MECHANICAL TOGGLE */}
+        <button 
+          onClick={() => onToggle(route, !isActive)}
+          className={`group/btn relative inline-flex h-11 w-20 shrink-0 cursor-pointer rounded-[1rem] border-[4px] border-slate-100 p-0.5 transition-all duration-300 active:scale-90 ${isActive ? 'bg-slate-900 shadow-xl shadow-indigo-500/10' : 'bg-slate-200'}`}
+        >
+          <div className={`flex items-center justify-center h-full w-9 transform rounded-[0.7rem] bg-white shadow-lg transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isActive ? 'translate-x-8' : 'translate-x-0'}`}>
+             <div className={`w-2 h-2 rounded-full transition-all duration-500 ${isActive ? 'bg-indigo-600 shadow-[0_0_8px_rgba(79,70,229,1)] scale-110' : 'bg-slate-200'}`} />
+          </div>
+          {/* Rail Indicator */}
+          <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 h-0.5 bg-slate-400/10 rounded-full" />
+        </button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale, systemSettings }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'content' | 'features' | 'system'>('overview');
@@ -230,19 +258,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale, system
       case 'features':
         return (
           <div className="space-y-8 animate-in fade-in duration-300">
-            <div className="bg-slate-950 rounded-[3rem] p-12 text-white shadow-2xl flex items-center justify-between overflow-hidden relative border border-white/5">
-               <div className="absolute right-0 top-0 w-64 h-64 bg-indigo-600/10 blur-[120px] rounded-full translate-x-1/3 -translate-y-1/3" />
+            <div className="bg-slate-950 rounded-[3.5rem] p-12 text-white shadow-2xl flex items-center justify-between overflow-hidden relative border border-white/5">
+               <div className="absolute right-0 top-0 w-80 h-80 bg-indigo-600/10 blur-[150px] rounded-full translate-x-1/3 -translate-y-1/3" />
                <div className="relative z-10">
-                 <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none mb-3">Citadel_OS_Switchboard</h2>
-                 <p className="text-[11px] font-black font-mono uppercase tracking-[0.5em] text-indigo-400/80">Master Layer Protocol Matrix</p>
+                 <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none mb-3">Citadel_Matrix_Switchboard</h2>
+                 <p className="text-[11px] font-black font-mono uppercase tracking-[0.5em] text-indigo-400/80">Operational Module Access Grid</p>
                </div>
                <div className="hidden md:flex flex-col items-end relative z-10">
-                  <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest font-mono mb-1">Active_Protocols</span>
+                  <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest font-mono mb-1">Active_Grid_Layers</span>
                   <span className="text-4xl font-black text-indigo-400 font-mono leading-none tracking-tighter">{Object.values(AppRoute).length}</span>
                </div>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-8">
               {Object.values(AppRoute).map(route => (
                 <CompactToggle 
                   key={route}
