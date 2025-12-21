@@ -96,6 +96,9 @@ export interface Post {
   authorName: string;
   authorAvatar: string;
   content: string;
+  contentLengthTier: 'pulse' | 'standard' | 'deep';
+  coAuthors?: { id: string, name: string, avatar: string }[];
+  capturedStatus?: { emoji: string, message: string };
   media: {
     type: 'image' | 'video' | 'file';
     url: string;
@@ -114,7 +117,6 @@ export interface Post {
   bookmarkedBy?: string[];
 }
 
-// Added missing Story interface
 export interface Story {
   id: string;
   authorId: string;
@@ -124,7 +126,6 @@ export interface Story {
   timestamp: any;
 }
 
-// Added missing LiveStream interface
 export interface LiveStream {
   id: string;
   authorId: string;

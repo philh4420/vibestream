@@ -83,6 +83,9 @@ const App: React.FC = () => {
   const [postLocation, setPostLocation] = useState<string | null>(null);
   const [postAudience, setPostAudience] = useState<SignalAudience>('global');
   
+  // Collaborative authors state
+  const [coAuthors, setCoAuthors] = useState<{ id: string, name: string, avatar: string }[]>([]);
+  
   const [userRegion, setUserRegion] = useState<Region>('en-GB');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -120,7 +123,6 @@ const App: React.FC = () => {
             if (userDoc.exists()) setUserData({ id: userDoc.id, ...userDoc.data() } as VibeUser);
           });
           
-          // Real-time Notifications Buffer
           const qNotif = query(collection(db, 'notifications'), where('toUserId', '==', user.uid), orderBy('timestamp', 'desc'), limit(20));
           onSnapshot(qNotif, (snap) => {
             setNotifications(snap.docs.map(d => ({ id: d.id, ...d.data() } as AppNotification)));
@@ -192,6 +194,12 @@ const App: React.FC = () => {
     if (!db || !userData) return;
     setIsUploading(true);
     addToast("Initiating Neural Uplink...", "info");
+
+    const contentLen = newPostText.trim().length;
+    let contentLengthTier: 'pulse' | 'standard' | 'deep' = 'standard';
+    if (contentLen < 80) contentLengthTier = 'pulse';
+    else if (contentLen > 280) contentLengthTier = 'deep';
+
     try {
       const mediaUplinks = selectedFiles.map(async (file) => {
         const url = await uploadToCloudinary(file);
@@ -203,6 +211,12 @@ const App: React.FC = () => {
         authorName: userData.displayName,
         authorAvatar: userData.avatarUrl,
         content: newPostText,
+        contentLengthTier,
+        coAuthors: coAuthors,
+        capturedStatus: {
+          emoji: userData.statusEmoji || '⚡',
+          message: userData.statusMessage || ''
+        },
         media: mediaItems,
         likes: 0,
         comments: 0,
@@ -218,6 +232,7 @@ const App: React.FC = () => {
       setSelectedFiles([]);
       setFilePreviews([]);
       setPostLocation(null);
+      setCoAuthors([]);
       setIsCreateModalOpen(false);
       addToast("Signal Successfully Published", "success");
     } catch (error) {
@@ -241,7 +256,6 @@ const App: React.FC = () => {
         likedBy: isLiked ? likedBy.filter((id: string) => id !== userData.id) : [...likedBy, userData.id]
       });
 
-      // Notify owner if not self
       if (!isLiked && data.authorId !== userData.id) {
         await addDoc(collection(db, 'notifications'), {
           type: 'like',
@@ -265,6 +279,17 @@ const App: React.FC = () => {
     notifications.filter(n => !n.isRead).forEach(async n => {
       await updateDoc(doc(db, 'notifications', n.id), { isRead: true });
     });
+  };
+
+  const toggleCoAuthorSim = () => {
+    if (coAuthors.length > 0) {
+      setCoAuthors([]);
+    } else {
+      setCoAuthors([
+        { id: 'sim_1', name: 'Citadel_Ghost', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ghost' }
+      ]);
+      addToast("Co-pilot Invited to Session", "success");
+    }
   };
 
   if (isLoading) return <div className="h-full w-full flex items-center justify-center font-black animate-pulse text-indigo-600 uppercase italic">Syncing_Neural_Buffer...</div>;
@@ -323,13 +348,27 @@ const App: React.FC = () => {
             </div>
             <div className="flex-1 overflow-y-auto no-scrollbar p-8">
               <div className="flex items-start gap-5 mb-8">
-                <img src={userData?.avatarUrl} className="w-12 h-12 rounded-[1.2rem] object-cover border border-slate-100 shadow-sm" alt="" />
+                <div className="relative">
+                  <img src={userData?.avatarUrl} className="w-12 h-12 rounded-[1.2rem] object-cover border border-slate-100 shadow-sm" alt="" />
+                  {coAuthors.map((ca, i) => (
+                    <img 
+                      key={ca.id} 
+                      src={ca.avatar} 
+                      className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full border-2 border-white shadow-lg" 
+                      style={{ transform: `translateX(${i * 12}px)` }}
+                      alt="" 
+                    />
+                  ))}
+                </div>
                 <div className="flex-1">
                    <div className="flex gap-2 mb-3">
                      <button onClick={() => setPostAudience(postAudience === 'global' ? 'mesh' : 'global')} className="px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-xl flex items-center gap-2 text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:bg-white transition-all shadow-sm">
                         {postAudience.toUpperCase()}_GRID
                      </button>
                      {postLocation && <button onClick={() => setPostLocation(null)} className="px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-2 text-[10px] font-black text-emerald-600 uppercase tracking-widest"> {postLocation} </button>}
+                     <button onClick={toggleCoAuthorSim} className={`px-3 py-1.5 border rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${coAuthors.length > 0 ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-slate-200 text-slate-400'}`}>
+                        {coAuthors.length > 0 ? 'CO-PILOT_ACTIVE' : 'INVITE_CO-PILOT'}
+                     </button>
                    </div>
                    <textarea value={newPostText} onChange={(e) => setNewPostText(e.target.value)} placeholder="Broadcast your frequency..." className="w-full h-32 bg-transparent border-none p-0 text-xl font-medium placeholder:text-slate-200 focus:ring-0 resize-none transition-all" />
                 </div>

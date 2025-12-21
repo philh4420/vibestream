@@ -97,7 +97,6 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
         comments: increment(1)
       });
 
-      // Create Notification for Post Owner
       if (post.authorId !== userData.id) {
         await addDoc(collection(db, 'notifications'), {
           type: 'comment',
@@ -123,29 +122,54 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
 
   if (isDeleting) return null;
 
+  const isPulse = post.contentLengthTier === 'pulse';
+  const isDeep = post.contentLengthTier === 'deep';
+
   return (
-    <div className="group bg-white border-precision rounded-[2.5rem] overflow-hidden transition-all duration-500 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.08)] mb-8">
+    <div className={`group bg-white border-precision rounded-[2.5rem] overflow-hidden transition-all duration-500 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.08)] mb-8 ${isPulse ? 'border-l-8 border-l-indigo-600' : ''}`}>
       <div className="p-6 md:p-8">
-        {/* Header Block */}
+        {/* Header Block with Multi-Node Support */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <div className="relative group/avatar cursor-pointer">
+            <div className="relative group/avatar cursor-pointer flex items-center">
+              {/* Primary Author */}
               <img 
                 src={post.authorAvatar} 
                 alt={post.authorName} 
-                className="w-12 h-12 md:w-14 md:h-14 rounded-[1.4rem] object-cover ring-4 ring-slate-50 transition-all group-hover/avatar:ring-indigo-100" 
+                className="w-12 h-12 md:w-14 md:h-14 rounded-[1.4rem] object-cover ring-4 ring-slate-50 transition-all group-hover/avatar:ring-indigo-100 z-10" 
               />
-              <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-[2.5px] border-white rounded-full" />
+              {/* Co-Authors Cluster */}
+              {post.coAuthors && post.coAuthors.length > 0 && post.coAuthors.map((ca, idx) => (
+                <img 
+                  key={ca.id}
+                  src={ca.avatar} 
+                  className="w-10 h-10 rounded-full border-2 border-white -ml-4 shadow-lg z-0 grayscale group-hover/avatar:grayscale-0 transition-all"
+                  style={{ zIndex: -idx }}
+                  alt="" 
+                />
+              ))}
+              <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-[2.5px] border-white rounded-full z-20" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <h3 className="font-black text-slate-950 text-sm md:text-base tracking-tight leading-none italic uppercase">{post.authorName}</h3>
+                <h3 className="font-black text-slate-950 text-sm md:text-base tracking-tight leading-none italic uppercase">
+                  {post.authorName}
+                  {post.coAuthors && post.coAuthors.length > 0 && (
+                    <span className="text-slate-300 font-bold ml-1 text-xs">+ {post.coAuthors.length} Co-Pilots</span>
+                  )}
+                </h3>
                 <ICONS.Verified />
               </div>
               <div className="flex items-center gap-2 mt-1.5">
                  <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest font-mono">
                    {post.createdAt}
                  </p>
+                 {/* Metadata Ghost Overlay */}
+                 {post.capturedStatus && (
+                   <span className="text-[8px] font-mono text-slate-300 uppercase tracking-tight hidden sm:inline">
+                     [{post.capturedStatus.emoji} {post.capturedStatus.message || 'Establish Signal'}]
+                   </span>
+                 )}
                  {post.location && (
                    <div className="flex items-center gap-1 px-2 py-0.5 bg-indigo-50 rounded-full">
                      <span className="text-[8px] font-black text-indigo-600 uppercase tracking-tight">{post.location}</span>
@@ -172,7 +196,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
                   </button>
                   {isAuthor && (
                     <button onClick={() => { setShowDeleteModal(true); setShowOptions(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-rose-500 hover:bg-rose-50 transition-all text-[10px] font-black uppercase tracking-widest font-mono border-t border-slate-50">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="m14.74 9-.344 12.142m-4.762 0L9.26 9m9.968-3.21c.342.053.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" strokeWidth={2.5}/></svg>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="m14.74 9-.344 12.142m-4.762 0L9.26 9m9.968-3.21c.342.053.682.107 1.022.166m-1.022-.165L18.16 19.673a2.244 2.077H8.084a2.244 2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" strokeWidth={2.5}/></svg>
                       Purge_Signal
                     </button>
                   )}
@@ -182,10 +206,19 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
           </div>
         </div>
 
-        {/* Content Block */}
-        <p className="text-slate-800 text-base md:text-lg leading-relaxed mb-6 font-medium whitespace-pre-wrap tracking-tight">
-          {post.content}
-        </p>
+        {/* Dynamic Content Block */}
+        <div className={`mb-6 ${isPulse ? 'text-center' : ''}`}>
+          <p className={`text-slate-800 leading-relaxed font-medium whitespace-pre-wrap tracking-tight transition-all duration-500 
+            ${isPulse ? 'text-2xl md:text-3xl font-black italic uppercase' : isDeep ? 'text-base md:text-lg border-l-2 border-slate-100 pl-6 py-2' : 'text-base md:text-lg'}`}>
+            {post.content}
+          </p>
+          {isDeep && (
+            <div className="flex items-center gap-2 mt-4 opacity-40">
+              <span className="text-[10px] font-mono font-black uppercase">Deep Dive Packet</span>
+              <div className="flex-1 h-px bg-slate-200" />
+            </div>
+          )}
+        </div>
 
         {/* Media Carousel Block */}
         {post.media && post.media.length > 0 && (
@@ -246,7 +279,6 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
         {/* COLLAPSIBLE COMMENT SECTION */}
         {showComments && (
           <div className="mt-8 pt-8 border-t border-slate-100 animate-in slide-in-from-top-4 duration-500">
-             {/* Comment Input */}
              <form onSubmit={handleSubmitComment} className="flex items-center gap-4 mb-8">
                 <img src={userData?.avatarUrl} className="w-10 h-10 rounded-xl object-cover shrink-0" alt="" />
                 <div className="flex-1 relative">
@@ -270,7 +302,6 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
                 </button>
              </form>
 
-             {/* Comments List */}
              <div className="space-y-6">
                 {comments.length > 0 ? (
                   comments.map(comment => (

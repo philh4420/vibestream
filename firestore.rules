@@ -140,11 +140,18 @@ service cloud.firestore {
       
       allow update: if isAuthenticated() && (
         isSignalOwner(postId) || 
-        incomingData().diff(existingData()).affectedKeys().hasOnly(['likes', 'comments', 'shares', 'likedBy']) ||
+        incomingData().diff(existingData()).affectedKeys().hasOnly(['likes', 'comments', 'shares', 'likedBy', 'bookmarkedBy']) ||
         isAdmin()
       );
       
       allow delete: if isAuthenticated() && (isSignalOwner(postId) || isAdmin());
+
+      // NEURAL ECHOES (Comments Sub-collection)
+      match /comments/{commentId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && incomingData().authorId == request.auth.uid;
+        allow update, delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isSignalOwner(postId) || isAdmin());
+      }
     }
 
     function isSignalOwner(postId) {
