@@ -333,25 +333,27 @@ const App: React.FC = () => {
   };
 
   const handleGoLive = () => {
-    addToast("Initialising Live Signal Protocol", "info");
+    // Only open the overlay; Title Entry happens inside the overlay
     setIsLiveOverlayOpen(true);
   };
 
   const handleStartStream = async (title: string) => {
     if (!db || !userData) return;
     try {
+      addToast("Establishing Neural Broadcast Node...", "info");
       const streamDoc = await addDoc(collection(db, 'streams'), {
         authorId: userData.id,
         authorName: userData.displayName,
         authorAvatar: userData.avatarUrl,
         title: title || `${userData.displayName}'s Neural Broadcast`,
-        thumbnailUrl: userData.avatarUrl, // Will be updated by screen capture in future
-        viewerCount: 1, // Broadcaster is the first viewer
+        thumbnailUrl: userData.avatarUrl, 
+        viewerCount: 1, 
         startedAt: serverTimestamp(),
         category: 'Live Signal'
       });
+      // Setting this triggers the broadcasting phase in the overlay
       setActiveStreamId(streamDoc.id);
-      addToast("Live Broadcast Established", "success");
+      addToast("Grid Connection Established", "success");
     } catch (e) {
       addToast("Broadcast Initiation Failed", "error");
       setIsLiveOverlayOpen(false);
@@ -359,7 +361,10 @@ const App: React.FC = () => {
   };
 
   const handleEndStream = async () => {
-    if (!db || !activeStreamId) return;
+    if (!db || !activeStreamId) {
+       setIsLiveOverlayOpen(false);
+       return;
+    }
     try {
       await deleteDoc(doc(db, 'streams', activeStreamId));
       setActiveStreamId(null);

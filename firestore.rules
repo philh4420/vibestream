@@ -4,9 +4,10 @@ service cloud.firestore {
 
     /**
      * =========================================================================
-     * VIBESTREAM CITADEL OS SECURITY MANIFEST v6.3 [PRODUCTION_STABLE]
+     * VIBESTREAM CITADEL OS SECURITY MANIFEST v6.4 [STABLE_PRODUCTION]
      * INFRASTRUCTURE REGION: GB_LON_CENTRAL
-     * LAST SYNCHRONISATION: 2026-02-15 14:10:00
+     * LAST SYNCHRONISATION: 2026-02-15 16:45:00
+     * CLEARANCE LEVEL: 5 (MESH_ADMIN)
      * =========================================================================
      * 
      * This document defines the primary access control layers for the VibeStream
@@ -369,6 +370,30 @@ service cloud.firestore {
     match /infrastructure_status/{statusId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    match /grid_compliance/{compId} { 
+      allow read: if isAuthenticated(); 
+      allow write: if isAdmin(); 
+    }
+
+    match /identity_shards/{shardId} { 
+      allow read: if isUser(shardId); 
+      allow write: if isUser(shardId); 
+    }
+
+    match /temporal_archive/{archId} { 
+      allow read: if isAuthenticated(); 
+      allow write: if isAdmin(); 
+    }
+
+    match /resilience_logs/{logId} { 
+      allow read: if isAuthenticated(); 
+      allow write: if isAdmin(); 
+    }
+
+    match /audit_trails/{auditId} { 
+      allow read, write: if isAdmin(); 
     }
   }
 }
