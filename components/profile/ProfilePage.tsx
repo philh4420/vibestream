@@ -19,9 +19,10 @@ interface ProfilePageProps {
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
   locale: Region;
   sessionStartTime: number;
+  onViewPost: (post: Post) => void;
 }
 
-export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProfile, addToast, locale, sessionStartTime }) => {
+export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProfile, addToast, locale, sessionStartTime, onViewPost }) => {
   const [activeTab, setActiveTab] = useState<string>('broadcasting');
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -114,7 +115,13 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
            </div>
            <div className="grid grid-cols-3 gap-1.5 rounded-xl overflow-hidden">
              {userPosts.filter(p => p.media?.length > 0).slice(0, 9).map((post, i) => (
-               <img key={i} src={post.media[0].url} className="aspect-square object-cover w-full hover:opacity-90 cursor-pointer transition-opacity" alt="" />
+               <img 
+                 key={i} 
+                 src={post.media[0].url} 
+                 onClick={() => onViewPost(post)}
+                 className="aspect-square object-cover w-full hover:opacity-90 cursor-pointer transition-opacity" 
+                 alt="" 
+               />
              ))}
            </div>
         </div>
@@ -136,12 +143,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
 
       {/* RIGHT COLUMN: POST FEED (The "Wall") */}
       <div className="lg:col-span-7 space-y-4">
-        {/* Pass missing userData and addToast props */}
         <ProfileBroadcastingSection 
           posts={userPosts} 
           locale={locale} 
           userData={profileData}
           addToast={addToast}
+          onViewPost={onViewPost}
         />
       </div>
     </div>
@@ -152,7 +159,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
       case 'identity':
         return <div className="max-w-5xl mx-auto"><ProfileAboutSection userData={profileData} locale={locale} /></div>;
       case 'visuals':
-        return <div className="max-w-5xl mx-auto"><ProfileVisualsSection posts={userPosts} /></div>;
+        return <div className="max-w-5xl mx-auto"><ProfileVisualsSection posts={userPosts} onViewPost={onViewPost} /></div>;
       case 'resonance':
         return <div className="max-w-5xl mx-auto"><ProfileResonanceSection userData={profileData} /></div>;
       case 'chronology':

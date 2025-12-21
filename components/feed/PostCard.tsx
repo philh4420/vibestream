@@ -17,13 +17,22 @@ import { CommentSection } from './CommentSection';
 interface PostCardProps {
   post: Post;
   onLike: (id: string, frequency?: string) => void;
+  onViewPost?: (post: Post) => void;
   locale?: string;
   isAuthor?: boolean;
   userData: User | null;
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-GB', isAuthor = false, userData, addToast }) => {
+export const PostCard: React.FC<PostCardProps> = ({ 
+  post, 
+  onLike, 
+  onViewPost,
+  locale = 'en-GB', 
+  isAuthor = false, 
+  userData, 
+  addToast 
+}) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
@@ -276,20 +285,23 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
         </div>
 
         <div className={`mb-6 ${isPulse ? 'text-center' : ''}`}>
-          <div className={`text-slate-800 leading-relaxed font-medium tracking-tight transition-all duration-500 
-            ${isPulse ? 'text-2xl md:text-3xl font-black italic uppercase' : isDeep ? 'text-base md:text-lg border-l-2 border-slate-100 pl-6 py-2' : 'text-base md:text-lg'}`}>
+          <div 
+            onClick={() => onViewPost?.(post)}
+            className={`cursor-pointer group/content text-slate-800 leading-relaxed font-medium tracking-tight transition-all duration-500 
+            ${isPulse ? 'text-2xl md:text-3xl font-black italic uppercase' : isDeep ? 'text-base md:text-lg border-l-2 border-slate-100 pl-6 py-2' : 'text-base md:text-lg'}`}
+          >
             {textChunks.map((chunk, idx) => {
               const reactions = post.inlineReactions?.[idx] || [];
               return (
                 <span key={idx} className="relative group/chunk inline-block">
-                  <span className="hover:bg-indigo-50/50 rounded-md transition-colors cursor-pointer p-0.5 inline">
+                  <span className="hover:bg-indigo-50/50 rounded-md transition-colors p-0.5 inline">
                     {chunk}
                   </span>
                   <div className="absolute -top-6 left-0 flex gap-1 opacity-0 group-hover/chunk:opacity-100 transition-opacity z-10">
                      {['🔥', '❤️', '💡', '🚀'].map(emoji => (
                        <button 
                          key={emoji} 
-                         onClick={() => handleInlineReact(idx, emoji)}
+                         onClick={(e) => { e.stopPropagation(); handleInlineReact(idx, emoji); }}
                          className="w-6 h-6 bg-white shadow-lg border border-slate-100 rounded-full flex items-center justify-center text-[10px] hover:scale-125 transition-transform"
                        >
                          {emoji}
@@ -312,7 +324,10 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
         </div>
 
         {post.media && post.media.length > 0 && (
-          <div className="relative rounded-[2rem] overflow-hidden mb-6 bg-slate-50 border-precision shadow-inner group/carousel">
+          <div 
+            onClick={() => onViewPost?.(post)}
+            className="relative rounded-[2rem] overflow-hidden mb-6 bg-slate-50 border-precision shadow-inner group/carousel cursor-pointer"
+          >
             <div className="flex transition-transform duration-500 ease-out" style={{ transform: `translateX(-${currentMediaIndex * 100}%)` }}>
               {post.media.map((item, idx) => (
                 <div key={idx} className="min-w-full flex items-center justify-center bg-slate-950 aspect-video md:aspect-[16/9]">
@@ -323,6 +338,10 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
                   )}
                 </div>
               ))}
+            </div>
+            {/* Focal Assist Indicator */}
+            <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-xl opacity-0 group-hover/carousel:opacity-100 transition-all pointer-events-none">
+               <span className="text-[8px] font-black text-white uppercase tracking-widest font-mono">Focal_Node_View</span>
             </div>
           </div>
         )}
@@ -367,7 +386,10 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
             </div>
 
             <button 
-              onClick={() => setShowComments(!showComments)}
+              onClick={() => {
+                 if (onViewPost) onViewPost(post);
+                 else setShowComments(!showComments);
+              }}
               className={`flex items-center gap-2.5 transition-all touch-active group/btn ${showComments ? 'text-indigo-600' : 'text-slate-400'}`}
             >
               <div className={`p-2.5 rounded-full transition-all duration-300 ${showComments ? 'bg-indigo-50 shadow-lg' : 'group-hover/btn:bg-indigo-50'}`}>
@@ -395,7 +417,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
           </button>
         </div>
 
-        {showComments && (
+        {showComments && !onViewPost && (
           <CommentSection 
             postId={post.id} 
             userData={userData} 

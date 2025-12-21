@@ -6,10 +6,11 @@ import { ICONS } from '../../constants';
 interface ExplorePageProps {
   posts: Post[];
   onLike: (id: string) => void;
+  onViewPost: (post: Post) => void;
   locale: Region;
 }
 
-export const ExplorePage: React.FC<ExplorePageProps> = ({ posts, onLike, locale }) => {
+export const ExplorePage: React.FC<ExplorePageProps> = ({ posts, onLike, onViewPost, locale }) => {
   const [filter, setFilter] = useState<'all' | 'media' | 'text'>('all');
 
   const filteredPosts = posts.filter(post => {
@@ -42,7 +43,11 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({ posts, onLike, locale 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPosts.length > 0 ? (
           filteredPosts.map(post => (
-            <div key={post.id} className="group relative bg-white border-precision rounded-[2.5rem] overflow-hidden hover:shadow-2xl hover:border-indigo-200 transition-all duration-500 cursor-pointer aspect-[4/5] sm:aspect-square flex flex-col">
+            <div 
+              key={post.id} 
+              onClick={() => onViewPost(post)}
+              className="group relative bg-white border-precision rounded-[2.5rem] overflow-hidden hover:shadow-2xl hover:border-indigo-200 transition-all duration-500 cursor-pointer aspect-[4/5] sm:aspect-square flex flex-col"
+            >
               {post.media && post.media.length > 0 ? (
                 <div className="flex-1 overflow-hidden relative">
                   <img 
@@ -65,7 +70,10 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({ posts, onLike, locale 
                     <span className="text-white text-[10px] font-black uppercase tracking-widest">{post.authorName}</span>
                   </div>
                   <div className="flex gap-3">
-                    <button onClick={(e) => { e.stopPropagation(); onLike(post.id); }} className="p-2 bg-white/20 backdrop-blur-md rounded-lg text-white hover:bg-rose-500 transition-colors">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onLike(post.id); }} 
+                      className="p-2 bg-white/20 backdrop-blur-md rounded-lg text-white hover:bg-rose-500 transition-colors"
+                    >
                       <svg className="w-4 h-4" fill={post.isLiked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>
                     </button>
                   </div>

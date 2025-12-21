@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Post, User, Region, LiveStream, ToastMessage } from '../../types';
+import { Post, User, Region, LiveStream } from '../../types';
 import { StoriesStrip } from './StoriesStrip';
 import { CreateSignalBox } from './CreateSignalBox';
 import { FeedProtocols } from './FeedProtocols';
@@ -10,6 +10,7 @@ interface FeedPageProps {
   posts: Post[];
   userData: User | null;
   onLike: (id: string) => void;
+  onViewPost: (post: Post) => void;
   onOpenCreate: () => void;
   onTransmitStory: (file: File) => void;
   onGoLive: () => void;
@@ -21,6 +22,7 @@ export const FeedPage: React.FC<FeedPageProps> = ({
   posts, 
   userData, 
   onLike, 
+  onViewPost,
   onOpenCreate,
   onTransmitStory,
   onGoLive,
@@ -28,15 +30,6 @@ export const FeedPage: React.FC<FeedPageProps> = ({
   locale 
 }) => {
   const [activeProtocol, setActiveProtocol] = useState<'mesh' | 'pulse' | 'recent'>('mesh');
-
-  // Logic to addToast inside the PostCard requires it to be available
-  // In a real app we'd use a context, but here we can pass a simple proxy 
-  // since App.tsx handles the actual toast state.
-  const proxyAddToast = (msg: string, type: any = 'info') => {
-    // This assumes the parent App.tsx has a way to receive this, but for now we'll 
-    // rely on the PostCard having access to the shared logic via props if needed.
-    console.log(`[TOAST]: ${msg}`);
-  };
 
   const filteredPosts = useMemo(() => {
     let result = [...posts];
@@ -74,11 +67,11 @@ export const FeedPage: React.FC<FeedPageProps> = ({
               key={post.id} 
               post={post} 
               onLike={onLike} 
+              onViewPost={onViewPost}
               locale={locale} 
               isAuthor={userData?.id === post.authorId}
               userData={userData}
               addToast={(msg, type) => {
-                 // In a production environment, this would be a global state call
                  window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg, type } }));
               }}
             />

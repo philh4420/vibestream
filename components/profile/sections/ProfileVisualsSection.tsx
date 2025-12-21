@@ -4,9 +4,10 @@ import { Post } from '../../../types';
 
 interface ProfileVisualsSectionProps {
   posts: Post[];
+  onViewPost: (post: Post) => void;
 }
 
-export const ProfileVisualsSection: React.FC<ProfileVisualsSectionProps> = ({ posts }) => {
+export const ProfileVisualsSection: React.FC<ProfileVisualsSectionProps> = ({ posts, onViewPost }) => {
   const mediaPosts = posts.filter(p => p.media && p.media.length > 0);
 
   return (
@@ -23,7 +24,11 @@ export const ProfileVisualsSection: React.FC<ProfileVisualsSectionProps> = ({ po
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {mediaPosts.map(post => (
-            <div key={post.id} className="aspect-square rounded-[2.5rem] overflow-hidden border border-slate-100 bg-slate-100 group cursor-pointer relative shadow-sm">
+            <div 
+              key={post.id} 
+              onClick={() => onViewPost(post)}
+              className="aspect-square rounded-[2.5rem] overflow-hidden border border-slate-100 bg-slate-100 group cursor-pointer relative shadow-sm"
+            >
                <img 
                  src={post.media[0].url} 
                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 

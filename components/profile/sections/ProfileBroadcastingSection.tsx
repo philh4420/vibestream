@@ -8,13 +8,15 @@ interface ProfileBroadcastingSectionProps {
   locale: Region;
   userData: User | null;
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
+  onViewPost: (post: Post) => void;
 }
 
 export const ProfileBroadcastingSection: React.FC<ProfileBroadcastingSectionProps> = ({ 
   posts, 
   locale,
   userData,
-  addToast
+  addToast,
+  onViewPost
 }) => {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -25,6 +27,7 @@ export const ProfileBroadcastingSection: React.FC<ProfileBroadcastingSectionProp
             key={post.id} 
             post={post} 
             onLike={() => {}} 
+            onViewPost={onViewPost}
             locale={locale} 
             userData={userData}
             addToast={addToast}

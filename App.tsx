@@ -12,6 +12,7 @@ import { NotificationsPage } from './components/notifications/NotificationsPage'
 import { StreamGridPage } from './components/streams/StreamGridPage';
 import { LiveBroadcastOverlay } from './components/streams/LiveBroadcastOverlay';
 import { LiveWatcherOverlay } from './components/streams/LiveWatcherOverlay';
+import { SinglePostView } from './components/feed/SinglePostView';
 import { PrivacyPage } from './components/legal/PrivacyPage';
 import { TermsPage } from './components/legal/TermsPage';
 import { CookiesPage } from './components/legal/CookiesPage';
@@ -77,6 +78,7 @@ const App: React.FC = () => {
   const [isLiveOverlayOpen, setIsLiveOverlayOpen] = useState(false);
   const [activeStreamId, setActiveStreamId] = useState<string | null>(null);
   const [watchingStream, setWatchingStream] = useState<LiveStream | null>(null);
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   
   const [newPostText, setNewPostText] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -102,6 +104,7 @@ const App: React.FC = () => {
   const handleNavigate = (route: AppRoute) => {
     setActiveRoute(route);
     localStorage.setItem(ROUTE_KEY, route);
+    setSelectedPost(null);
   };
 
   const handleLogout = async () => {
@@ -154,13 +157,20 @@ const App: React.FC = () => {
     if (!db || !isAuthenticated) return;
     const q = query(collection(db, 'posts'), orderBy('timestamp', 'desc'), limit(50));
     return onSnapshot(q, (snapshot) => {
-      setPosts(snapshot.docs.map(doc => ({ 
+      const fetchedPosts = snapshot.docs.map(doc => ({ 
         id: doc.id, 
         ...doc.data(),
         isLiked: doc.data().likedBy?.includes(auth.currentUser?.uid)
-      } as Post)));
+      } as Post));
+      setPosts(fetchedPosts);
+      
+      // Update selectedPost if it exists in the new snapshot
+      if (selectedPost) {
+        const updated = fetchedPosts.find(p => p.id === selectedPost.id);
+        if (updated) setSelectedPost(updated);
+      }
     });
-  }, [isAuthenticated]);
+  }, [isAuthenticated, selectedPost?.id]);
 
   const fetchCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -344,10 +354,11 @@ const App: React.FC = () => {
           onOpenCreate={() => setIsCreateModalOpen(true)}
           onTransmitStory={() => {}} onGoLive={() => setIsLiveOverlayOpen(true)}
           onJoinStream={(s) => setWatchingStream(s)} locale={userRegion}
+          onViewPost={setSelectedPost}
         />
       )}
 
-      {activeRoute === AppRoute.EXPLORE && <ExplorePage posts={posts} onLike={handleLike} locale={userRegion} />}
+      {activeRoute === AppRoute.EXPLORE && <ExplorePage posts={posts} onLike={handleLike} locale={userRegion} onViewPost={setSelectedPost} />}
       {activeRoute === AppRoute.MESSAGES && userData && <MessagesPage currentUser={userData} locale={userRegion} addToast={addToast} />}
       {activeRoute === AppRoute.NOTIFICATIONS && (
         <NotificationsPage 
@@ -366,6 +377,7 @@ const App: React.FC = () => {
           addToast={addToast} 
           locale={userRegion} 
           sessionStartTime={Date.now()}
+          onViewPost={setSelectedPost}
         />
       )}
       {activeRoute === AppRoute.STREAM_GRID && <StreamGridPage locale={userRegion} onJoinStream={setWatchingStream} onGoLive={() => setIsLiveOverlayOpen(true)} />}
@@ -433,7 +445,7 @@ const App: React.FC = () => {
                <div className="flex items-center justify-between mb-8">
                   <div className="flex gap-3">
                     <button onClick={() => fileInputRef.current?.click()} className="p-4 bg-white border border-slate-200 rounded-2xl text-slate-500 hover:text-indigo-600 transition-all active:scale-90"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Z" /></svg></button>
-                    <button onClick={fetchCurrentLocation} className={`p-4 border rounded-2xl transition-all active:scale-90 ${postLocation ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200 text-slate-500 hover:text-emerald-600'}`}><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg></button>
+                    <button onClick={fetchCurrentLocation} className={`p-4 border rounded-2xl transition-all active:scale-90 ${postLocation ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200 text-slate-500 hover:text-emerald-600'}`}><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 115 0z" /></svg></button>
                   </div>
                </div>
                <input type="file" ref={fileInputRef} multiple className="hidden" accept="image/*,video/*" onChange={handleFileChange} />
@@ -442,6 +454,17 @@ const App: React.FC = () => {
             {isUploading && <div className="absolute inset-x-0 bottom-0 h-1.5 bg-indigo-50 overflow-hidden"><div className="h-full bg-indigo-600 animate-[pulse_2s_infinite] w-full origin-left" /></div>}
           </div>
         </div>
+      )}
+
+      {selectedPost && (
+        <SinglePostView 
+          post={selectedPost} 
+          userData={userData} 
+          locale={userRegion} 
+          onClose={() => setSelectedPost(null)}
+          onLike={handleLike}
+          addToast={addToast}
+        />
       )}
 
       {isLiveOverlayOpen && userData && (
