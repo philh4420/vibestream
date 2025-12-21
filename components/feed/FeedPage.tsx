@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Post, User, Region, LiveStream } from '../../types';
+import { Post, User, Region, LiveStream, ToastMessage } from '../../types';
 import { StoriesStrip } from './StoriesStrip';
 import { CreateSignalBox } from './CreateSignalBox';
 import { FeedProtocols } from './FeedProtocols';
@@ -29,23 +29,27 @@ export const FeedPage: React.FC<FeedPageProps> = ({
 }) => {
   const [activeProtocol, setActiveProtocol] = useState<'mesh' | 'pulse' | 'recent'>('mesh');
 
+  // Logic to addToast inside the PostCard requires it to be available
+  // In a real app we'd use a context, but here we can pass a simple proxy 
+  // since App.tsx handles the actual toast state.
+  const proxyAddToast = (msg: string, type: any = 'info') => {
+    // This assumes the parent App.tsx has a way to receive this, but for now we'll 
+    // rely on the PostCard having access to the shared logic via props if needed.
+    console.log(`[TOAST]: ${msg}`);
+  };
+
   const filteredPosts = useMemo(() => {
     let result = [...posts];
-    
     switch (activeProtocol) {
-      case 'pulse':
-        return result.sort((a, b) => (b.likes || 0) - (a.likes || 0));
-      case 'recent':
-        return result; 
+      case 'pulse': return result.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+      case 'recent': return result; 
       case 'mesh':
-      default:
-        return result;
+      default: return result;
     }
   }, [posts, activeProtocol]);
 
   return (
     <div className="space-y-10 md:space-y-14 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-      {/* 1. Neural Sync Hub (Stories & Live Streams) */}
       <section>
         <StoriesStrip 
           userData={userData} 
@@ -55,17 +59,14 @@ export const FeedPage: React.FC<FeedPageProps> = ({
         />
       </section>
 
-      {/* 2. Primary Signal Ingress (Create Box) */}
       <section className="max-w-3xl mx-auto w-full">
         <CreateSignalBox userData={userData} onOpen={onOpenCreate} />
       </section>
 
-      {/* 3. Feed Navigation & Filters */}
       <section className="max-w-3xl mx-auto w-full">
         <FeedProtocols active={activeProtocol} onChange={setActiveProtocol} />
       </section>
 
-      {/* 4. Neural Transmission Feed */}
       <section className="max-w-3xl mx-auto w-full space-y-10">
         {filteredPosts.length > 0 ? (
           filteredPosts.map(post => (
@@ -75,6 +76,11 @@ export const FeedPage: React.FC<FeedPageProps> = ({
               onLike={onLike} 
               locale={locale} 
               isAuthor={userData?.id === post.authorId}
+              userData={userData}
+              addToast={(msg, type) => {
+                 // In a production environment, this would be a global state call
+                 window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg, type } }));
+              }}
             />
           ))
         ) : (
@@ -82,15 +88,7 @@ export const FeedPage: React.FC<FeedPageProps> = ({
              <div className="w-24 h-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mb-10 text-slate-200 shadow-inner">
                 <svg className="w-10 h-10 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
              </div>
-             <p className="text-[12px] font-black text-slate-400 uppercase tracking-[0.5em] font-mono italic px-12 leading-loose max-w-sm">
-               No signals detected in local buffer for {activeProtocol.toUpperCase()}. Synchronise your neural mesh to establish data flow.
-             </p>
-             <button 
-               onClick={onOpenCreate}
-               className="mt-12 px-10 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all active:scale-95 italic"
-             >
-               Broadcast_First_Signal
-             </button>
+             <p className="text-[12px] font-black text-slate-400 uppercase tracking-[0.5em] font-mono italic px-12 leading-loose max-w-sm"> No signals detected. </p>
           </div>
         )}
       </section>

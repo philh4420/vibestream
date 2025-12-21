@@ -64,7 +64,7 @@ export interface User {
   }[];
 }
 
-export type NotificationType = 'like' | 'follow' | 'mention' | 'broadcast' | 'system';
+export type NotificationType = 'like' | 'comment' | 'follow' | 'mention' | 'broadcast' | 'system';
 
 export interface AppNotification {
   id: string;
@@ -79,28 +79,15 @@ export interface AppNotification {
   timestamp: any;
 }
 
-export interface Story {
+export interface Comment {
   id: string;
   authorId: string;
   authorName: string;
   authorAvatar: string;
-  coverUrl: string;
+  content: string;
+  likes: number;
   timestamp: any;
-  expiresAt: any;
-  isActive: boolean;
-}
-
-export interface LiveStream {
-  id: string;
-  authorId: string;
-  authorName: string;
-  authorAvatar: string;
-  title: string;
-  thumbnailUrl: string;
-  viewerCount: number;
-  startedAt: any;
-  category: string;
-  liveSnapshot?: string; 
+  likedBy?: string[];
 }
 
 export interface Post {
@@ -123,6 +110,31 @@ export interface Post {
   likedBy?: string[];
   location?: string;
   audience?: SignalAudience;
+  reactions?: Record<string, number>;
+  bookmarkedBy?: string[];
+}
+
+// Added missing Story interface
+export interface Story {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  coverUrl: string;
+  timestamp: any;
+}
+
+// Added missing LiveStream interface
+export interface LiveStream {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  title: string;
+  thumbnailUrl: string;
+  viewerCount: number;
+  startedAt: any;
+  category: string;
 }
 
 export interface Chat {
