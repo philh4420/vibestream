@@ -5,10 +5,10 @@ import {
   query, 
   updateDoc, 
   doc, 
-  deleteDoc,
-  orderBy,
-  limit,
-  onSnapshot
+  deleteDoc, 
+  orderBy, 
+  limit, 
+  onSnapshot 
 } from 'firebase/firestore';
 import { Post, User, SystemSettings, AppRoute, Region } from '../../types';
 import { ICONS } from '../../constants';
@@ -19,7 +19,7 @@ interface AdminPanelProps {
   systemSettings: SystemSettings;
 }
 
-// --- Ultra-Compact Technical Components ---
+// --- High-Density Technical Components ---
 
 const StatMini = ({ label, value, trend, icon: Icon, color = "indigo" }: any) => {
   const colorMap: Record<string, string> = {
@@ -56,22 +56,32 @@ const CompactToggle = ({ label, route, isActive, onToggle }: {
   isActive: boolean; 
   onToggle: (route: AppRoute, val: boolean) => void 
 }) => (
-  <div className={`p-5 rounded-2xl border transition-all flex items-center justify-between min-h-[90px] ${isActive ? 'bg-white border-slate-100 shadow-sm' : 'bg-slate-50 border-slate-200 opacity-50'}`}>
-    <div className="flex items-center gap-4 min-w-0">
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${isActive ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-200 text-slate-400'}`}>
-        <div className="scale-100"><ICONS.Settings /></div>
+  <div className={`group p-6 rounded-[2rem] border transition-all duration-300 flex flex-col justify-between min-h-[140px] hover:shadow-xl hover:border-indigo-200 ${isActive ? 'bg-white border-slate-100 shadow-sm' : 'bg-slate-50 border-slate-200 opacity-60'}`}>
+    {/* Internal Sub-Grid Layout */}
+    <div className="grid grid-cols-[auto_1fr] gap-4 items-start">
+      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300 shadow-sm group-hover:scale-110 ${isActive ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-200 text-slate-400'}`}>
+        <ICONS.Settings />
       </div>
-      <div className="min-w-0">
-        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest font-mono leading-none mb-1.5">{route.toUpperCase()}</p>
-        <h4 className="text-[13px] font-black text-slate-900 uppercase tracking-tight truncate leading-none">{label.replace('_', ' ')}</h4>
+      <div className="min-w-0 flex flex-col justify-center h-12">
+        <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] font-mono leading-none mb-2">PROTO_{route.toUpperCase()}</p>
+        <h4 className="text-[14px] font-black text-slate-950 uppercase tracking-tight leading-none whitespace-normal break-words">{label.replace('_', ' ')}</h4>
       </div>
     </div>
-    <button 
-      onClick={() => onToggle(route, !isActive)}
-      className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${isActive ? 'bg-indigo-600' : 'bg-slate-300'}`}
-    >
-      <div className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ${isActive ? 'translate-x-5' : 'translate-x-0'}`} />
-    </button>
+    
+    <div className="flex justify-between items-center mt-5 pt-4 border-t border-slate-50">
+      <div className="flex flex-col">
+        <span className={`text-[7px] font-black uppercase tracking-widest font-mono ${isActive ? 'text-emerald-500' : 'text-slate-400'}`}>
+          {isActive ? 'STATUS: NOMINAL' : 'STATUS: OFFLINE'}
+        </span>
+        <span className="text-[6px] font-black text-slate-300 uppercase tracking-widest font-mono mt-0.5">EN_GB_NODE_SEC</span>
+      </div>
+      <button 
+        onClick={() => onToggle(route, !isActive)}
+        className={`relative inline-flex h-7 w-13 shrink-0 cursor-pointer rounded-full border-[3px] border-transparent transition-all duration-500 ${isActive ? 'bg-indigo-600 shadow-[0_0_20px_rgba(79,70,229,0.4)] ring-4 ring-indigo-50' : 'bg-slate-300'}`}
+      >
+        <div className={`pointer-events-none inline-block h-5.5 w-5.5 transform rounded-full bg-white shadow-lg transition duration-300 ease-in-out ${isActive ? 'translate-x-6' : 'translate-x-0'}`} />
+      </button>
+    </div>
   </div>
 );
 
@@ -212,15 +222,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale, system
 
       case 'features':
         return (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="bg-indigo-600 rounded-2xl p-8 text-white shadow-lg flex items-center justify-between overflow-hidden relative">
-               <div className="absolute right-0 top-0 w-32 h-32 bg-white/10 blur-xl rounded-full translate-x-1/2 -translate-y-1/2" />
+          <div className="space-y-8 animate-in fade-in duration-300">
+            <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl flex items-center justify-between overflow-hidden relative">
+               <div className="absolute right-0 top-0 w-48 h-48 bg-indigo-500/20 blur-3xl rounded-full translate-x-1/3 -translate-y-1/3" />
                <div className="relative z-10">
-                 <h2 className="text-3xl font-black italic tracking-tighter uppercase leading-none">Protocol_Switchboard</h2>
-                 <p className="text-[10px] font-mono uppercase tracking-[0.4em] mt-2 text-indigo-100">Master Feature Gates</p>
+                 <h2 className="text-3xl font-black italic tracking-tighter uppercase leading-none mb-2">Protocol_Switchboard_Matrix</h2>
+                 <p className="text-[10px] font-mono uppercase tracking-[0.4em] text-indigo-300">Neural Gateway Operational Control</p>
+               </div>
+               <div className="hidden md:flex flex-col items-end relative z-10">
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest font-mono">Total_Layers</span>
+                  <span className="text-2xl font-black text-indigo-400 font-mono leading-none">{Object.values(AppRoute).length}</span>
                </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
               {Object.values(AppRoute).map(route => (
                 <CompactToggle 
                   key={route}
