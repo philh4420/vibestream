@@ -1,17 +1,18 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from './components/layout/Layout';
-import { FeedPage } from './components/feed/FeedPage'; // New Modular Import
+import { FeedPage } from './components/feed/FeedPage'; 
 import { Toast } from './components/ui/Toast';
 import { LandingPage } from './components/landing/LandingPage';
 import { AdminPanel } from './components/admin/AdminPanel';
 import { ProfilePage } from './components/profile/ProfilePage';
 import { ExplorePage } from './components/explore/ExplorePage';
 import { MessagesPage } from './components/messages/MessagesPage';
+import { StreamGridPage } from './components/streams/StreamGridPage';
 import { PrivacyPage } from './components/legal/PrivacyPage';
 import { TermsPage } from './components/legal/TermsPage';
 import { CookiesPage } from './components/legal/CookiesPage';
-import { AppRoute, Post, ToastMessage, UserRole, Region, User as VibeUser, SystemSettings } from './types';
+import { AppRoute, Post, ToastMessage, Region, User as VibeUser, SystemSettings } from './types';
 import { db, auth } from './services/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { 
@@ -325,6 +326,16 @@ const App: React.FC = () => {
     }
   };
 
+  const handleGoLive = () => {
+    addToast("Initiating Live Signal Protocol", "info");
+    // In a real app, this would open a camera interface for WebRTC streaming.
+    // For now, we simulate the start of a broadcast.
+    setTimeout(() => {
+      addToast("Live Broadcast Established", "success");
+      handleNavigate(AppRoute.STREAM_GRID);
+    }, 1500);
+  };
+
   if (systemSettings.maintenanceMode && userData?.role !== 'admin') {
     return <MaintenanceOverlay type="system" />;
   }
@@ -347,7 +358,6 @@ const App: React.FC = () => {
   const renderContent = () => {
     const user = userData!;
     
-    // Feature Toggle Logic: Redirect non-admins if a feature is disabled
     const isFeatureDisabled = systemSettings.featureFlags && systemSettings.featureFlags[activeRoute] === false;
     if (isFeatureDisabled && user.role !== 'admin') {
       return <MaintenanceOverlay type="feature" />;
@@ -362,6 +372,8 @@ const App: React.FC = () => {
         return <ExplorePage posts={posts} onLike={handleLike} locale={userRegion} />;
       case AppRoute.MESSAGES:
         return <MessagesPage currentUser={user} locale={userRegion} addToast={addToast} />;
+      case AppRoute.STREAM_GRID:
+        return <StreamGridPage locale={userRegion} onJoinStream={(id) => addToast(`Synchronising with Stream Node: ${id.slice(0, 5)}`, 'info')} />;
       case AppRoute.PRIVACY:
         return <PrivacyPage />;
       case AppRoute.TERMS:
@@ -373,8 +385,6 @@ const App: React.FC = () => {
         return <NodePlaceholder title="Neural Mesh" subtitle="Synchronizing network identity bonds..." />;
       case AppRoute.CLUSTERS:
         return <NodePlaceholder title="Neural Clusters" subtitle="Calibrating group frequency protocols..." />;
-      case AppRoute.STREAM_GRID:
-        return <NodePlaceholder title="Stream Grid" subtitle="Buffering direct visual streams..." />;
       case AppRoute.SAVED:
         return <NodePlaceholder title="Saved Signals" subtitle="Retrieving fragments from temporal vault..." />;
       case AppRoute.VERIFIED_NODES:
@@ -396,6 +406,7 @@ const App: React.FC = () => {
             onLike={handleLike} 
             onOpenCreate={() => setIsCreateModalOpen(true)}
             onTransmitStory={handleCreateStory}
+            onGoLive={handleGoLive}
             locale={userRegion}
           />
         );

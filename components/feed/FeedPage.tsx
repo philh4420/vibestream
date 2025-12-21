@@ -12,6 +12,7 @@ interface FeedPageProps {
   onLike: (id: string) => void;
   onOpenCreate: () => void;
   onTransmitStory: (file: File) => void;
+  onGoLive: () => void;
   locale: Region;
 }
 
@@ -21,6 +22,7 @@ export const FeedPage: React.FC<FeedPageProps> = ({
   onLike, 
   onOpenCreate,
   onTransmitStory,
+  onGoLive,
   locale 
 }) => {
   const [activeProtocol, setActiveProtocol] = useState<'mesh' | 'pulse' | 'recent'>('mesh');
@@ -30,15 +32,11 @@ export const FeedPage: React.FC<FeedPageProps> = ({
     
     switch (activeProtocol) {
       case 'pulse':
-        // Sort by likes descending
         return result.sort((a, b) => (b.likes || 0) - (a.likes || 0));
       case 'recent':
-        // Already sorted by timestamp desc from App.tsx, but ensuring it here
         return result; 
       case 'mesh':
       default:
-        // In a real app, this would filter by followed users. 
-        // For now, we show the main feed as the 'Neural Mesh'.
         return result;
     }
   }, [posts, activeProtocol]);
@@ -46,7 +44,7 @@ export const FeedPage: React.FC<FeedPageProps> = ({
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
       {/* 1. Temporal Fragments (Stories) */}
-      <StoriesStrip userData={userData} onTransmit={onTransmitStory} />
+      <StoriesStrip userData={userData} onTransmit={onTransmitStory} onGoLive={onGoLive} />
 
       {/* 2. Primary Signal Ingress (Create Box) */}
       <CreateSignalBox userData={userData} onOpen={onOpenCreate} />

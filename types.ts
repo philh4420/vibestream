@@ -73,6 +73,18 @@ export interface Story {
   isActive: boolean;
 }
 
+export interface LiveStream {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  title: string;
+  thumbnailUrl: string;
+  viewerCount: number;
+  startedAt: any;
+  category: string;
+}
+
 export interface Post {
   id: string;
   authorId: string;
