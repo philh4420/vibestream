@@ -59,7 +59,7 @@ export const Layout: React.FC<LayoutProps> = ({
         onNavigate={onNavigate}
       />
 
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 flex overflow-hidden">
         
         {/* Dynamic Left Navigation System */}
         <LeftSidebar 
@@ -79,7 +79,7 @@ export const Layout: React.FC<LayoutProps> = ({
           </div>
         </main>
 
-        {/* Refined Right Sidebar */}
+        {/* Refined Right Sidebar - visible on large screens */}
         <RightSidebar userData={userData} />
       </div>
 

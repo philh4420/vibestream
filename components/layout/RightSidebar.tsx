@@ -53,7 +53,6 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
 
     const loadAtmosphericData = async () => {
       try {
-        // First try precision GPS lock
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             async (position) => {
@@ -63,7 +62,6 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
               setGpsLock(true);
             },
             async (error) => {
-              // Fallback to profile location if GPS fails or is denied
               const weatherData = await fetchWeather({ query: userData?.location || 'London' });
               setWeather(weatherData);
               setGpsLock(false);
@@ -113,7 +111,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
   };
 
   return (
-    <aside className="hidden xl:flex flex-col w-[380px] shrink-0 bg-[#f8fafc] border-l border-precision h-full pt-[calc(var(--header-h)+1rem)] pb-8 overflow-hidden">
+    <aside className="hidden lg:flex flex-col w-[320px] xl:w-[380px] shrink-0 bg-[#f8fafc] border-l border-precision h-full pt-[calc(var(--header-h)+1rem)] pb-8 overflow-hidden">
       
       <div className="flex-1 overflow-y-auto no-scrollbar px-6 space-y-8 pb-10">
         
