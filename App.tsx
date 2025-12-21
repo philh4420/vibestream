@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from './components/layout/Layout';
 import { FeedPage } from './components/feed/FeedPage'; 
@@ -38,6 +37,7 @@ import {
 } from 'firebase/firestore';
 import { uploadToCloudinary } from './services/cloudinary';
 import { ICONS, PRESENCE_CONFIG } from './constants';
+import { EmojiPicker } from './components/ui/EmojiPicker';
 
 const SESSION_KEY = 'vibestream_session_2026';
 const ROUTE_KEY = 'vibestream_active_route';
@@ -92,9 +92,11 @@ const App: React.FC = () => {
   const [isCoPilotSelectorOpen, setIsCoPilotSelectorOpen] = useState(false);
   const [availableFriends, setAvailableFriends] = useState<VibeUser[]>([]);
   const [searchFriendQuery, setSearchFriendQuery] = useState('');
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
 
   const [userRegion, setUserRegion] = useState<Region>('en-GB');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const isInitialLoad = useRef(true);
 
   const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -128,6 +130,27 @@ const App: React.FC = () => {
       localStorage.removeItem(SESSION_KEY);
       addToast("Session Terminated", "info");
     }
+  };
+
+  const insertEmoji = (emoji: string) => {
+    const textarea = textAreaRef.current;
+    if (!textarea) {
+      setNewPostText(prev => prev + emoji);
+      return;
+    }
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const before = text.substring(0, start);
+    const after = text.substring(end, text.length);
+    setNewPostText(before + emoji + after);
+    setIsEmojiPickerOpen(false);
+    
+    // Focus back and set caret position after state update
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + emoji.length, start + emoji.length);
+    }, 0);
   };
 
   useEffect(() => {
@@ -426,7 +449,13 @@ const App: React.FC = () => {
                         {coAuthors.length > 0 ? `${coAuthors.length}_PILOTS_SYNCED` : 'INVITE_CO-PILOT'}
                      </button>
                    </div>
-                   <textarea value={newPostText} onChange={(e) => setNewPostText(e.target.value)} placeholder="Broadcast your frequency..." className="w-full h-32 bg-transparent border-none p-0 text-xl font-medium placeholder:text-slate-200 focus:ring-0 resize-none transition-all" />
+                   <textarea 
+                    ref={textAreaRef}
+                    value={newPostText} 
+                    onChange={(e) => setNewPostText(e.target.value)} 
+                    placeholder="Broadcast your frequency..." 
+                    className="w-full h-32 bg-transparent border-none p-0 text-xl font-medium placeholder:text-slate-200 focus:ring-0 resize-none transition-all" 
+                   />
                 </div>
               </div>
               {filePreviews.length > 0 && (
@@ -440,12 +469,25 @@ const App: React.FC = () => {
                 </div>
               )}
             </div>
-            <div className="p-8 border-t border-slate-50 bg-slate-50/50 shrink-0">
+            <div className="p-8 border-t border-slate-50 bg-slate-50/50 shrink-0 relative">
                <div className="flex items-center justify-between mb-8">
                   <div className="flex gap-3">
-                    <button onClick={() => fileInputRef.current?.click()} className="p-4 bg-white border border-slate-200 rounded-2xl text-slate-500 hover:text-indigo-600 transition-all active:scale-90"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Z" /></svg></button>
+                    <button onClick={() => fileInputRef.current?.click()} className="p-4 bg-white border border-slate-200 rounded-2xl text-slate-500 hover:text-indigo-600 transition-all active:scale-90 shadow-sm"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Z" /></svg></button>
+                    <button 
+                      onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+                      className={`p-4 bg-white border border-slate-200 rounded-2xl transition-all active:scale-90 shadow-sm ${isEmojiPickerOpen ? 'text-indigo-600 border-indigo-200' : 'text-slate-500 hover:text-indigo-600'}`}
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" /></svg>
+                    </button>
                   </div>
                </div>
+
+               {isEmojiPickerOpen && (
+                 <div className="absolute bottom-full left-8 mb-4">
+                    <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />
+                 </div>
+               )}
+
                <input type="file" ref={fileInputRef} multiple className="hidden" accept="image/*,video/*" onChange={handleFileChange} />
                <button onClick={handleCreatePost} disabled={isUploading || (!newPostText.trim() && selectedFiles.length === 0)} className="w-full py-6 md:py-8 bg-indigo-600 text-white rounded-[2rem] md:rounded-[2.5rem] font-black text-sm md:text-base uppercase tracking-[0.4em] shadow-2xl hover:bg-indigo-700 transition-all active:scale-[0.98] flex items-center justify-center gap-4 italic">{isUploading ? 'SYNCHRONIZING...' : 'Broadcast_Signal'}</button>
             </div>

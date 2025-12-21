@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { db } from '../../services/firebase';
 import { 
   collection, 
@@ -14,6 +13,7 @@ import {
   doc
 } from 'firebase/firestore';
 import { Comment, User } from '../../types';
+import { EmojiPicker } from '../ui/EmojiPicker';
 
 interface CommentSectionProps {
   postId: string;
@@ -36,6 +36,9 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [focusedCommentId, setFocusedCommentId] = useState<string | null>(null);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!db) return;
@@ -74,12 +77,33 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
 
       setNewComment('');
       setReplyingTo(null);
+      setIsEmojiPickerOpen(false);
       addToast("Frequency Echo Synchronised", "success");
     } catch (e) {
       addToast("Neural Broadcast Failed", "error");
     } finally {
       setIsSubmittingComment(false);
     }
+  };
+
+  const insertEmoji = (emoji: string) => {
+    const input = inputRef.current;
+    if (!input) {
+      setNewComment(prev => prev + emoji);
+      return;
+    }
+    const start = input.selectionStart || 0;
+    const end = input.selectionEnd || 0;
+    const text = input.value;
+    const before = text.substring(0, start);
+    const after = text.substring(end, text.length);
+    setNewComment(before + emoji + after);
+    
+    // Maintain focus and set position
+    setTimeout(() => {
+      input.focus();
+      input.setSelectionRange(start + emoji.length, start + emoji.length);
+    }, 0);
   };
 
   const commentThreads = useMemo(() => {
@@ -154,20 +178,34 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
             <button onClick={() => setReplyingTo(null)} className="opacity-40 hover:opacity-100">Cancel</button>
           </div>
         )}
-        <div className="flex items-center gap-4">
-          <img src={userData?.avatarUrl} className="w-10 h-10 rounded-xl object-cover shrink-0" alt="" />
-          <div className="flex-1 relative">
+        <div className="flex items-center gap-3 relative">
+          <img src={userData?.avatarUrl} className="w-10 h-10 rounded-xl object-cover shrink-0 shadow-sm" alt="" />
+          <div className="flex-1 relative flex items-center bg-slate-50 border border-slate-100 rounded-2xl focus-within:ring-4 focus-within:ring-indigo-500/5 focus-within:border-indigo-500 transition-all">
              <input 
+               ref={inputRef}
                type="text" 
                value={newComment}
                onChange={(e) => setNewComment(e.target.value)}
                placeholder={replyingTo ? "Echo your frequency..." : "Broadcast initial thought..."}
-               className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 text-sm font-bold focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300"
+               className="w-full bg-transparent border-none px-5 py-3.5 text-sm font-bold outline-none placeholder:text-slate-300"
              />
+             <button 
+               type="button"
+               onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+               className={`p-2 mr-2 rounded-lg transition-all active:scale-90 ${isEmojiPickerOpen ? 'text-indigo-600 bg-indigo-50' : 'text-slate-300 hover:text-indigo-500'}`}
+             >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" /></svg>
+             </button>
+
+             {isEmojiPickerOpen && (
+                <div className="absolute bottom-full right-0 mb-4 z-[1000]">
+                  <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />
+                </div>
+             )}
           </div>
           <button 
             disabled={!newComment.trim() || isSubmittingComment}
-            className="p-3.5 bg-slate-900 text-white rounded-xl shadow-lg hover:bg-black transition-all active:scale-95 disabled:opacity-30"
+            className="p-3.5 bg-slate-900 text-white rounded-xl shadow-lg hover:bg-black transition-all active:scale-95 disabled:opacity-30 shrink-0"
           >
              {isSubmittingComment ? (
                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
