@@ -1,9 +1,10 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
     // =========================================================================
-    // VIBESTREAM CORE SECURITY PROTOCOL v5.7 [GLOBAL_EN_GB]
+    // VIBESTREAM CORE SECURITY PROTOCOL v5.8 [GLOBAL_EN_GB]
     // =========================================================================
     
     function isAuthenticated() {
@@ -21,29 +22,17 @@ service cloud.firestore {
     }
 
     // =========================================================================
-    // SYSTEM INFRASTRUCTURE: SETTINGS & CONFIGURATION
+    // SYSTEM INFRASTRUCTURE
     // =========================================================================
     
     match /settings/{settingId} {
-      // Required for maintenance mode detection and registration locks on landing
       allow read: if true;
-      // Only Citadel Admins can modify global infrastructure parameters
       allow write: if isAdmin();
     }
 
-    // =========================================================================
-    // IDENTITY CLUSTERS: USER PROFILES & ACCESS
-    // =========================================================================
-
     match /users/{userId} {
-      // Anyone logged in can view profiles or list users for the Mesh/Contacts
       allow read: if isAuthenticated();
-      
-      // Allow user to create their own initial profile
       allow create: if isUser(userId);
-      
-      // Allow updates by owner or admin
-      // Constraints: Users cannot promote their own role or verification status
       allow update: if (isUser(userId) && 
         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'verifiedHuman']))) 
         || isAdmin()
@@ -61,63 +50,49 @@ service cloud.firestore {
     }
 
     // =========================================================================
-    // TRANSMISSION GRID: POSTS & CONTENT
+    // TRANSMISSION GRID
     // =========================================================================
 
     match /posts/{postId} {
       allow read: if isAuthenticated();
-      
-      allow create: if isAuthenticated() && 
-        request.resource.data.authorId == request.auth.uid;
-      
+      allow create: if isAuthenticated() && request.resource.data.authorId == request.auth.uid;
       allow update: if isAuthenticated() && (
         resource.data.authorId == request.auth.uid || 
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'comments', 'shares', 'likedBy']) ||
         isAdmin()
       );
-      
       allow delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isAdmin());
     }
 
-    // =========================================================================
-    // TEMPORAL FRAGMENTS: STORIES
-    // =========================================================================
-
     match /stories/{storyId} {
       allow read: if isAuthenticated();
-      
-      allow create: if isAuthenticated() && 
-        request.resource.data.authorId == request.auth.uid;
-        
-      allow delete: if isAuthenticated() && (
-        resource.data.authorId == request.auth.uid || 
-        isAdmin()
-      );
-
+      allow create: if isAuthenticated() && request.resource.data.authorId == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isAdmin());
       allow update: if isAdmin();
     }
 
     // =========================================================================
-    // LIVE BROADCASTS: STREAMS
+    // REAL-TIME BROADCASTS (WebRTC Signaling Support)
     // =========================================================================
 
     match /streams/{streamId} {
-      // All authenticated nodes can view active broadcast metadata
       allow read: if isAuthenticated();
-      
-      // Only the broadcaster or admin can initialize a stream node
-      allow create: if isAuthenticated() && 
-        request.resource.data.authorId == request.auth.uid;
-        
-      // Updates allowed for viewer counts and status changes
-      allow update: if isAuthenticated() || isAdmin();
-      
-      // Deletion by author or admin
+      allow create: if isAuthenticated() && request.resource.data.authorId == request.auth.uid;
+      allow update: if isAuthenticated();
       allow delete: if (isAuthenticated() && resource.data.authorId == request.auth.uid) || isAdmin();
+
+      // WebRTC Signaling Sub-collection
+      match /connections/{connectionId} {
+        allow read, write: if isAuthenticated();
+        
+        match /signals/{signalId} {
+          allow read, write: if isAuthenticated();
+        }
+      }
     }
 
     // =========================================================================
-    // NEURAL NOTIFICATIONS SYSTEM
+    // NEURAL COMMS & NOTIFICATIONS
     // =========================================================================
 
     match /notifications/{notificationId} {
@@ -125,12 +100,7 @@ service cloud.firestore {
       allow create: if isAuthenticated();
     }
 
-    // =========================================================================
-    // REAL-TIME NEURAL COMMS (MESSAGING)
-    // =========================================================================
-
     match /chats/{chatId} {
-      // Access granted if user is a valid participant in the array
       allow read: if isAuthenticated() && request.auth.uid in resource.data.participants;
       allow create: if isAuthenticated() && request.auth.uid in request.resource.data.participants;
       allow update: if isAuthenticated() && request.auth.uid in resource.data.participants;
@@ -139,10 +109,6 @@ service cloud.firestore {
         allow read, create, update: if isAuthenticated();
       }
     }
-    
-    // =========================================================================
-    // SAFETY PROTOCOLS: REPORTING & MODERATION
-    // =========================================================================
     
     match /reports/{reportId} {
       allow create: if isAuthenticated();
