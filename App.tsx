@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from './components/layout/Layout';
 import { FeedPage } from './components/feed/FeedPage'; 
@@ -34,7 +35,6 @@ import {
   deleteDoc,
   where,
   writeBatch,
-  // Fixed: Added arrayUnion and arrayRemove to handle like/unlike operations in handleLike
   arrayUnion,
   arrayRemove
 } from 'firebase/firestore';
@@ -115,7 +115,6 @@ const App: React.FC = () => {
     setUserToasts(prev => prev.filter(t => t.id !== id));
   };
 
-  // Global listener for toasts from children
   useEffect(() => {
     const handleGlobalToast = (e: any) => {
       if (e.detail?.msg) addToast(e.detail.msg, e.detail.type);
@@ -309,7 +308,6 @@ const App: React.FC = () => {
       });
       const uploadedFiles = await Promise.all(mediaUplinks);
       const gifMedia = selectedGifs.map(g => ({ type: 'image' as any, url: g.images.original.url }));
-      
       const mediaItems = [...uploadedFiles, ...gifMedia];
 
       await addDoc(collection(db, 'posts'), {
@@ -349,37 +347,28 @@ const App: React.FC = () => {
     }
   };
 
-  // Fixed: Implemented handleLike function to manage signal pulse (like) synchronization across the grid
   const handleLike = async (postId: string, frequency?: string) => {
     if (!db || !auth.currentUser) {
       addToast("Connection to grid lost. Neural link required.", "error");
       return;
     }
-
     const postRef = doc(db, 'posts', postId);
     const userId = auth.currentUser.uid;
     const post = posts.find(p => p.id === postId);
-
     if (!post) return;
-
     const isLiked = post.likedBy?.includes(userId);
-
     try {
       if (isLiked) {
-        // Recalling a previously established pulse
         await updateDoc(postRef, {
           likes: increment(-1),
           likedBy: arrayRemove(userId)
         });
         addToast("Pulse Recalled", "info");
       } else {
-        // Establishing a new signal pulse synchronisation
         await updateDoc(postRef, {
           likes: increment(1),
           likedBy: arrayUnion(userId)
         });
-
-        // Trigger notification protocol if the author is not the current node
         if (post.authorId !== userId) {
           await addDoc(collection(db, 'notifications'), {
             type: 'like',
@@ -397,8 +386,7 @@ const App: React.FC = () => {
         addToast(`${(frequency || 'pulse').toUpperCase()} Synchronised`, "success");
       }
     } catch (error) {
-      console.error("Grid Sync Error:", error);
-      addToast("Transmission failure: Pulse rejected by central hub", "error");
+      addToast("Transmission failure: Pulse rejected", "error");
     }
   };
 
@@ -468,11 +456,20 @@ const App: React.FC = () => {
       </div>
 
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-[500] flex items-end md:items-center justify-center p-0 md:p-6 overflow-hidden">
+        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 md:p-6 overflow-hidden">
           <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl" onClick={() => !isUploading && setIsCreateModalOpen(false)}></div>
           
-          <div className="relative bg-white w-full max-w-2xl md:rounded-[4rem] h-[95vh] md:h-auto max-h-[92vh] flex flex-col shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-20 duration-700 overflow-hidden border border-white">
+          <div className="relative bg-white w-full max-w-2xl md:rounded-[4rem] h-[95vh] md:h-auto max-h-[95vh] flex flex-col shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-20 duration-700 overflow-hidden border border-white">
             
+            {/* Giphy Visual Buffer (Overlaid Positioning) */}
+            {isGiphyPickerOpen && (
+              <div className="absolute inset-0 z-[2700] p-4 md:p-10 flex items-center justify-center bg-slate-950/20 backdrop-blur-md animate-in fade-in duration-500">
+                <div className="w-full max-w-lg">
+                   <GiphyPicker onSelect={handleGifSelect} onClose={() => setIsGiphyPickerOpen(false)} />
+                </div>
+              </div>
+            )}
+
             {/* Close Protocol Node */}
             <button 
               onClick={() => setIsCreateModalOpen(false)} 
@@ -516,20 +513,14 @@ const App: React.FC = () => {
 
             <div className="p-10 md:p-14 pt-0 shrink-0 relative bg-white">
                
-               {/* Picker Floating Overlay Nodes */}
+               {/* Emoji Picker Floating Node */}
                {isEmojiPickerOpen && (
                  <div className="absolute bottom-[calc(100%+2rem)] left-10 z-[2600]">
                     <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />
                  </div>
                )}
 
-               {isGiphyPickerOpen && (
-                 <div className="absolute bottom-[calc(100%+2rem)] left-1/2 -translate-x-1/2 z-[2600] w-full max-w-[420px] px-10 md:px-0">
-                    <GiphyPicker onSelect={handleGifSelect} onClose={() => setIsGiphyPickerOpen(false)} />
-                 </div>
-               )}
-
-               {/* Stylized Button Bar - Matching Screenshot Architecture */}
+               {/* Stylized Button Bar */}
                <div className="flex items-center gap-4 mb-10">
                   <button 
                     onClick={() => fileInputRef.current?.click()} 
