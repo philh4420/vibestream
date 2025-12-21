@@ -88,6 +88,15 @@
             from { transform: translateY(100%); }
             to { transform: translateY(0); }
         }
+
+        @keyframes float-up {
+          0% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(-300px) scale(1.5) rotate(15deg); opacity: 0; }
+        }
+
+        .animate-float-up {
+          animation: float-up 2s ease-out forwards;
+        }
     </style>
 <script type="importmap">
 {
