@@ -333,7 +333,8 @@ const App: React.FC = () => {
   };
 
   const handleGoLive = () => {
-    // Only open the overlay; Title Entry happens inside the overlay
+    // CRITICAL: Ensure no stale ID is present when opening setup
+    setActiveStreamId(null);
     setIsLiveOverlayOpen(true);
   };
 
@@ -351,7 +352,7 @@ const App: React.FC = () => {
         startedAt: serverTimestamp(),
         category: 'Live Signal'
       });
-      // Setting this triggers the broadcasting phase in the overlay
+      // Setting this triggers the transition to "Live" state in the child overlay
       setActiveStreamId(streamDoc.id);
       addToast("Grid Connection Established", "success");
     } catch (e) {
@@ -361,17 +362,19 @@ const App: React.FC = () => {
   };
 
   const handleEndStream = async () => {
-    if (!db || !activeStreamId) {
+    if (!db) {
        setIsLiveOverlayOpen(false);
        return;
     }
     try {
-      await deleteDoc(doc(db, 'streams', activeStreamId));
+      if (activeStreamId) {
+        await deleteDoc(doc(db, 'streams', activeStreamId));
+      }
       setActiveStreamId(null);
       setIsLiveOverlayOpen(false);
       addToast("Broadcast Safely Terminated", "info");
     } catch (e) {
-      console.error(e);
+      setActiveStreamId(null);
       setIsLiveOverlayOpen(false);
     }
   };
