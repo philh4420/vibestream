@@ -55,7 +55,7 @@ const MaintenanceOverlay: React.FC<{ type?: 'system' | 'feature' }> = ({ type = 
         <p className="text-slate-400 font-mono text-xs uppercase tracking-[0.3em]">
           {type === 'system' ? 'Protocol_Interrupted • GB_NODE_OVR' : 'Module_Recalibration • GB_SYNC_WAIT'}
         </p>
-        <p className="text-slate-500 text-sm font-medium leading-relaxed max-w-sm mx-auto">
+        <p className="text-slate-500 text-sm font-medium leading-relaxed max-sm mx-auto">
           {type === 'system' 
             ? 'The VibeStream Neural Grid is currently undergoing scheduled synchronization. All nodes are temporarily suspended.'
             : 'This specific module is currently undergoing performance calibration. Normal service will resume shortly.'}
@@ -301,6 +301,30 @@ const App: React.FC = () => {
     }
   };
 
+  const handleCreateStory = async (file: File) => {
+    if (!db || !userData) return;
+    addToast("Temporal Uplink Initiated", "info");
+    try {
+      const mediaUrl = await uploadToCloudinary(file);
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24);
+
+      await addDoc(collection(db, 'stories'), {
+        authorId: userData.id,
+        authorName: userData.displayName,
+        authorAvatar: userData.avatarUrl,
+        coverUrl: mediaUrl,
+        timestamp: serverTimestamp(),
+        expiresAt: expiresAt.toISOString(),
+        isActive: true
+      });
+
+      addToast("Temporal Fragment Synced", "success");
+    } catch (e) {
+      addToast("Temporal Sync Interrupted", "error");
+    }
+  };
+
   if (systemSettings.maintenanceMode && userData?.role !== 'admin') {
     return <MaintenanceOverlay type="system" />;
   }
@@ -365,13 +389,13 @@ const App: React.FC = () => {
         return <NodePlaceholder title="Temporal Fragments" subtitle="Accessing historical signal database..." />;
 
       default:
-        // Now using the modular FeedPage component
         return (
           <FeedPage 
             posts={posts} 
             userData={userData} 
             onLike={handleLike} 
             onOpenCreate={() => setIsCreateModalOpen(true)}
+            onTransmitStory={handleCreateStory}
             locale={userRegion}
           />
         );

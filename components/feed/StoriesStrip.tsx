@@ -1,16 +1,18 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../../services/firebase';
 import { collection, query, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
 import { User, Story } from '../../types';
 
 interface StoriesStripProps {
   userData: User | null;
+  onTransmit: (file: File) => void;
 }
 
-export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData }) => {
+export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData, onTransmit }) => {
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!db) return;
@@ -41,10 +43,29 @@ export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData }) => {
     return () => unsubscribe();
   }, []);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onTransmit(file);
+      // Reset input
+      e.target.value = '';
+    }
+  };
+
   return (
     <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
       {/* 1. Self Signal Capture Trigger */}
-      <button className="flex-shrink-0 w-32 h-44 md:w-40 md:h-56 rounded-[2.5rem] bg-white border border-slate-100 overflow-hidden relative group shadow-sm transition-all hover:shadow-xl hover:border-indigo-100 touch-active">
+      <button 
+        onClick={() => fileInputRef.current?.click()}
+        className="flex-shrink-0 w-32 h-44 md:w-40 md:h-56 rounded-[2.5rem] bg-white border border-slate-100 overflow-hidden relative group shadow-sm transition-all hover:shadow-xl hover:border-indigo-100 touch-active"
+      >
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          className="hidden" 
+          accept="image/*,video/*" 
+          onChange={handleFileChange}
+        />
         <img 
           src={userData?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=neutral`} 
           className="w-full h-2/3 object-cover opacity-80 group-hover:scale-110 transition-transform duration-700" 
@@ -84,7 +105,7 @@ export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData }) => {
               </div>
             </div>
             
-            <div className="absolute bottom-5 left-5 right-5">
+            <div className="absolute bottom-5 left-5 right-5 text-left">
                <p className="text-white text-[11px] font-black uppercase tracking-widest truncate italic">{story.authorName}</p>
                <div className="flex items-center gap-1.5 mt-1.5">
                  <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />

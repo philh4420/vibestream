@@ -11,6 +11,7 @@ interface FeedPageProps {
   userData: User | null;
   onLike: (id: string) => void;
   onOpenCreate: () => void;
+  onTransmitStory: (file: File) => void;
   locale: Region;
 }
 
@@ -19,6 +20,7 @@ export const FeedPage: React.FC<FeedPageProps> = ({
   userData, 
   onLike, 
   onOpenCreate,
+  onTransmitStory,
   locale 
 }) => {
   const [activeProtocol, setActiveProtocol] = useState<'mesh' | 'pulse' | 'recent'>('mesh');
@@ -44,7 +46,7 @@ export const FeedPage: React.FC<FeedPageProps> = ({
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
       {/* 1. Temporal Fragments (Stories) */}
-      <StoriesStrip userData={userData} />
+      <StoriesStrip userData={userData} onTransmit={onTransmitStory} />
 
       {/* 2. Primary Signal Ingress (Create Box) */}
       <CreateSignalBox userData={userData} onOpen={onOpenCreate} />
