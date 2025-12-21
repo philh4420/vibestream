@@ -19,9 +19,9 @@
     --shadow-heavy: 0 40px 100px -20px rgba(0, 0, 0, 0.1);
 }
 
-/* Fluid Typography System 2026+ (Mobile First to 8K) */
+/* Professional Fixed Typography System */
 html {
-    font-size: clamp(14px, 0.8vw + 10px, 24px);
+    font-size: 16px;
     height: var(--app-height);
     width: 100%;
     margin: 0;
@@ -110,6 +110,13 @@ body {
 @media (orientation: landscape) and (max-height: 500px) {
     :root {
         --header-h: calc(3.5rem + var(--sat));
+    }
+}
+
+/* Adjust for smaller mobile screens */
+@media (max-width: 380px) {
+    html {
+        font-size: 14px;
     }
 }
 
