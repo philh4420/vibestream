@@ -1,164 +1,171 @@
 /* =========================================================================
-   VIBESTREAM GRID SYSTEM - CORE STYLING MANIFEST v2.6.GB
-   ENGINEERED FOR 2026+ STANDARDS | OKLCH ENABLED | FULL RESET
+   VIBESTREAM 2026+ ULTIMATE CSS RESET & MODERN DESIGN MANIFEST
+   OKLCH CORE | ZERO-SCROLLBAR ARCHITECTURE | MOBILE-FIRST
    ========================================================================= */
 
-/* 1. MODERN CSS RESET PROTOCOLS */
-*, *::before, *::after {
+/* 1. THE 2026 GLOBAL RESET */
+@layer reset {
+  *, *::before, *::after {
     box-sizing: border-box;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-}
+    -webkit-tap-highlight-color: transparent;
+  }
 
-* {
+  * {
     margin: 0;
     padding: 0;
     font: inherit;
-}
+    scrollbar-width: none; /* Universal Firefox Hide */
+    -ms-overflow-style: none; /* Universal IE/Edge Hide */
+  }
 
-ul[role='list'], ol[role='list'] {
-    list-style: none;
-}
+  /* Universal Webkit Scrollbar Eraser */
+  *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
 
-html {
-    /* Baseline Density: Professional Standard */
-    font-size: 16px; 
+  html {
+    /* 2026 Pro Baseline */
+    font-size: 16px;
     height: 100dvh;
-    width: 100%;
+    width: 100vw;
     color-scheme: light dark;
-    /* Prevent text size adjustment after orientation change */
-    -webkit-text-size-adjust: none;
-    text-size-adjust: none;
-    overflow: hidden;
-    scrollbar-gutter: stable;
-}
+    overflow: hidden; /* Enforce App-Shell Protocol */
+    overscroll-behavior: none;
+    cursor: default;
+    background-color: var(--bg-main);
+  }
 
-body {
+  body {
     height: 100%;
     width: 100%;
-    line-height: 1.5;
-    background-color: oklch(0.98 0.01 240);
-    color: oklch(0.2 0.02 240);
+    line-height: 1.6;
+    text-rendering: optimizeLegibility;
+    -webkit-text-size-adjust: none;
+    background-color: var(--bg-main);
+    color: var(--text-main);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-}
+  }
 
-img, picture, video, canvas, svg {
-    display: block;
-    max-width: 100%;
-    height: auto;
-}
-
-p, h1, h2, h3, h4, h5, h6 {
-    overflow-wrap: break-word;
-    text-wrap: pretty; /* 2025+ standard for avoiding orphans */
-}
-
-#root {
+  #root {
     height: 100%;
     display: flex;
     flex-direction: column;
     isolation: isolate;
+  }
+
+  img, picture, video, canvas, svg {
+    display: block;
+    max-width: 100%;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+    touch-action: manipulation;
+  }
+
+  p, h1, h2, h3, h4, h5, h6 {
+    overflow-wrap: break-word;
+    text-wrap: pretty; /* Eliminate widows/orphans */
+  }
+
+  input, textarea, select {
+    background: none;
+    border: none;
+    outline: none;
+  }
 }
 
-/* 2. DESIGN SYSTEM CONSTANTS (OKLCH) */
+/* 2. SYSTEM CONSTANTS (OKLCH 2026 SPACE) */
 :root {
-    /* Brand Frequencies */
-    --accent: oklch(0.55 0.22 260); /* Deep Indigo */
-    --accent-glow: oklch(0.55 0.22 260 / 0.15);
-    --pulse-rose: oklch(0.6 0.25 20);
-    --pulse-emerald: oklch(0.7 0.2 150);
-    
-    /* Surface Protocols */
-    --glass-bg: oklch(1 0 0 / 0.94);
-    --glass-border: oklch(0 0 0 / 0.06);
-    --surface-low: oklch(0.99 0.01 240);
-    
-    /* Layout Primitives */
-    --sat: env(safe-area-inset-top);
-    --sar: env(safe-area-inset-right);
-    --sab: env(safe-area-inset-bottom);
-    --sal: env(safe-area-inset-left);
-    --header-h: calc(4.5rem + var(--sat));
-    --bottom-nav-h: calc(4.5rem + var(--sab));
-    
-    /* Composite Shadows (Realistic Depth) */
-    --shadow-micro: 0 1px 2px oklch(0 0 0 / 0.05);
-    --shadow-pro: 0 4px 6px -1px oklch(0 0 0 / 0.1), 0 2px 4px -2px oklch(0 0 0 / 0.1);
-    --shadow-depth: 0 20px 25px -5px oklch(0 0 0 / 0.1), 0 8px 10px -6px oklch(0 0 0 / 0.1);
+  /* Surface Layers */
+  --bg-main: oklch(0.99 0.005 240);
+  --text-main: oklch(0.25 0.02 240);
+  --text-muted: oklch(0.55 0.02 240);
+  
+  --accent: oklch(0.55 0.22 260);
+  --accent-soft: oklch(0.55 0.22 260 / 0.08);
+  --rose-vibrant: oklch(0.6 0.25 20);
+  --emerald-vibrant: oklch(0.7 0.2 150);
+  
+  --glass-surface: oklch(1 0 0 / 0.85);
+  --glass-border: oklch(0 0 0 / 0.05);
+  
+  /* Layout Primitives */
+  --sat: env(safe-area-inset-top);
+  --sar: env(safe-area-inset-right);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+  
+  --header-h: calc(4.5rem + var(--sat));
+  --bottom-nav-h: calc(4rem + var(--sab));
+  
+  /* Precision Shadows */
+  --shadow-flat: 0 1px 3px oklch(0 0 0 / 0.05);
+  --shadow-float: 0 10px 30px -10px oklch(0 0 0 / 0.08);
+  --shadow-heavy: 0 40px 80px -20px oklch(0 0 0 / 0.12);
 }
 
-/* 3. CORE UTILITY CLASSES */
-.scroll-container {
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    -webkit-overflow-scrolling: touch;
+/* 3. MODERN UTILITIES */
+.scroll-viewport {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  scrollbar-gutter: stable;
 }
 
-.scroll-container::-webkit-scrollbar {
-    display: none;
+.glass-layer {
+  background: var(--glass-surface);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  border: 1px solid var(--glass-border);
 }
 
-.glass-panel {
-    background: var(--glass-bg);
-    backdrop-filter: blur(40px) saturate(180%);
-    -webkit-backdrop-filter: blur(40px) saturate(180%);
-    border: 1px solid var(--glass-border);
+.border-sharp {
+  border: 1px solid var(--glass-border);
 }
 
-.border-precision {
-    border: 1px solid var(--glass-border);
+/* 2026 Micro-Interactions */
+.tap-feedback:active {
+  transform: scale(0.97);
+  opacity: 0.8;
+  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* Touch-ready Interaction System */
-@media (hover: hover) {
-    .hover-depth:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-depth);
-    }
+.hover-glow:hover {
+  box-shadow: 0 0 20px oklch(0.55 0.22 260 / 0.15);
 }
 
-.touch-active:active {
-    transform: scale(0.97) translateY(1px);
-    opacity: 0.85;
-    transition: transform 0.1s cubic-bezier(0.33, 1, 0.68, 1);
+/* 4. ANIMATION MANIFEST */
+@keyframes fluid-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-/* Animation Manifest 2026 */
-@keyframes signal-pulse {
-    0% { box-shadow: 0 0 0 0 oklch(0.55 0.22 260 / 0.4); }
-    70% { box-shadow: 0 0 0 10px oklch(0.55 0.22 260 / 0); }
-    100% { box-shadow: 0 0 0 0 oklch(0.55 0.22 260 / 0); }
+.animate-entrance {
+  animation: fluid-fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.animate-signal {
-    animation: signal-pulse 2s infinite;
+/* 5. RESPONSIVE CALIBRATION */
+@media (max-width: 480px) {
+  :root {
+    --header-h: calc(4rem + var(--sat));
+  }
+  html { font-size: 15px; }
 }
 
-/* Orientation Adaptive Fixes */
-@media (max-width: 380px) {
-    html { font-size: 14px; }
-}
-
-@media (orientation: landscape) and (max-height: 500px) {
-    :root {
-        --header-h: calc(3.5rem + var(--sat));
-    }
-}
-
-/* Accessibility: Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
-    *, ::before, ::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
-    }
-}
-
-/* Selection aesthetics */
-::selection {
-    background-color: var(--accent);
-    color: white;
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

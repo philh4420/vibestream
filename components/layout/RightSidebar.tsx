@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../../services/firebase';
 import { 
@@ -113,10 +112,10 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
   return (
     <aside className="hidden lg:flex flex-col w-[320px] xl:w-[380px] shrink-0 bg-[#f8fafc] border-l border-precision h-full pt-[calc(var(--header-h)+1rem)] pb-8 overflow-hidden">
       
-      <div className="flex-1 overflow-y-auto no-scrollbar px-6 space-y-8 pb-10">
+      <div className="flex-1 scroll-viewport px-6 space-y-8 pb-10">
         
         {/* SECTION: SYSTEM MONITOR WIDGET */}
-        <div className="relative group overflow-hidden bg-slate-900 rounded-[2rem] p-6 text-white shadow-2xl shadow-indigo-500/10 transition-all duration-500 hover:shadow-indigo-500/20">
+        <div className="relative group overflow-hidden bg-slate-900 rounded-[2rem] p-6 text-white shadow-2xl transition-all duration-500 hover:shadow-indigo-500/20">
           <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 blur-[60px] rounded-full -translate-y-1/2 translate-x-1/2" />
           
           <div className="flex justify-between items-start mb-6 relative z-10">
@@ -177,11 +176,11 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
             </div>
             <div className="space-y-3">
               {trendingPosts.map((post, idx) => (
-                <div key={post.id} className="group relative flex gap-4 p-3 bg-white rounded-[1.8rem] border border-slate-100 hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-500 cursor-pointer">
+                <div key={post.id} className="group relative flex gap-4 p-3 bg-white rounded-[1.8rem] border-sharp hover:border-indigo-100 hover:shadow-float transition-all duration-500 cursor-pointer">
                   <div className="absolute -top-1.5 -left-1.5 w-6 h-6 bg-slate-900 text-white text-[9px] font-black flex items-center justify-center rounded-lg shadow-lg group-hover:bg-indigo-600 transition-colors">
                     {idx + 1}
                   </div>
-                  <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border-precision shadow-sm bg-slate-50">
+                  <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border-sharp bg-slate-50">
                     {post.media?.[0]?.url ? (
                       <img src={post.media[0].url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="" />
                     ) : (
@@ -225,7 +224,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
               ) : activeContacts.map(node => (
                 <button 
                   key={node.id}
-                  className="w-full flex items-center justify-between p-3 bg-white/40 hover:bg-white border border-transparent hover:border-precision rounded-[1.5rem] transition-all duration-300 group active:scale-95 hover:shadow-md"
+                  className="w-full flex items-center justify-between p-3 bg-white/40 hover:bg-white border border-transparent hover:border-sharp rounded-[1.5rem] transition-all duration-300 group tap-feedback hover:shadow-float"
                 >
                   <div className="flex items-center gap-3 overflow-hidden">
                     <div className="relative shrink-0">

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ICONS } from '../../constants';
 import { AppRoute, UserRole, User as VibeUser, AppNotification } from '../../types';
@@ -37,13 +36,13 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
       <button 
         onClick={() => route && onNavigate(route)}
         title={collapsed ? label : undefined}
-        className={`flex items-center transition-all duration-200 touch-active group relative w-full rounded-2xl ${
+        className={`flex items-center transition-all duration-200 tap-feedback group relative w-full rounded-2xl ${
           collapsed 
             ? 'p-3 justify-center' 
             : 'gap-4 px-3 py-2'
         } ${
           isActive 
-            ? 'bg-indigo-50 text-indigo-600 shadow-sm' 
+            ? 'bg-white text-indigo-600 shadow-sm border-sharp' 
             : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
         }`}
       >
@@ -56,10 +55,6 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
             <span className={`text-[13px] font-bold tracking-tight truncate ${isActive ? 'text-indigo-800' : 'text-slate-700'}`}>
               {label}
             </span>
-            {/* 
-              Fix: Operator '>' cannot be applied to types 'string | number' and 'number'.
-              Safely checking type before comparison to support both numeric counts and string badges like "LIVE".
-            */}
             {badge !== undefined && (typeof badge === 'number' ? badge > 0 : badge !== '') && (
               <span className="bg-rose-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md animate-pulse">
                 {badge}
@@ -157,7 +152,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
         <div className="mt-4 mb-2 px-1">
           <button 
             onClick={onOpenCreate}
-            className="w-full bg-slate-950 text-white font-black py-4 rounded-2xl shadow-xl shadow-slate-200 hover:bg-black hover:shadow-indigo-500/10 transition-all flex items-center justify-center gap-3 active:scale-95 group relative overflow-hidden"
+            className="w-full bg-slate-950 text-white font-black py-4 rounded-2xl shadow-xl hover:bg-black transition-all flex items-center justify-center gap-3 active:scale-95 group relative overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
             <div className="scale-100 group-hover:rotate-12 transition-transform duration-500 shrink-0">
@@ -186,14 +181,14 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   return (
     <>
       <aside 
-        className="hidden lg:flex flex-col w-[300px] shrink-0 border-r border-precision bg-[#fcfcfd] p-4 pt-[calc(var(--header-h)+1.5rem)] overflow-y-auto no-scrollbar h-full sticky top-0"
+        className="hidden lg:flex flex-col w-[300px] shrink-0 border-r border-precision bg-[#fcfcfd] p-4 pt-[calc(var(--header-h)+1.5rem)] scroll-viewport h-full sticky top-0"
         style={{ paddingLeft: 'max(1rem, var(--sal))' }}
       >
         {sidebarContent(false)}
       </aside>
 
       <aside 
-        className="hidden md:flex lg:hidden flex-col shrink-0 border-r border-precision bg-[#fcfcfd] py-6 items-center pt-[calc(var(--header-h)+1.5rem)] h-full overflow-y-auto no-scrollbar" 
+        className="hidden md:flex lg:hidden flex-col shrink-0 border-r border-precision bg-[#fcfcfd] py-6 items-center pt-[calc(var(--header-h)+1.5rem)] h-full scroll-viewport" 
         style={{ 
           width: 'calc(5.5rem + var(--sal))',
           paddingLeft: 'var(--sal)'
