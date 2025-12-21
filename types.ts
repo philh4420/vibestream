@@ -83,6 +83,7 @@ export interface LiveStream {
   viewerCount: number;
   startedAt: any;
   category: string;
+  liveSnapshot?: string; // New: base64 frame for live grid transmission
 }
 
 export interface Post {

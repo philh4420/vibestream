@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { db } from '../../services/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 import { User } from '../../types';
 
 interface LiveBroadcastOverlayProps {
@@ -20,8 +22,10 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
   const [timer, setTimer] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // 1. Camera Initialization
   useEffect(() => {
     const startCamera = async () => {
       try {
@@ -49,15 +53,53 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
     };
   }, []);
 
+  // 2. Broadcast Lifecycle & Frame Capture Protocol
   useEffect(() => {
-    let interval: number;
-    if (activeStreamId) {
+    let timerInterval: number;
+    let captureInterval: number;
+
+    if (activeStreamId && db) {
       setStep('broadcasting');
-      interval = window.setInterval(() => {
+      
+      // Timer for duration
+      timerInterval = window.setInterval(() => {
         setTimer(prev => prev + 1);
       }, 1000);
+
+      // Frame Broadcast Heartbeat (Every 1.5s for "Live" effect via Firestore)
+      captureInterval = window.setInterval(async () => {
+        if (!videoRef.current || !canvasRef.current || !activeStreamId) return;
+
+        const canvas = canvasRef.current;
+        const video = videoRef.current;
+        const context = canvas.getContext('2d');
+
+        if (context && video.videoWidth > 0) {
+          // Downscale for low-latency grid broadcast (320px width)
+          const ratio = video.videoHeight / video.videoWidth;
+          canvas.width = 320;
+          canvas.height = 320 * ratio;
+          
+          context.drawImage(video, 0, 0, canvas.width, canvas.height);
+          
+          // Low quality JPEG to keep payload small (< 15kb)
+          const snapshot = canvas.toDataURL('image/jpeg', 0.5);
+          
+          try {
+            await updateDoc(doc(db, 'streams', activeStreamId), {
+              liveSnapshot: snapshot
+            });
+          } catch (e) {
+            console.warn("Signal Sync Dropped:", e);
+          }
+        }
+      }, 1500);
     }
-    return () => clearInterval(interval);
+
+    return () => {
+      clearInterval(timerInterval);
+      clearInterval(captureInterval);
+    };
   }, [activeStreamId]);
 
   const formatTime = (seconds: number) => {
@@ -67,13 +109,16 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
   };
 
   const handleStartBroadcast = () => {
-    onStart(streamTitle);
+    onStart(streamTitle || `${userData.displayName}'s Neural Broadcast`);
   };
 
   return (
     <div className="fixed inset-0 z-[2000] bg-black flex items-center justify-center p-0 md:p-6 animate-in fade-in duration-500">
       <div className="relative w-full h-full max-w-5xl bg-slate-900 md:rounded-[3rem] overflow-hidden shadow-2xl flex flex-col">
         
+        {/* Hidden Frame Processor */}
+        <canvas ref={canvasRef} className="hidden" />
+
         {/* Live Video Preview */}
         <div className="absolute inset-0 bg-slate-950">
            <video 
@@ -165,19 +210,22 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
              {/* Footer Info */}
              <div className="mt-auto flex items-end justify-between pointer-events-auto">
                 <div className="flex items-center gap-4">
-                   <img src={userData.avatarUrl} className="w-14 h-14 rounded-2xl border-2 border-white/20 shadow-2xl" alt="" />
+                   <div className="relative">
+                      <img src={userData.avatarUrl} className="w-14 h-14 rounded-2xl border-2 border-white/20 shadow-2xl" alt="" />
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900 animate-pulse" />
+                   </div>
                    <div>
                       <p className="text-[10px] font-black text-white/60 uppercase tracking-widest font-mono mb-1">Broadcasting_Identity</p>
-                      <h3 className="text-xl font-black text-white italic tracking-tighter uppercase">{userData.displayName}</h3>
+                      <h3 className="text-xl font-black text-white italic tracking-tighter uppercase leading-none">{userData.displayName}</h3>
                    </div>
                 </div>
 
                 <div className="flex flex-col items-end">
                    <div className="flex items-center gap-2 mb-2">
-                      <svg className="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                      <span className="text-white font-black font-mono text-sm tracking-tighter">0 Nodes Synced</span>
+                      <div className="w-2 h-2 bg-rose-500 rounded-full animate-ping" />
+                      <span className="text-white font-black font-mono text-[10px] uppercase tracking-tighter">Transmitting Signal...</span>
                    </div>
-                   <p className="text-[8px] font-black text-white/30 uppercase tracking-[0.3em] font-mono">EN_GB_CLUSTER_UPLINK</p>
+                   <p className="text-[8px] font-black text-white/30 uppercase tracking-[0.3em] font-mono">NEURAL_ENCODER_V2.6</p>
                 </div>
              </div>
           </div>
