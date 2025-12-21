@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from './components/layout/Layout';
-import { PostCard } from './components/feed/PostCard';
+import { FeedPage } from './components/feed/FeedPage'; // New Modular Import
 import { Toast } from './components/ui/Toast';
 import { LandingPage } from './components/landing/LandingPage';
 import { AdminPanel } from './components/admin/AdminPanel';
@@ -345,7 +345,6 @@ const App: React.FC = () => {
       case AppRoute.COOKIES:
         return <CookiesPage />;
       
-      // New 2026 Expanded Route Handlers
       case AppRoute.MESH:
         return <NodePlaceholder title="Neural Mesh" subtitle="Synchronizing network identity bonds..." />;
       case AppRoute.CLUSTERS:
@@ -366,22 +365,15 @@ const App: React.FC = () => {
         return <NodePlaceholder title="Temporal Fragments" subtitle="Accessing historical signal database..." />;
 
       default:
+        // Now using the modular FeedPage component
         return (
-          <div className="space-y-6 animate-in fade-in duration-700">
-            <div className="flex flex-col gap-1 mb-8">
-              <h1 className="text-3xl font-black text-slate-900 tracking-tighter">CENTRAL_HUB</h1>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Infrastructure Relay Active • GB-LON</p>
-            </div>
-            {posts.length > 0 ? (
-              posts.map(post => (
-                <PostCard key={post.id} post={post} onLike={handleLike} locale={userRegion} />
-              ))
-            ) : (
-              <div className="py-20 text-center bg-white rounded-[3rem] border border-slate-100">
-                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No signals detected in local buffer</p>
-              </div>
-            )}
-          </div>
+          <FeedPage 
+            posts={posts} 
+            userData={userData} 
+            onLike={handleLike} 
+            onOpenCreate={() => setIsCreateModalOpen(true)}
+            locale={userRegion}
+          />
         );
     }
   };
