@@ -41,19 +41,25 @@ const NotificationItem = ({ notif }: { notif: AppNotification }) => {
   const iconMap: Record<string, any> = {
     like: <div className="p-2 bg-rose-50 text-rose-500 rounded-lg scale-75"><svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg></div>,
     follow: <div className="p-2 bg-indigo-50 text-indigo-500 rounded-lg scale-75"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M19 7.5v9m-4.5-4.5h9M3 13.5h9m-9-4.5h9m-9-4.5h9" /></svg></div>,
+    broadcast: <div className="p-2 bg-rose-600 text-white rounded-lg scale-75 shadow-lg shadow-rose-200 animate-pulse"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></div>,
     system: <div className="p-2 bg-slate-900 text-white rounded-lg scale-75"><ICONS.Admin /></div>,
   };
 
   return (
-    <div className={`flex gap-4 p-4 hover:bg-slate-50 transition-all cursor-pointer border-l-4 ${notif.isRead ? 'border-transparent' : 'border-indigo-500 bg-indigo-50/10'}`}>
-      <img src={notif.fromUserAvatar} className="w-10 h-10 rounded-xl object-cover shrink-0" alt="" />
+    <div className={`flex gap-4 p-4 hover:bg-slate-50 transition-all cursor-pointer border-l-4 ${notif.isRead ? 'border-transparent' : 'border-indigo-500 bg-indigo-50/10'} ${notif.type === 'broadcast' ? 'bg-rose-50/5' : ''}`}>
+      <img src={notif.fromUserAvatar} className="w-11 h-11 rounded-[1.2rem] object-cover shrink-0 border border-slate-100 shadow-sm" alt="" />
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-bold text-slate-900 leading-tight">
+        <p className="text-[13px] font-bold text-slate-900 leading-tight">
           <span className="font-black">{notif.fromUserName}</span> {notif.text}
         </p>
-        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1.5 font-mono">
-          {notif.timestamp?.toDate ? notif.timestamp.toDate().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'NOW'}
-        </p>
+        <div className="flex items-center gap-2 mt-1.5">
+           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">
+             {notif.timestamp?.toDate ? notif.timestamp.toDate().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'NOW'}
+           </p>
+           {notif.type === 'broadcast' && (
+             <span className="px-2 py-0.5 bg-rose-100 text-rose-600 text-[8px] font-black uppercase tracking-widest rounded-md animate-pulse">Neural_Link_Live</span>
+           )}
+        </div>
       </div>
       <div className="shrink-0">
         {iconMap[notif.type] || iconMap.system}

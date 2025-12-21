@@ -158,6 +158,40 @@ const App: React.FC = () => {
     }
   };
 
+  // 1. NEURAL BROADCAST OBSERVER (Global Livestream Notifications)
+  useEffect(() => {
+    if (!db || !isAuthenticated || !userData) return;
+
+    // Listen for any new stream added to the grid
+    const q = query(
+      collection(db, 'streams'),
+      orderBy('startedAt', 'desc'),
+      limit(5)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'added') {
+          const stream = { id: change.doc.id, ...change.doc.data() } as LiveStream;
+          
+          // Verify if signal is fresh (within last 45 seconds) and not our own
+          const now = Date.now();
+          const startedAt = stream.startedAt?.toMillis() || now;
+          const isFresh = (now - startedAt) < 45000;
+          
+          if (isFresh && stream.authorId !== userData.id) {
+            addToast(`SIGNAL_INCOMING: ${stream.authorName} is Broadcasting!`, 'success');
+            
+            // Optionally: Inject a temporary local notification into the header stack
+            // In a full fan-out system, we'd have a cloud function creating these in the DB
+          }
+        }
+      });
+    });
+
+    return () => unsubscribe();
+  }, [isAuthenticated, userData?.id]);
+
   useEffect(() => {
     if (!db) return;
     const unsub = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
@@ -425,6 +459,9 @@ const App: React.FC = () => {
       });
       setActiveStreamId(streamDoc.id);
       addToast("Grid Connection Established", "success");
+      
+      // In a production fan-out system, we would create notification documents 
+      // for all followers here or via a Cloud Function.
     } catch (e) {
       addToast("Broadcast Initiation Failed", "error");
       setIsLiveOverlayOpen(false);
