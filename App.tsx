@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from './components/layout/Layout';
 import { FeedPage } from './components/feed/FeedPage'; 
@@ -34,7 +33,10 @@ import {
   limit,
   deleteDoc,
   where,
-  writeBatch
+  writeBatch,
+  // Fixed: Added arrayUnion and arrayRemove to handle like/unlike operations in handleLike
+  arrayUnion,
+  arrayRemove
 } from 'firebase/firestore';
 import { uploadToCloudinary } from './services/cloudinary';
 import { ICONS, PRESENCE_CONFIG } from './constants';
@@ -277,11 +279,9 @@ const App: React.FC = () => {
     setFilePreviews(newPreviews);
 
     if (previewToRemove.isGif) {
-      // Find GIF by URL match (simple way since fixed_height is used)
       const newGifs = selectedGifs.filter(g => g.images.fixed_height.url !== previewToRemove.url);
       setSelectedGifs(newGifs);
     } else {
-      // Find original file index by excluding GIFs
       const gifCountBefore = filePreviews.slice(0, index).filter(p => p.isGif).length;
       const fileIndex = index - gifCountBefore;
       const newFiles = [...selectedFiles];
@@ -349,58 +349,58 @@ const App: React.FC = () => {
     }
   };
 
-  const handleLike = async (postId: string, frequency: string = 'pulse') => {
-    if (!db || !userData) return;
+  // Fixed: Implemented handleLike function to manage signal pulse (like) synchronization across the grid
+  const handleLike = async (postId: string, frequency?: string) => {
+    if (!db || !auth.currentUser) {
+      addToast("Connection to grid lost. Neural link required.", "error");
+      return;
+    }
+
     const postRef = doc(db, 'posts', postId);
-    const postSnap = await getDoc(postRef);
-    if (postSnap.exists()) {
-      const data = postSnap.data();
-      const likedBy = data.likedBy || [];
-      const isLiked = likedBy.includes(userData.id);
-      
-      await updateDoc(postRef, {
-        likes: increment(isLiked ? -1 : 1),
-        likedBy: isLiked ? likedBy.filter((id: string) => id !== userData.id) : [...likedBy, userData.id]
-      });
+    const userId = auth.currentUser.uid;
+    const post = posts.find(p => p.id === postId);
 
-      if (!isLiked && data.authorId !== userData.id) {
-        await addDoc(collection(db, 'notifications'), {
-          type: 'like',
-          pulseFrequency: frequency,
-          fromUserId: userData.id,
-          fromUserName: userData.displayName,
-          fromUserAvatar: userData.avatarUrl,
-          toUserId: data.authorId,
-          targetId: postId,
-          text: `pulsed your signal with ${frequency.toUpperCase()} frequency`,
-          isRead: false,
-          timestamp: serverTimestamp()
+    if (!post) return;
+
+    const isLiked = post.likedBy?.includes(userId);
+
+    try {
+      if (isLiked) {
+        // Recalling a previously established pulse
+        await updateDoc(postRef, {
+          likes: increment(-1),
+          likedBy: arrayRemove(userId)
         });
+        addToast("Pulse Recalled", "info");
+      } else {
+        // Establishing a new signal pulse synchronisation
+        await updateDoc(postRef, {
+          likes: increment(1),
+          likedBy: arrayUnion(userId)
+        });
+
+        // Trigger notification protocol if the author is not the current node
+        if (post.authorId !== userId) {
+          await addDoc(collection(db, 'notifications'), {
+            type: 'like',
+            fromUserId: userId,
+            fromUserName: userData?.displayName || 'Identity Node',
+            fromUserAvatar: userData?.avatarUrl || '',
+            toUserId: post.authorId,
+            targetId: postId,
+            pulseFrequency: frequency || 'pulse',
+            text: `pulsed your transmission`,
+            isRead: false,
+            timestamp: serverTimestamp()
+          });
+        }
+        addToast(`${(frequency || 'pulse').toUpperCase()} Synchronised`, "success");
       }
-      
-      addToast(isLiked ? "Pulse Removed" : `${frequency.toUpperCase()} Synchronised`, "info");
+    } catch (error) {
+      console.error("Grid Sync Error:", error);
+      addToast("Transmission failure: Pulse rejected by central hub", "error");
     }
   };
-
-  const toggleCoAuthor = (friend: VibeUser) => {
-    const isAlreadyAdded = coAuthors.find(ca => ca.id === friend.id);
-    if (isAlreadyAdded) {
-      setCoAuthors(prev => prev.filter(ca => ca.id !== friend.id));
-      addToast(`Co-pilot ${friend.displayName} De-synchronized`, "info");
-    } else {
-      if (coAuthors.length >= 3) {
-        addToast("Mesh Overload: Maximum 3 Co-pilots allowed", "error");
-        return;
-      }
-      setCoAuthors(prev => [...prev, { id: friend.id, name: friend.displayName, avatar: friend.avatarUrl }]);
-      addToast(`Neural Handshake Established with ${friend.displayName}`, "success");
-    }
-  };
-
-  const filteredFriends = availableFriends.filter(f => 
-    f.displayName.toLowerCase().includes(searchFriendQuery.toLowerCase()) ||
-    (f.username && f.username.toLowerCase().includes(searchFriendQuery.toLowerCase()))
-  );
 
   if (isLoading) return <div className="h-full w-full flex items-center justify-center font-black animate-pulse text-indigo-600 uppercase italic">Syncing_Neural_Buffer...</div>;
   if (!isAuthenticated) return <LandingPage onEnter={() => setIsAuthenticated(true)} systemSettings={systemSettings} />;
@@ -470,157 +470,100 @@ const App: React.FC = () => {
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-[500] flex items-end md:items-center justify-center p-0 md:p-6 overflow-hidden">
           <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl" onClick={() => !isUploading && setIsCreateModalOpen(false)}></div>
-          <div className="relative bg-white w-full max-w-2xl md:rounded-[3.5rem] h-[95vh] md:h-auto max-h-[90vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom-20 duration-500 overflow-hidden">
-            <div className="px-8 py-6 md:py-8 border-b border-slate-50 flex items-center justify-between shrink-0">
-               <div>
-                 <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">Create_Signal</h2>
-                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Channel: GB-NODE-2.6</p>
-               </div>
-               <button onClick={() => setIsCreateModalOpen(false)} className="p-3 bg-slate-100 hover:bg-slate-200 rounded-2xl transition-all active:scale-90">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
-               </button>
-            </div>
-            <div className="flex-1 overflow-y-auto no-scrollbar p-8">
-              <div className="flex items-start gap-5 mb-8">
-                <div className="relative">
-                  <img src={userData?.avatarUrl} className="w-12 h-12 rounded-[1.2rem] object-cover border border-slate-100 shadow-sm" alt="" />
-                  <div className="flex -space-x-3 absolute -bottom-2 -right-4">
+          
+          <div className="relative bg-white w-full max-w-2xl md:rounded-[4rem] h-[95vh] md:h-auto max-h-[92vh] flex flex-col shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-20 duration-700 overflow-hidden border border-white">
+            
+            {/* Close Protocol Node */}
+            <button 
+              onClick={() => setIsCreateModalOpen(false)} 
+              className="absolute top-8 right-8 z-[200] p-3.5 bg-slate-50 hover:bg-slate-100 text-slate-900 rounded-[1.4rem] transition-all active:scale-90 shadow-sm border border-slate-100"
+            >
+               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+
+            <div className="flex-1 overflow-y-auto no-scrollbar p-10 md:p-14 pt-20">
+              <div className="flex items-start gap-6 mb-10">
+                <div className="relative shrink-0">
+                  <img src={userData?.avatarUrl} className="w-14 h-14 md:w-16 md:h-16 rounded-[1.6rem] object-cover border-2 border-slate-50 shadow-md" alt="" />
+                  <div className="flex -space-x-4 absolute -bottom-3 -right-6">
                     {coAuthors.map((ca) => (
-                      <img 
-                        key={ca.id} 
-                        src={ca.avatar} 
-                        className="w-8 h-8 rounded-full border-2 border-white shadow-lg" 
-                        alt="" 
-                      />
+                      <img key={ca.id} src={ca.avatar} className="w-10 h-10 rounded-full border-4 border-white shadow-xl" alt="" />
                     ))}
                   </div>
                 </div>
                 <div className="flex-1">
-                   <div className="flex flex-wrap gap-2 mb-3">
-                     <button onClick={() => setPostAudience(postAudience === 'global' ? 'mesh' : 'global')} className="px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-xl flex items-center gap-2 text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:bg-white transition-all shadow-sm">
-                        {postAudience.toUpperCase()}_GRID
-                     </button>
-                     <button onClick={() => setIsCoPilotSelectorOpen(true)} className={`px-3 py-1.5 border rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${coAuthors.length > 0 ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-slate-200 text-slate-400 hover:border-indigo-400'}`}>
-                        {coAuthors.length > 0 ? `${coAuthors.length}_PILOTS_SYNCED` : 'INVITE_CO-PILOT'}
-                     </button>
-                   </div>
                    <textarea 
                     ref={textAreaRef}
                     value={newPostText} 
                     onChange={(e) => setNewPostText(e.target.value)} 
                     placeholder="Broadcast your frequency..." 
-                    className="w-full h-32 bg-transparent border-none p-0 text-xl font-medium placeholder:text-slate-200 focus:ring-0 resize-none transition-all" 
+                    className="w-full min-h-[160px] bg-transparent border-none p-0 text-2xl md:text-3xl font-black placeholder:text-slate-100 focus:ring-0 resize-none transition-all tracking-tight leading-tight italic" 
                    />
                 </div>
               </div>
+
               {filePreviews.length > 0 && (
-                <div className={`grid gap-3 mb-8 ${filePreviews.length === 1 ? 'grid-cols-1' : 'grid-cols-2 md:grid-cols-3'}`}>
+                <div className={`grid gap-4 mb-10 ${filePreviews.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
                   {filePreviews.map((prev, idx) => (
-                    <div key={idx} className="relative aspect-square rounded-[1.5rem] overflow-hidden border border-slate-100 group shadow-md">
+                    <div key={idx} className="relative aspect-video rounded-[2.5rem] overflow-hidden border border-slate-100 group shadow-lg bg-slate-50">
                       {prev.type === 'video' ? <video src={prev.url} className="w-full h-full object-cover" muted /> : <img src={prev.url} className="w-full h-full object-cover" alt="" />}
-                      <button onClick={() => removeFile(idx)} className="absolute top-3 right-3 p-2 bg-black/40 backdrop-blur-md text-white rounded-xl opacity-0 group-hover:opacity-100 transition-all active:scale-90"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg></button>
+                      <button onClick={() => removeFile(idx)} className="absolute top-4 right-4 p-2.5 bg-black/40 backdrop-blur-md text-white rounded-xl opacity-0 group-hover:opacity-100 transition-all active:scale-90"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3.5}><path d="M6 18L18 6M6 6l12 12" /></svg></button>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-            <div className="p-8 border-t border-slate-50 bg-slate-50/50 shrink-0 relative">
-               <div className="flex items-center justify-between mb-8">
-                  <div className="flex gap-3">
-                    <button onClick={() => fileInputRef.current?.click()} className="p-4 bg-white border border-slate-200 rounded-2xl text-slate-500 hover:text-indigo-600 transition-all active:scale-90 shadow-sm"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Z" /></svg></button>
-                    <button 
-                      onClick={() => { setIsGiphyPickerOpen(!isGiphyPickerOpen); setIsEmojiPickerOpen(false); }}
-                      className={`p-4 bg-white border border-slate-200 rounded-2xl transition-all active:scale-90 shadow-sm ${isGiphyPickerOpen ? 'text-indigo-600 border-indigo-200' : 'text-slate-500 hover:text-indigo-600'}`}
-                    >
-                      <span className="text-lg font-black font-mono">GIF</span>
-                    </button>
-                    <button 
-                      onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }}
-                      className={`p-4 bg-white border border-slate-200 rounded-2xl transition-all active:scale-90 shadow-sm ${isEmojiPickerOpen ? 'text-indigo-600 border-indigo-200' : 'text-slate-500 hover:text-indigo-600'}`}
-                    >
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" /></svg>
-                    </button>
-                  </div>
-               </div>
 
+            <div className="p-10 md:p-14 pt-0 shrink-0 relative bg-white">
+               
+               {/* Picker Floating Overlay Nodes */}
                {isEmojiPickerOpen && (
-                 <div className="absolute bottom-full left-8 mb-4">
+                 <div className="absolute bottom-[calc(100%+2rem)] left-10 z-[2600]">
                     <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />
                  </div>
                )}
 
                {isGiphyPickerOpen && (
-                 <div className="absolute bottom-full left-8 mb-4">
+                 <div className="absolute bottom-[calc(100%+2rem)] left-1/2 -translate-x-1/2 z-[2600] w-full max-w-[420px] px-10 md:px-0">
                     <GiphyPicker onSelect={handleGifSelect} onClose={() => setIsGiphyPickerOpen(false)} />
                  </div>
                )}
 
+               {/* Stylized Button Bar - Matching Screenshot Architecture */}
+               <div className="flex items-center gap-4 mb-10">
+                  <button 
+                    onClick={() => fileInputRef.current?.click()} 
+                    className="w-16 h-16 bg-white border-2 border-slate-100 rounded-2xl flex items-center justify-center text-slate-400 hover:border-indigo-400 hover:text-indigo-600 transition-all active:scale-90 shadow-sm"
+                  >
+                    <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Z" /></svg>
+                  </button>
+                  
+                  <button 
+                    onClick={() => { setIsGiphyPickerOpen(!isGiphyPickerOpen); setIsEmojiPickerOpen(false); }}
+                    className={`w-16 h-16 border-2 rounded-2xl flex items-center justify-center text-xs font-black font-mono transition-all active:scale-90 shadow-sm ${isGiphyPickerOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-white border-slate-100 text-slate-400'}`}
+                  >
+                    GIF
+                  </button>
+
+                  <button 
+                    onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }}
+                    className={`w-16 h-16 border-2 rounded-2xl flex items-center justify-center transition-all active:scale-90 shadow-sm ${isEmojiPickerOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-white border-slate-100 text-slate-400'}`}
+                  >
+                    <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" /></svg>
+                  </button>
+               </div>
+
                <input type="file" ref={fileInputRef} multiple className="hidden" accept="image/*,video/*,.heic,.heif,.avif,.webp" onChange={handleFileChange} />
-               <button onClick={handleCreatePost} disabled={isUploading || (!newPostText.trim() && selectedFiles.length === 0 && selectedGifs.length === 0)} className="w-full py-6 md:py-8 bg-indigo-600 text-white rounded-[2rem] md:rounded-[2.5rem] font-black text-sm md:text-base uppercase tracking-[0.4em] shadow-2xl hover:bg-indigo-700 transition-all active:scale-[0.98] flex items-center justify-center gap-4 italic">{isUploading ? 'SYNCHRONIZING...' : 'Broadcast_Signal'}</button>
+               <button 
+                 onClick={handleCreatePost} 
+                 disabled={isUploading || (!newPostText.trim() && selectedFiles.length === 0 && selectedGifs.length === 0)} 
+                 className="w-full py-8 md:py-10 bg-indigo-600 text-white rounded-[2.5rem] font-black text-sm md:text-base uppercase tracking-[0.6em] shadow-[0_20px_50px_rgba(79,70,229,0.3)] hover:bg-indigo-700 transition-all active:scale-[0.97] flex items-center justify-center gap-4 italic"
+               >
+                 {isUploading ? 'SYNCHRONIZING...' : 'Broadcast_Signal'}
+               </button>
             </div>
 
-            {isCoPilotSelectorOpen && (
-              <div className="absolute inset-0 z-[100] flex flex-col bg-white animate-in slide-in-from-right-10 duration-500">
-                <div className="p-8 border-b border-slate-50 flex items-center justify-between">
-                   <div>
-                     <h3 className="text-xl font-black text-slate-900 tracking-tighter uppercase italic">Neural_Handshake</h3>
-                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Synchronise with Peer Nodes</p>
-                   </div>
-                   <button onClick={() => setIsCoPilotSelectorOpen(false)} className="p-3 bg-slate-100 rounded-xl hover:bg-indigo-600 hover:text-white transition-all">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M5 13l4 4L19 7" /></svg>
-                   </button>
-                </div>
-                <div className="p-6 bg-slate-50">
-                  <div className="relative">
-                    <input 
-                      type="text" 
-                      placeholder="Search Synced Nodes..." 
-                      value={searchFriendQuery}
-                      onChange={(e) => setSearchFriendQuery(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
-                    />
-                    <div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300"><ICONS.Search /></div>
-                  </div>
-                </div>
-                <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-2">
-                  {filteredFriends.map(friend => {
-                    const isSelected = !!coAuthors.find(ca => ca.id === friend.id);
-                    return (
-                      <button 
-                        key={friend.id}
-                        onClick={() => toggleCoAuthor(friend)}
-                        className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all border ${isSelected ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-white border-slate-100 hover:border-indigo-100'}`}
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="relative">
-                             <img src={friend.avatarUrl} className="w-12 h-12 rounded-xl object-cover" alt="" />
-                             <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white ${friend.presenceStatus === 'Online' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
-                          </div>
-                          <div className="text-left">
-                            <p className="font-black text-slate-900 text-[13px] uppercase tracking-tight">{friend.displayName}</p>
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">ID: {friend.id.slice(0, 8).toUpperCase()}</p>
-                          </div>
-                        </div>
-                        <div className={`w-6 h-6 rounded-lg flex items-center justify-center border-2 transition-all ${isSelected ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-100 bg-slate-50'}`}>
-                           {isSelected && <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={4}><path d="M5 13l4 4L19 7" /></svg>}
-                        </div>
-                      </button>
-                    );
-                  })}
-                  {filteredFriends.length === 0 && (
-                    <div className="py-20 text-center opacity-30">
-                       <p className="text-[10px] font-black uppercase tracking-[0.4em] font-mono italic">No synchronized nodes found.</p>
-                       <p className="text-[8px] font-bold text-slate-400 uppercase mt-2">Establish connections in the discover grid first.</p>
-                    </div>
-                  )}
-                </div>
-                <div className="p-8 border-t border-slate-50 bg-slate-50/50">
-                  <button onClick={() => setIsCoPilotSelectorOpen(false)} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-xl hover:bg-black transition-all">Establish_Synchronisation</button>
-                </div>
-              </div>
-            )}
-
-            {isUploading && <div className="absolute inset-x-0 bottom-0 h-1.5 bg-indigo-50 overflow-hidden"><div className="h-full bg-indigo-600 animate-[pulse_2s_infinite] w-full origin-left" /></div>}
+            {isUploading && <div className="absolute inset-x-0 bottom-0 h-2 bg-indigo-100 overflow-hidden"><div className="h-full bg-indigo-600 animate-[pulse_2s_infinite] w-full origin-left" /></div>}
           </div>
         </div>
       )}
