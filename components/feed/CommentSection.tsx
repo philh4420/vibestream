@@ -15,7 +15,9 @@ import {
 } from 'firebase/firestore';
 import { Comment, User } from '../../types';
 import { EmojiPicker } from '../ui/EmojiPicker';
+import { GiphyPicker } from '../ui/GiphyPicker';
 import { uploadToCloudinary } from '../../services/cloudinary';
+import { GiphyGif } from '../../services/giphy';
 
 interface CommentSectionProps {
   postId: string;
@@ -39,9 +41,11 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
   const [focusedCommentId, setFocusedCommentId] = useState<string | null>(null);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [isGiphyPickerOpen, setIsGiphyPickerOpen] = useState(false);
   
   // Media State for Comments
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedGif, setSelectedGif] = useState<GiphyGif | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
 
@@ -63,6 +67,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setSelectedGif(null); // Clear GIF if file selected
       setSelectedFile(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
@@ -70,15 +75,24 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
     }
   };
 
+  const handleGifSelect = (gif: GiphyGif) => {
+    setSelectedFile(null); // Clear file if GIF selected
+    setSelectedGif(gif);
+    setPreviewUrl(gif.images.fixed_height.url);
+    setIsGiphyPickerOpen(false);
+    addToast("Giphy Fragment Linked", "success");
+  };
+
   const removeSelectedFile = () => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    if (previewUrl && !selectedGif) URL.revokeObjectURL(previewUrl);
     setSelectedFile(null);
+    setSelectedGif(null);
     setPreviewUrl(null);
   };
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!newComment.trim() && !selectedFile) || !db || !userData) return;
+    if ((!newComment.trim() && !selectedFile && !selectedGif) || !db || !userData) return;
     
     setIsSubmittingComment(true);
     let mediaItems: { type: 'image' | 'video'; url: string }[] = [];
@@ -91,6 +105,11 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
         mediaItems.push({
           type: selectedFile.type.startsWith('video/') ? 'video' : 'image',
           url
+        });
+      } else if (selectedGif) {
+        mediaItems.push({
+          type: 'image',
+          url: selectedGif.images.original.url
         });
       }
 
@@ -213,10 +232,10 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
 
   return (
     <div className="mt-8 pt-8 border-t border-slate-100 animate-in slide-in-from-top-4 duration-500">
-      {isEmojiPickerOpen && (
+      {(isEmojiPickerOpen || isGiphyPickerOpen) && (
         <div 
           className="fixed inset-0 z-[1500] bg-slate-950/20 backdrop-blur-[2px] animate-in fade-in duration-300"
-          onClick={() => setIsEmojiPickerOpen(false)}
+          onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }}
         />
       )}
 
@@ -268,7 +287,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
                placeholder={replyingTo ? "Echo your frequency..." : "Broadcast initial thought..."}
                className="w-full bg-transparent border-none px-5 py-3.5 text-sm font-bold outline-none placeholder:text-slate-300"
              />
-             <div className="flex items-center gap-1 mr-2">
+             <div className="flex items-center gap-0.5 mr-2">
                <button 
                  type="button"
                  onClick={() => fileInputRef.current?.click()}
@@ -278,7 +297,14 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
                </button>
                <button 
                  type="button"
-                 onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+                 onClick={() => { setIsGiphyPickerOpen(!isGiphyPickerOpen); setIsEmojiPickerOpen(false); }}
+                 className={`p-2 rounded-lg transition-all active:scale-90 ${isGiphyPickerOpen ? 'text-indigo-600 bg-indigo-50' : 'text-slate-300 hover:text-indigo-500'}`}
+               >
+                  <span className="text-[10px] font-black font-mono">GIF</span>
+               </button>
+               <button 
+                 type="button"
+                 onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }}
                  className={`p-2 rounded-lg transition-all active:scale-90 ${isEmojiPickerOpen ? 'text-indigo-600 bg-indigo-50' : 'text-slate-300 hover:text-indigo-500'}`}
                >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" /></svg>
@@ -298,9 +324,15 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
                   <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />
                 </div>
              )}
+
+             {isGiphyPickerOpen && (
+                <div className="fixed z-[2000] bottom-[max(2rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 md:left-auto md:right-4 md:bottom-24 md:translate-x-0">
+                  <GiphyPicker onSelect={handleGifSelect} onClose={() => setIsGiphyPickerOpen(false)} />
+                </div>
+             )}
           </div>
           <button 
-            disabled={(!newComment.trim() && !selectedFile) || isSubmittingComment}
+            disabled={(!newComment.trim() && !selectedFile && !selectedGif) || isSubmittingComment}
             className="p-3.5 bg-slate-900 text-white rounded-xl shadow-lg hover:bg-black transition-all active:scale-95 disabled:opacity-30 shrink-0"
           >
              {isSubmittingComment ? (

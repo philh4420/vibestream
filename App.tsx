@@ -39,6 +39,8 @@ import {
 import { uploadToCloudinary } from './services/cloudinary';
 import { ICONS, PRESENCE_CONFIG } from './constants';
 import { EmojiPicker } from './components/ui/EmojiPicker';
+import { GiphyPicker } from './components/ui/GiphyPicker';
+import { GiphyGif } from './services/giphy';
 
 const SESSION_KEY = 'vibestream_session_2026';
 const ROUTE_KEY = 'vibestream_active_route';
@@ -84,7 +86,8 @@ const App: React.FC = () => {
   
   const [newPostText, setNewPostText] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [filePreviews, setFilePreviews] = useState<{url: string, type: string}[]>([]);
+  const [selectedGifs, setSelectedGifs] = useState<GiphyGif[]>([]);
+  const [filePreviews, setFilePreviews] = useState<{url: string, type: string, isGif?: boolean}[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [postLocation, setPostLocation] = useState<string | null>(null);
   const [postAudience, setPostAudience] = useState<SignalAudience>('global');
@@ -94,6 +97,7 @@ const App: React.FC = () => {
   const [availableFriends, setAvailableFriends] = useState<VibeUser[]>([]);
   const [searchFriendQuery, setSearchFriendQuery] = useState('');
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [isGiphyPickerOpen, setIsGiphyPickerOpen] = useState(false);
 
   const [userRegion, setUserRegion] = useState<Region>('en-GB');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -133,7 +137,7 @@ const App: React.FC = () => {
     setActiveRoute(AppRoute.SINGLE_POST);
   };
 
-  const handleOpenCreate = (initialFiles?: File[]) => {
+  const handleOpenCreate = (initialFiles?: File[], action?: 'gif') => {
     if (initialFiles && initialFiles.length > 0) {
       const newFiles = [...selectedFiles, ...initialFiles];
       setSelectedFiles(newFiles);
@@ -142,6 +146,9 @@ const App: React.FC = () => {
         type: f.type.startsWith('video/') ? 'video' : 'image'
       }));
       setFilePreviews([...filePreviews, ...newPreviews]);
+    }
+    if (action === 'gif') {
+      setIsGiphyPickerOpen(true);
     }
     setIsCreateModalOpen(true);
   };
@@ -173,6 +180,17 @@ const App: React.FC = () => {
       textarea.focus();
       textarea.setSelectionRange(start + emoji.length, start + emoji.length);
     }, 0);
+  };
+
+  const handleGifSelect = (gif: GiphyGif) => {
+    if (selectedGifs.length + selectedFiles.length >= 5) {
+      addToast("Mesh overload: Limit 5 fragments per signal", "error");
+      return;
+    }
+    setSelectedGifs([...selectedGifs, gif]);
+    setFilePreviews([...filePreviews, { url: gif.images.fixed_height.url, type: 'image', isGif: true }]);
+    setIsGiphyPickerOpen(false);
+    addToast("GIF Linked to Buffer", "success");
   };
 
   useEffect(() => {
@@ -239,7 +257,7 @@ const App: React.FC = () => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (files.length + selectedFiles.length > 5) {
+    if (files.length + selectedFiles.length + selectedGifs.length > 5) {
       addToast("Transmission overload: Limit 5 artifacts per signal", "error");
       return;
     }
@@ -253,17 +271,28 @@ const App: React.FC = () => {
   };
 
   const removeFile = (index: number) => {
-    const updatedFiles = [...selectedFiles];
-    updatedFiles.splice(index, 1);
-    setSelectedFiles(updatedFiles);
-    const updatedPreviews = [...filePreviews];
-    URL.revokeObjectURL(updatedPreviews[index].url);
-    updatedPreviews.splice(index, 1);
-    setFilePreviews(updatedPreviews);
+    const previewToRemove = filePreviews[index];
+    const newPreviews = [...filePreviews];
+    newPreviews.splice(index, 1);
+    setFilePreviews(newPreviews);
+
+    if (previewToRemove.isGif) {
+      // Find GIF by URL match (simple way since fixed_height is used)
+      const newGifs = selectedGifs.filter(g => g.images.fixed_height.url !== previewToRemove.url);
+      setSelectedGifs(newGifs);
+    } else {
+      // Find original file index by excluding GIFs
+      const gifCountBefore = filePreviews.slice(0, index).filter(p => p.isGif).length;
+      const fileIndex = index - gifCountBefore;
+      const newFiles = [...selectedFiles];
+      URL.revokeObjectURL(previewToRemove.url);
+      newFiles.splice(fileIndex, 1);
+      setSelectedFiles(newFiles);
+    }
   };
 
   const handleCreatePost = async () => {
-    if (!newPostText.trim() && selectedFiles.length === 0) return;
+    if (!newPostText.trim() && selectedFiles.length === 0 && selectedGifs.length === 0) return;
     if (!db || !userData) return;
     setIsUploading(true);
     addToast("Initiating Neural Uplink...", "info");
@@ -278,7 +307,11 @@ const App: React.FC = () => {
         const url = await uploadToCloudinary(file);
         return { type: file.type.startsWith('video/') ? 'video' : 'image' as any, url };
       });
-      const mediaItems = await Promise.all(mediaUplinks);
+      const uploadedFiles = await Promise.all(mediaUplinks);
+      const gifMedia = selectedGifs.map(g => ({ type: 'image' as any, url: g.images.original.url }));
+      
+      const mediaItems = [...uploadedFiles, ...gifMedia];
+
       await addDoc(collection(db, 'posts'), {
         authorId: userData.id,
         authorName: userData.displayName,
@@ -303,6 +336,7 @@ const App: React.FC = () => {
       });
       setNewPostText('');
       setSelectedFiles([]);
+      setSelectedGifs([]);
       setFilePreviews([]);
       setPostLocation(null);
       setCoAuthors([]);
@@ -495,7 +529,13 @@ const App: React.FC = () => {
                   <div className="flex gap-3">
                     <button onClick={() => fileInputRef.current?.click()} className="p-4 bg-white border border-slate-200 rounded-2xl text-slate-500 hover:text-indigo-600 transition-all active:scale-90 shadow-sm"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Z" /></svg></button>
                     <button 
-                      onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+                      onClick={() => { setIsGiphyPickerOpen(!isGiphyPickerOpen); setIsEmojiPickerOpen(false); }}
+                      className={`p-4 bg-white border border-slate-200 rounded-2xl transition-all active:scale-90 shadow-sm ${isGiphyPickerOpen ? 'text-indigo-600 border-indigo-200' : 'text-slate-500 hover:text-indigo-600'}`}
+                    >
+                      <span className="text-lg font-black font-mono">GIF</span>
+                    </button>
+                    <button 
+                      onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }}
                       className={`p-4 bg-white border border-slate-200 rounded-2xl transition-all active:scale-90 shadow-sm ${isEmojiPickerOpen ? 'text-indigo-600 border-indigo-200' : 'text-slate-500 hover:text-indigo-600'}`}
                     >
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" /></svg>
@@ -509,8 +549,14 @@ const App: React.FC = () => {
                  </div>
                )}
 
+               {isGiphyPickerOpen && (
+                 <div className="absolute bottom-full left-8 mb-4">
+                    <GiphyPicker onSelect={handleGifSelect} onClose={() => setIsGiphyPickerOpen(false)} />
+                 </div>
+               )}
+
                <input type="file" ref={fileInputRef} multiple className="hidden" accept="image/*,video/*,.heic,.heif,.avif,.webp" onChange={handleFileChange} />
-               <button onClick={handleCreatePost} disabled={isUploading || (!newPostText.trim() && selectedFiles.length === 0)} className="w-full py-6 md:py-8 bg-indigo-600 text-white rounded-[2rem] md:rounded-[2.5rem] font-black text-sm md:text-base uppercase tracking-[0.4em] shadow-2xl hover:bg-indigo-700 transition-all active:scale-[0.98] flex items-center justify-center gap-4 italic">{isUploading ? 'SYNCHRONIZING...' : 'Broadcast_Signal'}</button>
+               <button onClick={handleCreatePost} disabled={isUploading || (!newPostText.trim() && selectedFiles.length === 0 && selectedGifs.length === 0)} className="w-full py-6 md:py-8 bg-indigo-600 text-white rounded-[2rem] md:rounded-[2.5rem] font-black text-sm md:text-base uppercase tracking-[0.4em] shadow-2xl hover:bg-indigo-700 transition-all active:scale-[0.98] flex items-center justify-center gap-4 italic">{isUploading ? 'SYNCHRONIZING...' : 'Broadcast_Signal'}</button>
             </div>
 
             {isCoPilotSelectorOpen && (

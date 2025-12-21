@@ -5,7 +5,7 @@ import { ICONS } from '../../constants';
 
 interface CreateSignalBoxProps {
   userData: User | null;
-  onOpen: () => void;
+  onOpen: (initialAction?: 'media' | 'gif') => void;
   onFileSelect?: (file: File) => void;
 }
 
@@ -33,7 +33,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         </div>
         
         <button 
-          onClick={onOpen}
+          onClick={() => onOpen()}
           className="flex-1 bg-slate-50/80 border border-slate-100 hover:bg-white hover:border-indigo-100 text-left px-8 py-4.5 rounded-[1.8rem] transition-all duration-300 group/input touch-active flex items-center justify-between"
         >
           <span className="text-slate-400 font-bold text-sm md:text-lg group-hover/input:text-slate-700 italic tracking-tight">
@@ -45,16 +45,16 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 border-t border-slate-50 pt-6">
+      <div className="grid grid-cols-4 gap-2 border-t border-slate-50 pt-6">
         <button 
           onClick={() => fileInputRef.current?.click()} 
-          className="flex flex-col md:flex-row items-center justify-center gap-3 py-4 hover:bg-indigo-50/50 rounded-2xl transition-all duration-300 text-slate-500 group/btn touch-active"
+          className="flex flex-col items-center justify-center gap-2 py-3 hover:bg-indigo-50/50 rounded-2xl transition-all duration-300 text-slate-500 group/btn touch-active"
         >
           <div className="text-indigo-500 group-hover/btn:scale-125 transition-transform duration-500 scale-90 md:scale-100">
             <ICONS.Create />
           </div>
-          <span className="text-[9px] font-black uppercase tracking-[0.2em] font-mono leading-none">
-            Visual_Artifact
+          <span className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] font-mono leading-none">
+            Artifact
           </span>
         </button>
         
@@ -67,18 +67,19 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         />
 
         {[
-          { icon: <ICONS.Streams />, label: 'Broadcast_Live', color: 'text-rose-500', bg: 'hover:bg-rose-50/50', action: onOpen },
-          { icon: <ICONS.Explore />, label: 'Neural_Update', color: 'text-emerald-500', bg: 'hover:bg-emerald-50/50', action: onOpen }
+          { icon: <span className="text-sm font-black font-mono">GIF</span>, label: 'GIF_Fragment', color: 'text-amber-500', bg: 'hover:bg-amber-50/50', action: () => onOpen('gif') },
+          { icon: <ICONS.Streams />, label: 'Live_Stream', color: 'text-rose-500', bg: 'hover:bg-rose-50/50', action: () => onOpen() },
+          { icon: <ICONS.Explore />, label: 'Deep_Sync', color: 'text-emerald-500', bg: 'hover:bg-emerald-50/50', action: () => onOpen() }
         ].map((action, i) => (
           <button 
             key={i}
             onClick={action.action} 
-            className={`flex flex-col md:flex-row items-center justify-center gap-3 py-4 ${action.bg} rounded-2xl transition-all duration-300 text-slate-500 group/btn touch-active`}
+            className={`flex flex-col items-center justify-center gap-2 py-3 ${action.bg} rounded-2xl transition-all duration-300 text-slate-500 group/btn touch-active`}
           >
             <div className={`${action.color} group-hover/btn:scale-125 transition-transform duration-500 scale-90 md:scale-100`}>
               {action.icon}
             </div>
-            <span className="text-[9px] font-black uppercase tracking-[0.2em] font-mono leading-none">
+            <span className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] font-mono leading-none">
               {action.label}
             </span>
           </button>
