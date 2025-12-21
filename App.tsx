@@ -40,6 +40,9 @@ const SESSION_KEY = 'vibestream_session_2026';
 const SESSION_START_KEY = 'vibestream_session_start_timestamp';
 const ROUTE_KEY = 'vibestream_active_route';
 
+// High-fidelity futuristic notification sound
+const NOTIFICATION_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3';
+
 const MaintenanceOverlay: React.FC<{ type?: 'system' | 'feature' }> = ({ type = 'system' }) => (
   <div className="fixed inset-0 z-[9999] bg-slate-950 flex flex-col items-center justify-center p-6 text-center overflow-hidden">
     <div className="absolute inset-0 opacity-10 pointer-events-none">
@@ -121,6 +124,7 @@ const App: React.FC = () => {
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [ephemeralNotifications, setEphemeralNotifications] = useState<AppNotification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toasts, setUserToasts] = useState<ToastMessage[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -133,6 +137,21 @@ const App: React.FC = () => {
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [userRegion, setUserRegion] = useState<Region>('en-GB');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const prevNotifCountRef = useRef(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const playNotificationSound = () => {
+    if (!audioRef.current) {
+      audioRef.current = new Audio(NOTIFICATION_SOUND_URL);
+      audioRef.current.volume = 0.35;
+    }
+    audioRef.current.currentTime = 0;
+    audioRef.current.play().catch(() => {
+      // Browsers often block audio until user interaction
+      console.debug("Audio pulse blocked by browser policy");
+    });
+  };
 
   const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -158,11 +177,19 @@ const App: React.FC = () => {
     }
   };
 
+  // Sound Relay Monitor: Watch for notification count increases
+  useEffect(() => {
+    const totalCount = notifications.length + ephemeralNotifications.length;
+    if (totalCount > prevNotifCountRef.current) {
+      playNotificationSound();
+    }
+    prevNotifCountRef.current = totalCount;
+  }, [notifications.length, ephemeralNotifications.length]);
+
   // 1. NEURAL BROADCAST OBSERVER (Global Livestream Notifications)
   useEffect(() => {
     if (!db || !isAuthenticated || !userData) return;
 
-    // Listen for any new stream added to the grid
     const q = query(
       collection(db, 'streams'),
       orderBy('startedAt', 'desc'),
@@ -174,16 +201,32 @@ const App: React.FC = () => {
         if (change.type === 'added') {
           const stream = { id: change.doc.id, ...change.doc.data() } as LiveStream;
           
-          // Verify if signal is fresh (within last 45 seconds) and not our own
           const now = Date.now();
           const startedAt = stream.startedAt?.toMillis() || now;
-          const isFresh = (now - startedAt) < 45000;
+          const isFresh = (now - startedAt) < 30000; // 30 second window
           
           if (isFresh && stream.authorId !== userData.id) {
             addToast(`SIGNAL_INCOMING: ${stream.authorName} is Broadcasting!`, 'success');
             
-            // Optionally: Inject a temporary local notification into the header stack
-            // In a full fan-out system, we'd have a cloud function creating these in the DB
+            // Create Ephemeral Notification for the bell
+            const newSignalNotif: AppNotification = {
+              id: `ephemeral_${stream.id}_${now}`,
+              type: 'broadcast',
+              fromUserId: stream.authorId,
+              fromUserName: stream.authorName,
+              fromUserAvatar: stream.authorAvatar,
+              toUserId: userData.id,
+              targetId: stream.id,
+              text: `started a new neural broadcast: "${stream.title}"`,
+              isRead: false,
+              timestamp: stream.startedAt
+            };
+
+            setEphemeralNotifications(prev => {
+              // Avoid duplicates
+              if (prev.find(n => n.targetId === stream.id)) return prev;
+              return [newSignalNotif, ...prev].slice(0, 10);
+            });
           }
         }
       });
@@ -271,6 +314,7 @@ const App: React.FC = () => {
         setCurrentUser(null);
         setUserData(null);
         setNotifications([]);
+        setEphemeralNotifications([]);
         localStorage.removeItem(SESSION_KEY);
         localStorage.removeItem(SESSION_START_KEY);
         if (userUnsubscribe) userUnsubscribe();
@@ -344,8 +388,6 @@ const App: React.FC = () => {
       const targetSnap = await getDoc(targetRef);
       if (!targetSnap.exists()) return;
 
-      // This is a simplified follow toggle for 2026. In a full system we'd use subcollections.
-      // For this demo, we use counters and notifications.
       await updateDoc(targetRef, { followers: increment(1) });
       await updateDoc(userRef, { following: increment(1) });
 
@@ -367,6 +409,10 @@ const App: React.FC = () => {
   };
 
   const markNotificationsRead = async () => {
+    // Mark ephemeral (local) as read
+    setEphemeralNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    
+    // Mark database ones as read
     if (!db || !notifications.length) return;
     const unread = notifications.filter(n => !n.isRead);
     for (const n of unread) {
@@ -459,9 +505,6 @@ const App: React.FC = () => {
       });
       setActiveStreamId(streamDoc.id);
       addToast("Grid Connection Established", "success");
-      
-      // In a production fan-out system, we would create notification documents 
-      // for all followers here or via a Cloud Function.
     } catch (e) {
       addToast("Broadcast Initiation Failed", "error");
       setIsLiveOverlayOpen(false);
@@ -531,6 +574,13 @@ const App: React.FC = () => {
     return <LandingPage onEnter={() => setIsAuthenticated(true)} systemSettings={systemSettings} />;
   }
 
+  // Merge database notifications with ephemeral ones (like Live Broadcasts)
+  const allNotifications = [...ephemeralNotifications, ...notifications].sort((a, b) => {
+    const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : (typeof a.timestamp === 'number' ? a.timestamp : Date.now());
+    const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : (typeof b.timestamp === 'number' ? b.timestamp : Date.now());
+    return timeB - timeA;
+  });
+
   const renderContent = () => {
     const user = userData!;
     
@@ -597,7 +647,7 @@ const App: React.FC = () => {
       onOpenCreate={() => { setIsCreateModalOpen(true); addToast("Opening Neural Uplink", "info"); }}
       onLogout={handleLogout}
       userData={userData}
-      notifications={notifications}
+      notifications={allNotifications}
       onMarkRead={markNotificationsRead}
       userRole={userData?.role}
       currentRegion={userRegion}
