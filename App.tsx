@@ -9,6 +9,7 @@ import { ProfilePage } from './components/profile/ProfilePage';
 import { ExplorePage } from './components/explore/ExplorePage';
 import { MessagesPage } from './components/messages/MessagesPage';
 import { StreamGridPage } from './components/streams/StreamGridPage';
+import { LiveBroadcastOverlay } from './components/streams/LiveBroadcastOverlay';
 import { PrivacyPage } from './components/legal/PrivacyPage';
 import { TermsPage } from './components/legal/TermsPage';
 import { CookiesPage } from './components/legal/CookiesPage';
@@ -27,7 +28,8 @@ import {
   increment,
   getDoc,
   setDoc,
-  limit
+  limit,
+  deleteDoc
 } from 'firebase/firestore';
 import { uploadToCloudinary } from './services/cloudinary';
 import { ICONS } from './constants';
@@ -119,6 +121,8 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [toasts, setUserToasts] = useState<ToastMessage[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isLiveOverlayOpen, setIsLiveOverlayOpen] = useState(false);
+  const [activeStreamId, setActiveStreamId] = useState<string | null>(null);
   const [newPostText, setNewPostText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -327,13 +331,42 @@ const App: React.FC = () => {
   };
 
   const handleGoLive = () => {
-    addToast("Initiating Live Signal Protocol", "info");
-    // In a real app, this would open a camera interface for WebRTC streaming.
-    // For now, we simulate the start of a broadcast.
-    setTimeout(() => {
+    addToast("Initialising Live Signal Protocol", "info");
+    setIsLiveOverlayOpen(true);
+  };
+
+  const handleStartStream = async (title: string) => {
+    if (!db || !userData) return;
+    try {
+      const streamDoc = await addDoc(collection(db, 'streams'), {
+        authorId: userData.id,
+        authorName: userData.displayName,
+        authorAvatar: userData.avatarUrl,
+        title: title || `${userData.displayName}'s Neural Broadcast`,
+        thumbnailUrl: userData.avatarUrl, // Will be updated by screen capture in future
+        viewerCount: 0,
+        startedAt: serverTimestamp(),
+        category: 'Live Signal'
+      });
+      setActiveStreamId(streamDoc.id);
       addToast("Live Broadcast Established", "success");
-      handleNavigate(AppRoute.STREAM_GRID);
-    }, 1500);
+    } catch (e) {
+      addToast("Broadcast Initiation Failed", "error");
+      setIsLiveOverlayOpen(false);
+    }
+  };
+
+  const handleEndStream = async () => {
+    if (!db || !activeStreamId) return;
+    try {
+      await deleteDoc(doc(db, 'streams', activeStreamId));
+      setActiveStreamId(null);
+      setIsLiveOverlayOpen(false);
+      addToast("Broadcast Safely Terminated", "info");
+    } catch (e) {
+      console.error(e);
+      setIsLiveOverlayOpen(false);
+    }
   };
 
   if (systemSettings.maintenanceMode && userData?.role !== 'admin') {
@@ -429,6 +462,15 @@ const App: React.FC = () => {
       <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[1000] flex flex-col gap-3 pointer-events-none w-full max-w-sm px-4">
         {toasts.map(toast => <Toast key={toast.id} toast={toast} onClose={removeToast} />)}
       </div>
+
+      {isLiveOverlayOpen && (
+        <LiveBroadcastOverlay 
+          userData={userData!} 
+          onStart={handleStartStream} 
+          onEnd={handleEndStream} 
+          activeStreamId={activeStreamId}
+        />
+      )}
 
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-[500] flex items-end md:items-center justify-center p-4">
