@@ -69,6 +69,7 @@ export type NotificationType = 'like' | 'comment' | 'follow' | 'mention' | 'broa
 export interface AppNotification {
   id: string;
   type: NotificationType;
+  pulseFrequency?: string; // New: Supports Pulse Spectrum
   fromUserId: string;
   fromUserName: string;
   fromUserAvatar: string;

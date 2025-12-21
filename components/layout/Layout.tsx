@@ -16,6 +16,7 @@ interface LayoutProps {
   userData: VibeUser | null;
   notifications: AppNotification[];
   onMarkRead: () => void;
+  onDeleteNotification: (id: string) => void;
   currentRegion: Region;
   onRegionChange: (region: Region) => void;
 }
@@ -30,6 +31,7 @@ export const Layout: React.FC<LayoutProps> = ({
   userData,
   notifications,
   onMarkRead,
+  onDeleteNotification,
   currentRegion,
   onRegionChange
 }) => {
@@ -52,6 +54,7 @@ export const Layout: React.FC<LayoutProps> = ({
         userData={userData}
         notifications={notifications}
         onMarkRead={onMarkRead}
+        onDeleteNotification={onDeleteNotification}
         currentRegion={currentRegion} 
         onRegionChange={onRegionChange} 
         onLogout={onLogout} 

@@ -242,7 +242,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleLike = async (postId: string) => {
+  const handleLike = async (postId: string, frequency: string = 'pulse') => {
     if (!db || !userData) return;
     const postRef = doc(db, 'posts', postId);
     const postSnap = await getDoc(postRef);
@@ -259,18 +259,19 @@ const App: React.FC = () => {
       if (!isLiked && data.authorId !== userData.id) {
         await addDoc(collection(db, 'notifications'), {
           type: 'like',
+          pulseFrequency: frequency,
           fromUserId: userData.id,
           fromUserName: userData.displayName,
           fromUserAvatar: userData.avatarUrl,
           toUserId: data.authorId,
           targetId: postId,
-          text: "pulsed your signal",
+          text: `pulsed your signal with ${frequency.toUpperCase()} frequency`,
           isRead: false,
           timestamp: serverTimestamp()
         });
       }
       
-      addToast(isLiked ? "Pulse Removed" : "Pulse Synchronised", "info");
+      addToast(isLiked ? "Pulse Removed" : `${frequency.toUpperCase()} Synchronised`, "info");
     }
   };
 
@@ -279,6 +280,16 @@ const App: React.FC = () => {
     notifications.filter(n => !n.isRead).forEach(async n => {
       await updateDoc(doc(db, 'notifications', n.id), { isRead: true });
     });
+  };
+
+  const handleDeleteNotification = async (notifId: string) => {
+    if (!db || !auth.currentUser) return;
+    try {
+      await deleteDoc(doc(db, 'notifications', notifId));
+      addToast("Notification Cluster Purged", "success");
+    } catch (e) {
+      addToast("Purge Protocol Failed", "error");
+    }
   };
 
   const toggleCoAuthorSim = () => {
@@ -300,7 +311,7 @@ const App: React.FC = () => {
       activeRoute={activeRoute} onNavigate={handleNavigate} 
       onOpenCreate={() => setIsCreateModalOpen(true)}
       onLogout={handleLogout} userData={userData} notifications={notifications}
-      onMarkRead={handleMarkRead} userRole={userData?.role} currentRegion={userRegion}
+      onMarkRead={handleMarkRead} onDeleteNotification={handleDeleteNotification} userRole={userData?.role} currentRegion={userRegion}
       onRegionChange={setUserRegion}
     >
       {activeRoute === AppRoute.FEED && (
