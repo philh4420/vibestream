@@ -58,7 +58,7 @@ const NotificationItem = ({ notif, onDelete }: { notif: AppNotification; onDelet
     <div className={`group/item flex gap-4 p-4 hover:bg-slate-50 transition-all cursor-pointer border-l-4 relative overflow-hidden ${notif.isRead ? 'border-transparent' : 'border-indigo-500 bg-indigo-50/10'} ${notif.type === 'broadcast' ? 'bg-rose-50/5' : ''}`}>
       <img src={notif.fromUserAvatar} className="w-11 h-11 rounded-[1.2rem] object-cover shrink-0 border border-slate-100 shadow-sm" alt="" />
       <div className="flex-1 min-w-0">
-        <p className={`text-[13px] font-bold leading-tight ${pulseConfig ? 'text-slate-900' : 'text-slate-900'}`}>
+        <p className={`text-[13px] font-bold leading-tight text-slate-900`}>
           <span className="font-black italic uppercase tracking-tight">{notif.fromUserName}</span> {notif.text}
         </p>
         <div className="flex items-center gap-2 mt-1.5">
@@ -179,7 +179,6 @@ export const Header: React.FC<HeaderProps> = ({
     >
       <div className="flex items-center justify-between w-full max-w-[2560px] mx-auto h-full px-4 md:px-6">
         
-        {/* LEFT: Branding & Search */}
         <div className="flex items-center gap-4 flex-1">
           <div 
             className="w-10 h-10 md:w-11 md:h-11 bg-slate-900 rounded-full flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition-all shrink-0"
@@ -204,13 +203,11 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* RIGHT: Notifications & Master Pill */}
         <div className="flex items-center gap-2 md:gap-5 justify-end">
           
-          {/* NOTIFICATION HUB */}
           <div className="relative">
             <button 
-              onClick={() => { setIsNotifOpen(!isNotifOpen); if(!isNotifOpen) onMarkRead(); }}
+              onClick={() => setIsNotifOpen(!isNotifOpen)}
               className={`p-3 rounded-2xl transition-all relative touch-active ${isNotifOpen ? 'bg-indigo-50 text-indigo-600' : 'text-slate-400 hover:bg-slate-50'}`}
             >
               <ICONS.Bell />
@@ -225,14 +222,24 @@ export const Header: React.FC<HeaderProps> = ({
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setIsNotifOpen(false)}></div>
                 <div className="absolute right-0 md:right-[-120px] mt-4 w-[min(90vw,400px)] bg-white rounded-[2.5rem] shadow-[0_30px_90px_-20px_rgba(0,0,0,0.3)] border border-precision overflow-hidden z-20 animate-in zoom-in-95 slide-in-from-top-4 duration-500 flex flex-col max-h-[80vh]">
-                   <div className="p-6 border-b border-slate-50 flex items-center justify-between">
+                   <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-white sticky top-0 z-10">
                      <div>
                        <h3 className="text-lg font-black text-slate-900 tracking-tighter uppercase italic">Neural_Alerts</h3>
                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Real-time Handshake Logs</p>
                      </div>
-                     <button onClick={() => setIsNotifOpen(false)} className="p-2 hover:bg-slate-50 rounded-lg"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth="2.5" /></svg></button>
+                     <div className="flex items-center gap-2">
+                       {unreadCount > 0 && (
+                         <button 
+                           onClick={() => { onMarkRead(); }}
+                           className="text-[9px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-all"
+                         >
+                           Mark_All_Read
+                         </button>
+                       )}
+                       <button onClick={() => setIsNotifOpen(false)} className="p-2 hover:bg-slate-50 rounded-lg"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth="2.5" /></svg></button>
+                     </div>
                    </div>
-                   <div className="flex-1 overflow-y-auto no-scrollbar pb-4">
+                   <div className="flex-1 overflow-y-auto no-scrollbar pb-4 scroll-container">
                      {notifications.length > 0 ? (
                        notifications.map(n => <NotificationItem key={n.id} notif={n} onDelete={onDeleteNotification} />)
                      ) : (
@@ -248,7 +255,6 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           <div className="relative">
-            {/* MASTER PILL - Complete Identity Mirror */}
             <button 
               onClick={() => setIsSystemMenuOpen(!isSystemMenuOpen)}
               className="flex items-center gap-4 p-1.5 pr-6 rounded-full bg-white border border-slate-100 shadow-[0_2px_15px_rgba(0,0,0,0.03)] hover:shadow-md transition-all duration-300 active:scale-95 group"
@@ -287,10 +293,8 @@ export const Header: React.FC<HeaderProps> = ({
                 <div className="fixed inset-0 z-10" onClick={() => setIsSystemMenuOpen(false)}></div>
                 <div className="absolute right-0 mt-3 w-[min(90vw,380px)] bg-white rounded-[2.5rem] shadow-[0_30px_90px_-20px_rgba(0,0,0,0.25)] border border-precision overflow-hidden z-20 animate-in zoom-in-95 slide-in-from-top-4 duration-500 flex flex-col max-h-[85vh]">
                   
-                  {/* SCROLLABLE CONTENT */}
-                  <div className="flex-1 overflow-y-auto no-scrollbar py-5">
+                  <div className="flex-1 overflow-y-auto no-scrollbar py-5 scroll-container">
                     
-                    {/* Integrated Status Toggle Block */}
                     <div className="px-5 mb-6">
                       <button 
                         onClick={() => { setIsHubOpen(true); setIsSystemMenuOpen(false); }}
@@ -317,7 +321,6 @@ export const Header: React.FC<HeaderProps> = ({
                       </button>
                     </div>
 
-                    {/* MOBILE-ONLY NAVIGATION GRID (SIDEBAR MIRROR) */}
                     <div className="lg:hidden px-5 pb-8 space-y-4">
                       <div className="px-4 py-2 text-[9px] font-black text-slate-300 uppercase tracking-[0.4em] font-mono border-t border-slate-50 pt-6 mb-2">Grid_Protocols</div>
                       <div className="grid grid-cols-2 gap-2">
@@ -341,7 +344,6 @@ export const Header: React.FC<HeaderProps> = ({
                       </div>
                     </div>
                     
-                    {/* SHARED ACTIONS */}
                     <div className="px-5 pb-5">
                       <button 
                         onClick={() => { onNavigate(AppRoute.PROFILE); setIsSystemMenuOpen(false); }}
@@ -373,7 +375,6 @@ export const Header: React.FC<HeaderProps> = ({
 
                   </div>
                   
-                  {/* STICKY FOOTER */}
                   <div className="p-3 border-t border-slate-50 bg-white shrink-0">
                     <button 
                       onClick={() => { onLogout(); setIsSystemMenuOpen(false); }}
@@ -389,15 +390,12 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* NEURAL STATUS HUB */}
       {isHubOpen && (
         <div className="fixed inset-0 z-[600] flex items-start justify-center p-6 pt-[calc(var(--header-h)+3.5rem)] animate-in fade-in duration-400">
-           {/* Dismiss Backdrop */}
            <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-3xl" onClick={() => setIsHubOpen(false)}></div>
            
            <div className="relative bg-white w-full max-w-2xl rounded-[4rem] p-10 md:p-14 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] border border-white animate-in zoom-in-95 slide-in-from-top-12 duration-500 overflow-hidden max-h-[85vh] flex flex-col">
-              <div className="relative z-10 overflow-y-auto no-scrollbar pb-6 flex-1">
-                 {/* Current Status Message Entry */}
+              <div className="relative z-10 overflow-y-auto no-scrollbar pb-6 flex-1 scroll-container">
                  <div className="flex items-center gap-8 mb-12 pt-4">
                     <div className="w-24 h-24 bg-slate-50 border border-slate-100 rounded-[2.5rem] flex items-center justify-center text-6xl shadow-inner shrink-0 transition-transform active:scale-90">
                       {localStatus.statusEmoji}
@@ -415,7 +413,6 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                  </div>
 
-                 {/* GRID MODALITY */}
                  <div className="space-y-6 mb-14">
                     <h4 className="text-[12px] font-black text-[#94a3b8] uppercase tracking-[0.4em] font-mono ml-1">Grid_Modality</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -438,7 +435,6 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                  </div>
 
-                 {/* Signal cortex */}
                  <div className="space-y-6 mb-14 pt-8 border-t border-slate-50">
                     <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] font-mono ml-1">Signal_Cortex</h4>
                     <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-11 gap-4">
@@ -454,7 +450,6 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                  </div>
 
-                 {/* SYNCHRONISE BUTTON */}
                  <button 
                   onClick={() => { updateNeuralStatus({}); setIsHubOpen(false); }}
                   className="w-full py-6 bg-[#4f46e5] text-white rounded-[2.5rem] font-black text-[13px] uppercase tracking-[0.4em] shadow-[0_20px_50px_rgba(79,70,229,0.35)] hover:bg-[#4338ca] transition-all active:scale-95 mt-4"

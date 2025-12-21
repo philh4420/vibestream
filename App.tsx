@@ -32,7 +32,8 @@ import {
   setDoc,
   limit,
   deleteDoc,
-  where
+  where,
+  writeBatch
 } from 'firebase/firestore';
 import { uploadToCloudinary } from './services/cloudinary';
 import { ICONS } from './constants';
@@ -87,6 +88,7 @@ const App: React.FC = () => {
   const [coAuthors, setCoAuthors] = useState<{ id: string, name: string, avatar: string }[]>([]);
   const [userRegion, setUserRegion] = useState<Region>('en-GB');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isInitialLoad = useRef(true);
 
   const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -124,7 +126,19 @@ const App: React.FC = () => {
           
           const qNotif = query(collection(db, 'notifications'), where('toUserId', '==', user.uid), orderBy('timestamp', 'desc'), limit(50));
           onSnapshot(qNotif, (snap) => {
-            setNotifications(snap.docs.map(d => ({ id: d.id, ...d.data() } as AppNotification)));
+            const newNotifs = snap.docs.map(d => ({ id: d.id, ...d.data() } as AppNotification));
+            setNotifications(newNotifs);
+
+            // Handle Real-time Signal Toasts
+            if (!isInitialLoad.current) {
+              snap.docChanges().forEach(change => {
+                if (change.type === 'added') {
+                  const data = change.doc.data() as AppNotification;
+                  addToast(`New Signal: ${data.fromUserName} ${data.text}`, 'info');
+                }
+              });
+            }
+            isInitialLoad.current = false;
           });
         }
       } else {
@@ -275,10 +289,21 @@ const App: React.FC = () => {
   };
 
   const handleMarkRead = async () => {
-    if (!db || !auth.currentUser) return;
-    notifications.filter(n => !n.isRead).forEach(async n => {
-      await updateDoc(doc(db, 'notifications', n.id), { isRead: true });
+    if (!db || !auth.currentUser || notifications.length === 0) return;
+    const unread = notifications.filter(n => !n.isRead);
+    if (unread.length === 0) return;
+
+    const batch = writeBatch(db);
+    unread.forEach(n => {
+      batch.update(doc(db, 'notifications', n.id), { isRead: true });
     });
+
+    try {
+      await batch.commit();
+      addToast("Neural Alerts Synchronised", "success");
+    } catch (e) {
+      addToast("Atomic Sync Failed", "error");
+    }
   };
 
   const handleDeleteNotification = async (notifId: string) => {
