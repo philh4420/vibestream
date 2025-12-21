@@ -79,8 +79,15 @@ export interface AppNotification {
   timestamp: any;
 }
 
+export interface InlineReaction {
+  emoji: string;
+  count: number;
+  users: string[];
+}
+
 export interface Comment {
   id: string;
+  parentId?: string; // Support for nested frequency threads
   authorId: string;
   authorName: string;
   authorAvatar: string;
@@ -88,6 +95,7 @@ export interface Comment {
   likes: number;
   timestamp: any;
   likedBy?: string[];
+  depth?: number;
 }
 
 export interface Post {
@@ -115,6 +123,7 @@ export interface Post {
   audience?: SignalAudience;
   reactions?: Record<string, number>;
   bookmarkedBy?: string[];
+  inlineReactions?: Record<number, InlineReaction[]>; // Map of text block index to reactions
 }
 
 export interface Story {

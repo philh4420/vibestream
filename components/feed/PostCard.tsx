@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { Post, User, Comment } from '../../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Post, User, Comment, InlineReaction } from '../../types';
 import { ICONS } from '../../constants';
 import { db, auth } from '../../services/firebase';
 import { 
@@ -27,6 +27,14 @@ interface PostCardProps {
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
 }
 
+const FREQUENCY_COLORS = [
+  'from-indigo-500 to-blue-500',
+  'from-rose-500 to-pink-500',
+  'from-emerald-500 to-teal-500',
+  'from-amber-500 to-orange-500',
+  'from-violet-500 to-purple-500'
+];
+
 export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-GB', isAuthor = false, userData, addToast }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -35,12 +43,23 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [focusedCommentId, setFocusedCommentId] = useState<string | null>(null);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(post.bookmarkedBy?.includes(userData?.id || '') || false);
 
+  // Heatmap State
+  const textChunks = useMemo(() => {
+    return post.content.split(/([.!?]\s+)/).filter(Boolean).map((chunk, i, arr) => {
+       if (i % 2 !== 0) return null; // These are the delimiters
+       const next = arr[i+1];
+       return chunk + (next || '');
+    }).filter(Boolean);
+  }, [post.content]);
+
   useEffect(() => {
     if (showComments && db) {
-      const q = query(collection(db, 'posts', post.id, 'comments'), orderBy('timestamp', 'desc'), limit(50));
+      const q = query(collection(db, 'posts', post.id, 'comments'), orderBy('timestamp', 'asc'), limit(100));
       return onSnapshot(q, (snap) => {
         setComments(snap.docs.map(d => ({ id: d.id, ...d.data() } as Comment)));
       });
@@ -78,40 +97,57 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
     }
   };
 
+  const handleInlineReact = async (chunkIndex: number, emoji: string) => {
+    if (!db || !userData) return;
+    const postRef = doc(db, 'posts', post.id);
+    const currentReactions = post.inlineReactions || {};
+    const chunkReactions = currentReactions[chunkIndex] || [];
+    
+    const existing = chunkReactions.find(r => r.emoji === emoji);
+    let updated;
+    if (existing) {
+      if (existing.users.includes(userData.id)) {
+        updated = chunkReactions.map(r => r.emoji === emoji ? { ...r, count: r.count - 1, users: r.users.filter(u => u !== userData.id) } : r).filter(r => r.count > 0);
+      } else {
+        updated = chunkReactions.map(r => r.emoji === emoji ? { ...r, count: r.count + 1, users: [...r.users, userData.id] } : r);
+      }
+    } else {
+      updated = [...chunkReactions, { emoji, count: 1, users: [userData.id] }];
+    }
+
+    try {
+      await updateDoc(postRef, { [`inlineReactions.${chunkIndex}`]: updated });
+      addToast("Micro-Signal Synchronized", "success");
+    } catch (e) {
+      addToast("Heatmap Update Failed", "error");
+    }
+  };
+
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim() || !db || !userData) return;
     setIsSubmittingComment(true);
     try {
       const commentText = newComment.trim();
-      await addDoc(collection(db, 'posts', post.id, 'comments'), {
+      const payload: any = {
         authorId: userData.id,
         authorName: userData.displayName,
         authorAvatar: userData.avatarUrl,
         content: commentText,
         likes: 0,
-        timestamp: serverTimestamp()
-      });
+        timestamp: serverTimestamp(),
+        depth: replyingTo ? (comments.find(c => c.id === replyingTo)?.depth || 0) + 1 : 0
+      };
+      if (replyingTo) payload.parentId = replyingTo;
+
+      await addDoc(collection(db, 'posts', post.id, 'comments'), payload);
       
       await updateDoc(doc(db, 'posts', post.id), {
         comments: increment(1)
       });
 
-      if (post.authorId !== userData.id) {
-        await addDoc(collection(db, 'notifications'), {
-          type: 'comment',
-          fromUserId: userData.id,
-          fromUserName: userData.displayName,
-          fromUserAvatar: userData.avatarUrl,
-          toUserId: post.authorId,
-          targetId: post.id,
-          text: `echoed your signal: "${commentText.slice(0, 20)}..."`,
-          isRead: false,
-          timestamp: serverTimestamp()
-        });
-      }
-
       setNewComment('');
+      setReplyingTo(null);
       addToast("Comment broadcasted", "success");
     } catch (e) {
       addToast("Neural broadcast failed", "error");
@@ -120,25 +156,93 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
     }
   };
 
+  const commentThreads = useMemo(() => {
+    const map: Record<string, Comment[]> = { root: [] };
+    comments.forEach(c => {
+      const key = c.parentId || 'root';
+      if (!map[key]) map[key] = [];
+      map[key].push(c);
+    });
+    return map;
+  }, [comments]);
+
+  const renderComment = (comment: Comment) => {
+    const isFocused = focusedCommentId === comment.id;
+    const colorClass = FREQUENCY_COLORS[(comment.depth || 0) % FREQUENCY_COLORS.length];
+    
+    return (
+      <div key={comment.id} className={`relative flex flex-col gap-2 animate-in fade-in slide-in-from-left-2 duration-300 group/comment ${isFocused ? 'z-[600]' : ''}`}>
+        <div className="flex gap-4">
+          {/* Frequency Line */}
+          <div className={`w-1 rounded-full bg-gradient-to-b ${colorClass} opacity-40 group-hover/comment:opacity-100 transition-opacity`} />
+          
+          <div className="flex-1 min-w-0">
+             <div 
+               onClick={() => setFocusedCommentId(isFocused ? null : comment.id)}
+               className={`cursor-pointer transition-all duration-500 rounded-3xl p-4 ${isFocused ? 'bg-white shadow-2xl scale-105 border-2 border-indigo-500' : 'bg-slate-50 border border-slate-100 hover:border-slate-200'}`}
+             >
+                <div className="flex justify-between items-center mb-1">
+                  <div className="flex items-center gap-2">
+                    <img src={comment.authorAvatar} className="w-6 h-6 rounded-lg object-cover" alt="" />
+                    <p className="text-[10px] font-black text-slate-950 uppercase tracking-tight italic">{comment.authorName}</p>
+                  </div>
+                  <span className="text-[8px] font-black text-slate-300 font-mono">
+                    {comment.timestamp?.toDate ? comment.timestamp.toDate().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'NOW'}
+                  </span>
+                </div>
+                <p className="text-sm text-slate-700 font-medium leading-relaxed">{comment.content}</p>
+             </div>
+             
+             <div className="flex gap-4 mt-2 ml-1 items-center">
+                <button className="text-[9px] font-black uppercase text-slate-400 hover:text-rose-500 transition-colors">Pulse</button>
+                <button 
+                  onClick={() => setReplyingTo(comment.id)}
+                  className="text-[9px] font-black uppercase text-slate-400 hover:text-indigo-600 transition-colors"
+                >
+                  Echo
+                </button>
+                {commentThreads[comment.id] && (
+                  <span className="text-[8px] font-bold text-indigo-300 uppercase tracking-widest">{commentThreads[comment.id].length} Frequency Nodes</span>
+                )}
+             </div>
+             
+             {/* Recursive Replies */}
+             {commentThreads[comment.id] && (
+               <div className="mt-4 space-y-4 pl-4 border-l border-slate-100">
+                 {commentThreads[comment.id].map(reply => renderComment(reply))}
+               </div>
+             )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (isDeleting) return null;
 
   const isPulse = post.contentLengthTier === 'pulse';
   const isDeep = post.contentLengthTier === 'deep';
 
   return (
-    <div className={`group bg-white border-precision rounded-[2.5rem] overflow-hidden transition-all duration-500 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.08)] mb-8 ${isPulse ? 'border-l-8 border-l-indigo-600' : ''}`}>
+    <div className={`group bg-white border-precision rounded-[2.5rem] overflow-hidden transition-all duration-500 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.08)] mb-8 ${isPulse ? 'border-l-8 border-l-indigo-600' : ''} ${focusedCommentId ? 'relative' : ''}`}>
+      
+      {/* Neural Dialogue Overlay (Focus Mode) */}
+      {focusedCommentId && (
+        <div className="fixed inset-0 z-[550] flex items-center justify-center p-6 animate-in fade-in duration-500">
+           <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-md" onClick={() => setFocusedCommentId(null)}></div>
+        </div>
+      )}
+
       <div className="p-6 md:p-8">
         {/* Header Block with Multi-Node Support */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <div className="relative group/avatar cursor-pointer flex items-center">
-              {/* Primary Author */}
               <img 
                 src={post.authorAvatar} 
                 alt={post.authorName} 
                 className="w-12 h-12 md:w-14 md:h-14 rounded-[1.4rem] object-cover ring-4 ring-slate-50 transition-all group-hover/avatar:ring-indigo-100 z-10" 
               />
-              {/* Co-Authors Cluster */}
               {post.coAuthors && post.coAuthors.length > 0 && post.coAuthors.map((ca, idx) => (
                 <img 
                   key={ca.id}
@@ -154,9 +258,6 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
               <div className="flex items-center gap-1.5">
                 <h3 className="font-black text-slate-950 text-sm md:text-base tracking-tight leading-none italic uppercase">
                   {post.authorName}
-                  {post.coAuthors && post.coAuthors.length > 0 && (
-                    <span className="text-slate-300 font-bold ml-1 text-xs">+ {post.coAuthors.length} Co-Pilots</span>
-                  )}
                 </h3>
                 <ICONS.Verified />
               </div>
@@ -164,88 +265,73 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
                  <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest font-mono">
                    {post.createdAt}
                  </p>
-                 {/* Metadata Ghost Overlay */}
-                 {post.capturedStatus && (
-                   <span className="text-[8px] font-mono text-slate-300 uppercase tracking-tight hidden sm:inline">
-                     [{post.capturedStatus.emoji} {post.capturedStatus.message || 'Establish Signal'}]
-                   </span>
-                 )}
-                 {post.location && (
-                   <div className="flex items-center gap-1 px-2 py-0.5 bg-indigo-50 rounded-full">
-                     <span className="text-[8px] font-black text-indigo-600 uppercase tracking-tight">{post.location}</span>
-                   </div>
-                 )}
               </div>
             </div>
           </div>
           
-          <div className="relative">
-            <button 
-              onClick={() => setShowOptions(!showOptions)}
-              className="p-2.5 text-slate-300 hover:text-slate-900 transition-all hover:bg-slate-50 rounded-xl active:scale-90"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" /></svg>
-            </button>
-            {showOptions && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowOptions(false)}></div>
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-slate-100 z-20 overflow-hidden animate-in zoom-in-95 duration-200">
-                  <button onClick={handleToggleBookmark} className="w-full flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-50 transition-all text-[10px] font-black uppercase tracking-widest font-mono">
-                    <svg className={`w-4 h-4 ${isBookmarked ? 'fill-indigo-600 text-indigo-600' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" strokeWidth={2.5}/></svg>
-                    {isBookmarked ? 'De-Archive' : 'Vault_Signal'}
-                  </button>
-                  {isAuthor && (
-                    <button onClick={() => { setShowDeleteModal(true); setShowOptions(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-rose-500 hover:bg-rose-50 transition-all text-[10px] font-black uppercase tracking-widest font-mono border-t border-slate-50">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="m14.74 9-.344 12.142m-4.762 0L9.26 9m9.968-3.21c.342.053.682.107 1.022.166m-1.022-.165L18.16 19.673a2.244 2.077H8.084a2.244 2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" strokeWidth={2.5}/></svg>
-                      Purge_Signal
-                    </button>
+          <button 
+            onClick={() => setShowOptions(!showOptions)}
+            className="p-2.5 text-slate-300 hover:text-slate-900 transition-all hover:bg-slate-50 rounded-xl active:scale-90"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" /></svg>
+          </button>
+        </div>
+
+        {/* Heatmap Content Block */}
+        <div className={`mb-6 ${isPulse ? 'text-center' : ''}`}>
+          <div className={`text-slate-800 leading-relaxed font-medium tracking-tight transition-all duration-500 
+            ${isPulse ? 'text-2xl md:text-3xl font-black italic uppercase' : isDeep ? 'text-base md:text-lg border-l-2 border-slate-100 pl-6 py-2' : 'text-base md:text-lg'}`}>
+            {textChunks.map((chunk, idx) => {
+              const reactions = post.inlineReactions?.[idx] || [];
+              return (
+                <span key={idx} className="relative group/chunk inline-block">
+                  <span className="hover:bg-indigo-50/50 rounded-md transition-colors cursor-pointer p-0.5 inline">
+                    {chunk}
+                  </span>
+                  
+                  {/* Micro-Signal Indicator */}
+                  <div className="absolute -top-6 left-0 flex gap-1 opacity-0 group-hover/chunk:opacity-100 transition-opacity z-10">
+                     {['🔥', '❤️', '💡', '🚀'].map(emoji => (
+                       <button 
+                         key={emoji} 
+                         onClick={() => handleInlineReact(idx, emoji)}
+                         className="w-6 h-6 bg-white shadow-lg border border-slate-100 rounded-full flex items-center justify-center text-[10px] hover:scale-125 transition-transform"
+                       >
+                         {emoji}
+                       </button>
+                     ))}
+                  </div>
+
+                  {/* Reaction Badges */}
+                  {reactions.length > 0 && (
+                    <div className="inline-flex gap-1 ml-1 align-middle">
+                      {reactions.map(r => (
+                        <div key={r.emoji} className="flex items-center gap-0.5 bg-slate-100/80 px-1.5 py-0.5 rounded-full border border-white text-[9px] font-black">
+                          {r.emoji} <span className="text-[8px] opacity-60">{r.count}</span>
+                        </div>
+                      ))}
+                    </div>
                   )}
-                </div>
-              </>
-            )}
+                </span>
+              );
+            })}
           </div>
         </div>
 
-        {/* Dynamic Content Block */}
-        <div className={`mb-6 ${isPulse ? 'text-center' : ''}`}>
-          <p className={`text-slate-800 leading-relaxed font-medium whitespace-pre-wrap tracking-tight transition-all duration-500 
-            ${isPulse ? 'text-2xl md:text-3xl font-black italic uppercase' : isDeep ? 'text-base md:text-lg border-l-2 border-slate-100 pl-6 py-2' : 'text-base md:text-lg'}`}>
-            {post.content}
-          </p>
-          {isDeep && (
-            <div className="flex items-center gap-2 mt-4 opacity-40">
-              <span className="text-[10px] font-mono font-black uppercase">Deep Dive Packet</span>
-              <div className="flex-1 h-px bg-slate-200" />
-            </div>
-          )}
-        </div>
-
-        {/* Media Carousel Block */}
+        {/* Media Block */}
         {post.media && post.media.length > 0 && (
           <div className="relative rounded-[2rem] overflow-hidden mb-6 bg-slate-50 border-precision shadow-inner group/carousel">
             <div className="flex transition-transform duration-500 ease-out" style={{ transform: `translateX(-${currentMediaIndex * 100}%)` }}>
               {post.media.map((item, idx) => (
                 <div key={idx} className="min-w-full flex items-center justify-center bg-slate-950 aspect-video md:aspect-[16/9]">
                   {item.type === 'image' ? (
-                    <img 
-                      src={item.url} 
-                      alt="" 
-                      className="w-full h-full object-cover" 
-                      loading="lazy" 
-                    />
+                    <img src={item.url} alt="" className="w-full h-full object-cover" loading="lazy" />
                   ) : (
                     <video src={item.url} className="w-full h-full object-cover" controls playsInline />
                   )}
                 </div>
               ))}
             </div>
-            {post.media.length > 1 && (
-               <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-1.5 z-10">
-                 {post.media.map((_, idx) => (
-                   <div key={idx} className={`h-1 rounded-full transition-all duration-300 ${currentMediaIndex === idx ? 'w-6 bg-white' : 'w-1.5 bg-white/40'}`} />
-                 ))}
-               </div>
-            )}
           </div>
         )}
 
@@ -254,9 +340,9 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
           <div className="flex gap-6 md:gap-10">
             <button 
               onClick={(e) => { e.stopPropagation(); onLike(post.id); }} 
-              className={`flex items-center gap-2.5 transition-all touch-active group/btn ${post.isLiked ? 'text-rose-500 scale-105' : 'text-slate-400 hover:text-rose-500'}`}
+              className={`flex items-center gap-2.5 transition-all touch-active group/btn ${post.isLiked ? 'text-rose-500' : 'text-slate-400'}`}
             >
-              <div className={`p-2.5 rounded-full transition-all duration-300 ${post.isLiked ? 'bg-rose-50 shadow-lg shadow-rose-100' : 'group-hover/btn:bg-rose-50'}`}>
+              <div className={`p-2.5 rounded-full transition-all duration-300 ${post.isLiked ? 'bg-rose-50 shadow-lg' : 'group-hover/btn:bg-rose-50'}`}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill={post.isLiked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
                   <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
                 </svg>
@@ -266,9 +352,9 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
 
             <button 
               onClick={() => setShowComments(!showComments)}
-              className={`flex items-center gap-2.5 transition-all touch-active group/btn ${showComments ? 'text-indigo-600' : 'text-slate-400 hover:text-indigo-600'}`}
+              className={`flex items-center gap-2.5 transition-all touch-active group/btn ${showComments ? 'text-indigo-600' : 'text-slate-400'}`}
             >
-              <div className={`p-2.5 rounded-full transition-all duration-300 ${showComments ? 'bg-indigo-50 shadow-lg shadow-indigo-100' : 'group-hover/btn:bg-indigo-50'}`}>
+              <div className={`p-2.5 rounded-full transition-all duration-300 ${showComments ? 'bg-indigo-50 shadow-lg' : 'group-hover/btn:bg-indigo-50'}`}>
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 0 1-.923 1.785 0.596.596 0 0 0 .21.685 0.59.59 0 0 0 .44.03 6.041 6.041 0 0 0 2.986-1.334c.451.06.91.09 1.378.09Z" /></svg>
               </div>
               <span className="text-sm font-black tracking-tighter">{post.comments.toLocaleString(locale)}</span>
@@ -279,54 +365,43 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
         {/* COLLAPSIBLE COMMENT SECTION */}
         {showComments && (
           <div className="mt-8 pt-8 border-t border-slate-100 animate-in slide-in-from-top-4 duration-500">
-             <form onSubmit={handleSubmitComment} className="flex items-center gap-4 mb-8">
-                <img src={userData?.avatarUrl} className="w-10 h-10 rounded-xl object-cover shrink-0" alt="" />
-                <div className="flex-1 relative">
-                   <input 
-                     type="text" 
-                     value={newComment}
-                     onChange={(e) => setNewComment(e.target.value)}
-                     placeholder="Echo your frequency..."
-                     className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 text-sm font-bold focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300"
-                   />
+             <form onSubmit={handleSubmitComment} className="flex flex-col gap-4 mb-8">
+                {replyingTo && (
+                  <div className="flex items-center justify-between bg-indigo-50 px-4 py-2 rounded-xl text-[10px] font-black text-indigo-600 uppercase italic">
+                    Replying to neural node...
+                    <button onClick={() => setReplyingTo(null)} className="opacity-40 hover:opacity-100">Cancel</button>
+                  </div>
+                )}
+                <div className="flex items-center gap-4">
+                  <img src={userData?.avatarUrl} className="w-10 h-10 rounded-xl object-cover shrink-0" alt="" />
+                  <div className="flex-1 relative">
+                     <input 
+                       type="text" 
+                       value={newComment}
+                       onChange={(e) => setNewComment(e.target.value)}
+                       placeholder={replyingTo ? "Echo your frequency..." : "Broadcast initial thought..."}
+                       className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 text-sm font-bold focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300"
+                     />
+                  </div>
+                  <button 
+                    disabled={!newComment.trim() || isSubmittingComment}
+                    className="p-3.5 bg-slate-900 text-white rounded-xl shadow-lg hover:bg-black transition-all active:scale-95 disabled:opacity-30"
+                  >
+                     {isSubmittingComment ? (
+                       <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                     ) : (
+                       <svg className="w-5 h-5 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                     )}
+                  </button>
                 </div>
-                <button 
-                  disabled={!newComment.trim() || isSubmittingComment}
-                  className="p-3.5 bg-slate-900 text-white rounded-xl shadow-lg hover:bg-black transition-all active:scale-95 disabled:opacity-30"
-                >
-                   {isSubmittingComment ? (
-                     <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                   ) : (
-                     <svg className="w-5 h-5 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
-                   )}
-                </button>
              </form>
 
-             <div className="space-y-6">
-                {comments.length > 0 ? (
-                  comments.map(comment => (
-                    <div key={comment.id} className="flex gap-4 animate-in fade-in slide-in-from-left-2 duration-300 group/comment">
-                       <img src={comment.authorAvatar} className="w-9 h-9 rounded-lg object-cover shrink-0 border border-slate-100" alt="" />
-                       <div className="flex-1 min-w-0">
-                          <div className="bg-slate-50 p-4 rounded-2xl rounded-tl-none border border-slate-100">
-                             <div className="flex justify-between items-center mb-1">
-                               <p className="text-[11px] font-black text-slate-950 uppercase tracking-tight italic">{comment.authorName}</p>
-                               <span className="text-[8px] font-black text-slate-300 font-mono">
-                                 {comment.timestamp?.toDate ? comment.timestamp.toDate().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'NOW'}
-                               </span>
-                             </div>
-                             <p className="text-sm text-slate-700 font-medium leading-relaxed">{comment.content}</p>
-                          </div>
-                          <div className="flex gap-4 mt-2 ml-1">
-                             <button className="text-[9px] font-black uppercase text-slate-400 hover:text-rose-500 transition-colors">Pulse</button>
-                             <button className="text-[9px] font-black uppercase text-slate-400 hover:text-indigo-600 transition-colors">Thread</button>
-                          </div>
-                       </div>
-                    </div>
-                  ))
+             <div className="space-y-8">
+                {commentThreads.root.length > 0 ? (
+                  commentThreads.root.map(comment => renderComment(comment))
                 ) : (
                   <div className="py-10 text-center opacity-30">
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] font-mono italic">Awaiting first echo...</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] font-mono italic">Awaiting first frequency echo...</p>
                   </div>
                 )}
              </div>
@@ -334,31 +409,18 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, locale = 'en-G
         )}
       </div>
 
-      {/* PURGE CONFIRMATION MODAL */}
+      {/* Options Menu & Modals */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-2xl" onClick={() => setShowDeleteModal(false)}></div>
-          <div className="relative bg-white w-full max-w-sm rounded-[3rem] p-10 shadow-2xl border border-white/10 animate-in zoom-in-95 duration-500">
-             <div className="w-20 h-20 bg-rose-50 rounded-[2.5rem] flex items-center justify-center mb-8 mx-auto text-rose-500">
-                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
-             </div>
+          <div className="relative bg-white w-full max-w-sm rounded-[3rem] p-10 shadow-2xl border border-white/10">
              <div className="text-center space-y-3 mb-10">
                <h3 className="text-2xl font-black text-slate-950 tracking-tighter uppercase italic leading-none">PROTOCOL_ALERT</h3>
-               <p className="text-xs text-slate-500 font-bold leading-relaxed px-4">Terminate this transmission sequence from the grid permanently? This action is immutable.</p>
+               <p className="text-xs text-slate-500 font-bold leading-relaxed px-4">Terminate this transmission sequence? This action is immutable.</p>
              </div>
              <div className="flex flex-col gap-3">
-                <button 
-                  onClick={handlePurgeSignal}
-                  className="w-full py-5 bg-rose-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-xl shadow-rose-100 hover:bg-rose-700 active:scale-95 transition-all"
-                >
-                  CONFIRM_PURGE
-                </button>
-                <button 
-                  onClick={() => setShowDeleteModal(false)}
-                  className="w-full py-5 bg-slate-50 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-slate-100 active:scale-95 transition-all"
-                >
-                  ABORT_ACTION
-                </button>
+                <button onClick={handlePurgeSignal} className="w-full py-5 bg-rose-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-xl">CONFIRM_PURGE</button>
+                <button onClick={() => setShowDeleteModal(false)} className="w-full py-5 bg-slate-50 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em]">ABORT_ACTION</button>
              </div>
           </div>
         </div>
