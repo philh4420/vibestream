@@ -20,53 +20,61 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ activeTab, setActiveTa
   const currentTitle = tabs.find(t => t.id === activeTab)?.label || 'OVERVIEW';
 
   return (
-    <div className="w-full bg-white rounded-full px-4 md:px-6 py-3 flex items-center justify-between shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 max-w-full overflow-x-auto no-scrollbar mb-8 animate-in slide-in-from-top-4 duration-700">
-      {/* Branding Section */}
-      <div className="flex items-center shrink-0">
-        <div className="w-12 h-12 md:w-14 md:h-14 bg-slate-950 rounded-full flex items-center justify-center text-white font-black italic text-2xl md:text-3xl shadow-xl active:scale-95 transition-transform cursor-pointer">
-          V
-        </div>
-        <div className="ml-5 md:ml-8 flex flex-col justify-center">
-          <h1 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-slate-950 leading-none">
-            {activeTab === 'overview' ? 'OVERVIEW' : currentTitle}
-          </h1>
-          <p className="text-[9px] md:text-[10px] font-mono font-bold text-slate-300 uppercase tracking-[0.4em] mt-1.5 md:mt-2 whitespace-nowrap opacity-80">
-            VIBESTREAM_CITADEL_OS_V5.2.LTS
-          </p>
-        </div>
-      </div>
-
-      {/* Navigation & Utilities */}
-      <div className="flex items-center gap-4 ml-6">
-        <nav className="flex items-center p-1.5 bg-slate-50/80 rounded-full border border-slate-100 shadow-inner">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2.5 px-5 md:px-7 py-2.5 md:py-3.5 rounded-full transition-all duration-500 relative group active:scale-95 ${
-                activeTab === tab.id 
-                  ? 'bg-slate-950 text-white shadow-[0_10px_25px_rgba(0,0,0,0.15)]' 
-                  : 'text-slate-400 hover:text-slate-900'
-              }`}
-            >
-              <div className={`shrink-0 transition-transform duration-500 ${activeTab === tab.id ? 'scale-110' : 'group-hover:scale-110'}`}>
-                <tab.icon />
-              </div>
-              <span className="text-[10px] md:text-[11px] font-black italic tracking-widest hidden lg:block">
-                {tab.label}
-              </span>
-              
-              {/* Active Indicator Underline */}
-              {activeTab === tab.id && (
-                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-7 h-1.5 bg-[#4F46E5] rounded-full animate-in zoom-in duration-300" />
-              )}
-            </button>
-          ))}
-        </nav>
+    <div className="w-full max-w-7xl mx-auto px-2 md:px-4 py-4 sticky top-0 z-[100] animate-in fade-in slide-in-from-top-2 duration-500">
+      <div className="bg-white rounded-full border border-slate-100 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] px-3 md:px-6 py-2.5 flex items-center justify-between gap-4">
         
-        <button className="p-3.5 text-slate-300 hover:text-slate-950 transition-colors hover:bg-slate-50 rounded-full hidden sm:block active:scale-90">
-          <ICONS.Search />
-        </button>
+        {/* Branding & Title Section */}
+        <div className="flex items-center gap-3 md:gap-5 shrink-0">
+          <div className="w-10 h-10 md:w-11 md:h-11 bg-slate-950 rounded-full flex items-center justify-center text-white font-black italic text-xl shadow-lg shrink-0">
+            V
+          </div>
+          <div className="flex flex-col">
+            <h1 className="text-xl md:text-2xl font-black italic uppercase tracking-tighter text-slate-950 leading-none">
+              {activeTab === 'overview' ? 'OVERVIEW' : currentTitle}
+            </h1>
+            <p className="text-[7px] md:text-[8px] font-mono font-bold text-slate-300 uppercase tracking-[0.4em] mt-1 leading-none whitespace-nowrap">
+              VIBESTREAM_CITADEL_OS_V5.2.LTS
+            </p>
+          </div>
+        </div>
+
+        {/* Navigation Section */}
+        <div className="flex items-center gap-1 md:gap-3 overflow-x-auto no-scrollbar">
+          <nav className="flex items-center gap-1">
+            {tabs.map(tab => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-3 md:px-5 py-2 md:py-2.5 rounded-full transition-all duration-300 relative active:scale-95 shrink-0 ${
+                    isActive 
+                      ? 'bg-slate-950 text-white shadow-xl shadow-slate-200' 
+                      : 'text-slate-400 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                >
+                  <div className={`shrink-0 ${isActive ? 'scale-100' : 'scale-90 opacity-70'}`}>
+                    <tab.icon />
+                  </div>
+                  <span className={`text-[9px] md:text-[10px] font-black italic tracking-widest hidden sm:block ${isActive ? 'opacity-100' : 'opacity-70'}`}>
+                    {tab.label}
+                  </span>
+                  
+                  {/* Indicator Dot for Active */}
+                  {isActive && (
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-indigo-500 rounded-full md:hidden" />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+          
+          <div className="w-px h-6 bg-slate-100 mx-1 hidden md:block" />
+          
+          <button className="p-2.5 text-slate-300 hover:text-slate-950 transition-colors hover:bg-slate-50 rounded-full active:scale-90 shrink-0">
+            <ICONS.Search />
+          </button>
+        </div>
       </div>
     </div>
   );

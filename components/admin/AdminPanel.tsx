@@ -79,9 +79,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale, system
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] animate-in fade-in duration-1000 max-w-[3840px] mx-auto flex flex-col gap-6 py-6 px-4 md:px-8">
+    <div className="min-h-screen bg-[#f8fafc] animate-in fade-in duration-1000 max-w-[3840px] mx-auto flex flex-col pb-24">
       
-      {/* 1. MASTER COMMAND HEADER (Refined Component) */}
+      {/* 1. MASTER COMMAND HEADER */}
       <AdminHeader 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
@@ -89,7 +89,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale, system
       />
 
       {/* 2. OPERATIONAL DATA VIEWPORT */}
-      <div className="flex-1 pb-24 overflow-y-auto no-scrollbar scroll-container">
+      <div className="flex-1 overflow-y-auto no-scrollbar scroll-container px-4 md:px-8">
         <div className="max-w-[2560px] mx-auto">
           {renderContent()}
         </div>
