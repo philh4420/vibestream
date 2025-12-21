@@ -19,7 +19,6 @@ export interface SystemSettings {
   minTrustTier: 'Alpha' | 'Beta' | 'Gamma';
   lastUpdatedBy: string;
   updatedAt: string;
-  // 2026 Feature Control Matrix
   featureFlags: Record<string, boolean>;
 }
 
@@ -38,15 +37,11 @@ export interface User {
   badges: string[];
   isSuspended?: boolean;
   verifiedHuman?: boolean;
-  
-  // 2026 Identity Extensions
   dob?: string;
   pronouns?: string;
   website?: string;
   tags?: string[];
   trustTier?: 'Alpha' | 'Beta' | 'Gamma';
-
-  // Advanced Social Hub Data
   education?: string;
   occupation?: string;
   relationshipStatus?: 'Single' | 'Partnered' | 'Married' | 'Encoded' | 'Private';
@@ -65,6 +60,17 @@ export interface User {
     date: string;
     icon: string;
   }[];
+}
+
+export interface Story {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  coverUrl: string;
+  timestamp: any;
+  expiresAt: any;
+  isActive: boolean;
 }
 
 export interface Post {
@@ -123,17 +129,15 @@ export enum AppRoute {
   PRIVACY = 'privacy',
   TERMS = 'terms',
   COOKIES = 'cookies',
-  
-  // 2026 Expanded Protocols
-  MESH = 'mesh',             // Friends
-  CLUSTERS = 'clusters',     // Groups
-  STREAM_GRID = 'streams',   // Watch/Video
-  TEMPORAL = 'temporal',     // Memories
-  SAVED = 'saved',           // Saved
-  VERIFIED_NODES = 'nodes',  // Pages
-  GATHERINGS = 'gatherings', // Events
-  SIMULATIONS = 'sims',      // Gaming
-  RESILIENCE = 'resilience'  // Fundraisers
+  MESH = 'mesh',
+  CLUSTERS = 'clusters',
+  STREAM_GRID = 'streams',
+  TEMPORAL = 'temporal',
+  SAVED = 'saved',
+  VERIFIED_NODES = 'nodes',
+  GATHERINGS = 'gatherings',
+  SIMULATIONS = 'sims',
+  RESILIENCE = 'resilience'
 }
 
 export interface ToastMessage {
