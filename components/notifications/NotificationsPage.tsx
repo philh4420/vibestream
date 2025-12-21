@@ -1,9 +1,9 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { AppNotification, Region, User } from '../../types';
 import { PULSE_FREQUENCIES, ICONS } from '../../constants';
 import { db } from '../../services/firebase';
-import { doc, deleteDoc, writeBatch, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, writeBatch } from 'firebase/firestore';
 
 interface NotificationsPageProps {
   notifications: AppNotification[];
@@ -22,11 +22,27 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
   locale,
   userData
 }) => {
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSyncAll = async () => {
+    setIsSyncing(true);
+    try {
+      await onMarkRead();
+      addToast("Neural Handshakes Synchronized", "success");
+    } catch (e) {
+      addToast("Sync Protocol Interrupted", "error");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const handlePurgeAll = async () => {
-    if (!db || !userData || notifications.length === 0) return;
-    if (!confirm("Initiate total buffer purge? This will remove all alerts from the local cluster.")) return;
+    if (!db || !userData || notifications.length === 0) {
+      addToast("Local Buffer Empty", "info");
+      return;
+    }
     
+    // 2026 Protocol: No browser confirms. We execute and notify.
     const batch = writeBatch(db);
     notifications.forEach(n => {
       batch.delete(doc(db, 'notifications', n.id));
@@ -34,9 +50,9 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
     
     try {
       await batch.commit();
-      addToast("Local Buffer Purged", "success");
+      addToast("Local Notification Cluster Purged", "success");
     } catch (e) {
-      addToast("Purge Protocol Failed", "error");
+      addToast("Purge Protocol Failed: Buffer Locked", "error");
     }
   };
 
@@ -55,16 +71,17 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono mt-3">Monitoring Grid Handshakes • Buffer Status: {notifications.length} Nodes</p>
         </div>
         
-        <div className="flex gap-3">
+        <div className="flex gap-3 w-full md:w-auto">
            <button 
-             onClick={onMarkRead}
-             className="px-6 py-3.5 bg-white border border-slate-200 text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-sm hover:shadow-md transition-all active:scale-95"
+             onClick={handleSyncAll}
+             disabled={isSyncing}
+             className="flex-1 md:flex-none px-6 py-4 bg-white border border-slate-200 text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-sm hover:shadow-md transition-all active:scale-95 disabled:opacity-50"
            >
-             Sync_All_Read
+             {isSyncing ? 'Syncing...' : 'Sync_All_Read'}
            </button>
            <button 
              onClick={handlePurgeAll}
-             className="px-6 py-3.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-100 transition-all active:scale-95"
+             className="flex-1 md:flex-none px-6 py-4 bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-600 hover:text-white transition-all active:scale-95 shadow-sm"
            >
              Purge_Buffer
            </button>
@@ -120,9 +137,10 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                   </div>
                   <button 
                     onClick={(e) => { e.stopPropagation(); onDelete(notif.id); }}
-                    className="p-4 bg-slate-50 text-rose-500 rounded-2xl hover:bg-rose-50 transition-all active:scale-90 opacity-0 group-hover:opacity-100 shadow-sm"
+                    className="p-5 md:p-6 bg-slate-50 text-rose-500 rounded-2xl hover:bg-rose-50 transition-all active:scale-90 opacity-0 group-hover:opacity-100 shadow-sm"
+                    title="Purge Signal"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" /></svg>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={4} viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" /></svg>
                   </button>
                 </div>
               </div>
