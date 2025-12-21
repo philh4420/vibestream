@@ -16,7 +16,7 @@ import { SinglePostView } from './components/feed/SinglePostView';
 import { PrivacyPage } from './components/legal/PrivacyPage';
 import { TermsPage } from './components/legal/TermsPage';
 import { CookiesPage } from './components/legal/CookiesPage';
-import { AppRoute, Post, ToastMessage, Region, User as VibeUser, SystemSettings, LiveStream, AppNotification, SignalAudience } from './types';
+import { AppRoute, Post, ToastMessage, Region, User as VibeUser, SystemSettings, LiveStream, AppNotification, SignalAudience, PresenceStatus } from './types';
 import { db, auth } from './services/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { 
@@ -37,7 +37,7 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { uploadToCloudinary } from './services/cloudinary';
-import { ICONS } from './constants';
+import { ICONS, PRESENCE_CONFIG } from './constants';
 
 const SESSION_KEY = 'vibestream_session_2026';
 const ROUTE_KEY = 'vibestream_active_route';
@@ -89,6 +89,10 @@ const App: React.FC = () => {
   const [postAudience, setPostAudience] = useState<SignalAudience>('global');
   
   const [coAuthors, setCoAuthors] = useState<{ id: string, name: string, avatar: string }[]>([]);
+  const [isCoPilotSelectorOpen, setIsCoPilotSelectorOpen] = useState(false);
+  const [availableFriends, setAvailableFriends] = useState<VibeUser[]>([]);
+  const [searchFriendQuery, setSearchFriendQuery] = useState('');
+
   const [userRegion, setUserRegion] = useState<Region>('en-GB');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isInitialLoad = useRef(true);
@@ -142,7 +146,6 @@ const App: React.FC = () => {
             const newNotifs = snap.docs.map(d => ({ id: d.id, ...d.data() } as AppNotification));
             setNotifications(newNotifs);
 
-            // Handle Real-time Signal Toasts
             if (!isInitialLoad.current) {
               snap.docChanges().forEach(change => {
                 if (change.type === 'added') {
@@ -152,6 +155,15 @@ const App: React.FC = () => {
               });
             }
             isInitialLoad.current = false;
+          });
+
+          // Fetch Synced Nodes (Friends) for Co-Pilot
+          const qFriends = query(collection(db, 'users'), limit(50));
+          onSnapshot(qFriends, (snap) => {
+            setAvailableFriends(snap.docs
+              .map(d => ({ id: d.id, ...d.data() } as VibeUser))
+              .filter(u => u.id !== user.uid)
+            );
           });
         }
       } else {
@@ -174,28 +186,12 @@ const App: React.FC = () => {
       } as Post));
       setPosts(fetchedPosts);
       
-      // Update selectedPost if it exists in the new snapshot
       if (selectedPost) {
         const updated = fetchedPosts.find(p => p.id === selectedPost.id);
         if (updated) setSelectedPost(updated);
       }
     });
   }, [isAuthenticated, selectedPost?.id]);
-
-  const fetchCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      addToast("Geospatial locking unavailable", "error");
-      return;
-    }
-    addToast("Searching for local node...", "info");
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setPostLocation(`NODE_GB_CENTRAL`);
-        addToast("Geospatial coordinates locked", "success");
-      },
-      () => addToast("Signal interference: Location lock failed", "error")
-    );
-  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -308,44 +304,25 @@ const App: React.FC = () => {
     }
   };
 
-  const handleMarkRead = async () => {
-    if (!db || !auth.currentUser || notifications.length === 0) return;
-    const unread = notifications.filter(n => !n.isRead);
-    if (unread.length === 0) return;
-
-    const batch = writeBatch(db);
-    unread.forEach(n => {
-      batch.update(doc(db, 'notifications', n.id), { isRead: true });
-    });
-
-    try {
-      await batch.commit();
-      addToast("Neural Alerts Synchronised", "success");
-    } catch (e) {
-      addToast("Atomic Sync Failed", "error");
-    }
-  };
-
-  const handleDeleteNotification = async (notifId: string) => {
-    if (!db || !auth.currentUser) return;
-    try {
-      await deleteDoc(doc(db, 'notifications', notifId));
-      addToast("Notification Cluster Purged", "success");
-    } catch (e) {
-      addToast("Purge Protocol Failed", "error");
-    }
-  };
-
-  const toggleCoAuthorSim = () => {
-    if (coAuthors.length > 0) {
-      setCoAuthors([]);
+  const toggleCoAuthor = (friend: VibeUser) => {
+    const isAlreadyAdded = coAuthors.find(ca => ca.id === friend.id);
+    if (isAlreadyAdded) {
+      setCoAuthors(prev => prev.filter(ca => ca.id !== friend.id));
+      addToast(`Co-pilot ${friend.displayName} De-synchronized`, "info");
     } else {
-      setCoAuthors([
-        { id: 'sim_1', name: 'Citadel_Ghost', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ghost' }
-      ]);
-      addToast("Co-pilot Invited to Session", "success");
+      if (coAuthors.length >= 3) {
+        addToast("Mesh Overload: Maximum 3 Co-pilots allowed", "error");
+        return;
+      }
+      setCoAuthors(prev => [...prev, { id: friend.id, name: friend.displayName, avatar: friend.avatarUrl }]);
+      addToast(`Neural Handshake Established with ${friend.displayName}`, "success");
     }
   };
+
+  const filteredFriends = availableFriends.filter(f => 
+    f.displayName.toLowerCase().includes(searchFriendQuery.toLowerCase()) ||
+    f.username.toLowerCase().includes(searchFriendQuery.toLowerCase())
+  );
 
   if (isLoading) return <div className="h-full w-full flex items-center justify-center font-black animate-pulse text-indigo-600 uppercase italic">Syncing_Neural_Buffer...</div>;
   if (!isAuthenticated) return <LandingPage onEnter={() => setIsAuthenticated(true)} systemSettings={systemSettings} />;
@@ -355,7 +332,7 @@ const App: React.FC = () => {
       activeRoute={activeRoute} onNavigate={handleNavigate} 
       onOpenCreate={() => setIsCreateModalOpen(true)}
       onLogout={handleLogout} userData={userData} notifications={notifications}
-      onMarkRead={handleMarkRead} onDeleteNotification={handleDeleteNotification} userRole={userData?.role} currentRegion={userRegion}
+      onMarkRead={() => {}} onDeleteNotification={() => {}} userRole={userData?.role} currentRegion={userRegion}
       onRegionChange={setUserRegion}
     >
       {activeRoute === AppRoute.FEED && (
@@ -385,8 +362,8 @@ const App: React.FC = () => {
       {activeRoute === AppRoute.NOTIFICATIONS && (
         <NotificationsPage 
           notifications={notifications} 
-          onDelete={handleDeleteNotification} 
-          onMarkRead={handleMarkRead} 
+          onDelete={() => {}} 
+          onMarkRead={() => {}} 
           addToast={addToast} 
           locale={userRegion}
           userData={userData}
@@ -429,24 +406,24 @@ const App: React.FC = () => {
               <div className="flex items-start gap-5 mb-8">
                 <div className="relative">
                   <img src={userData?.avatarUrl} className="w-12 h-12 rounded-[1.2rem] object-cover border border-slate-100 shadow-sm" alt="" />
-                  {coAuthors.map((ca, i) => (
-                    <img 
-                      key={ca.id} 
-                      src={ca.avatar} 
-                      className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full border-2 border-white shadow-lg" 
-                      style={{ transform: `translateX(${i * 12}px)` }}
-                      alt="" 
-                    />
-                  ))}
+                  <div className="flex -space-x-3 absolute -bottom-2 -right-4">
+                    {coAuthors.map((ca) => (
+                      <img 
+                        key={ca.id} 
+                        src={ca.avatar} 
+                        className="w-8 h-8 rounded-full border-2 border-white shadow-lg" 
+                        alt="" 
+                      />
+                    ))}
+                  </div>
                 </div>
                 <div className="flex-1">
-                   <div className="flex gap-2 mb-3">
+                   <div className="flex flex-wrap gap-2 mb-3">
                      <button onClick={() => setPostAudience(postAudience === 'global' ? 'mesh' : 'global')} className="px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-xl flex items-center gap-2 text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:bg-white transition-all shadow-sm">
                         {postAudience.toUpperCase()}_GRID
                      </button>
-                     {postLocation && <button onClick={() => setPostLocation(null)} className="px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-2 text-[10px] font-black text-emerald-600 uppercase tracking-widest"> {postLocation} </button>}
-                     <button onClick={toggleCoAuthorSim} className={`px-3 py-1.5 border rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${coAuthors.length > 0 ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-slate-200 text-slate-400'}`}>
-                        {coAuthors.length > 0 ? 'CO-PILOT_ACTIVE' : 'INVITE_CO-PILOT'}
+                     <button onClick={() => setIsCoPilotSelectorOpen(true)} className={`px-3 py-1.5 border rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${coAuthors.length > 0 ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-slate-200 text-slate-400 hover:border-indigo-400'}`}>
+                        {coAuthors.length > 0 ? `${coAuthors.length}_PILOTS_SYNCED` : 'INVITE_CO-PILOT'}
                      </button>
                    </div>
                    <textarea value={newPostText} onChange={(e) => setNewPostText(e.target.value)} placeholder="Broadcast your frequency..." className="w-full h-32 bg-transparent border-none p-0 text-xl font-medium placeholder:text-slate-200 focus:ring-0 resize-none transition-all" />
@@ -467,13 +444,73 @@ const App: React.FC = () => {
                <div className="flex items-center justify-between mb-8">
                   <div className="flex gap-3">
                     <button onClick={() => fileInputRef.current?.click()} className="p-4 bg-white border border-slate-200 rounded-2xl text-slate-500 hover:text-indigo-600 transition-all active:scale-90"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Z" /></svg></button>
-                    <button onClick={fetchCurrentLocation} className={`p-4 border rounded-2xl transition-all active:scale-90 ${postLocation ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200 text-slate-500 hover:text-emerald-600'}`}><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 115 0z" /></svg></button>
                   </div>
                </div>
-               {/* Fixed: Removed duplicate type attribute and unused check-unused marker */}
                <input type="file" ref={fileInputRef} multiple className="hidden" accept="image/*,video/*" onChange={handleFileChange} />
                <button onClick={handleCreatePost} disabled={isUploading || (!newPostText.trim() && selectedFiles.length === 0)} className="w-full py-6 md:py-8 bg-indigo-600 text-white rounded-[2rem] md:rounded-[2.5rem] font-black text-sm md:text-base uppercase tracking-[0.4em] shadow-2xl hover:bg-indigo-700 transition-all active:scale-[0.98] flex items-center justify-center gap-4 italic">{isUploading ? 'SYNCHRONIZING...' : 'Broadcast_Signal'}</button>
             </div>
+
+            {/* NEURAL CO-PILOT SELECTION OVERLAY */}
+            {isCoPilotSelectorOpen && (
+              <div className="absolute inset-0 z-[100] flex flex-col bg-white animate-in slide-in-from-right-10 duration-500">
+                <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+                   <div>
+                     <h3 className="text-xl font-black text-slate-900 tracking-tighter uppercase italic">Neural_Handshake</h3>
+                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Synchronise with Peer Nodes</p>
+                   </div>
+                   <button onClick={() => setIsCoPilotSelectorOpen(false)} className="p-3 bg-slate-100 rounded-xl hover:bg-indigo-600 hover:text-white transition-all">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M5 13l4 4L19 7" /></svg>
+                   </button>
+                </div>
+                <div className="p-6 bg-slate-50">
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      placeholder="Search Synced Nodes..." 
+                      value={searchFriendQuery}
+                      onChange={(e) => setSearchFriendQuery(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
+                    />
+                    <div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300"><ICONS.Search /></div>
+                  </div>
+                </div>
+                <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-2">
+                  {filteredFriends.map(friend => {
+                    const isSelected = !!coAuthors.find(ca => ca.id === friend.id);
+                    return (
+                      <button 
+                        key={friend.id}
+                        onClick={() => toggleCoAuthor(friend)}
+                        className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all border ${isSelected ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-white border-slate-100 hover:border-indigo-100'}`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="relative">
+                             <img src={friend.avatarUrl} className="w-12 h-12 rounded-xl object-cover" alt="" />
+                             <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white ${friend.presenceStatus === 'Online' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
+                          </div>
+                          <div className="text-left">
+                            <p className="font-black text-slate-900 text-[13px] uppercase tracking-tight">{friend.displayName}</p>
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">ID: {friend.id.slice(0, 8).toUpperCase()}</p>
+                          </div>
+                        </div>
+                        <div className={`w-6 h-6 rounded-lg flex items-center justify-center border-2 transition-all ${isSelected ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-100 bg-slate-50'}`}>
+                           {isSelected && <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={4}><path d="M5 13l4 4L19 7" /></svg>}
+                        </div>
+                      </button>
+                    );
+                  })}
+                  {filteredFriends.length === 0 && (
+                    <div className="py-20 text-center opacity-30">
+                       <p className="text-[10px] font-black uppercase tracking-[0.4em] font-mono italic">No synchronized nodes found.</p>
+                    </div>
+                  )}
+                </div>
+                <div className="p-8 border-t border-slate-50 bg-slate-50/50">
+                  <button onClick={() => setIsCoPilotSelectorOpen(false)} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-xl hover:bg-black transition-all">Establish_Synchronisation</button>
+                </div>
+              </div>
+            )}
+
             {isUploading && <div className="absolute inset-x-0 bottom-0 h-1.5 bg-indigo-50 overflow-hidden"><div className="h-full bg-indigo-600 animate-[pulse_2s_infinite] w-full origin-left" /></div>}
           </div>
         </div>
