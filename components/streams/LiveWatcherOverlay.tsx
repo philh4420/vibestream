@@ -24,66 +24,98 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
 
   useEffect(() => {
     let unsubAnswer: () => void;
-    let unsubCandidates: () => void;
+    let unsubHostCandidates: () => void;
+    const hostCandidateQueue: RTCIceCandidateInit[] = [];
 
     const connect = async () => {
       if (!db || !auth.currentUser) return;
       const pc = new RTCPeerConnection(servers);
       pcRef.current = pc;
 
+      // Track Management
       pc.ontrack = (event) => {
         if (videoRef.current && event.streams[0]) {
           videoRef.current.srcObject = event.streams[0];
           setStatus('established');
-          videoRef.current.play().catch(() => {});
+          // Standard auto-play handling for 2026 browsers
+          videoRef.current.play().catch(e => console.debug("Muted autoplay active"));
         }
       };
 
+      // Reliability monitoring
+      pc.oniceconnectionstatechange = () => {
+        const state = pc.iceConnectionState;
+        console.debug("ICE State Change:", state);
+        if (state === 'connected' || state === 'completed') {
+          setStatus('established');
+        }
+        if (state === 'failed' || state === 'closed') setStatus('failed');
+      };
+
+      // Transmit Peer Candidates to Broadcaster
       pc.onicecandidate = (e) => {
         if (e.candidate) {
-          addDoc(collection(db, 'streams', stream.id, 'connections', connectionIdRef.current, 'candidates'), e.candidate.toJSON());
+          addDoc(collection(db, 'streams', stream.id, 'connections', connectionIdRef.current, 'peerCandidates'), e.candidate.toJSON());
         }
       };
 
-      pc.oniceconnectionstatechange = () => {
-        if (pc.iceConnectionState === 'connected') setStatus('established');
-        if (pc.iceConnectionState === 'failed') setStatus('failed');
-      };
+      try {
+        // 1. Initial Handshake: Create Offer
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        await setDoc(doc(db, 'streams', stream.id, 'connections', connectionIdRef.current), { 
+          offer: { sdp: offer.sdp, type: offer.type },
+          createdAt: new Date()
+        });
+        setStatus('p2p_sync');
 
-      // Create Offer
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      await setDoc(doc(db, 'streams', stream.id, 'connections', connectionIdRef.current), { 
-        offer: { sdp: offer.sdp, type: offer.type },
-        createdAt: new Date()
-      });
-      setStatus('p2p_sync');
-
-      // Listen for Answer
-      unsubAnswer = onSnapshot(doc(db, 'streams', stream.id, 'connections', connectionIdRef.current), async (snap) => {
-        const data = snap.data();
-        if (data?.answer && !pc.currentRemoteDescription) {
-          await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-        }
-      });
-
-      // Listen for Candidates
-      unsubCandidates = onSnapshot(collection(db, 'streams', stream.id, 'connections', connectionIdRef.current, 'candidates'), (snap) => {
-        snap.docChanges().forEach(async (change) => {
-          if (change.type === 'added' && pc.remoteDescription) {
-            await pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+        // 2. Response Monitoring: Listen for Host Answer
+        unsubAnswer = onSnapshot(doc(db, 'streams', stream.id, 'connections', connectionIdRef.current), async (snap) => {
+          const data = snap.data();
+          if (data?.answer && !pc.currentRemoteDescription) {
+            await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+            
+            // 3. Post-Handshake Sync: Flush candidates
+            while (hostCandidateQueue.length > 0) {
+              const cand = hostCandidateQueue.shift();
+              if (cand) pc.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
+            }
           }
         });
-      });
+
+        // 4. Route Monitoring: Listen for Host Candidates
+        const hostCandRef = collection(db, 'streams', stream.id, 'connections', connectionIdRef.current, 'hostCandidates');
+        unsubHostCandidates = onSnapshot(hostCandRef, (snap) => {
+          snap.docChanges().forEach(async (change) => {
+            if (change.type === 'added') {
+              const cand = change.doc.data() as RTCIceCandidateInit;
+              if (pc.remoteDescription) {
+                pc.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
+              } else {
+                hostCandidateQueue.push(cand);
+              }
+            }
+          });
+        });
+      } catch (err) {
+        console.error("WebRTC Critical Initiation Failure:", err);
+        setStatus('failed');
+      }
     };
 
     connect();
 
     return () => {
       if (unsubAnswer) unsubAnswer();
-      if (unsubCandidates) unsubCandidates();
-      if (pcRef.current) pcRef.current.close();
-      if (db) deleteDoc(doc(db, 'streams', stream.id, 'connections', connectionIdRef.current));
+      if (unsubHostCandidates) unsubHostCandidates();
+      if (pcRef.current) {
+        pcRef.current.close();
+        pcRef.current = null;
+      }
+      if (db) {
+        // Cleanup connection document on exit
+        deleteDoc(doc(db, 'streams', stream.id, 'connections', connectionIdRef.current)).catch(() => {});
+      }
     };
   }, [stream.id]);
 

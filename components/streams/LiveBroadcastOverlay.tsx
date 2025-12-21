@@ -39,7 +39,10 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
         });
         streamRef.current = stream;
         if (videoRef.current) videoRef.current.srcObject = stream;
-      } catch (err) { setStep('error'); }
+      } catch (err) { 
+        console.error("Hardware Init Error:", err);
+        setStep('error'); 
+      }
     };
     initHardware();
     return () => {
@@ -74,32 +77,55 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
     if (!streamRef.current) return;
     const pc = new RTCPeerConnection(servers);
     pcInstances.current[id] = pc;
+    const peerCandidateQueue: RTCIceCandidateInit[] = [];
 
+    // Attach stream tracks immediately
     streamRef.current.getTracks().forEach(track => pc.addTrack(track, streamRef.current!));
 
+    // Relay Local Host Candidates
     pc.onicecandidate = (e) => {
       if (e.candidate) {
-        addDoc(collection(db, 'streams', streamId, 'connections', id, 'candidates'), e.candidate.toJSON());
+        addDoc(collection(db, 'streams', streamId, 'connections', id, 'hostCandidates'), e.candidate.toJSON());
       }
     };
 
-    await pc.setRemoteDescription(new RTCSessionDescription(offer));
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-
-    await updateDoc(doc(db, 'streams', streamId, 'connections', id), { 
-      answer: { type: answer.type, sdp: answer.sdp } 
-    });
-
-    // Handle candidates sent by viewer AFTER handshake
-    const cRef = collection(db, 'streams', streamId, 'connections', id, 'candidates');
-    onSnapshot(cRef, (snap) => {
+    // Listen for Viewer Peer Candidates
+    const peerCandRef = collection(db, 'streams', streamId, 'connections', id, 'peerCandidates');
+    const unsubPeerCand = onSnapshot(peerCandRef, (snap) => {
       snap.docChanges().forEach((change) => {
-        if (change.type === 'added' && pc.remoteDescription) {
-          pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+        if (change.type === 'added') {
+          const cand = change.doc.data() as RTCIceCandidateInit;
+          if (pc.remoteDescription) {
+            pc.addIceCandidate(new RTCIceCandidate(cand)).catch(err => console.debug("Queueing Peer Candidate", err));
+          } else {
+            peerCandidateQueue.push(cand);
+          }
         }
       });
     });
+
+    try {
+      // Process Handshake
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      // Transmit Answer
+      await updateDoc(doc(db, 'streams', streamId, 'connections', id), { 
+        answer: { type: answer.type, sdp: answer.sdp } 
+      });
+
+      // Flush Queued Peer Candidates
+      while (peerCandidateQueue.length > 0) {
+        const cand = peerCandidateQueue.shift();
+        if (cand) pc.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
+      }
+    } catch (err) {
+      console.error("P2P Handshake Failed for peer:", id, err);
+      unsubPeerCand();
+      pc.close();
+      delete pcInstances.current[id];
+    }
   };
 
   return (
