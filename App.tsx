@@ -512,7 +512,7 @@ const App: React.FC = () => {
       case AppRoute.MESSAGES:
         return <MessagesPage currentUser={user} locale={userRegion} addToast={addToast} />;
       case AppRoute.STREAM_GRID:
-        return <StreamGridPage locale={userRegion} onJoinStream={handleJoinStream} />;
+        return <StreamGridPage locale={userRegion} onJoinStream={handleJoinStream} onGoLive={handleGoLive} />;
       case AppRoute.PRIVACY:
         return <PrivacyPage />;
       case AppRoute.TERMS:
