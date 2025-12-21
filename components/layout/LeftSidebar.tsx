@@ -162,11 +162,11 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
       {/* SIDEBAR FOOTER (Pinned to Bottom) */}
       {!collapsed && (
         <div className="mt-auto pt-4 pb-2 px-4 border-t border-slate-50 opacity-40 hover:opacity-100 transition-opacity">
-          <div className="flex flex-wrap gap-x-3 gap-y-1 text-[8px] font-black text-slate-800 uppercase tracking-widest font-mono">
+          <div className="flex flex-wrap gap-x-3 gap-y-1 text-[9px] font-black text-slate-800 uppercase tracking-widest font-mono">
             <button onClick={() => onNavigate(AppRoute.PRIVACY)} className="hover:text-indigo-600">Privacy</button>
             <button onClick={() => onNavigate(AppRoute.TERMS)} className="hover:text-indigo-600">Terms</button>
             <button onClick={() => onNavigate(AppRoute.COOKIES)} className="hover:text-indigo-600">Cookies</button>
-            <span className="text-slate-200">|</span>
+            <span className="text-[9px] text-slate-800">|</span>
             <span>VIBE_OS v2.6 © 2026</span>
           </div>
         </div>

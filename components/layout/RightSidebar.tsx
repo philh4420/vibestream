@@ -266,10 +266,10 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
         <div className="px-2 pt-8 pb-4 border-t border-slate-100 flex flex-col gap-3">
            <div className="flex items-center gap-3">
              <div className="flex-1 h-px bg-slate-100" />
-             <span className="text-[8px] font-black text-slate-800 uppercase tracking-[0.5em] font-mono">Infrastructure</span>
+             <span className="text-[9px] font-black text-slate-800 uppercase tracking-[0.5em] font-mono">Infrastructure</span>
              <div className="flex-1 h-px bg-slate-100" />
            </div>
-           <p className="text-[8px] text-center text-slate-800 font-bold leading-relaxed px-4 opacity-50">
+           <p className="text-[9px] text-center text-slate-800 font-bold leading-relaxed px-4 opacity-50">
              VibeStream Node 2.6 Synchronisation Active. Local UK routing cluster operational via GB-LON-CENTRAL.
            </p>
         </div>
