@@ -191,6 +191,22 @@ service cloud.firestore {
       allow delete: if (isAuthenticated() && resource.data.authorId == request.auth.uid) || isAdmin();
 
       /**
+       * Sub-collection: Broadcast Chat Signals
+       */
+      match /messages/{messageId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && incomingData().senderId == request.auth.uid;
+      }
+
+      /**
+       * Sub-collection: Pulse Reactions
+       */
+      match /reactions/{reactionId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+      }
+
+      /**
        * High-Frequency WebRTC Handshake Cluster
        */
       match /connections/{connectionId} {
@@ -198,7 +214,7 @@ service cloud.firestore {
         allow create: if isAuthenticated() && incomingData().offer != null;
         allow update: if isAuthenticated() && (
           incomingData().answer != null ||
-          incomingData().diff(existingData()).affectedKeys().hasOnly(['answer'])
+          incomingData().diff(existingData()).affectedKeys().hasAny(['answer', 'respondedAt'])
         );
         allow delete: if isAuthenticated();
 
