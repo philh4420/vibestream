@@ -1,13 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../../services/firebase';
-import { 
+// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
+import * as Firestore from 'firebase/firestore';
+const { 
   collection, 
   query, 
   orderBy,
   limit,
   onSnapshot
-} from 'firebase/firestore';
+} = Firestore as any;
 import { User as VibeUser, PresenceStatus, Post, WeatherInfo } from '../../types';
 import { ICONS } from '../../constants';
 
@@ -52,17 +54,17 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather })
     setIsLoading(true);
 
     const usersQuery = query(collection(db, 'users'), limit(12), orderBy('joinedAt', 'desc'));
-    const unsubUsers = onSnapshot(usersQuery, (snap) => {
+    const unsubUsers = onSnapshot(usersQuery, (snap: any) => {
       const fetched = snap.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as VibeUser))
-        .filter(user => user.id !== auth.currentUser?.uid);
+        .map((doc: any) => ({ id: doc.id, ...doc.data() } as VibeUser))
+        .filter((user: VibeUser) => user.id !== auth.currentUser?.uid);
       setActiveContacts(fetched);
       setIsLoading(false);
     });
 
     const trendingQuery = query(collection(db, 'posts'), orderBy('likes', 'desc'), limit(3));
-    const unsubTrending = onSnapshot(trendingQuery, (snap) => {
-      setTrendingPosts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Post)));
+    const unsubTrending = onSnapshot(trendingQuery, (snap: any) => {
+      setTrendingPosts(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Post)));
     });
 
     return () => {

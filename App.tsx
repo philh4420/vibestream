@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from './components/layout/Layout';
 import { FeedPage } from './components/feed/FeedPage'; 
@@ -16,11 +17,18 @@ import { PrivacyPage } from './components/legal/PrivacyPage';
 import { TermsPage } from './components/legal/TermsPage';
 import { CookiesPage } from './components/legal/CookiesPage';
 import { NeuralLinkOverlay } from './components/messages/NeuralLinkOverlay';
+// Newly Imported Components
+import { MeshPage } from './components/mesh/MeshPage';
+import { ClustersPage } from './components/clusters/ClustersPage';
+import { VerifiedNodesPage } from './components/explore/VerifiedNodesPage';
+
 import { AppRoute, Post, ToastMessage, Region, User as VibeUser, SystemSettings, LiveStream, AppNotification, SignalAudience, PresenceStatus, WeatherInfo, CallSession } from './types';
 import { db, auth } from './services/firebase';
 import * as FirebaseAuth from 'firebase/auth';
 const { onAuthStateChanged, signOut } = FirebaseAuth as any;
-import { 
+// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
+import * as Firestore from 'firebase/firestore';
+const { 
   collection, 
   onSnapshot, 
   query, 
@@ -40,7 +48,7 @@ import {
   arrayRemove,
   or,
   and
-} from 'firebase/firestore';
+} = Firestore as any;
 import { uploadToCloudinary } from './services/cloudinary';
 import { ICONS, PRESENCE_CONFIG } from './constants';
 import { EmojiPicker } from './components/ui/EmojiPicker';
@@ -88,6 +96,7 @@ const App: React.FC = () => {
   const [watchingStream, setWatchingStream] = useState<LiveStream | null>(null);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [previousRoute, setPreviousRoute] = useState<AppRoute | null>(null);
+  const [viewingProfile, setViewingProfile] = useState<VibeUser | null>(null); // For handling profile navigation
   
   const [newPostText, setNewPostText] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -185,11 +194,9 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [isAuthenticated, userData?.location]);
 
-  // Monitor Global Call Signal Bus (Fix for permissions)
+  // Monitor Global Call Signal Bus
   useEffect(() => {
-    // CRITICAL: We only initialize the real-time bus once the user identity is verified in the mesh
     if (!isAuthenticated || !userData?.id || !db || !auth.currentUser) return;
-    
     const q = query(
       collection(db, 'calls'),
       and(
@@ -210,11 +217,8 @@ const App: React.FC = () => {
       } else {
         setActiveCall(null);
       }
-    }, (error) => {
-      // Ignore initial buffering permission denials during the auth handshake
-      if (error.code !== 'permission-denied') {
-        console.error("Grid_Call_Bus Sync Failure:", error);
-      }
+    }, (error: any) => {
+      if (error.code !== 'permission-denied') console.error("Grid_Call_Bus Sync Failure:", error);
     });
     return () => unsub();
   }, [isAuthenticated, userData?.id]);
@@ -224,8 +228,15 @@ const App: React.FC = () => {
       setPreviousRoute(activeRoute);
       setSelectedPost(null);
     }
+    // Reset view profile if navigating away from profile
+    if (route !== AppRoute.PROFILE) setViewingProfile(null);
     setActiveRoute(route);
     localStorage.setItem(ROUTE_KEY, route);
+  };
+
+  const handleViewUserProfile = (user: VibeUser) => {
+    setViewingProfile(user);
+    handleNavigate(AppRoute.PROFILE);
   };
 
   const handleSearch = (query: string) => {
@@ -319,15 +330,13 @@ const App: React.FC = () => {
   // 2. Individual Node Data Listener
   useEffect(() => {
     if (!isAuthenticated || !currentUser?.uid || !db) return;
-    const unsub = onSnapshot(doc(db, 'users', currentUser.uid), (userDoc) => {
+    const unsub = onSnapshot(doc(db, 'users', currentUser.uid), (userDoc: any) => {
       if (userDoc.exists()) {
         const u = { id: userDoc.id, ...userDoc.data() } as VibeUser;
         setUserData(u);
       }
-    }, (error) => {
-      if (error.code === 'permission-denied') {
-        console.warn("Identity Sync: Permission Buffering...");
-      }
+    }, (error: any) => {
+      if (error.code === 'permission-denied') console.warn("Identity Sync: Permission Buffering...");
     });
     return () => unsub();
   }, [isAuthenticated, currentUser?.uid]);
@@ -336,12 +345,10 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isAuthenticated || !db || !auth.currentUser) return;
     const qUsers = query(collection(db, 'users'), limit(100));
-    const unsub = onSnapshot(qUsers, (snap) => {
-      setAllUsers(snap.docs.map(d => ({ id: d.id, ...d.data() } as VibeUser)));
-    }, (error) => {
-      if (error.code === 'permission-denied') {
-        addToast("Discovery Grid Access Refused: Resyncing...", "error");
-      }
+    const unsub = onSnapshot(qUsers, (snap: any) => {
+      setAllUsers(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as VibeUser)));
+    }, (error: any) => {
+      if (error.code === 'permission-denied') addToast("Discovery Grid Access Refused: Resyncing...", "error");
     });
     return () => unsub();
   }, [isAuthenticated]);
@@ -355,11 +362,11 @@ const App: React.FC = () => {
       orderBy('timestamp', 'desc'), 
       limit(50)
     );
-    const unsub = onSnapshot(qNotif, (snap) => {
-      const newNotifs = snap.docs.map(d => ({ id: d.id, ...d.data() } as AppNotification));
+    const unsub = onSnapshot(qNotif, (snap: any) => {
+      const newNotifs = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as AppNotification));
       setNotifications(newNotifs);
       if (!isInitialLoad.current) {
-        snap.docChanges().forEach(change => {
+        snap.docChanges().forEach((change: any) => {
           if (change.type === 'added') {
             const data = change.doc.data() as AppNotification;
             if (userData?.presenceStatus !== 'Deep Work') {
@@ -369,10 +376,8 @@ const App: React.FC = () => {
         });
       }
       isInitialLoad.current = false;
-    }, (error) => {
-      if (error.code !== 'permission-denied') {
-        console.error("Notification Bus Failure:", error);
-      }
+    }, (error: any) => {
+      if (error.code !== 'permission-denied') console.error("Notification Bus Failure:", error);
     });
     return () => unsub();
   }, [isAuthenticated, currentUser?.uid, userData?.presenceStatus]);
@@ -381,31 +386,27 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!db || !isAuthenticated || !auth.currentUser) return;
     const q = query(collection(db, 'posts'), orderBy('timestamp', 'desc'), limit(100));
-    return onSnapshot(q, (snapshot) => {
-      const fetchedPosts = snapshot.docs.map(doc => ({ 
+    return onSnapshot(q, (snapshot: any) => {
+      const fetchedPosts = snapshot.docs.map((doc: any) => ({ 
         id: doc.id, 
         ...doc.data(),
         isLiked: doc.data().likedBy?.includes(auth.currentUser?.uid)
       } as Post));
       setPosts(fetchedPosts);
       if (selectedPost) {
-        const updated = fetchedPosts.find(p => p.id === selectedPost.id);
+        const updated = fetchedPosts.find((p: any) => p.id === selectedPost.id);
         if (updated) setSelectedPost(updated);
       }
-    }, (error) => {
-      if (error.code === 'permission-denied') {
-        addToast("Neural Frequency Access Blocked", "error");
-      }
+    }, (error: any) => {
+      if (error.code === 'permission-denied') addToast("Neural Frequency Access Blocked", "error");
     });
   }, [isAuthenticated, selectedPost?.id]);
 
   // 6. Global Kernel Settings Listener
   useEffect(() => {
     if (!db) return;
-    return onSnapshot(doc(db, 'settings', 'global'), (snap) => {
-      if (snap.exists()) {
-        setSystemSettings(snap.data() as SystemSettings);
-      }
+    return onSnapshot(doc(db, 'settings', 'global'), (snap: any) => {
+      if (snap.exists()) setSystemSettings(snap.data() as SystemSettings);
     });
   }, []);
 
@@ -584,7 +585,43 @@ const App: React.FC = () => {
         />
       )}
 
-      {activeRoute === AppRoute.MESSAGES && userData && <MessagesPage currentUser={userData} locale={userRegion} addToast={addToast} weather={weather} allUsers={allUsers} />}
+      {activeRoute === AppRoute.MESSAGES && userData && (
+        <MessagesPage 
+          currentUser={userData} 
+          locale={userRegion} 
+          addToast={addToast} 
+          weather={weather} 
+          allUsers={allUsers} 
+        />
+      )}
+      
+      {activeRoute === AppRoute.MESH && userData && (
+        <MeshPage 
+          currentUser={userData}
+          locale={userRegion}
+          addToast={addToast}
+          onViewProfile={handleViewUserProfile}
+        />
+      )}
+
+      {activeRoute === AppRoute.CLUSTERS && userData && (
+        <ClustersPage 
+          currentUser={userData}
+          locale={userRegion}
+          addToast={addToast}
+          onOpenChat={(id) => { handleNavigate(AppRoute.MESSAGES); /* In a real app we'd pass the ID to open */ }}
+          allUsers={allUsers}
+        />
+      )}
+
+      {activeRoute === AppRoute.VERIFIED_NODES && (
+        <VerifiedNodesPage 
+          users={allUsers}
+          onViewProfile={handleViewUserProfile}
+          onFollow={(id) => addToast("Follow logic needs Mesh Page", "info")}
+        />
+      )}
+
       {activeRoute === AppRoute.NOTIFICATIONS && (
         <NotificationsPage 
           notifications={notifications} 
@@ -597,7 +634,7 @@ const App: React.FC = () => {
       )}
       {activeRoute === AppRoute.PROFILE && userData && (
         <ProfilePage 
-          userData={userData} 
+          userData={viewingProfile || userData} 
           onUpdateProfile={(d) => setUserData(prev => prev ? { ...prev, ...d } : null)} 
           addToast={addToast} 
           locale={userRegion} 

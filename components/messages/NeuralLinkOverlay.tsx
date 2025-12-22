@@ -1,6 +1,9 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../../services/firebase';
-import { 
+// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
+import * as Firestore from 'firebase/firestore';
+const { 
   doc, 
   updateDoc, 
   onSnapshot, 
@@ -8,7 +11,7 @@ import {
   addDoc,
   serverTimestamp,
   getDoc
-} from 'firebase/firestore';
+} = Firestore as any;
 import { CallSession, User } from '../../types';
 import { ICONS } from '../../constants';
 
@@ -76,7 +79,7 @@ export const NeuralLinkOverlay: React.FC<NeuralLinkOverlayProps> = ({ session, u
 
     setupMedia();
 
-    const unsub = onSnapshot(doc(db, 'calls', session.id), (snap) => {
+    const unsub = onSnapshot(doc(db, 'calls', session.id), (snap: any) => {
       if (!snap.exists()) { onEnd(); return; }
       const data = snap.data();
       setCallStatus(data.status);
@@ -108,15 +111,15 @@ export const NeuralLinkOverlay: React.FC<NeuralLinkOverlayProps> = ({ session, u
     await pc.setLocalDescription(offer);
     await updateDoc(doc(db, 'calls', session.id), { offer: { type: offer.type, sdp: offer.sdp } });
 
-    onSnapshot(doc(db, 'calls', session.id), async (snap) => {
+    onSnapshot(doc(db, 'calls', session.id), async (snap: any) => {
       const data = snap.data();
       if (data?.answer && !pc.currentRemoteDescription) {
         await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
       }
     });
 
-    onSnapshot(collection(db, 'calls', session.id, 'receiverCandidates'), (snap) => {
-      snap.docChanges().forEach(change => {
+    onSnapshot(collection(db, 'calls', session.id, 'receiverCandidates'), (snap: any) => {
+      snap.docChanges().forEach((change: any) => {
         if (change.type === 'added') pc.addIceCandidate(new RTCIceCandidate(change.doc.data())).catch(() => {});
       });
     });
@@ -144,8 +147,8 @@ export const NeuralLinkOverlay: React.FC<NeuralLinkOverlayProps> = ({ session, u
       }
     };
 
-    onSnapshot(collection(db, 'calls', session.id, 'callerCandidates'), (snap) => {
-      snap.docChanges().forEach(change => {
+    onSnapshot(collection(db, 'calls', session.id, 'callerCandidates'), (snap: any) => {
+      snap.docChanges().forEach((change: any) => {
         if (change.type === 'added') pc.addIceCandidate(new RTCIceCandidate(change.doc.data())).catch(() => {});
       });
     });

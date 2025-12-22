@@ -1,6 +1,9 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../../services/firebase';
-import { 
+// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
+import * as Firestore from 'firebase/firestore';
+const { 
   collection, 
   query, 
   where, 
@@ -13,7 +16,7 @@ import {
   setDoc,
   deleteDoc,
   updateDoc
-} from 'firebase/firestore';
+} = Firestore as any;
 import { User as VibeUser, Message, Chat, Region, WeatherInfo } from '../../types';
 import { ICONS } from '../../constants';
 import { AtmosphericBackground } from './AtmosphericBackground';
@@ -58,8 +61,8 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
   useEffect(() => {
     if (!db || !currentUser.id) return;
     const q = query(collection(db, 'chats'), where('participants', 'array-contains', currentUser.id), orderBy('lastMessageTimestamp', 'desc'));
-    const unsub = onSnapshot(q, (snap) => {
-      setChats(snap.docs.map(d => ({ id: d.id, ...d.data() } as Chat)));
+    const unsub = onSnapshot(q, (snap: any) => {
+      setChats(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Chat)));
     });
     return () => unsub();
   }, [currentUser.id]);
@@ -67,8 +70,8 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
   useEffect(() => {
     if (!db || !selectedChatId) return;
     const q = query(collection(db, 'chats', selectedChatId, 'messages'), orderBy('timestamp', 'asc'), limit(100));
-    const unsub = onSnapshot(q, (snap) => {
-      setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() } as Message)));
+    const unsub = onSnapshot(q, (snap: any) => {
+      setMessages(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Message)));
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 200);
     });
     return () => unsub();

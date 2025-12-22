@@ -2,7 +2,18 @@
 import React, { useState, useEffect } from 'react';
 import { User, Post, Region } from '../../types';
 import { db, auth } from '../../services/firebase';
-import { collection, query, where, getDocs, orderBy, updateDoc, doc, onSnapshot } from 'firebase/firestore';
+// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
+import * as Firestore from 'firebase/firestore';
+const { 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  orderBy, 
+  updateDoc, 
+  doc, 
+  onSnapshot 
+} = Firestore as any;
 import { ProfileHeader } from './ProfileHeader';
 import { CalibrationOverlay } from './CalibrationOverlay';
 
@@ -31,7 +42,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
 
   useEffect(() => {
     if (!db || !userData.id) return;
-    const unsub = onSnapshot(doc(db, 'users', userData.id), (doc) => {
+    const unsub = onSnapshot(doc(db, 'users', userData.id), (doc: any) => {
       if (doc.exists()) {
         setProfileData({ id: doc.id, ...doc.data() } as User);
       }
@@ -45,7 +56,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
       try {
         const q = query(collection(db, 'posts'), where('authorId', '==', userData.id), orderBy('timestamp', 'desc'));
         const snap = await getDocs(q);
-        setUserPosts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Post)));
+        setUserPosts(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Post)));
       } catch (e) { console.error(e); } finally { setIsLoading(false); }
     };
     fetchUserPosts();

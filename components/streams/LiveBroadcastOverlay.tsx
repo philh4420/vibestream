@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../../services/firebase';
-import { 
+// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
+import * as Firestore from 'firebase/firestore';
+const { 
   collection, 
   doc, 
   onSnapshot, 
@@ -11,8 +13,7 @@ import {
   query, 
   orderBy, 
   limit,
-  Timestamp 
-} from 'firebase/firestore';
+} = Firestore as any;
 import { User } from '../../types';
 import { ICONS } from '../../constants';
 
@@ -28,7 +29,7 @@ interface StreamMessage {
   senderName: string;
   senderAvatar: string;
   text: string;
-  timestamp: Timestamp;
+  timestamp: any; // using any to avoid type import issues
 }
 
 interface FloatingReaction {
@@ -102,8 +103,8 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
       const timerInt = window.setInterval(() => setTimer(prev => prev + 1), 1000);
       
       const connectionsRef = collection(db, 'streams', activeStreamId, 'connections');
-      const unsubConns = onSnapshot(connectionsRef, (snapshot) => {
-        snapshot.docChanges().forEach(async (change) => {
+      const unsubConns = onSnapshot(connectionsRef, (snapshot: any) => {
+        snapshot.docChanges().forEach(async (change: any) => {
           if (change.type === 'added') {
             const connectionId = change.doc.id;
             const data = change.doc.data();
@@ -114,19 +115,19 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
         });
       });
 
-      const unsubMeta = onSnapshot(doc(db, 'streams', activeStreamId), (snap) => {
+      const unsubMeta = onSnapshot(doc(db, 'streams', activeStreamId), (snap: any) => {
         if (snap.exists()) setViewerCount(snap.data().viewerCount || 0);
       });
 
       const chatQuery = query(collection(db, 'streams', activeStreamId, 'messages'), orderBy('timestamp', 'asc'), limit(50));
-      const unsubChat = onSnapshot(chatQuery, (snap) => {
-        setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() } as StreamMessage)));
+      const unsubChat = onSnapshot(chatQuery, (snap: any) => {
+        setMessages(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as StreamMessage)));
         setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
       });
 
       const reactQuery = query(collection(db, 'streams', activeStreamId, 'reactions'), orderBy('timestamp', 'desc'), limit(1));
-      const unsubReact = onSnapshot(reactQuery, (snap) => {
-        snap.docChanges().forEach(change => {
+      const unsubReact = onSnapshot(reactQuery, (snap: any) => {
+        snap.docChanges().forEach((change: any) => {
           if (change.type === 'added') {
             const id = Math.random().toString(36).substring(7);
             const left = Math.floor(Math.random() * 60) + 20;

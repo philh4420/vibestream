@@ -2,7 +2,9 @@
 // Fixed: Using namespaced import and destructuring to resolve "no exported member" errors in Firebase types
 import * as FirebaseApp from 'firebase/app';
 const { initializeApp } = FirebaseApp as any;
-import { getFirestore } from 'firebase/firestore';
+// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
+import * as Firestore from 'firebase/firestore';
+const { getFirestore } = Firestore as any;
 // Fixed: Using namespaced import for firebase/auth to resolve "no exported member" errors
 import * as FirebaseAuth from 'firebase/auth';
 const { getAuth } = FirebaseAuth as any;

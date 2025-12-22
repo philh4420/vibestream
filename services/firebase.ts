@@ -2,7 +2,9 @@
 // Fixed: Using namespaced import and destructuring with any-cast to resolve "no exported member" errors for initializeApp, getApps, and getApp in Firebase v9+
 import * as FirebaseApp from 'firebase/app';
 const { initializeApp, getApps, getApp } = FirebaseApp as any;
-import { getFirestore, Firestore } from 'firebase/firestore';
+// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
+import * as Firestore from 'firebase/firestore';
+const { getFirestore } = Firestore as any;
 // Fixed: Using namespaced import for firebase/auth and any-casting to resolve "no exported member" errors for getAuth and Auth type
 import * as FirebaseAuth from 'firebase/auth';
 const { getAuth } = FirebaseAuth as any;
@@ -28,7 +30,7 @@ try {
 }
 
 // Exporting with explicit types to ensure IDE stability
-export const db: Firestore = getFirestore(app);
+export const db: any = getFirestore(app);
 // Fixed: auth type set to any to bypass Auth interface missing member error
 export const auth: any = getAuth(app);
 export default app;

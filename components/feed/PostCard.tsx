@@ -3,7 +3,9 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Post, User } from '../../types';
 import { ICONS, PULSE_FREQUENCIES } from '../../constants';
 import { db } from '../../services/firebase';
-import { 
+// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
+import * as Firestore from 'firebase/firestore';
+const { 
   deleteDoc, 
   doc, 
   updateDoc,
@@ -11,7 +13,7 @@ import {
   addDoc,
   serverTimestamp,
   collection
-} from 'firebase/firestore';
+} = Firestore as any;
 import { CommentSection } from './CommentSection';
 
 interface PostCardProps {

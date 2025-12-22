@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../../services/firebase';
-import { collection, query, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
+// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
+import * as Firestore from 'firebase/firestore';
+const { collection, query, where, onSnapshot, orderBy, limit } = Firestore as any;
 import { User, Story, LiveStream } from '../../types';
 
 interface StoriesStripProps {
@@ -38,13 +40,13 @@ export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData, onTransmit
       limit(10)
     );
 
-    const unsubStories = onSnapshot(storyQ, (snapshot) => {
-      setStories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Story)));
+    const unsubStories = onSnapshot(storyQ, (snapshot: any) => {
+      setStories(snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Story)));
       setLoading(false);
     });
 
-    const unsubStreams = onSnapshot(streamQ, (snapshot) => {
-      setActiveStreams(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LiveStream)));
+    const unsubStreams = onSnapshot(streamQ, (snapshot: any) => {
+      setActiveStreams(snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as LiveStream)));
     });
 
     return () => {

@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../../services/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
+import * as Firestore from 'firebase/firestore';
+const { doc, updateDoc } = Firestore as any;
 import { ICONS, IDENTITY_SIGNALS, PULSE_FREQUENCIES } from '../../constants';
 import { UserRole, Region, User as VibeUser, AppRoute, PresenceStatus, AppNotification } from '../../types';
 

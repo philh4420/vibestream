@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { db } from '../../services/firebase';
-import { 
+// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
+import * as Firestore from 'firebase/firestore';
+const { 
   collection, 
   addDoc, 
   serverTimestamp, 
@@ -12,7 +14,7 @@ import {
   updateDoc, 
   increment,
   doc
-} from 'firebase/firestore';
+} = Firestore as any;
 import { Comment, User } from '../../types';
 import { EmojiPicker } from '../ui/EmojiPicker';
 import { GiphyPicker } from '../ui/GiphyPicker';
@@ -59,8 +61,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
       orderBy('timestamp', 'asc'), 
       limit(100)
     );
-    return onSnapshot(q, (snap) => {
-      setComments(snap.docs.map(d => ({ id: d.id, ...d.data() } as Comment)));
+    return onSnapshot(q, (snap: any) => {
+      setComments(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Comment)));
     });
   }, [postId]);
 

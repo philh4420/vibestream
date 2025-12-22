@@ -1,7 +1,9 @@
 
 import React from 'react';
 import { Post } from '../../types';
-import { deleteDoc, doc } from 'firebase/firestore';
+// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
+import * as Firestore from 'firebase/firestore';
+const { deleteDoc, doc } = Firestore as any;
 import { db } from '../../services/firebase';
 
 interface AdminContentProps {

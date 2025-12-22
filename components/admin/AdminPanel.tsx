@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { db } from '../../services/firebase';
-import { 
+// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
+import * as Firestore from 'firebase/firestore';
+const { 
   collection, 
   query, 
   updateDoc, 
@@ -9,7 +11,7 @@ import {
   orderBy, 
   limit, 
   onSnapshot 
-} from 'firebase/firestore';
+} = Firestore as any;
 import { Post, User, SystemSettings, AppRoute, Region } from '../../types';
 
 // Refactored Sub-Components
@@ -37,14 +39,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale, system
     if (!db) return;
 
     // REAL DATA: Tracking Global Inhabitants (Users)
-    const unsubNodes = onSnapshot(collection(db, 'users'), (snap) => {
-      setNodes(snap.docs.map(d => ({ id: d.id, ...d.data() } as User)));
+    const unsubNodes = onSnapshot(collection(db, 'users'), (snap: any) => {
+      setNodes(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as User)));
       setMetrics(prev => ({ ...prev, users: snap.size }));
     });
 
     // REAL DATA: Tracking Signal Throughput (Posts)
-    const unsubSignals = onSnapshot(query(collection(db, 'posts'), orderBy('timestamp', 'desc'), limit(100)), (snap) => {
-      setSignals(snap.docs.map(d => ({ id: d.id, ...d.data() } as Post)));
+    const unsubSignals = onSnapshot(query(collection(db, 'posts'), orderBy('timestamp', 'desc'), limit(100)), (snap: any) => {
+      setSignals(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Post)));
       setMetrics(prev => ({ ...prev, posts: snap.size }));
     });
 

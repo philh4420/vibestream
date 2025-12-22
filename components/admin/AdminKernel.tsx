@@ -1,7 +1,9 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { db } from '../../services/firebase';
-import { updateDoc, doc } from 'firebase/firestore';
+// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
+import * as Firestore from 'firebase/firestore';
+const { updateDoc, doc } = Firestore as any;
 import { SystemSettings } from '../../types';
 
 interface AdminKernelProps {

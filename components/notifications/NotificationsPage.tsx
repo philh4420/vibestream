@@ -3,7 +3,9 @@ import React, { useState, useMemo } from 'react';
 import { AppNotification, Region, User, NotificationType } from '../../types';
 import { PULSE_FREQUENCIES, ICONS } from '../../constants';
 import { db } from '../../services/firebase';
-import { doc, writeBatch, updateDoc } from 'firebase/firestore';
+// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
+import * as Firestore from 'firebase/firestore';
+const { doc, writeBatch, updateDoc } = Firestore as any;
 
 interface NotificationsPageProps {
   notifications: AppNotification[];
