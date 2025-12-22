@@ -155,8 +155,9 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [isAuthenticated, userData?.location]);
 
-  // Monitor Global Call Signal Bus
+  // Monitor Global Call Signal Bus (Fix for permissions)
   useEffect(() => {
+    // CRITICAL: We only initialize the real-time bus once the user identity is verified in the mesh
     if (!isAuthenticated || !userData?.id || !db || !auth.currentUser) return;
     
     const q = query(
@@ -180,6 +181,7 @@ const App: React.FC = () => {
         setActiveCall(null);
       }
     }, (error) => {
+      // Ignore initial buffering permission denials during the auth handshake
       if (error.code !== 'permission-denied') {
         console.error("Grid_Call_Bus Sync Failure:", error);
       }

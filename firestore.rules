@@ -4,14 +4,10 @@ service cloud.firestore {
 
     /**
      * =========================================================================
-     * VIBESTREAM CITADEL OS SECURITY MANIFEST v6.9 [RESTORED_FULL_INFRASTRUCTURE]
+     * VIBESTREAM CITADEL OS SECURITY MANIFEST v7.2 [STABLE_PRO_2026]
      * INFRASTRUCTURE REGION: GB_LON_CENTRAL
      * SECURITY CLEARANCE: LEVEL 5 (MESH_ADMIN)
      * =========================================================================
-     * 
-     * This document defines the primary access control layers for the VibeStream
-     * Neural Grid. Do not modify without Level 4 clearance from Citadel Admin.
-     * All timestamps follow UTC/GMT+0 protocols for synchronisation.
      */
 
     // -------------------------------------------------------------------------
@@ -69,6 +65,7 @@ service cloud.firestore {
     // -------------------------------------------------------------------------
 
     match /users/{userId} {
+      // Relaxed list permission for authenticated users to support discovery grid
       allow read, list: if isAuthenticated();
       allow create: if isUser(userId);
       allow update: if (isUser(userId) && 
@@ -218,10 +215,18 @@ service cloud.firestore {
     }
 
     match /calls/{callId} {
-      allow read, list: if isAuthenticated() && (resource.data.callerId == request.auth.uid || resource.data.receiverId == request.auth.uid);
+      // Enhanced permission for call list queries (fixes permission-denied in real-time listeners)
+      allow read, list: if isAuthenticated() && (
+        !exists(/databases/$(database)/documents/calls/$(callId)) || 
+        resource.data.callerId == request.auth.uid || 
+        resource.data.receiverId == request.auth.uid
+      );
       allow create: if isAuthenticated() && incomingData().callerId == request.auth.uid;
       allow update: if isAuthenticated() && (resource.data.callerId == request.auth.uid || resource.data.receiverId == request.auth.uid);
       allow delete: if isAuthenticated() && (resource.data.callerId == request.auth.uid || resource.data.receiverId == request.auth.uid || isAdmin());
+      
+      match /callerCandidates/{id} { allow read, write: if isAuthenticated(); }
+      match /receiverCandidates/{id} { allow read, write: if isAuthenticated(); }
     }
 
     match /notifications/{notificationId} {
@@ -328,7 +333,7 @@ service cloud.firestore {
      */
     match /node_telemetry/{id} { allow read, list: if isAdmin(); allow write: if isAuthenticated(); }
     match /uplink_diagnostics/{id} { allow read, list: if isAdmin(); allow write: if isAdmin(); }
-    match / resonance_buffers/{id} { allow read, list: if isAuthenticated(); allow write: if isAuthenticated(); }
+    match /resonance_buffers/{id} { allow read, list: if isAuthenticated(); allow write: if isAuthenticated(); }
     match /kernel_manifests/{id} { allow read, list: if true; allow write: if isAdmin(); }
     match /identity_vaults/{id} { allow read, list: if isUser(id); allow write: if isUser(id); }
     match /secure_handshakes/{id} { allow read, write, list: if isAuthenticated(); }

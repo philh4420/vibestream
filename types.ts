@@ -184,6 +184,9 @@ export interface CallSession {
   callerName: string;
   callerAvatar: string;
   receiverId: string;
+  // Added missing receiver metadata to resolve type error in NeuralLinkOverlay component
+  receiverName: string;
+  receiverAvatar: string;
   status: 'ringing' | 'connected' | 'ended' | 'rejected';
   type: 'voice' | 'video';
   timestamp: any;
