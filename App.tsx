@@ -116,6 +116,36 @@ const App: React.FC = () => {
     setUserToasts(prev => prev.filter(t => t.id !== id));
   };
 
+  const handleMarkAllRead = async () => {
+    if (!db || !currentUser?.uid) return;
+    const batch = writeBatch(db);
+    const unread = notifications.filter(n => !n.isRead);
+    
+    if (unread.length === 0) return;
+
+    unread.forEach(n => {
+      const ref = doc(db, 'notifications', n.id);
+      batch.update(ref, { isRead: true });
+    });
+
+    try {
+      await batch.commit();
+      addToast("Signals Synchronised", "success");
+    } catch (e) {
+      addToast("Sync Protocol Failed", "error");
+    }
+  };
+
+  const handleDeleteNotification = async (id: string) => {
+    if (!db) return;
+    try {
+      await deleteDoc(doc(db, 'notifications', id));
+      addToast("Signal Archive Purged", "info");
+    } catch (e) {
+      addToast("Purge Error", "error");
+    }
+  };
+
   useEffect(() => {
     const handleGlobalToast = (e: any) => {
       if (e.detail?.msg) addToast(e.detail.msg, e.detail.type);
@@ -517,7 +547,7 @@ const App: React.FC = () => {
       activeRoute={activeRoute} onNavigate={handleNavigate} 
       onOpenCreate={() => handleOpenCreate()}
       onLogout={handleLogout} userData={userData} notifications={notifications}
-      onMarkRead={() => {}} onDeleteNotification={() => {}} userRole={userData?.role} currentRegion={userRegion}
+      onMarkRead={handleMarkAllRead} onDeleteNotification={handleDeleteNotification} userRole={userData?.role} currentRegion={userRegion}
       onRegionChange={setUserRegion}
       onSearch={handleSearch}
       weather={weather}
@@ -558,8 +588,8 @@ const App: React.FC = () => {
       {activeRoute === AppRoute.NOTIFICATIONS && (
         <NotificationsPage 
           notifications={notifications} 
-          onDelete={() => {}} 
-          onMarkRead={() => {}} 
+          onDelete={handleDeleteNotification} 
+          onMarkRead={handleMarkAllRead} 
           addToast={addToast} 
           locale={userRegion}
           userData={userData}

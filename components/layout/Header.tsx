@@ -54,7 +54,8 @@ const NotificationItem = ({ notif, onDelete }: { notif: AppNotification; onDelet
     system: <div className="p-2 bg-slate-900 text-white rounded-lg scale-75"><ICONS.Admin /></div>,
     relay: <div className="p-2 bg-indigo-600 text-white rounded-lg scale-75"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg></div>,
     call: <div className="p-2 bg-emerald-600 text-white rounded-lg scale-75"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg></div>,
-    packet_summary: <div className="p-2 bg-amber-500 text-white rounded-lg scale-75 shadow-lg shadow-amber-100"><ICONS.Temporal /></div>
+    packet_summary: <div className="p-2 bg-amber-500 text-white rounded-lg scale-75 shadow-lg shadow-amber-100"><ICONS.Temporal /></div>,
+    message: <div className="p-2 bg-indigo-500 text-white rounded-lg scale-75 shadow-md shadow-indigo-200"><ICONS.Messages /></div>
   };
 
   return (

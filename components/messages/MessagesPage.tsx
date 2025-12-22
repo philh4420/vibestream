@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../../services/firebase';
 import { 
@@ -184,6 +183,30 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
         lastMessage: lastMsgText, 
         lastMessageTimestamp: serverTimestamp() 
       });
+
+      // Notification Logic
+      const activeChat = chats.find(c => c.id === selectedChatId);
+      if (activeChat) {
+        const recipients = activeChat.participants.filter(pId => pId !== currentUser.id);
+        const notificationText = msgText 
+          ? `transmitted: "${msgText.substring(0, 30)}${msgText.length > 30 ? '...' : ''}"`
+          : (mediaItems.length > 0 ? "transmitted visual artifact" : "sent a signal");
+
+        for (const recipientId of recipients) {
+           addDoc(collection(db, 'notifications'), {
+             type: 'message',
+             fromUserId: currentUser.id,
+             fromUserName: currentUser.displayName,
+             fromUserAvatar: currentUser.avatarUrl,
+             toUserId: recipientId,
+             targetId: selectedChatId,
+             text: notificationText,
+             isRead: false,
+             timestamp: serverTimestamp(),
+             pulseFrequency: 'velocity'
+           });
+        }
+      }
 
       setNewMessage('');
       clearMedia();
@@ -425,7 +448,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                     <button 
                       type="button"
                       onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }}
-                      className={`p-3 rounded-2xl transition-all active:scale-90 border ${isEmojiPickerOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white hover:border-indigo-100 hover:text-indigo-500 shadow-sm'}`}
+                      className={`p-3 rounded-2xl transition-all active:scale-90 border ${isEmojiPickerOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-indigo-100 hover:text-indigo-500 shadow-sm'}`}
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" /></svg>
                     </button>

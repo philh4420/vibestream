@@ -83,7 +83,8 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
     follow: <div className="p-3 bg-indigo-50 text-indigo-500 rounded-2xl"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M19 7.5v9m-4.5-4.5h9M3 13.5h9m-9-4.5h9m-9-4.5h9" /></svg></div>,
     broadcast: <div className="p-3 bg-rose-600 text-white rounded-2xl shadow-lg shadow-rose-200 animate-pulse"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></div>,
     system: <div className="p-3 bg-slate-900 text-white rounded-2xl"><ICONS.Admin /></div>,
-    relay: <div className="p-3 bg-indigo-600 text-white rounded-2xl"><svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 00(1.242 7.244" /></svg></div>
+    relay: <div className="p-3 bg-indigo-600 text-white rounded-2xl"><svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg></div>,
+    message: <div className="p-3 bg-indigo-500 text-white rounded-2xl shadow-lg shadow-indigo-100"><ICONS.Messages /></div>
   };
 
   return (
