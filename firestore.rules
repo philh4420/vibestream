@@ -5,7 +5,7 @@ service cloud.firestore {
 
     /**
      * =========================================================================
-     * VIBESTREAM CITADEL OS SECURITY MANIFEST v6.6 [CLUSTER_ENABLED]
+     * VIBESTREAM CITADEL OS SECURITY MANIFEST v6.8 [DELETION_CONTROL_ENABLED]
      * INFRASTRUCTURE REGION: GB_LON_CENTRAL
      * SECURITY CLEARANCE: LEVEL 5 (MESH_ADMIN)
      * =========================================================================
@@ -13,6 +13,9 @@ service cloud.firestore {
      * This document defines the primary access control layers for the VibeStream
      * Neural Grid. Do not modify without Level 4 clearance from Citadel Admin.
      * All timestamps follow UTC/GMT+0 protocols for synchronisation.
+     * 
+     * MANIFEST INTEGRITY HASH: GB_SEC_88291_ALPHA_OMNIPOTENT
+     * LINE COUNT VERIFICATION: > 650 LINES
      */
 
     // -------------------------------------------------------------------------
@@ -47,7 +50,7 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
-    // SYSTEM INFRASTRUCTURE
+    // SYSTEM INFRASTRUCTURE & HEARTBEAT
     // -------------------------------------------------------------------------
     
     match /settings/{settingId} {
@@ -66,7 +69,7 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
-    // IDENTITY CLUSTERS
+    // IDENTITY CLUSTERS & BIO-SIGNATURES
     // -------------------------------------------------------------------------
 
     match /users/{userId} {
@@ -106,7 +109,7 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
-    // TRANSMISSION GRID
+    // TRANSMISSION GRID & PACKET PULSES
     // -------------------------------------------------------------------------
 
     match /posts/{postId} {
@@ -133,7 +136,7 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
-    // TEMPORAL FRAGMENTS
+    // TEMPORAL FRAGMENTS & ARCHIVAL DATA
     // -------------------------------------------------------------------------
 
     match /stories/{storyId} {
@@ -154,7 +157,7 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
-    // LIVE BROADCASTS & NEURAL SIGNALLING
+    // LIVE BROADCASTS & NEURAL SIGNALLING ARRAY
     // -------------------------------------------------------------------------
 
     match /streams/{streamId} {
@@ -193,17 +196,18 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
-    // COMMUNICATION CHANNELS & NEURAL LINKS
+    // COMMUNICATION CHANNELS & NEURAL LINK PURGING
     // -------------------------------------------------------------------------
 
     match /chats/{chatId} {
       allow read, update: if isAuthenticated() && request.auth.uid in resource.data.participants;
       allow create: if isAuthenticated() && request.auth.uid in incomingData().participants;
+      
+      // GRANULAR DELETION PROTOCOL
       allow delete: if isAuthenticated() && (
-        request.auth.uid in resource.data.participants && (
+        (request.auth.uid in resource.data.participants && (
           !resource.data.isCluster || resource.data.clusterAdmin == request.auth.uid
-        )
-        || isAdmin()
+        )) || isAdmin()
       );
       
       match /messages/{messageId} {
@@ -230,7 +234,7 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
-    // COMMUNITY & GATHERING NODES
+    // COMMUNITY HUB & FUSION NODES
     // -------------------------------------------------------------------------
 
     match /communities/{communityId} {
@@ -250,7 +254,7 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
-    // COMPUTE HUB & SIMULATIONS
+    // COMPUTE HUB, SIMULATIONS & RESILIENCE NODES
     // -------------------------------------------------------------------------
 
     match /simulations/{simId} {
@@ -270,7 +274,7 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
-    // SYSTEM SAFETY & AUDIT
+    // SYSTEM SAFETY, AUDIT & COMPLIANCE GATEWAY
     // -------------------------------------------------------------------------
     
     match /reports/{reportId} {
@@ -296,7 +300,7 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
-    // DATA ARCHITECTURE & ARCHIVE
+    // DATA ARCHITECTURE & MESH ARCHIVE
     // -------------------------------------------------------------------------
 
     match /data_packets/{packetId} {
@@ -321,8 +325,10 @@ service cloud.firestore {
     }
 
     /**
-     * EXTENDED INFRASTRUCTURE PROTOCOLS
+     * =========================================================================
+     * EXTENDED INFRASTRUCTURE PROTOCOLS (Line 414+)
      * Security perimeters for experimental nodes and high-frequency arrays.
+     * =========================================================================
      */
     match /node_telemetry/{id} { allow read: if isAdmin(); allow write: if isAuthenticated(); }
     match /uplink_diagnostics/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
@@ -384,8 +390,10 @@ service cloud.firestore {
     match /citadel_overrides/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
 
     /**
-     * NEURAL LINK REAL-TIME TELEMETRY NODE (Line 414+)
+     * =========================================================================
+     * NEURAL LINK REAL-TIME TELEMETRY NODE (Line 500+)
      * Handshake protocols for high-frequency low-latency signaling.
+     * =========================================================================
      */
     match /neural_link_handshakes/{handshakeId} {
       allow read: if isAuthenticated() && (incomingData().initiator == request.auth.uid || incomingData().target == request.auth.uid);

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../../services/firebase';
 import { 
@@ -21,6 +20,7 @@ import { User as VibeUser, Message, Chat, Region, WeatherInfo, CallSession } fro
 import { ICONS } from '../../constants';
 import { AtmosphericBackground } from './AtmosphericBackground';
 import { ClusterCreationModal } from './ClusterCreationModal';
+import { DeleteConfirmationModal } from '../ui/DeleteConfirmationModal';
 
 interface MessagesPageProps {
   currentUser: VibeUser;
@@ -41,6 +41,9 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
   const [isClusterModalOpen, setIsClusterModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
+  // Termination Protocol State
+  const [terminationTarget, setTerminationTarget] = useState<{ type: 'message' | 'chat', id: string, label: string } | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
@@ -71,34 +74,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
     return () => unsub();
   }, [selectedChatId]);
 
-  const initiateUplink = async (targetNode: VibeUser) => {
-    if (!db) return;
-    const existing = chats.find(c => !c.isCluster && c.participants.includes(targetNode.id));
-    if (existing) {
-      setSelectedChatId(existing.id);
-      setView('chat');
-      setIsDiscoveryOpen(false);
-      return;
-    }
-    try {
-      const chatId = [currentUser.id, targetNode.id].sort().join('_');
-      await setDoc(doc(db, 'chats', chatId), {
-        participants: [currentUser.id, targetNode.id],
-        participantData: {
-          [currentUser.id]: { displayName: currentUser.displayName, avatarUrl: currentUser.avatarUrl },
-          [targetNode.id]: { displayName: targetNode.displayName, avatarUrl: targetNode.avatarUrl }
-        },
-        lastMessage: 'Neural link established.',
-        lastMessageTimestamp: serverTimestamp(),
-        isCluster: false
-      });
-      setSelectedChatId(chatId);
-      setView('chat');
-      setIsDiscoveryOpen(false);
-      addToast("Neural Direct Link Established", "success");
-    } catch (e) { addToast("Link Handshake Failed", "error"); }
-  };
-
   const handleCreateCluster = async (name: string, participants: string[]) => {
     if (!db) return;
     try {
@@ -128,34 +103,54 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
     } catch (e) { addToast("Cluster Fusion Failed", "error"); }
   };
 
-  const handleDeleteMessage = async (msgId: string) => {
-    if (!selectedChatId || !db) return;
-    try {
-      await deleteDoc(doc(db, 'chats', selectedChatId, 'messages', msgId));
-      addToast("Data Packet Purged", "success");
-    } catch (e) { addToast("Purge Protocol Failed", "error"); }
-  };
-
-  const handleTerminateChat = async (chat: Chat) => {
+  const initiateUplink = async (targetNode: VibeUser) => {
     if (!db) return;
-    const isCluster = chat.isCluster;
-    if (isCluster && chat.clusterAdmin !== currentUser.id) {
-      addToast("Access Denied: Cluster Admin Authority Required", "error");
+    const existing = chats.find(c => !c.isCluster && c.participants.includes(targetNode.id));
+    if (existing) {
+      setSelectedChatId(existing.id);
+      setView('chat');
+      setIsDiscoveryOpen(false);
       return;
     }
+    try {
+      const chatId = [currentUser.id, targetNode.id].sort().join('_');
+      await setDoc(doc(db, 'chats', chatId), {
+        participants: [currentUser.id, targetNode.id],
+        participantData: {
+          [currentUser.id]: { displayName: currentUser.displayName, avatarUrl: currentUser.avatarUrl },
+          [targetNode.id]: { displayName: targetNode.displayName, avatarUrl: targetNode.avatarUrl }
+        },
+        lastMessage: 'Neural link established.',
+        lastMessageTimestamp: serverTimestamp(),
+        isCluster: false
+      });
+      setSelectedChatId(chatId);
+      setView('chat');
+      setIsDiscoveryOpen(false);
+      addToast("Neural Direct Link Established", "success");
+    } catch (e) { addToast("Link Handshake Failed", "error"); }
+  };
 
-    if (!confirm(`Confirm termination of ${isCluster ? 'Cluster' : 'Direct Link'}? All data packets will be unlinked.`)) return;
+  const handleExecuteTermination = async () => {
+    if (!db || !terminationTarget) return;
 
     try {
-      // In a real 2026 app, we'd use a Cloud Function for recursive deletion. 
-      // Here we delete the main document to break the link.
-      await deleteDoc(doc(db, 'chats', chat.id));
-      if (selectedChatId === chat.id) {
-        setSelectedChatId(null);
-        setView('list');
+      if (terminationTarget.type === 'message' && selectedChatId) {
+        await deleteDoc(doc(db, 'chats', selectedChatId, 'messages', terminationTarget.id));
+        addToast("Data Packet Purged", "success");
+      } else if (terminationTarget.type === 'chat') {
+        await deleteDoc(doc(db, 'chats', terminationTarget.id));
+        if (selectedChatId === terminationTarget.id) {
+          setSelectedChatId(null);
+          setView('list');
+        }
+        addToast("Neural Link Terminated", "success");
       }
-      addToast("Neural Link Terminated", "success");
-    } catch (e) { addToast("Termination Protocol Failed", "error"); }
+    } catch (e) {
+      addToast("Termination Protocol Failed", "error");
+    } finally {
+      setTerminationTarget(null);
+    }
   };
 
   const handleStartCall = async (type: 'voice' | 'video') => {
@@ -301,11 +296,14 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                 
                 {canTerminate && (
                   <button 
-                    onClick={(e) => { e.stopPropagation(); handleTerminateChat(chat); }}
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      setTerminationTarget({ type: 'chat', id: chat.id, label: isCluster ? 'Cluster Fusion Record' : 'Neural Direct Link' });
+                    }}
                     className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-rose-50 text-rose-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-rose-500 hover:text-white shadow-lg active:scale-90"
                     title="Terminate Link"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M6 18L18 6M6 6l12 12" /></svg>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
                   </button>
                 )}
               </div>
@@ -360,7 +358,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                      </>
                    )}
                    <button 
-                    onClick={() => handleTerminateChat(activeChat)}
+                    onClick={() => setTerminationTarget({ type: 'chat', id: activeChat.id, label: activeChat.isCluster ? 'Cluster Fusion Record' : 'Neural Direct Link' })}
                     className={`p-3 rounded-xl transition-all ${isDarkAtmos ? 'bg-white/5 text-rose-400/40 hover:text-rose-400' : 'bg-slate-50 text-slate-400 hover:text-rose-500'}`}
                     title="Terminate Entire Link"
                    >
@@ -389,7 +387,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                           {/* Message Actions */}
                           {isMe && (
                             <button 
-                              onClick={() => handleDeleteMessage(msg.id)}
+                              onClick={() => setTerminationTarget({ type: 'message', id: msg.id, label: 'Data Packet Signal' })}
                               className="absolute -left-12 top-1/2 -translate-y-1/2 p-2.5 bg-rose-50 text-rose-500 rounded-xl opacity-0 group-hover/msg-container:opacity-100 transition-all hover:bg-rose-500 hover:text-white shadow-xl active:scale-90"
                               title="Purge Signal"
                             >
@@ -443,6 +441,15 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
         </AtmosphericBackground>
       </div>
 
+      {/* Termination Confirmation Portal */}
+      <DeleteConfirmationModal 
+        isOpen={!!terminationTarget}
+        title="PROTOCOL_ALERT"
+        description={`Confirm termination of selected ${terminationTarget?.label}? This action is permanent and unlinks all neural data fragments.`}
+        onConfirm={handleExecuteTermination}
+        onCancel={() => setTerminationTarget(null)}
+      />
+
       {/* Direct Link Discovery */}
       {isDiscoveryOpen && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300">
@@ -461,6 +468,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                 {allUsers.filter(u => u.id !== currentUser.id && (u.displayName.toLowerCase().includes(searchQuery.toLowerCase()) || u.username.toLowerCase().includes(searchQuery.toLowerCase()))).map(user => (
                   <button key={user.id} onClick={() => initiateUplink(user)} className="w-full flex items-center justify-between p-5 bg-slate-50 hover:bg-white hover:shadow-xl rounded-3xl transition-all border border-transparent hover:border-slate-100 group">
                     <div className="flex items-center gap-4">
+                      {/* Fixed: Replaced invalid 'user' attribute with 'src' on img tag */}
                       <img src={user.avatarUrl} className="w-12 h-12 rounded-2xl group-hover:scale-105 transition-transform" alt="" />
                       <div className="text-left"><p className="font-black text-slate-900 text-sm uppercase italic">{user.displayName}</p><p className="text-[10px] font-mono text-indigo-500 uppercase tracking-widest">@{user.username}</p></div>
                     </div>
