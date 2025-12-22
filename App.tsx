@@ -38,7 +38,8 @@ import {
   where,
   writeBatch,
   arrayUnion,
-  arrayRemove
+  arrayRemove,
+  or
 } from 'firebase/firestore';
 import { uploadToCloudinary } from './services/cloudinary';
 import { ICONS, PRESENCE_CONFIG } from './constants';
@@ -157,14 +158,18 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [isAuthenticated, userData?.location]);
 
-  // Monitor Global Call Signal Bus
+  // Monitor Global Call Signal Bus - Fixed with proper ID filtering to satisfy security rules
   useEffect(() => {
     if (!isAuthenticated || !userData?.id || !db) return;
     
-    // Check both incoming and outgoing ringing calls
+    // Check both incoming and outgoing ringing calls for the specific user
     const q = query(
       collection(db, 'calls'),
       where('status', 'in', ['ringing', 'connected']),
+      or(
+        where('callerId', '==', userData.id),
+        where('receiverId', '==', userData.id)
+      ),
       orderBy('timestamp', 'desc'),
       limit(1)
     );
@@ -172,15 +177,12 @@ const App: React.FC = () => {
     const unsub = onSnapshot(q, (snap) => {
       if (!snap.empty) {
         const callData = { id: snap.docs[0].id, ...snap.docs[0].data() } as CallSession;
-        // Only trigger overlay if current user is part of the call
-        if (callData.receiverId === userData.id || callData.callerId === userData.id) {
-           setActiveCall(callData);
-        } else {
-           setActiveCall(null);
-        }
+        setActiveCall(callData);
       } else {
         setActiveCall(null);
       }
+    }, (error) => {
+      console.error("Grid_Call_Bus Sync Failure:", error);
     });
     return () => unsub();
   }, [isAuthenticated, userData?.id]);
@@ -263,52 +265,78 @@ const App: React.FC = () => {
     addToast("GIF Linked to Buffer", "success");
   };
 
+  // 1. Auth Observer
   useEffect(() => {
     if (!auth) { setIsLoading(false); return; }
     const authUnsubscribe = onAuthStateChanged(auth, async (user: any) => {
       if (user) {
         setCurrentUser(user);
         setIsAuthenticated(true);
-        if (db) {
-          onSnapshot(doc(db, 'users', user.uid), (userDoc) => {
-            if (userDoc.exists()) {
-              const u = { id: userDoc.id, ...userDoc.data() } as VibeUser;
-              setUserData(u);
-              if (userData?.presenceStatus === 'Deep Work' && u.presenceStatus === 'Online') {
-                 addToast("Deep Work Cycle Complete: Delivering Buffered Packets", "success");
-              }
-            }
-          });
-          const qUsers = query(collection(db, 'users'), limit(100));
-          onSnapshot(qUsers, (snap) => {
-            setAllUsers(snap.docs.map(d => ({ id: d.id, ...d.data() } as VibeUser)));
-          });
-          const qNotif = query(collection(db, 'notifications'), where('toUserId', '==', user.uid), orderBy('timestamp', 'desc'), limit(50));
-          onSnapshot(qNotif, (snap) => {
-            const newNotifs = snap.docs.map(d => ({ id: d.id, ...d.data() } as AppNotification));
-            setNotifications(newNotifs);
-            if (!isInitialLoad.current) {
-              snap.docChanges().forEach(change => {
-                if (change.type === 'added') {
-                  const data = change.doc.data() as AppNotification;
-                  if (userData?.presenceStatus !== 'Deep Work') {
-                    addToast(`New Signal: ${data.fromUserName} ${data.text}`, 'info');
-                  }
-                }
-              });
-            }
-            isInitialLoad.current = false;
-          });
-        }
+        localStorage.setItem(SESSION_KEY, 'active');
       } else {
         setIsAuthenticated(false);
+        setCurrentUser(null);
         setUserData(null);
+        localStorage.removeItem(SESSION_KEY);
       }
       setIsLoading(false);
     });
     return () => authUnsubscribe();
-  }, [userData?.presenceStatus]);
+  }, []);
 
+  // 2. User Data Listener
+  useEffect(() => {
+    if (!currentUser?.uid || !db) return;
+    const unsub = onSnapshot(doc(db, 'users', currentUser.uid), (userDoc) => {
+      if (userDoc.exists()) {
+        const u = { id: userDoc.id, ...userDoc.data() } as VibeUser;
+        setUserData(u);
+        if (userData?.presenceStatus === 'Deep Work' && u.presenceStatus === 'Online') {
+           addToast("Deep Work Cycle Complete: Delivering Buffered Packets", "success");
+        }
+      }
+    });
+    return () => unsub();
+  }, [currentUser?.uid, userData?.presenceStatus]);
+
+  // 3. Global Mesh Nodes Listener
+  useEffect(() => {
+    if (!isAuthenticated || !db) return;
+    const qUsers = query(collection(db, 'users'), limit(100));
+    const unsub = onSnapshot(qUsers, (snap) => {
+      setAllUsers(snap.docs.map(d => ({ id: d.id, ...d.data() } as VibeUser)));
+    });
+    return () => unsub();
+  }, [isAuthenticated]);
+
+  // 4. Notifications Listener
+  useEffect(() => {
+    if (!currentUser?.uid || !db) return;
+    const qNotif = query(
+      collection(db, 'notifications'), 
+      where('toUserId', '==', currentUser.uid), 
+      orderBy('timestamp', 'desc'), 
+      limit(50)
+    );
+    const unsub = onSnapshot(qNotif, (snap) => {
+      const newNotifs = snap.docs.map(d => ({ id: d.id, ...d.data() } as AppNotification));
+      setNotifications(newNotifs);
+      if (!isInitialLoad.current) {
+        snap.docChanges().forEach(change => {
+          if (change.type === 'added') {
+            const data = change.doc.data() as AppNotification;
+            if (userData?.presenceStatus !== 'Deep Work') {
+              addToast(`New Signal: ${data.fromUserName} ${data.text}`, 'info');
+            }
+          }
+        });
+      }
+      isInitialLoad.current = false;
+    });
+    return () => unsub();
+  }, [currentUser?.uid, userData?.presenceStatus]);
+
+  // 5. Grid Signals Listener
   useEffect(() => {
     if (!db || !isAuthenticated) return;
     const q = query(collection(db, 'posts'), orderBy('timestamp', 'desc'), limit(100));
@@ -325,6 +353,16 @@ const App: React.FC = () => {
       }
     });
   }, [isAuthenticated, selectedPost?.id]);
+
+  // 6. System Settings Listener
+  useEffect(() => {
+    if (!db) return;
+    return onSnapshot(doc(db, 'settings', 'global'), (snap) => {
+      if (snap.exists()) {
+        setSystemSettings(snap.data() as SystemSettings);
+      }
+    });
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
