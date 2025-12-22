@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Post, Region } from '../../types';
 import { db, auth } from '../../services/firebase';
-// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
 import * as Firestore from 'firebase/firestore';
 const { 
   collection, 
@@ -12,12 +11,16 @@ const {
   orderBy, 
   updateDoc, 
   doc, 
-  onSnapshot 
+  onSnapshot,
+  writeBatch,
+  serverTimestamp,
+  increment,
+  getDoc
 } = Firestore as any;
 import { ProfileHeader } from './ProfileHeader';
 import { CalibrationOverlay } from './CalibrationOverlay';
 
-// Modular Sections (Assumed Immutable)
+// Modular Sections
 import { ProfileBroadcastingSection } from './sections/ProfileBroadcastingSection';
 import { ProfileAboutSection } from './sections/ProfileAboutSection';
 import { ProfileVisualsSection } from './sections/ProfileVisualsSection';
@@ -36,10 +39,15 @@ interface ProfilePageProps {
 export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProfile, addToast, locale, sessionStartTime, onViewPost }) => {
   const [activeTab, setActiveTab] = useState<string>('broadcasting');
   const [userPosts, setUserPosts] = useState<Post[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [profileData, setProfileData] = useState<User>(userData);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [isProcessingFollow, setIsProcessingFollow] = useState(false);
 
+  const currentUser = auth.currentUser;
+  const isOwnProfile = currentUser?.uid === userData.id;
+
+  // Real-time Profile Data Sync
   useEffect(() => {
     if (!db || !userData.id) return;
     const unsub = onSnapshot(doc(db, 'users', userData.id), (doc: any) => {
@@ -50,6 +58,22 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
     return () => unsub();
   }, [userData.id]);
 
+  // Check Relationship Status
+  useEffect(() => {
+    const checkFollowStatus = async () => {
+      if (!db || !currentUser || isOwnProfile) return;
+      try {
+        const docRef = doc(db, 'users', currentUser.uid, 'following', userData.id);
+        const docSnap = await getDoc(docRef);
+        setIsFollowing(docSnap.exists());
+      } catch (e) {
+        console.error("Relation Check Failed", e);
+      }
+    };
+    checkFollowStatus();
+  }, [userData.id, currentUser, isOwnProfile]);
+
+  // Fetch Posts
   useEffect(() => {
     const fetchUserPosts = async () => {
       if (!db || !userData.id) return;
@@ -57,7 +81,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
         const q = query(collection(db, 'posts'), where('authorId', '==', userData.id), orderBy('timestamp', 'desc'));
         const snap = await getDocs(q);
         setUserPosts(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Post)));
-      } catch (e) { console.error(e); } finally { setIsLoading(false); }
+      } catch (e) { console.error(e); }
     };
     fetchUserPosts();
   }, [userData.id]);
@@ -74,96 +98,60 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
     }
   };
 
-  const isOwnProfile = auth.currentUser?.uid === userData.id;
+  const handleFollowToggle = async () => {
+    if (!db || !currentUser || isOwnProfile || isProcessingFollow) return;
+    setIsProcessingFollow(true);
+    
+    // Optimistic UI
+    const nextState = !isFollowing;
+    setIsFollowing(nextState);
 
-  const renderTimelineLayout = () => (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-5xl mx-auto items-start">
-      {/* LEFT COLUMN: INTRO / ABOUT PREVIEWS (FB Style) */}
-      <div className="lg:col-span-5 space-y-4 lg:sticky lg:top-[var(--header-h)]">
+    const batch = writeBatch(db);
+    const myFollowingRef = doc(db, 'users', currentUser.uid, 'following', userData.id);
+    const theirFollowersRef = doc(db, 'users', userData.id, 'followers', currentUser.uid);
+    const myRef = doc(db, 'users', currentUser.uid);
+    const theirRef = doc(db, 'users', userData.id);
+
+    try {
+      if (nextState) {
+        // Follow
+        batch.set(myFollowingRef, { linkedAt: serverTimestamp() });
+        batch.set(theirFollowersRef, { linkedAt: serverTimestamp() });
+        batch.update(myRef, { following: increment(1) });
+        batch.update(theirRef, { followers: increment(1) });
         
-        {/* Intro Card */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-           <h3 className="text-xl font-black text-slate-900 tracking-tight mb-4 italic">Intro</h3>
-           <div className="space-y-4">
-              {profileData.statusMessage && (
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
-                  <p className="text-sm font-bold text-slate-700 italic">"{profileData.statusMessage}"</p>
-                </div>
-              )}
-              <p className="text-slate-700 text-center text-sm font-medium py-2 leading-relaxed">
-                {profileData.bio || 'Establish your neural signature in calibration...'}
-              </p>
-              <div className="h-px bg-slate-100" />
-              <div className="space-y-4 py-2">
-                 {profileData.occupation && (
-                    <div className="flex items-center gap-3 text-slate-600">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 opacity-40"><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 .621-.504 1.125-1.125 1.125H4.875c-.621 0-1.125-.504-1.125-1.125v-4.25m16.5 0a2.25 2.25 0 0 0-1.883-2.212c-3.13-.51-6.947-.51-10.084 0A2.25 2.25 0 0 0 3.75 14.15m16.5 0V9.25c0-.621-.504-1.125-1.125-1.125H4.875c-.621 0-1.125.504-1.125 1.125v4.9m16.5 0a2.25 2.25 0 0 1-2.25 2.25H5.25a2.25 2.25 0 0 1-2.25-2.25m13.5-12.25h-3c-.621 0-1.125.504-1.125 1.125v.75c0 .621.504 1.125 1.125 1.125h3c.621 0 1.125-.504 1.125-1.125v-.75c0-.621-.504-1.125-1.125-1.125Z" /></svg>
-                      <span className="text-sm">Works at <span className="font-bold text-slate-900">{profileData.occupation}</span></span>
-                    </div>
-                 )}
-                 {profileData.location && (
-                    <div className="flex items-center gap-3 text-slate-600">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 opacity-40"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" /></svg>
-                      <span className="text-sm">From <span className="font-bold text-slate-900">{profileData.location}</span></span>
-                    </div>
-                 )}
-                 <div className="flex items-center gap-3 text-slate-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 opacity-40"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
-                    <span className="text-sm">Joined <span className="font-bold text-slate-900">{new Date(profileData.joinedAt).toLocaleDateString(locale, { month: 'long', year: 'numeric' })}</span></span>
-                 </div>
-              </div>
-              {isOwnProfile && (
-                <button onClick={() => setIsEditModalOpen(true)} className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all">Edit Bio / Details</button>
-              )}
-           </div>
-        </div>
+        // Notification
+        const notifRef = doc(collection(db, 'notifications'));
+        batch.set(notifRef, {
+          type: 'follow',
+          fromUserId: currentUser.uid,
+          fromUserName: currentUser.displayName || 'Unknown Node',
+          fromUserAvatar: currentUser.photoURL || '',
+          toUserId: userData.id,
+          text: 'established a neural link with you',
+          isRead: false,
+          timestamp: serverTimestamp(),
+          pulseFrequency: 'cognition'
+        });
 
-        {/* Photos Preview Card */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-           <div className="flex justify-between items-center mb-4">
-             <h3 className="text-xl font-black text-slate-900 tracking-tight italic">Photos</h3>
-             <button onClick={() => setActiveTab('visuals')} className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline px-2 py-1">See All</button>
-           </div>
-           <div className="grid grid-cols-3 gap-1.5 rounded-xl overflow-hidden">
-             {userPosts.filter(p => p.media?.length > 0).slice(0, 9).map((post, i) => (
-               <img 
-                 key={i} 
-                 src={post.media[0].url} 
-                 onClick={() => onViewPost(post)}
-                 className="aspect-square object-cover w-full hover:opacity-90 cursor-pointer transition-opacity" 
-                 alt="" 
-               />
-             ))}
-           </div>
-        </div>
-
-        {/* Resonance/Tags Card */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-           <div className="flex justify-between items-center mb-4">
-             <h3 className="text-xl font-black text-slate-900 tracking-tight italic">Resonance</h3>
-             <button onClick={() => setActiveTab('resonance')} className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline px-2 py-1">Mesh</button>
-           </div>
-           <div className="flex flex-wrap gap-2">
-             {profileData.tags?.slice(0, 8).map(tag => (
-               <span key={tag} className="px-3 py-1 bg-slate-50 text-slate-600 text-[10px] font-black uppercase tracking-widest rounded-lg border border-slate-100">#{tag}</span>
-             ))}
-           </div>
-        </div>
-
-      </div>
-
-      {/* RIGHT COLUMN: POST FEED (The "Wall") */}
-      <div className="lg:col-span-7 space-y-4">
-        <ProfileBroadcastingSection 
-          posts={userPosts} 
-          locale={locale} 
-          userData={profileData}
-          addToast={addToast}
-          onViewPost={onViewPost}
-        />
-      </div>
-    </div>
-  );
+        addToast(`Link established with ${userData.displayName}`, 'success');
+      } else {
+        // Unfollow
+        batch.delete(myFollowingRef);
+        batch.delete(theirFollowersRef);
+        batch.update(myRef, { following: increment(-1) });
+        batch.update(theirRef, { followers: increment(-1) });
+        addToast(`Link severed with ${userData.displayName}`, 'info');
+      }
+      
+      await batch.commit();
+    } catch (e) {
+      setIsFollowing(!nextState); // Revert logic on error
+      addToast("Connection Protocol Failed", 'error');
+    } finally {
+      setIsProcessingFollow(false);
+    }
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -176,7 +164,49 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
       case 'chronology':
         return <div className="max-w-5xl mx-auto"><ProfileChronologySection userData={profileData} locale={locale} /></div>;
       default:
-        return renderTimelineLayout();
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-5xl mx-auto items-start">
+            <div className="lg:col-span-5 space-y-4 lg:sticky lg:top-[var(--header-h)]">
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                 <h3 className="text-xl font-black text-slate-900 tracking-tight mb-4 italic">Intro</h3>
+                 <div className="space-y-4">
+                    {profileData.statusMessage && (
+                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                        <p className="text-sm font-bold text-slate-700 italic">"{profileData.statusMessage}"</p>
+                      </div>
+                    )}
+                    <p className="text-slate-700 text-center text-sm font-medium py-2 leading-relaxed">
+                      {profileData.bio || 'Establish your neural signature in calibration...'}
+                    </p>
+                    <div className="h-px bg-slate-100" />
+                    <div className="space-y-4 py-2">
+                       {profileData.occupation && (
+                          <div className="flex items-center gap-3 text-slate-600">
+                            <span className="text-xs font-bold uppercase tracking-widest text-slate-400">ROLE:</span>
+                            <span className="text-sm font-bold text-slate-900">{profileData.occupation}</span>
+                          </div>
+                       )}
+                       {profileData.location && (
+                          <div className="flex items-center gap-3 text-slate-600">
+                            <span className="text-xs font-bold uppercase tracking-widest text-slate-400">NODE:</span>
+                            <span className="text-sm font-bold text-slate-900">{profileData.location}</span>
+                          </div>
+                       )}
+                    </div>
+                 </div>
+              </div>
+            </div>
+            <div className="lg:col-span-7 space-y-4">
+              <ProfileBroadcastingSection 
+                posts={userPosts} 
+                locale={locale} 
+                userData={profileData}
+                addToast={addToast}
+                onViewPost={onViewPost}
+              />
+            </div>
+          </div>
+        );
     }
   };
 
@@ -185,11 +215,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
       <ProfileHeader 
         userData={profileData} 
         onEdit={() => setIsEditModalOpen(true)} 
-        postCount={userPosts.length} 
         addToast={addToast}
         isOwnProfile={isOwnProfile}
         activeTab={activeTab}
         onTabChange={setActiveTab}
+        isFollowing={isFollowing}
+        onFollowToggle={handleFollowToggle}
       />
       
       <div className="mt-4 md:mt-8 px-4 sm:px-6 md:px-10 lg:px-14">

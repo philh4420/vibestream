@@ -1,16 +1,17 @@
 
 import React from 'react';
-import { User, Region, PresenceStatus } from '../../types';
-import { ICONS, PRESENCE_CONFIG } from '../../constants';
+import { User, PresenceStatus } from '../../types';
+import { ICONS } from '../../constants';
 
 interface ProfileHeaderProps {
   userData: User;
   onEdit: () => void;
-  postCount?: number;
   addToast?: (msg: string, type?: 'success' | 'error' | 'info') => void;
   isOwnProfile?: boolean;
   activeTab: string;
   onTabChange: (tab: any) => void;
+  isFollowing?: boolean;
+  onFollowToggle?: () => void;
 }
 
 const PRESENCE_DOTS: Record<PresenceStatus, string> = {
@@ -28,7 +29,9 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   onEdit, 
   isOwnProfile,
   activeTab,
-  onTabChange
+  onTabChange,
+  isFollowing,
+  onFollowToggle
 }) => {
   const navTabs = [
     { id: 'broadcasting', label: 'Timeline' },
@@ -88,10 +91,12 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               {userData.verifiedHuman && <ICONS.Verified />}
               {userData.statusEmoji && <span className="text-2xl ml-1">{userData.statusEmoji}</span>}
             </div>
-            <div className="flex items-center justify-center md:justify-start gap-3">
+            <div className="flex items-center justify-center md:justify-start gap-4">
               <p className="text-slate-500 font-bold text-sm">@{userData.username}</p>
-              <span className="text-slate-300">•</span>
-              <p className="text-slate-600 font-bold text-sm">{userData.followers.toLocaleString('en-GB')} Signals</p>
+              <div className="flex gap-4 text-sm">
+                 <span className="font-bold text-slate-900">{userData.following || 0} <span className="text-slate-500 font-normal">Following</span></span>
+                 <span className="font-bold text-slate-900">{userData.followers || 0} <span className="text-slate-500 font-normal">Followers</span></span>
+              </div>
             </div>
           </div>
 
@@ -100,17 +105,20 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             {isOwnProfile ? (
               <button 
                 onClick={onEdit}
-                className="flex-1 md:flex-none h-10 px-6 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black transition-all active:scale-95 shadow-lg shadow-slate-200"
+                className="flex-1 md:flex-none h-12 px-6 bg-slate-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black transition-all active:scale-95 shadow-lg"
               >
                 <ICONS.Create /> Edit Profile
               </button>
             ) : (
               <>
-                <button className="flex-1 md:flex-none h-10 px-6 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-100">
-                  Follow
+                <button 
+                  onClick={onFollowToggle}
+                  className={`flex-1 md:flex-none h-12 px-8 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg ${isFollowing ? 'bg-white border border-slate-200 text-slate-900 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-100' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100'}`}
+                >
+                  {isFollowing ? 'Following' : 'Follow'}
                 </button>
-                <button className="flex-1 md:flex-none h-10 px-6 bg-slate-100 text-slate-900 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-200 transition-all active:scale-95">
-                  <ICONS.Messages /> Message
+                <button className="flex-1 md:flex-none h-12 px-6 bg-slate-100 text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-200 transition-all active:scale-95">
+                  <ICONS.Messages />
                 </button>
               </>
             )}
