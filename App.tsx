@@ -16,7 +16,8 @@ import { SinglePostView } from './components/feed/SinglePostView';
 import { PrivacyPage } from './components/legal/PrivacyPage';
 import { TermsPage } from './components/legal/TermsPage';
 import { CookiesPage } from './components/legal/CookiesPage';
-import { AppRoute, Post, ToastMessage, Region, User as VibeUser, SystemSettings, LiveStream, AppNotification, SignalAudience, PresenceStatus, WeatherInfo } from './types';
+import { NeuralLinkOverlay } from './components/messages/NeuralLinkOverlay';
+import { AppRoute, Post, ToastMessage, Region, User as VibeUser, SystemSettings, LiveStream, AppNotification, SignalAudience, PresenceStatus, WeatherInfo, CallSession } from './types';
 import { db, auth } from './services/firebase';
 import * as FirebaseAuth from 'firebase/auth';
 const { onAuthStateChanged, signOut } = FirebaseAuth as any;
@@ -61,6 +62,7 @@ const App: React.FC = () => {
   const [userData, setUserData] = useState<VibeUser | null>(null);
   const [allUsers, setAllUsers] = useState<VibeUser[]>([]);
   const [weather, setWeather] = useState<WeatherInfo | null>(null);
+  const [activeCall, setActiveCall] = useState<CallSession | null>(null);
 
   const [systemSettings, setSystemSettings] = useState<SystemSettings>({
     maintenanceMode: false,
@@ -102,9 +104,7 @@ const App: React.FC = () => {
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [isGiphyPickerOpen, setIsGiphyPickerOpen] = useState(false);
 
-  // Universal Search Hub
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
-
   const [userRegion, setUserRegion] = useState<Region>('en-GB');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
@@ -127,10 +127,8 @@ const App: React.FC = () => {
     return () => window.removeEventListener('vibe-toast', handleGlobalToast);
   }, []);
 
-  // Atmospheric Synch Protocol
   useEffect(() => {
     if (!isAuthenticated) return;
-    
     const syncAtmosphere = async () => {
       try {
         if (navigator.geolocation) {
@@ -140,27 +138,45 @@ const App: React.FC = () => {
               if (info) setWeather(info);
             },
             async () => {
-              // Fallback to London or User Location if Geolocation denied
               const info = await fetchWeather({ query: userData?.location || 'London' });
               if (info) setWeather(info);
             },
-            { timeout: 5000 } // Don't hang forever
+            { timeout: 5000 }
           );
         } else {
           const info = await fetchWeather({ query: userData?.location || 'London' });
           if (info) setWeather(info);
         }
       } catch (err) { 
-        console.debug("Atmospheric link failed. Defaulting to UK Hub.");
         const info = await fetchWeather({ query: 'London' });
         if (info) setWeather(info);
       }
     };
-
     syncAtmosphere();
-    const interval = setInterval(syncAtmosphere, 1800000); // 30min sync
+    const interval = setInterval(syncAtmosphere, 1800000);
     return () => clearInterval(interval);
   }, [isAuthenticated, userData?.location]);
+
+  // Monitor Incoming Neural Links (Calls)
+  useEffect(() => {
+    if (!isAuthenticated || !userData?.id || !db) return;
+    const q = query(
+      collection(db, 'calls'),
+      where('receiverId', '==', userData.id),
+      where('status', '==', 'ringing'),
+      limit(1)
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      if (!snap.empty) {
+        const callData = { id: snap.docs[0].id, ...snap.docs[0].data() } as CallSession;
+        setActiveCall(callData);
+      } else {
+        // Only clear if the call wasn't connected locally
+        setActiveCall(prev => prev?.status === 'connected' ? prev : null);
+      }
+    });
+    return () => unsub();
+  }, [isAuthenticated, userData?.id]);
 
   const handleNavigate = (route: AppRoute) => {
     if (route !== AppRoute.SINGLE_POST) {
@@ -223,7 +239,6 @@ const App: React.FC = () => {
     const after = text.substring(end, text.length);
     setNewPostText(before + emoji + after);
     setIsEmojiPickerOpen(false);
-    
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(start + emoji.length, start + emoji.length);
@@ -249,25 +264,30 @@ const App: React.FC = () => {
         setIsAuthenticated(true);
         if (db) {
           onSnapshot(doc(db, 'users', user.uid), (userDoc) => {
-            if (userDoc.exists()) setUserData({ id: userDoc.id, ...userDoc.data() } as VibeUser);
+            if (userDoc.exists()) {
+              const u = { id: userDoc.id, ...userDoc.data() } as VibeUser;
+              setUserData(u);
+              // Packet Summary Check: If returning from Deep Work to Online
+              if (userData?.presenceStatus === 'Deep Work' && u.presenceStatus === 'Online') {
+                 addToast("Deep Work Cycle Complete: Delivering Buffered Packets", "success");
+              }
+            }
           });
-          
-          // Universal Registry Subscription
           const qUsers = query(collection(db, 'users'), limit(100));
           onSnapshot(qUsers, (snap) => {
             setAllUsers(snap.docs.map(d => ({ id: d.id, ...d.data() } as VibeUser)));
           });
-
           const qNotif = query(collection(db, 'notifications'), where('toUserId', '==', user.uid), orderBy('timestamp', 'desc'), limit(50));
           onSnapshot(qNotif, (snap) => {
             const newNotifs = snap.docs.map(d => ({ id: d.id, ...d.data() } as AppNotification));
             setNotifications(newNotifs);
-
             if (!isInitialLoad.current) {
               snap.docChanges().forEach(change => {
                 if (change.type === 'added') {
                   const data = change.doc.data() as AppNotification;
-                  addToast(`New Signal: ${data.fromUserName} ${data.text}`, 'info');
+                  if (userData?.presenceStatus !== 'Deep Work') {
+                    addToast(`New Signal: ${data.fromUserName} ${data.text}`, 'info');
+                  }
                 }
               });
             }
@@ -281,7 +301,7 @@ const App: React.FC = () => {
       setIsLoading(false);
     });
     return () => authUnsubscribe();
-  }, []);
+  }, [userData?.presenceStatus]);
 
   useEffect(() => {
     if (!db || !isAuthenticated) return;
@@ -293,7 +313,6 @@ const App: React.FC = () => {
         isLiked: doc.data().likedBy?.includes(auth.currentUser?.uid)
       } as Post));
       setPosts(fetchedPosts);
-      
       if (selectedPost) {
         const updated = fetchedPosts.find(p => p.id === selectedPost.id);
         if (updated) setSelectedPost(updated);
@@ -321,7 +340,6 @@ const App: React.FC = () => {
     const newPreviews = [...filePreviews];
     newPreviews.splice(index, 1);
     setFilePreviews(newPreviews);
-
     if (previewToRemove.isGif) {
       const newGifs = selectedGifs.filter(g => g.images.fixed_height.url !== previewToRemove.url);
       setSelectedGifs(newGifs);
@@ -340,12 +358,10 @@ const App: React.FC = () => {
     if (!db || !userData) return;
     setIsUploading(true);
     addToast("Initiating Neural Uplink...", "info");
-
     const contentLen = newPostText.trim().length;
     let contentLengthTier: 'pulse' | 'standard' | 'deep' = 'standard';
     if (contentLen < 80) contentLengthTier = 'pulse';
     else if (contentLen > 280) contentLengthTier = 'deep';
-
     try {
       const mediaUplinks = selectedFiles.map(async (file) => {
         const url = await uploadToCloudinary(file);
@@ -354,7 +370,6 @@ const App: React.FC = () => {
       const uploadedFiles = await Promise.all(mediaUplinks);
       const gifMedia = selectedGifs.map(g => ({ type: 'image' as any, url: g.images.original.url }));
       const mediaItems = [...uploadedFiles, ...gifMedia];
-
       await addDoc(collection(db, 'posts'), {
         authorId: userData.id,
         authorName: userData.displayName,
@@ -480,7 +495,7 @@ const App: React.FC = () => {
         />
       )}
 
-      {activeRoute === AppRoute.MESSAGES && userData && <MessagesPage currentUser={userData} locale={userRegion} addToast={addToast} weather={weather} />}
+      {activeRoute === AppRoute.MESSAGES && userData && <MessagesPage currentUser={userData} locale={userRegion} addToast={addToast} weather={weather} allUsers={allUsers} />}
       {activeRoute === AppRoute.NOTIFICATIONS && (
         <NotificationsPage 
           notifications={notifications} 
@@ -638,6 +653,14 @@ const App: React.FC = () => {
         <LiveWatcherOverlay 
           stream={watchingStream} 
           onLeave={() => setWatchingStream(null)} 
+        />
+      )}
+
+      {activeCall && userData && (
+        <NeuralLinkOverlay 
+          session={activeCall} 
+          userData={userData} 
+          onEnd={() => setActiveCall(null)} 
         />
       )}
     </Layout>

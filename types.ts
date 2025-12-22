@@ -1,4 +1,3 @@
-
 export type UserRole = 'member' | 'verified' | 'creator' | 'admin';
 
 export type Region = 'en-GB' | 'en-US' | 'de-DE' | 'fr-FR' | 'ja-JP';
@@ -64,7 +63,7 @@ export interface User {
   }[];
 }
 
-export type NotificationType = 'like' | 'comment' | 'follow' | 'mention' | 'broadcast' | 'system' | 'relay';
+export type NotificationType = 'like' | 'comment' | 'follow' | 'mention' | 'broadcast' | 'system' | 'relay' | 'call' | 'cluster_invite' | 'packet_summary';
 
 export interface AppNotification {
   id: string;
@@ -164,6 +163,10 @@ export interface Chat {
   participantData: Record<string, { displayName: string; avatarUrl: string }>;
   lastMessage?: string;
   lastMessageTimestamp?: any;
+  isCluster?: boolean;
+  clusterName?: string;
+  clusterAvatar?: string;
+  clusterAdmin?: string;
 }
 
 export interface Message {
@@ -172,15 +175,18 @@ export interface Message {
   text: string;
   timestamp: any;
   isRead: boolean;
+  isBuffered?: boolean;
 }
 
-export interface Community {
+export interface CallSession {
   id: string;
-  name: string;
-  description: string;
-  memberCount: number;
-  icon: string;
-  category: string;
+  callerId: string;
+  callerName: string;
+  callerAvatar: string;
+  receiverId: string;
+  status: 'ringing' | 'connected' | 'ended' | 'rejected';
+  type: 'voice' | 'video';
+  timestamp: any;
 }
 
 export enum AppRoute {

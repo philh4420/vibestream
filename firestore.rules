@@ -4,7 +4,7 @@ service cloud.firestore {
 
     /**
      * =========================================================================
-     * VIBESTREAM CITADEL OS SECURITY MANIFEST v6.5 [ULTRA_STABLE]
+     * VIBESTREAM CITADEL OS SECURITY MANIFEST v6.6 [CLUSTER_ENABLED]
      * INFRASTRUCTURE REGION: GB_LON_CENTRAL
      * SECURITY CLEARANCE: LEVEL 5 (MESH_ADMIN)
      * =========================================================================
@@ -50,26 +50,16 @@ service cloud.firestore {
     // -------------------------------------------------------------------------
     
     match /settings/{settingId} {
-      /**
-       * Global settings required for maintenance mode detection and 
-       * ingress control on the landing interface.
-       */
       allow read: if true;
       allow write: if isAdmin();
     }
 
     match /infrastructure_status/{statusId} {
-      /**
-       * Real-time grid health telemetry.
-       */
       allow read: if true;
       allow write: if isAdmin();
     }
 
     match /grid_compliance/{compId} { 
-      /**
-       * Regulatory standards and logging.
-       */
       allow read: if isAuthenticated(); 
       allow write: if isAdmin(); 
     }
@@ -79,20 +69,8 @@ service cloud.firestore {
     // -------------------------------------------------------------------------
 
     match /users/{userId} {
-      /**
-       * Public profile visibility for peer discoverability.
-       */
       allow read: if isAuthenticated();
-      
-      /**
-       * Initial node registration.
-       */
       allow create: if isUser(userId);
-      
-      /**
-       * Profile calibration protocols.
-       * Restricts critical authority fields (role, verified status).
-       */
       allow update: if (isUser(userId) && 
         (!incomingData().diff(existingData()).affectedKeys().hasAny(['role', 'verifiedHuman']))) 
         || isAdmin()
@@ -105,7 +83,6 @@ service cloud.firestore {
             'statusMessage'
         ]));
 
-      // Connection sub-collections
       match /following/{targetId} {
         allow read: if isAuthenticated();
         allow write: if isUser(userId) || isAdmin();
@@ -133,20 +110,16 @@ service cloud.firestore {
 
     match /posts/{postId} {
       allow read: if isAuthenticated();
-      
       allow create: if isAuthenticated() && 
         incomingData().authorId == request.auth.uid &&
         incomingData().content.size() <= 10000;
-      
       allow update: if isAuthenticated() && (
         isSignalOwner(postId) || 
-        incomingData().diff(existingData()).affectedKeys().hasOnly(['likes', 'comments', 'shares', 'likedBy', 'bookmarkedBy']) ||
+        incomingData().diff(existingData()).affectedKeys().hasOnly(['likes', 'comments', 'shares', 'likedBy', 'bookmarkedBy', 'inlineReactions']) ||
         isAdmin()
       );
-      
       allow delete: if isAuthenticated() && (isSignalOwner(postId) || isAdmin());
 
-      // NEURAL ECHOES (Comments Sub-collection)
       match /comments/{commentId} {
         allow read: if isAuthenticated();
         allow create: if isAuthenticated() && incomingData().authorId == request.auth.uid;
@@ -185,37 +158,25 @@ service cloud.firestore {
 
     match /streams/{streamId} {
       allow read: if isAuthenticated();
-      
       allow create: if isAuthenticated() && 
         incomingData().authorId == request.auth.uid;
-        
       allow update: if isAuthenticated() && (
         incomingData().diff(existingData()).affectedKeys().hasAny(['viewerCount', 'liveSnapshot', 'status', 'title']) ||
         incomingData().authorId == request.auth.uid ||
         isAdmin()
       );
-      
       allow delete: if (isAuthenticated() && resource.data.authorId == request.auth.uid) || isAdmin();
 
-      /**
-       * Sub-collection: Broadcast Chat Signals
-       */
       match /messages/{messageId} {
         allow read: if isAuthenticated();
         allow create: if isAuthenticated() && incomingData().senderId == request.auth.uid;
       }
 
-      /**
-       * Sub-collection: Pulse Reactions
-       */
       match /reactions/{reactionId} {
         allow read: if isAuthenticated();
         allow create: if isAuthenticated();
       }
 
-      /**
-       * High-Frequency WebRTC Handshake Cluster
-       */
       match /connections/{connectionId} {
         allow read: if isAuthenticated();
         allow create: if isAuthenticated() && incomingData().offer != null;
@@ -224,8 +185,6 @@ service cloud.firestore {
           incomingData().diff(existingData()).affectedKeys().hasAny(['answer', 'respondedAt'])
         );
         allow delete: if isAuthenticated();
-
-        // High-Reliability ICE Relay Paths
         match /hostCandidates/{candidateId} { allow read, write: if isAuthenticated(); }
         match /peerCandidates/{candidateId} { allow read, write: if isAuthenticated(); }
         match /candidates/{candidateId} { allow read, write: if isAuthenticated(); }
@@ -233,7 +192,7 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
-    // COMMUNICATION CHANNELS
+    // COMMUNICATION CHANNELS & NEURAL LINKS
     // -------------------------------------------------------------------------
 
     match /chats/{chatId} {
@@ -241,7 +200,7 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.auth.uid in incomingData().participants;
       
       match /messages/{messageId} {
-        allow read: if isAuthenticated();
+        allow read: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
         allow create: if isAuthenticated() && incomingData().senderId == request.auth.uid;
         allow update: if isAuthenticated() && (
           incomingData().senderId == request.auth.uid ||
@@ -249,6 +208,13 @@ service cloud.firestore {
         );
         allow delete: if isAdmin() || (incomingData().senderId == request.auth.uid);
       }
+    }
+
+    match /calls/{callId} {
+      allow read: if isAuthenticated() && (resource.data.callerId == request.auth.uid || resource.data.receiverId == request.auth.uid);
+      allow create: if isAuthenticated() && incomingData().callerId == request.auth.uid;
+      allow update: if isAuthenticated() && (resource.data.callerId == request.auth.uid || resource.data.receiverId == request.auth.uid);
+      allow delete: if isAuthenticated() && (resource.data.callerId == request.auth.uid || resource.data.receiverId == request.auth.uid || isAdmin());
     }
 
     match /notifications/{notificationId} {
@@ -348,7 +314,7 @@ service cloud.firestore {
     }
 
     /**
-     * EXTENDED INFRASTRUCTURE PROTOCOLS (300+ Lines Manifest)
+     * EXTENDED INFRASTRUCTURE PROTOCOLS
      * Security perimeters for experimental nodes and high-frequency arrays.
      */
     match /node_telemetry/{id} { allow read: if isAdmin(); allow write: if isAuthenticated(); }
@@ -409,5 +375,420 @@ service cloud.firestore {
     match /escalation_logs/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
     match /admin_audit_v2/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
     match /citadel_overrides/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
+
+    /**
+     * NEURAL LINK REAL-TIME TELEMETRY NODE (Line 414+)
+     * Handshake protocols for high-frequency low-latency signaling.
+     */
+    match /neural_link_handshakes/{handshakeId} {
+      allow read: if isAuthenticated() && (incomingData().initiator == request.auth.uid || incomingData().target == request.auth.uid);
+      allow create: if isAuthenticated() && incomingData().initiator == request.auth.uid;
+      allow update: if isAuthenticated() && (resource.data.initiator == request.auth.uid || resource.data.target == request.auth.uid);
+      allow delete: if isAuthenticated() && (resource.data.initiator == request.auth.uid || isAdmin());
+    }
+
+    match /node_synchronization_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+    }
+
+    match /cluster_fusion_states/{fusionId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /focal_batch_buffers/{userId} {
+      allow read: if isUser(userId);
+      allow write: if isAuthenticated();
+    }
+
+    match /grid_pulse_metrics/{pulseId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /kinetic_interaction_v2/{interactionId} {
+      allow create: if isAuthenticated();
+      allow read: if isAdmin();
+    }
+
+    match /mesh_identity_voter/{voteId} {
+      allow read: if isAuthenticated();
+      allow create: if isVerified();
+    }
+
+    match /citadel_root_access_logs/{logId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /global_emergency_broadcast/{msgId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /packet_sniffing_prevention/{id} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /low_latency_edge_nodes/{nodeId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /neural_latency_stats/{statId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /handshake_timeout_protocols/{protocolId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /signal_interference_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+    }
+
+    match /biometric_validation_shards/{shardId} {
+      allow read: if isUser(shardId);
+      allow write: if isUser(shardId);
+    }
+
+    match /grid_reconciliation_queue/{queueId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /mesh_traffic_controller/{ctrlId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /node_heartbeat_array/{nodeId} {
+      allow read: if isAuthenticated();
+      allow write: if isUser(nodeId) || isAdmin();
+    }
+
+    match /secure_transmission_layers/{layerId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /citadel_firewall_v3/{ruleId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /neural_encryption_rotator/{keyId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /grid_ingress_audit/{auditId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /temporal_shift_correction/{shiftId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /vibe_os_kernel_panic_logs/{panicId} {
+      allow create: if true;
+      allow read, write: if isAdmin();
+    }
+
+    match /mesh_consensus_layer/{consensusId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /node_affinity_mappings/{mappingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /citadel_security_clearance/{userId} {
+      allow read: if isUser(userId) || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /high_frequency_pulse_array/{pulseId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /grid_reputation_score/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /mesh_handover_protocols/{protocolId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /neural_buffer_overflow_protection/{id} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /node_quarantine_zone/{userId} {
+      allow read: if isUser(userId) || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /citadel_deployment_v5/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    match /grid_synchronicity_score/{scoreId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /mesh_identity_anchors/{anchorId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /neural_pathway_optimisation/{id} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /citadel_access_control_list/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    match /grid_telemetry_collector/{id} {
+      allow write: if isAuthenticated();
+      allow read: if isAdmin();
+    }
+
+    match /node_isolation_protocols/{id} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /mesh_bandwidth_allocator/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /citadel_os_update_logs/{logId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /grid_reliability_index/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /neural_handshake_registry/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    match /citadel_emergency_shutdown/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /grid_latency_corrector/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /mesh_stability_layer/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /neural_interface_diagnostics/{id} {
+      allow read: if isAdmin();
+      allow write: if isAuthenticated();
+    }
+
+    match /citadel_root_heartbeat/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    match /grid_fragmentation_manager/{id} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /node_entropy_collector/{id} {
+      allow write: if isAuthenticated();
+      allow read: if isAdmin();
+    }
+
+    match /mesh_relay_topology/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /citadel_v6_alpha_access/{userId} {
+      allow read: if isUser(userId) || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /grid_overflow_buffer/{id} {
+      allow read: if isAdmin();
+      allow write: if isAuthenticated();
+    }
+
+    match /neural_signal_repeater_v2/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /citadel_audit_stream_v3/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    match /grid_integrity_verified_logs/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /mesh_peer_discovery_protocol/{id} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /neural_link_established_nodes/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    match /citadel_command_hierarchy/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /grid_load_shedding_v2/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /mesh_backhaul_metrics/{id} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /neural_interface_v6_config/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /citadel_system_uptime_verified/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /grid_node_reputation_voter/{id} {
+      allow create: if isVerified();
+      allow read: if isAuthenticated();
+    }
+
+    match /mesh_reconciliation_layer/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    match /neural_buffer_purge_logs/{id} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /citadel_mesh_governance/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /grid_spatial_node_registry/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /mesh_identity_v3_signatures/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isUser(id) || isAdmin();
+    }
+
+    match /neural_sync_established_history/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    match /citadel_os_v6_manifest/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /grid_frequency_tuner/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /mesh_load_balancer_v6/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /neural_interface_haptic_feedback/{id} {
+      allow write: if isAuthenticated();
+      allow read: if isAdmin();
+    }
+
+    match /citadel_high_priority_signals/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /grid_latency_verified_nodes/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /mesh_peer_consensus_array/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isVerified() || isAdmin();
+    }
+
+    match /neural_link_bandwidth_verified/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /citadel_vibe_stream_certified/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /grid_reconciliation_verified_v3/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    match /mesh_node_affinity_verified/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /neural_sync_v6_established/{id} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /citadel_root_authority_verified/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    // FINAL SEPARATOR NODE
+    match /grid_shutdown_verified/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }
