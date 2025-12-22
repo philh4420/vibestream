@@ -33,11 +33,11 @@
     height: 100dvh;
     width: 100vw;
     color-scheme: light dark;
-    overflow: hidden !important; /* Lockdown Protocol */
+    overflow: hidden !important; 
     overscroll-behavior: none !important;
     cursor: default;
     background-color: var(--bg-main);
-    position: fixed; /* Prevent bouncy scroll on iOS */
+    position: fixed; 
     top: 0;
     left: 0;
   }
@@ -127,7 +127,6 @@
   -webkit-overflow-scrolling: touch !important;
   scrollbar-width: none !important;
   overscroll-behavior-y: contain !important;
-  /* Ensure padding-bottom is accounted for in height */
   display: flex;
   flex-direction: column;
 }
@@ -147,7 +146,6 @@
   border: 1px solid var(--glass-border);
 }
 
-/* 2026 Micro-Interactions */
 .tap-feedback:active {
   transform: scale(0.97);
   opacity: 0.8;
@@ -166,6 +164,17 @@
 
 .animate-entrance {
   animation: fluid-fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Extra Animations for Handshakes */
+@keyframes ring-pulse-2026 {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); }
+  70% { transform: scale(1.1); box-shadow: 0 0 40px 20px rgba(79, 70, 229, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+}
+
+.animate-neural-pulse {
+  animation: ring-pulse-2026 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* 5. RESPONSIVE CALIBRATION */
