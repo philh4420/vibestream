@@ -1,3 +1,4 @@
+
 export type UserRole = 'member' | 'verified' | 'creator' | 'admin';
 
 export type Region = 'en-GB' | 'en-US' | 'de-DE' | 'fr-FR' | 'ja-JP';
@@ -176,6 +177,10 @@ export interface Message {
   timestamp: any;
   isRead: boolean;
   isBuffered?: boolean;
+  media?: {
+    type: 'image' | 'video';
+    url: string;
+  }[];
 }
 
 export interface CallSession {

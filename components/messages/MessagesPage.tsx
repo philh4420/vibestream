@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../../services/firebase';
 import { 
@@ -19,6 +20,10 @@ import { ICONS } from '../../constants';
 import { AtmosphericBackground } from './AtmosphericBackground';
 import { ClusterCreationModal } from './ClusterCreationModal';
 import { DeleteConfirmationModal } from '../ui/DeleteConfirmationModal';
+import { EmojiPicker } from '../ui/EmojiPicker';
+import { GiphyPicker } from '../ui/GiphyPicker';
+import { uploadToCloudinary } from '../../services/cloudinary';
+import { GiphyGif } from '../../services/giphy';
 
 interface MessagesPageProps {
   currentUser: VibeUser;
@@ -35,13 +40,21 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [view, setView] = useState<'list' | 'chat'>('list');
-  const [isDiscoveryOpen, setIsDiscoveryOpen] = useState(false);
   const [isClusterModalOpen, setIsClusterModalOpen] = useState(false);
+  
+  // Media & Picker State
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [isGiphyPickerOpen, setIsGiphyPickerOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedGif, setSelectedGif] = useState<GiphyGif | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   
   const [terminationTarget, setTerminationTarget] = useState<{ type: 'message' | 'chat', id: string, label: string } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!db || !currentUser.id) return;
@@ -92,58 +105,98 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
     // Protocol Update: Feature Gate v2.6.4
     const featureName = type === 'voice' ? 'Neural Voice Uplink' : 'Quantum Video Sync';
     addToast(`${featureName} v3.0 Coming Soon to the Grid`, "info");
-    
-    // Underlying logic remains intact for future deployment
     return;
+  };
 
-    if (!activeChat || activeChat.isCluster || !db) return;
-    const targetId = activeChat.participants.find(id => id !== currentUser.id);
-    if (!targetId) return;
-    const targetUser = allUsers.find(u => u.id === targetId);
-    
-    if (!targetUser || targetUser.presenceStatus === 'Away' || targetUser.presenceStatus === 'Invisible') {
-       addToast(`Target node is currently ${targetUser?.presenceStatus || 'Offline'}. Link refused.`, "error");
-       return;
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 20 * 1024 * 1024) {
+        addToast("Artifact too large (Max 20MB)", "error");
+        return;
+      }
+      setSelectedFile(file);
+      setSelectedGif(null);
+      setMediaPreview(URL.createObjectURL(file));
+      setIsGiphyPickerOpen(false);
+      setIsEmojiPickerOpen(false);
     }
-    
-    try {
-      const callId = `call_${Date.now()}_${currentUser.id.slice(0,4)}`;
-      await setDoc(doc(db, 'calls', callId), {
-        callerId: currentUser.id,
-        callerName: currentUser.displayName,
-        callerAvatar: currentUser.avatarUrl,
-        receiverId: targetId,
-        receiverName: targetUser.displayName,
-        receiverAvatar: targetUser.avatarUrl,
-        status: 'ringing',
-        type,
-        timestamp: serverTimestamp()
-      });
-      addToast(`Initiating Neural ${type.toUpperCase()} Protocol...`, "info");
-    } catch (e) { addToast("Call protocol handshake denied", "error"); }
+  };
+
+  const handleGifSelect = (gif: GiphyGif) => {
+    setSelectedGif(gif);
+    setSelectedFile(null);
+    setMediaPreview(gif.images.fixed_height.url);
+    setIsGiphyPickerOpen(false);
+  };
+
+  const clearMedia = () => {
+    if (mediaPreview && selectedFile) URL.revokeObjectURL(mediaPreview);
+    setSelectedFile(null);
+    setSelectedGif(null);
+    setMediaPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const insertEmoji = (emoji: string) => {
+    setNewMessage(prev => prev + emoji);
+    inputRef.current?.focus();
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedChatId || isSending) return;
+    if ((!newMessage.trim() && !selectedFile && !selectedGif) || !selectedChatId || isSending) return;
+    
     setIsSending(true);
+    let mediaItems: { type: 'image' | 'video', url: string }[] = [];
+
     try {
+      if (selectedFile) {
+        addToast("Uploading Artifact...", "info");
+        const url = await uploadToCloudinary(selectedFile);
+        mediaItems.push({
+          type: selectedFile.type.startsWith('video/') ? 'video' : 'image',
+          url
+        });
+      } else if (selectedGif) {
+        mediaItems.push({
+          type: 'image',
+          url: selectedGif.images.original.url
+        });
+      }
+
       const msgText = newMessage.trim();
-      setNewMessage('');
-      await addDoc(collection(db, 'chats', selectedChatId, 'messages'), {
+      const payload: any = {
         senderId: currentUser.id,
         text: msgText,
         timestamp: serverTimestamp(),
         isRead: false
+      };
+
+      if (mediaItems.length > 0) {
+        payload.media = mediaItems;
+      }
+
+      await addDoc(collection(db, 'chats', selectedChatId, 'messages'), payload);
+      
+      const lastMsgText = mediaItems.length > 0 ? (msgText ? `📎 ${msgText}` : '📎 Attached Artifact') : msgText;
+      await updateDoc(doc(db, 'chats', selectedChatId), { 
+        lastMessage: lastMsgText, 
+        lastMessageTimestamp: serverTimestamp() 
       });
-      await updateDoc(doc(db, 'chats', selectedChatId), { lastMessage: msgText, lastMessageTimestamp: serverTimestamp() });
-    } catch (e) { addToast("Transmission Interrupted", "error"); } finally { setIsSending(false); }
+
+      setNewMessage('');
+      clearMedia();
+    } catch (e) { 
+      addToast("Transmission Interrupted", "error"); 
+    } finally { 
+      setIsSending(false); 
+    }
   };
 
   const handleExecuteTermination = async () => {
     if (!terminationTarget || !db) return;
     const { type, id } = terminationTarget;
-    
     try {
       if (type === 'chat') {
         await deleteDoc(doc(db, 'chats', id));
@@ -254,11 +307,9 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                      <div className="hidden sm:flex bg-slate-100/80 p-1.5 rounded-[2.2rem] gap-1.5 shadow-inner border border-slate-100">
                        <button onClick={() => handleStartCall('voice')} className="px-5 py-3 bg-white hover:bg-indigo-50 text-indigo-600 rounded-2xl transition-all shadow-sm flex items-center gap-2 group active:scale-90">
                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg>
-                         <span className="text-[8px] font-black uppercase tracking-widest italic">Voice_Link</span>
                        </button>
                        <button onClick={() => handleStartCall('video')} className="px-5 py-3 bg-white hover:bg-emerald-50 text-emerald-600 rounded-2xl transition-all shadow-sm flex items-center gap-2 group active:scale-90">
                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25z" /></svg>
-                         <span className="text-[8px] font-black uppercase tracking-widest italic">Video_Sync</span>
                        </button>
                      </div>
                    )}
@@ -289,6 +340,18 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                           </div>
                         )}
                         <div className={`p-6 rounded-[2.5rem] text-sm font-bold shadow-sm relative group-hover/msg:shadow-lg transition-all duration-300 ${isMe ? 'bg-[#0f172a] text-white rounded-tr-none shadow-indigo-950/10' : 'bg-white text-slate-800 rounded-tl-none border border-slate-100 shadow-slate-200/50'}`}>
+                          
+                          {/* Media Rendering */}
+                          {msg.media && msg.media.map((item, mIdx) => (
+                            <div key={mIdx} className="mb-3 rounded-2xl overflow-hidden shadow-md">
+                              {item.type === 'video' ? (
+                                <video src={item.url} controls className="w-full h-auto max-h-[300px] object-cover" />
+                              ) : (
+                                <img src={item.url} alt="Attachment" className="w-full h-auto max-h-[400px] object-cover" />
+                              )}
+                            </div>
+                          ))}
+
                           {msg.text}
                           <div className={`text-[7px] font-black uppercase mt-3 opacity-30 font-mono tracking-widest ${isMe ? 'text-right' : 'text-left'}`}>
                             {msg.timestamp?.toDate ? msg.timestamp.toDate().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'SYNCING...'}
@@ -302,26 +365,92 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
               </div>
 
               {/* INPUT SECTION */}
-              <div className="p-8 border-t bg-white/80 backdrop-blur-md border-slate-100/50 relative">
-                <form onSubmit={handleSendMessage} className="flex gap-4 max-w-5xl mx-auto">
-                  <div className="flex-1 relative flex items-center">
+              <div className="p-6 md:p-8 border-t bg-white/80 backdrop-blur-md border-slate-100/50 relative z-30">
+                
+                {/* Media Preview Area */}
+                {mediaPreview && (
+                  <div className="absolute bottom-full left-0 right-0 p-4 bg-slate-50/90 backdrop-blur-lg border-t border-slate-100 flex items-center gap-4 animate-in slide-in-from-bottom-2">
+                    <div className="relative group">
+                      {selectedFile?.type.startsWith('video/') ? (
+                        <video src={mediaPreview} className="h-20 w-20 object-cover rounded-xl border border-slate-200" />
+                      ) : (
+                        <img src={mediaPreview} className="h-20 w-20 object-cover rounded-xl border border-slate-200" alt="Preview" />
+                      )}
+                      <button 
+                        onClick={clearMedia}
+                        className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600 transition-colors"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                      </button>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 font-mono">Artifact Ready</p>
+                      <p className="text-xs font-bold text-slate-900 truncate max-w-[200px]">{selectedFile?.name || 'GIF Fragment'}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Overlays */}
+                {(isEmojiPickerOpen || isGiphyPickerOpen) && (
+                  <div className="fixed inset-0 z-[100] bg-black/10 backdrop-blur-[1px]" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />
+                )}
+                {isEmojiPickerOpen && (
+                  <div className="absolute bottom-24 left-4 z-[200]">
+                    <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />
+                  </div>
+                )}
+                {isGiphyPickerOpen && (
+                  <div className="absolute bottom-24 left-4 z-[200]">
+                    <GiphyPicker onSelect={handleGifSelect} onClose={() => setIsGiphyPickerOpen(false)} />
+                  </div>
+                )}
+
+                <form onSubmit={handleSendMessage} className="flex gap-3 md:gap-4 max-w-5xl mx-auto items-end">
+                  {/* Media Tools */}
+                  <div className="flex gap-2 pb-1.5 shrink-0">
+                    <button 
+                      type="button" 
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`p-3 rounded-2xl transition-all active:scale-90 border ${selectedFile ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white hover:border-indigo-100 hover:text-indigo-500 shadow-sm'}`}
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Z" /></svg>
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => { setIsGiphyPickerOpen(!isGiphyPickerOpen); setIsEmojiPickerOpen(false); }}
+                      className={`p-3 rounded-2xl transition-all active:scale-90 border ${isGiphyPickerOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white hover:border-indigo-100 hover:text-indigo-500 shadow-sm'}`}
+                    >
+                      <span className="text-[10px] font-black font-mono">GIF</span>
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }}
+                      className={`p-3 rounded-2xl transition-all active:scale-90 border ${isEmojiPickerOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white hover:border-indigo-100 hover:text-indigo-500 shadow-sm'}`}
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" /></svg>
+                    </button>
+                  </div>
+
+                  <div className="flex-1 relative">
                     <input 
+                      ref={inputRef}
                       type="text" 
                       value={newMessage} 
                       onChange={(e) => setNewMessage(e.target.value)} 
-                      placeholder="Establish broadcast sequence..." 
-                      className="w-full bg-slate-100/80 border border-slate-200 rounded-[2.2rem] pl-8 pr-16 py-5 text-sm font-bold focus:ring-8 focus:ring-indigo-500/5 focus:bg-white focus:border-indigo-500 transition-all outline-none italic placeholder:text-slate-300 shadow-inner" 
+                      placeholder={selectedFile ? "Add a caption..." : "Establish broadcast sequence..."} 
+                      className="w-full bg-slate-100/80 border border-slate-200 rounded-[2.2rem] pl-6 pr-6 py-5 text-sm font-bold focus:ring-4 focus:ring-indigo-500/5 focus:bg-white focus:border-indigo-500 transition-all outline-none italic placeholder:text-slate-400 shadow-inner" 
                     />
-                    <div className="absolute right-4 flex gap-1">
-                      <button type="button" className="p-2 text-slate-400 hover:text-indigo-600 transition-colors"><ICONS.Search /></button>
-                    </div>
                   </div>
+                  
                   <button 
-                    disabled={!newMessage.trim() || isSending} 
-                    className="px-12 py-5 bg-slate-950 text-white rounded-[2.2rem] font-black text-xs uppercase tracking-[0.4em] hover:bg-black transition-all active:scale-95 disabled:opacity-30 italic shadow-2xl group"
+                    disabled={(!newMessage.trim() && !selectedFile && !selectedGif) || isSending} 
+                    className="h-[58px] px-8 bg-slate-950 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] hover:bg-black transition-all active:scale-95 disabled:opacity-30 italic shadow-xl group flex items-center justify-center shrink-0"
                   >
-                    SEND
-                    <svg className="inline-block w-4 h-4 ml-3 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M13 5l7 7-7 7" /></svg>
+                    {isSending ? (
+                      <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <svg className="w-5 h-5 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                    )}
                   </button>
                 </form>
               </div>
@@ -338,6 +467,8 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
           )}
         </AtmosphericBackground>
       </div>
+
+      <input type="file" ref={fileInputRef} className="hidden" accept="image/*,video/*,.heic,.heif,.avif,.webp" onChange={handleFileSelect} />
 
       {/* CLUSTER MODAL OVERLAYS */}
       {isClusterModalOpen && (
