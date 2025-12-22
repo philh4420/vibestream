@@ -5,6 +5,7 @@ import { AppRoute, UserRole, Region, User as VibeUser, AppNotification, WeatherI
 import { Header } from './Header';
 import { RightSidebar } from './RightSidebar';
 import { LeftSidebar } from './LeftSidebar';
+import { AtmosphericBackground } from '../messages/AtmosphericBackground';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -67,7 +68,7 @@ export const Layout: React.FC<LayoutProps> = ({
         onSearch={onSearch}
       />
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         
         {/* Dynamic Left Navigation System */}
         <LeftSidebar 
@@ -78,13 +79,15 @@ export const Layout: React.FC<LayoutProps> = ({
           userData={userData}
         />
 
-        {/* Main Content Viewport */}
+        {/* Main Content Viewport with Global Atmosphere */}
         <main className="flex-1 relative overflow-hidden flex flex-col pt-[var(--header-h)]">
-          <div className="flex-1 scroll-viewport px-4 sm:px-6 md:px-10 lg:px-14 py-6" style={{ paddingLeft: 'max(1.25rem, var(--sal))', paddingRight: 'max(1.25rem, var(--sar))' }}>
-            <div className="max-w-4xl mx-auto w-full pb-[calc(var(--bottom-nav-h)+4rem)] md:pb-24">
-              {children}
+          <AtmosphericBackground weather={weather}>
+            <div className="flex-1 scroll-viewport px-4 sm:px-6 md:px-10 lg:px-14 py-6 relative z-10" style={{ paddingLeft: 'max(1.25rem, var(--sal))', paddingRight: 'max(1.25rem, var(--sar))' }}>
+              <div className="max-w-4xl mx-auto w-full pb-[calc(var(--bottom-nav-h)+4rem)] md:pb-24">
+                {children}
+              </div>
             </div>
-          </div>
+          </AtmosphericBackground>
         </main>
 
         {/* Refined Right Sidebar - visible on large screens */}
@@ -94,18 +97,15 @@ export const Layout: React.FC<LayoutProps> = ({
       {/* Portrait Mobile Tab Bar - Facebook Style Core Protocols */}
       <nav className={`${orientation === 'landscape' ? 'hidden' : 'md:hidden'} fixed bottom-0 left-0 right-0 glass-panel border-t border-precision z-[150] shadow-[0_-10px_40px_rgba(0,0,0,0.05)]`} style={{ height: 'var(--bottom-nav-h)', paddingBottom: 'var(--sab)' }}>
         <div className="flex items-center justify-around h-full px-2">
-          {/* HOME */}
           <button onClick={() => onNavigate(AppRoute.FEED)} className={`p-3 rounded-xl transition-all tap-feedback relative ${activeRoute === AppRoute.FEED ? 'text-indigo-600 bg-indigo-50 shadow-inner' : 'text-slate-400'}`}>
             <ICONS.Home />
           </button>
 
-          {/* WATCH (STREAMS) */}
           <button onClick={() => onNavigate(AppRoute.STREAM_GRID)} className={`p-3 rounded-xl transition-all tap-feedback relative ${activeRoute === AppRoute.STREAM_GRID ? 'text-indigo-600 bg-indigo-50 shadow-inner' : 'text-slate-400'}`}>
             <ICONS.Streams />
             <div className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white animate-pulse" />
           </button>
           
-          {/* CREATE ACTION */}
           <div className="relative w-14 h-14">
             <button 
               onClick={onOpenCreate}
@@ -117,12 +117,10 @@ export const Layout: React.FC<LayoutProps> = ({
             </button>
           </div>
 
-          {/* GROUPS (CLUSTERS) */}
           <button onClick={() => onNavigate(AppRoute.CLUSTERS)} className={`p-3 rounded-xl transition-all tap-feedback relative ${activeRoute === AppRoute.CLUSTERS ? 'text-indigo-600 bg-indigo-50 shadow-inner' : 'text-slate-400'}`}>
             <ICONS.Clusters />
           </button>
 
-          {/* MENU / PROFILE */}
           <button onClick={() => onNavigate(AppRoute.PROFILE)} className={`p-3 rounded-xl transition-all tap-feedback ${activeRoute === AppRoute.PROFILE ? 'text-indigo-600 bg-indigo-50 shadow-inner' : 'text-slate-400'}`}>
             <div className="w-6 h-6 rounded-lg overflow-hidden border border-current p-0.5">
               <img src={userData?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=user`} className="w-full h-full object-cover rounded-sm" alt="" />

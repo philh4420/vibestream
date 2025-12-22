@@ -35,26 +35,26 @@ export const AtmosphericBackground: React.FC<AtmosphericBackgroundProps> = ({ we
         
         {/* UK Condensation Layer (Rain/Drizzle/Storm) */}
         {(condition.includes('rain') || condition.includes('storm') || condition.includes('drizzle')) && (
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?q=80&w=2000')] bg-cover mix-blend-soft-light opacity-20 animate-pulse-slow" />
+          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1534274988757-a28bf1f539cf?q=80&w=2000')] bg-cover mix-blend-soft-light opacity-[0.08] animate-pulse-slow" />
         )}
         
         {/* Solar Flare Layer (Clear/Sunny) */}
         {condition.includes('clear') && (
-          <div className="absolute -top-1/4 -right-1/4 w-full h-full bg-gradient-radial from-amber-400/20 to-transparent blur-[140px] animate-float-slow" />
+          <div className="absolute -top-1/4 -right-1/4 w-full h-full bg-gradient-radial from-amber-400/10 to-transparent blur-[140px] animate-float-slow" />
         )}
 
         {/* Crystalline Layer (Snow) */}
         {condition.includes('snow') && (
-          <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px] opacity-40" />
+          <div className="absolute inset-0 bg-white/5 backdrop-blur-[1px] opacity-20" />
         )}
 
         {/* Volumetric Layer (Mist/Fog/Haze) */}
         {['mist', 'fog', 'haze'].some(c => condition.includes(c)) && (
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-white/10 backdrop-blur-xl animate-drift-slow" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-white/5 backdrop-blur-md animate-drift-slow" />
         )}
 
         {/* Neural Grid Noise (2026 Refractive Texture) */}
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] mix-blend-overlay" />
       </div>
 
       {/* Content Interface Container */}
@@ -63,41 +63,41 @@ export const AtmosphericBackground: React.FC<AtmosphericBackgroundProps> = ({ we
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        /* OKLCH Professional Palette 2026 */
-        .atmos-thunderstorm .bg-atmosphere-base { background: oklch(0.12 0.03 270); }
-        .atmos-rain .bg-atmosphere-base { background: oklch(0.15 0.05 260); }
-        .atmos-drizzle .bg-atmosphere-base { background: oklch(0.45 0.02 240); }
-        .atmos-snow .bg-atmosphere-base { background: oklch(0.98 0.005 200); }
-        .atmos-clear .bg-atmosphere-base { background: oklch(0.98 0.01 80); }
-        .atmos-clouds .bg-atmosphere-base { background: oklch(0.92 0.01 240); }
-        .atmos-mist .bg-atmosphere-base { background: oklch(0.85 0.01 220); }
-        .atmos-dust .bg-atmosphere-base { background: oklch(0.8 0.03 60); }
-        .atmos-extreme .bg-atmosphere-base { background: oklch(0.1 0.01 0); }
-        .atmos-default .bg-atmosphere-base { background: oklch(1 0 0); }
+        /* OKLCH Professional Palette 2026 - Adjusted for Global Backgrounds */
+        .atmos-thunderstorm .bg-atmosphere-base { background: linear-gradient(180deg, oklch(0.15 0.02 260), oklch(0.2 0.02 260)); }
+        .atmos-rain .bg-atmosphere-base { background: linear-gradient(180deg, oklch(0.92 0.01 240), oklch(0.88 0.02 240)); }
+        .atmos-drizzle .bg-atmosphere-base { background: linear-gradient(180deg, oklch(0.95 0.01 240), oklch(0.92 0.01 240)); }
+        .atmos-snow .bg-atmosphere-base { background: linear-gradient(180deg, oklch(0.99 0.005 200), oklch(0.97 0.01 200)); }
+        .atmos-clear .bg-atmosphere-base { background: linear-gradient(180deg, oklch(0.99 0.01 80), oklch(0.97 0.02 90)); }
+        .atmos-clouds .bg-atmosphere-base { background: linear-gradient(180deg, oklch(0.98 0.005 240), oklch(0.95 0.01 240)); }
+        .atmos-mist .bg-atmosphere-base { background: linear-gradient(180deg, oklch(0.96 0.01 220), oklch(0.94 0.01 220)); }
+        .atmos-dust .bg-atmosphere-base { background: linear-gradient(180deg, oklch(0.92 0.02 60), oklch(0.88 0.03 60)); }
+        .atmos-extreme .bg-atmosphere-base { background: linear-gradient(180deg, oklch(0.1 0.01 0), oklch(0.2 0.02 10)); }
+        .atmos-default .bg-atmosphere-base { background: oklch(0.99 0.005 240); }
 
         .bg-gradient-radial { background-image: radial-gradient(var(--tw-gradient-stops)); }
         
         @keyframes pulse-slow {
-          0%, 100% { opacity: 0.15; }
-          50% { opacity: 0.25; }
+          0%, 100% { opacity: 0.05; }
+          50% { opacity: 0.12; }
         }
-        .animate-pulse-slow { animation: pulse-slow 10s ease-in-out infinite; }
+        .animate-pulse-slow { animation: pulse-slow 12s ease-in-out infinite; }
         
         @keyframes float-slow {
           0%, 100% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(20px, -30px) scale(1.15); }
+          50% { transform: translate(30px, -40px) scale(1.1); }
         }
-        .animate-float-slow { animation: float-slow 20s ease-in-out infinite; }
+        .animate-float-slow { animation: float-slow 25s ease-in-out infinite; }
 
         @keyframes drift-slow {
-          0% { transform: translateX(-5%); }
-          100% { transform: translateX(5%); }
+          0% { transform: translateX(-2%); }
+          100% { transform: translateX(2%); }
         }
-        .animate-drift-slow { animation: drift-slow 15s ease-in-out infinite alternate; }
+        .animate-drift-slow { animation: drift-slow 20s ease-in-out infinite alternate; }
 
-        /* Smooth UI adaptation for dark backgrounds */
-        .atmos-thunderstorm, .atmos-rain, .atmos-extreme { color-scheme: dark; }
-        .atmos-clear, .atmos-snow, .atmos-clouds, .atmos-mist { color-scheme: light; }
+        /* Content adaptation */
+        .atmos-thunderstorm, .atmos-extreme { color-scheme: dark; }
+        .atmos-thunderstorm main, .atmos-extreme main { --text-main: oklch(0.95 0.01 240); }
       `}} />
     </div>
   );
