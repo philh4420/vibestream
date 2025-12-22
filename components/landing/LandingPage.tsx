@@ -6,7 +6,8 @@ import * as FirebaseAuth from 'firebase/auth';
 const { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
-  updateProfile 
+  updateProfile,
+  sendPasswordResetEmail
 } = FirebaseAuth as any;
 import * as Firestore from 'firebase/firestore';
 const { doc, setDoc, serverTimestamp } = Firestore as any;
@@ -19,7 +20,7 @@ interface LandingPageProps {
 }
 
 type Step = 'discovery' | 'verification' | 'entry';
-type AuthMode = 'login' | 'register';
+type AuthMode = 'login' | 'register' | 'reset';
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSettings }) => {
   const [step, setStep] = useState<Step>('discovery');
@@ -27,6 +28,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
   const [isProcessing, setIsProcessing] = useState(false);
   const [verificationProgress, setVerificationProgress] = useState(0);
   const [isVerified, setIsVerified] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -61,8 +63,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
     if (!auth) return;
     setIsProcessing(true);
     setErrorDetails(null);
+    setResetSuccess(false);
+
     try {
-      if (authMode === 'register') {
+      if (authMode === 'reset') {
+        if (!email) throw new Error('EMAIL_REQUIRED');
+        await sendPasswordResetEmail(auth, email);
+        setResetSuccess(true);
+      } else if (authMode === 'register') {
         if (systemSettings.registrationDisabled) {
           throw new Error('REGISTRATION_DISABLED');
         }
@@ -96,15 +104,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
           tags: ['Novice'],
           socialLinks: []
         });
-
+        
+        onEnter();
       } else {
         await signInWithEmailAndPassword(auth, email, password);
+        onEnter();
       }
-      onEnter();
     } catch (error: any) {
-      const msg = error.message === 'REGISTRATION_DISABLED' 
-        ? 'Registration is currently locked by central command.'
-        : 'Credential authentication failed. Access denied.';
+      let msg = 'Credential authentication failed. Access denied.';
+      if (error.message === 'REGISTRATION_DISABLED') msg = 'Registration is currently locked by central command.';
+      if (error.message === 'EMAIL_REQUIRED') msg = 'Please provide a valid network ID to reset.';
+      if (error.code === 'auth/user-not-found') msg = 'Identity node not found on grid.';
+      if (error.code === 'auth/wrong-password') msg = 'Incorrect passkey. Access rejected.';
+      
       setErrorDetails({ code: error.code || 'ERR', message: msg });
     } finally {
       setIsProcessing(false);
@@ -162,20 +174,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
 
         {step === 'entry' && (
           <div className="bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 md:p-12 animate-in slide-in-from-bottom-8 duration-500 shadow-2xl">
-            <div className="flex gap-8 mb-10 border-b border-white/5 overflow-x-auto no-scrollbar">
-              {(['login', 'register'] as const).map(mode => {
-                if (mode === 'register' && systemSettings.registrationDisabled) return null;
-                return (
-                  <button 
-                    key={mode} onClick={() => setAuthMode(mode)}
-                    className={`pb-4 text-xl font-black uppercase tracking-tight transition-all relative whitespace-nowrap ${authMode === mode ? 'text-white' : 'text-slate-600 hover:text-slate-400'}`}
-                  >
-                    {mode}
-                    {authMode === mode && <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-500 rounded-full" />}
-                  </button>
-                );
-              })}
-            </div>
+            {authMode !== 'reset' ? (
+              <div className="flex gap-8 mb-10 border-b border-white/5 overflow-x-auto no-scrollbar">
+                {(['login', 'register'] as const).map(mode => {
+                  if (mode === 'register' && systemSettings.registrationDisabled) return null;
+                  return (
+                    <button 
+                      key={mode} onClick={() => { setAuthMode(mode); setErrorDetails(null); }}
+                      className={`pb-4 text-xl font-black uppercase tracking-tight transition-all relative whitespace-nowrap ${authMode === mode ? 'text-white' : 'text-slate-600 hover:text-slate-400'}`}
+                    >
+                      {mode}
+                      {authMode === mode && <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-500 rounded-full" />}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="mb-10 pb-4 border-b border-white/5 flex items-center justify-between">
+                <h3 className="text-xl font-black text-white uppercase tracking-tight">Recovery Protocol</h3>
+                <button 
+                  onClick={() => { setAuthMode('login'); setErrorDetails(null); setResetSuccess(false); }} 
+                  className="text-[10px] font-bold text-slate-500 hover:text-white uppercase tracking-widest font-mono"
+                >
+                  Back_To_Login
+                </button>
+              </div>
+            )}
 
             <form onSubmit={handleEntry} className="space-y-6">
               {authMode === 'register' && (
@@ -187,6 +211,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
                   />
                 </div>
               )}
+              
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 font-mono">Network ID (Email)</label>
                 <input 
@@ -194,21 +219,55 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-700"
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 font-mono">Passkey (Password)</label>
-                <input 
-                  type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-700"
-                />
-              </div>
 
-              {errorDetails && <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest text-center font-mono leading-relaxed">{errorDetails.message}</p>}
+              {authMode !== 'reset' && (
+                <div className="space-y-2 animate-in fade-in">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 font-mono">Passkey (Password)</label>
+                  <input 
+                    type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-700"
+                  />
+                  {authMode === 'login' && (
+                    <div className="flex justify-end pt-1">
+                      <button 
+                        type="button" 
+                        onClick={() => { setAuthMode('reset'); setErrorDetails(null); }}
+                        className="text-[9px] font-bold text-slate-600 hover:text-indigo-400 uppercase tracking-wider font-mono transition-colors"
+                      >
+                        Forgot Passkey?
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {errorDetails && (
+                <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl animate-in fade-in slide-in-from-top-1">
+                  <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest text-center font-mono leading-relaxed">{errorDetails.message}</p>
+                </div>
+              )}
+
+              {resetSuccess && authMode === 'reset' && (
+                <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl animate-in fade-in slide-in-from-top-1">
+                  <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest text-center font-mono leading-relaxed">
+                    Recovery signal transmitted. Check your external inbox to reset credentials.
+                  </p>
+                </div>
+              )}
 
               <button 
-                disabled={isProcessing}
-                className="w-full py-4 bg-white text-slate-950 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-indigo-50 transition-all active:scale-95 disabled:opacity-50 mt-4 shadow-xl"
+                disabled={isProcessing || (authMode === 'reset' && resetSuccess)}
+                className="w-full py-4 bg-white text-slate-950 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-indigo-50 transition-all active:scale-95 disabled:opacity-50 mt-4 shadow-xl flex items-center justify-center gap-2"
               >
-                {isProcessing ? 'Authenticating...' : 'Establish Connection'}
+                {isProcessing ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-950 rounded-full animate-spin" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  authMode === 'login' ? 'Establish Connection' : 
+                  authMode === 'register' ? 'Initialize Node' : 'Transmit Reset Signal'
+                )}
               </button>
             </form>
           </div>
