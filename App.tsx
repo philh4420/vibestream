@@ -140,15 +140,21 @@ const App: React.FC = () => {
               if (info) setWeather(info);
             },
             async () => {
+              // Fallback to London or User Location if Geolocation denied
               const info = await fetchWeather({ query: userData?.location || 'London' });
               if (info) setWeather(info);
-            }
+            },
+            { timeout: 5000 } // Don't hang forever
           );
         } else {
           const info = await fetchWeather({ query: userData?.location || 'London' });
           if (info) setWeather(info);
         }
-      } catch (err) { console.debug("Atmospheric link failed"); }
+      } catch (err) { 
+        console.debug("Atmospheric link failed. Defaulting to UK Hub.");
+        const info = await fetchWeather({ query: 'London' });
+        if (info) setWeather(info);
+      }
     };
 
     syncAtmosphere();
@@ -440,14 +446,15 @@ const App: React.FC = () => {
       onMarkRead={() => {}} onDeleteNotification={() => {}} userRole={userData?.role} currentRegion={userRegion}
       onRegionChange={setUserRegion}
       onSearch={handleSearch}
+      weather={weather}
     >
       {activeRoute === AppRoute.FEED && (
         <FeedPage 
           posts={posts} userData={userData} onLike={handleLike} 
+          onViewPost={handleOpenPost}
           onOpenCreate={handleOpenCreate}
           onTransmitStory={() => {}} onGoLive={() => setIsLiveOverlayOpen(true)}
           onJoinStream={(s) => setWatchingStream(s)} locale={userRegion}
-          onViewPost={handleOpenPost}
         />
       )}
 
