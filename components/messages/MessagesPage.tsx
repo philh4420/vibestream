@@ -13,6 +13,7 @@ import {
   doc,
   updateDoc,
   setDoc,
+  deleteDoc,
   getDocs,
   Timestamp
 } from 'firebase/firestore';
@@ -127,12 +128,41 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
     } catch (e) { addToast("Cluster Fusion Failed", "error"); }
   };
 
+  const handleDeleteMessage = async (msgId: string) => {
+    if (!selectedChatId || !db) return;
+    try {
+      await deleteDoc(doc(db, 'chats', selectedChatId, 'messages', msgId));
+      addToast("Data Packet Purged", "success");
+    } catch (e) { addToast("Purge Protocol Failed", "error"); }
+  };
+
+  const handleTerminateChat = async (chat: Chat) => {
+    if (!db) return;
+    const isCluster = chat.isCluster;
+    if (isCluster && chat.clusterAdmin !== currentUser.id) {
+      addToast("Access Denied: Cluster Admin Authority Required", "error");
+      return;
+    }
+
+    if (!confirm(`Confirm termination of ${isCluster ? 'Cluster' : 'Direct Link'}? All data packets will be unlinked.`)) return;
+
+    try {
+      // In a real 2026 app, we'd use a Cloud Function for recursive deletion. 
+      // Here we delete the main document to break the link.
+      await deleteDoc(doc(db, 'chats', chat.id));
+      if (selectedChatId === chat.id) {
+        setSelectedChatId(null);
+        setView('list');
+      }
+      addToast("Neural Link Terminated", "success");
+    } catch (e) { addToast("Termination Protocol Failed", "error"); }
+  };
+
   const handleStartCall = async (type: 'voice' | 'video') => {
     if (!activeChat || activeChat.isCluster || !db) return;
     const targetId = activeChat.participants.find(id => id !== currentUser.id);
     if (!targetId) return;
 
-    // Check target status for focal batching
     const targetUser = allUsers.find(u => u.id === targetId);
     if (targetUser?.presenceStatus === 'Deep Work') {
        addToast("Target Node in Deep Work: Neural Links Intercepted", "error");
@@ -158,7 +188,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
     e.preventDefault();
     if (!newMessage.trim() || !selectedChatId || isSending) return;
     
-    // Check recipient status for "Focal Batching"
     const isCluster = activeChat?.isCluster;
     let isBuffered = false;
     if (!isCluster) {
@@ -246,27 +275,40 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
             const pId = chat.participants.find(id => id !== currentUser.id);
             const pData = isCluster ? { displayName: chat.clusterName, avatarUrl: chat.clusterAvatar } : chat.participantData[pId || ''];
             const isActive = selectedChatId === chat.id;
+            const canTerminate = !isCluster || chat.clusterAdmin === currentUser.id;
+            
             return (
-              <button 
-                key={chat.id}
-                onClick={() => { setSelectedChatId(chat.id); setView('chat'); }}
-                className={`w-full flex items-center gap-4 p-5 rounded-[2rem] transition-all duration-300 relative group ${isActive ? 'bg-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.1)] ring-1 ring-slate-100' : 'hover:bg-slate-50/50'}`}
-              >
-                {isActive && <div className="absolute left-0 top-6 bottom-6 w-1 bg-[#4f46e5] rounded-r-full" />}
-                <div className="relative shrink-0">
-                  <img src={pData?.avatarUrl} className={`w-12 h-12 object-cover ${isCluster ? 'rounded-[1.2rem] ring-2 ring-indigo-500/20' : 'rounded-2xl'}`} alt="" />
-                  {!isCluster && <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full" />}
-                </div>
-                <div className="text-left overflow-hidden flex-1">
-                  <div className="flex justify-between items-center mb-1">
-                    <p className={`font-black text-[12px] uppercase tracking-tight truncate ${isActive ? 'text-indigo-600' : 'text-slate-900'}`}>{pData?.displayName}</p>
-                    <span className="text-[8px] font-black text-slate-300 font-mono">
-                      {chat.lastMessageTimestamp?.toDate ? chat.lastMessageTimestamp.toDate().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'NOW'}
-                    </span>
+              <div key={chat.id} className="relative group">
+                <button 
+                  onClick={() => { setSelectedChatId(chat.id); setView('chat'); }}
+                  className={`w-full flex items-center gap-4 p-5 rounded-[2rem] transition-all duration-300 relative group ${isActive ? 'bg-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.1)] ring-1 ring-slate-100' : 'hover:bg-slate-50/50'}`}
+                >
+                  {isActive && <div className="absolute left-0 top-6 bottom-6 w-1 bg-[#4f46e5] rounded-r-full" />}
+                  <div className="relative shrink-0">
+                    <img src={pData?.avatarUrl} className={`w-12 h-12 object-cover ${isCluster ? 'rounded-[1.2rem] ring-2 ring-indigo-500/20' : 'rounded-2xl'}`} alt="" />
+                    {!isCluster && <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full" />}
                   </div>
-                  <p className="text-[9px] text-slate-400 font-bold truncate italic leading-none">{chat.lastMessage}</p>
-                </div>
-              </button>
+                  <div className="text-left overflow-hidden flex-1">
+                    <div className="flex justify-between items-center mb-1">
+                      <p className={`font-black text-[12px] uppercase tracking-tight truncate ${isActive ? 'text-indigo-600' : 'text-slate-900'}`}>{pData?.displayName}</p>
+                      <span className="text-[8px] font-black text-slate-300 font-mono">
+                        {chat.lastMessageTimestamp?.toDate ? chat.lastMessageTimestamp.toDate().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'NOW'}
+                      </span>
+                    </div>
+                    <p className="text-[9px] text-slate-400 font-bold truncate italic leading-none">{chat.lastMessage}</p>
+                  </div>
+                </button>
+                
+                {canTerminate && (
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); handleTerminateChat(chat); }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-rose-50 text-rose-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-rose-500 hover:text-white shadow-lg active:scale-90"
+                    title="Terminate Link"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                )}
+              </div>
             );
           })}
         </div>
@@ -317,7 +359,13 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                        <button onClick={() => handleStartCall('video')} className={`p-3 rounded-xl transition-all ${isDarkAtmos ? 'bg-white/5 text-white/40 hover:text-indigo-400' : 'bg-slate-50 text-slate-400 hover:text-indigo-600'}`}><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" /></svg></button>
                      </>
                    )}
-                   <button className={`p-3 rounded-xl transition-all ${isDarkAtmos ? 'bg-white/5 text-white/40 hover:text-white' : 'bg-slate-50 text-slate-400 hover:text-slate-950'}`}><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5zM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5zM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5z" /></svg></button>
+                   <button 
+                    onClick={() => handleTerminateChat(activeChat)}
+                    className={`p-3 rounded-xl transition-all ${isDarkAtmos ? 'bg-white/5 text-rose-400/40 hover:text-rose-400' : 'bg-slate-50 text-slate-400 hover:text-rose-500'}`}
+                    title="Terminate Entire Link"
+                   >
+                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                   </button>
                 </div>
               </div>
 
@@ -327,8 +375,8 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                   const isMe = msg.senderId === currentUser.id;
                   const senderP = activeChat.participantData[msg.senderId];
                   return (
-                    <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2`}>
-                      <div className={`max-w-[80%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                    <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2 group/msg-container`}>
+                      <div className={`max-w-[80%] flex flex-col ${isMe ? 'items-end' : 'items-start'} relative`}>
                         {!isMe && activeChat.isCluster && (
                           <div className="flex items-center gap-2 mb-2 ml-1">
                              <img src={senderP?.avatarUrl} className="w-5 h-5 rounded-lg object-cover" alt="" />
@@ -337,6 +385,18 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                         )}
                         <div className={`p-5 rounded-[2rem] text-sm font-bold shadow-sm backdrop-blur-xl relative group ${isMe ? 'bg-indigo-600 text-white rounded-tr-none' : isDarkAtmos ? 'bg-white/5 text-white border border-white/10 rounded-tl-none' : 'bg-white text-slate-800 rounded-tl-none border border-slate-50 shadow-float'}`}>
                           {msg.text}
+                          
+                          {/* Message Actions */}
+                          {isMe && (
+                            <button 
+                              onClick={() => handleDeleteMessage(msg.id)}
+                              className="absolute -left-12 top-1/2 -translate-y-1/2 p-2.5 bg-rose-50 text-rose-500 rounded-xl opacity-0 group-hover/msg-container:opacity-100 transition-all hover:bg-rose-500 hover:text-white shadow-xl active:scale-90"
+                              title="Purge Signal"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3.5}><path d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                          )}
+
                           {msg.isBuffered && (
                              <div className="absolute -right-3 -top-3 w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-[10px] shadow-lg border-2 border-white animate-pulse">
                                <ICONS.Temporal />

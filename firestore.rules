@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -198,6 +199,12 @@ service cloud.firestore {
     match /chats/{chatId} {
       allow read, update: if isAuthenticated() && request.auth.uid in resource.data.participants;
       allow create: if isAuthenticated() && request.auth.uid in incomingData().participants;
+      allow delete: if isAuthenticated() && (
+        request.auth.uid in resource.data.participants && (
+          !resource.data.isCluster || resource.data.clusterAdmin == request.auth.uid
+        )
+        || isAdmin()
+      );
       
       match /messages/{messageId} {
         allow read: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
@@ -206,7 +213,7 @@ service cloud.firestore {
           incomingData().senderId == request.auth.uid ||
           incomingData().diff(existingData()).affectedKeys().hasOnly(['isRead'])
         );
-        allow delete: if isAdmin() || (incomingData().senderId == request.auth.uid);
+        allow delete: if isAdmin() || (resource.data.senderId == request.auth.uid);
       }
     }
 
@@ -787,6 +794,44 @@ service cloud.firestore {
 
     // FINAL SEPARATOR NODE
     match /grid_shutdown_verified/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /**
+     * =========================================================================
+     * GRID TERMINATION PROTOCOLS (Line 635+)
+     * Explicit deletion handlers for communication channels.
+     * =========================================================================
+     */
+    match /terminated_handshakes/{id} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+    }
+
+    match /purge_request_logs/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    match /cluster_shutdown_signals/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /ephemeral_packet_summary/{userId} {
+      allow read, write: if isUser(userId) || isAdmin();
+    }
+
+    match /citadel_wiping_in_progress/{nodeId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /grid_history_pruning/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    match /secure_deletion_verified/{id} {
       allow read: if true;
       allow write: if isAdmin();
     }
