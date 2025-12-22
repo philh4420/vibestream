@@ -18,7 +18,6 @@ import { TermsPage } from './components/legal/TermsPage';
 import { CookiesPage } from './components/legal/CookiesPage';
 import { AppRoute, Post, ToastMessage, Region, User as VibeUser, SystemSettings, LiveStream, AppNotification, SignalAudience, PresenceStatus } from './types';
 import { db, auth } from './services/firebase';
-// Fixed: Using namespaced import for firebase/auth to resolve "no exported member" errors for onAuthStateChanged and signOut
 import * as FirebaseAuth from 'firebase/auth';
 const { onAuthStateChanged, signOut } = FirebaseAuth as any;
 import { 
@@ -59,6 +58,7 @@ const App: React.FC = () => {
   
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userData, setUserData] = useState<VibeUser | null>(null);
+  const [allUsers, setAllUsers] = useState<VibeUser[]>([]);
 
   const [systemSettings, setSystemSettings] = useState<SystemSettings>({
     maintenanceMode: false,
@@ -97,11 +97,10 @@ const App: React.FC = () => {
   const [postAudience, setPostAudience] = useState<SignalAudience>('global');
   
   const [coAuthors, setCoAuthors] = useState<{ id: string, name: string, avatar: string }[]>([]);
-  const [availableFriends, setAvailableFriends] = useState<VibeUser[]>([]);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [isGiphyPickerOpen, setIsGiphyPickerOpen] = useState(false);
 
-  // Search Architecture
+  // Universal Search Hub
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
 
   const [userRegion, setUserRegion] = useState<Region>('en-GB');
@@ -138,6 +137,7 @@ const App: React.FC = () => {
   const handleSearch = (query: string) => {
     setGlobalSearchQuery(query);
     if (query.trim()) {
+      addToast(`Scanning Grid for "${query}"`, "info");
       handleNavigate(AppRoute.EXPLORE);
     }
   };
@@ -215,6 +215,12 @@ const App: React.FC = () => {
             if (userDoc.exists()) setUserData({ id: userDoc.id, ...userDoc.data() } as VibeUser);
           });
           
+          // Universal Registry Subscription
+          const qUsers = query(collection(db, 'users'), limit(100));
+          onSnapshot(qUsers, (snap) => {
+            setAllUsers(snap.docs.map(d => ({ id: d.id, ...d.data() } as VibeUser)));
+          });
+
           const qNotif = query(collection(db, 'notifications'), where('toUserId', '==', user.uid), orderBy('timestamp', 'desc'), limit(50));
           onSnapshot(qNotif, (snap) => {
             const newNotifs = snap.docs.map(d => ({ id: d.id, ...d.data() } as AppNotification));
@@ -230,14 +236,6 @@ const App: React.FC = () => {
             }
             isInitialLoad.current = false;
           });
-
-          const qFollowing = query(collection(db, 'users', user.uid, 'following'), limit(50));
-          onSnapshot(qFollowing, (snap) => {
-            setAvailableFriends(snap.docs.map(d => ({ 
-              id: d.id, 
-              ...d.data() 
-            } as VibeUser)));
-          });
         }
       } else {
         setIsAuthenticated(false);
@@ -250,7 +248,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (!db || !isAuthenticated) return;
-    const q = query(collection(db, 'posts'), orderBy('timestamp', 'desc'), limit(50));
+    const q = query(collection(db, 'posts'), orderBy('timestamp', 'desc'), limit(100));
     return onSnapshot(q, (snapshot) => {
       const fetchedPosts = snapshot.docs.map(doc => ({ 
         id: doc.id, 
@@ -424,7 +422,9 @@ const App: React.FC = () => {
 
       {activeRoute === AppRoute.EXPLORE && (
         <ExplorePage 
-          posts={posts} onLike={handleLike} locale={userRegion} 
+          posts={posts} 
+          users={allUsers}
+          onLike={handleLike} locale={userRegion} 
           onViewPost={handleOpenPost} 
           searchQuery={globalSearchQuery}
           onClearSearch={() => setGlobalSearchQuery('')}
@@ -479,7 +479,6 @@ const App: React.FC = () => {
           
           <div className="relative bg-white w-full max-w-2xl md:rounded-[4rem] h-[95vh] md:h-auto max-h-[95vh] flex flex-col shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-20 duration-700 overflow-hidden border border-white">
             
-            {/* Giphy Visual Buffer (Centered Focal Point Overlay) */}
             {isGiphyPickerOpen && (
               <div className="absolute inset-0 z-[2700] p-4 md:p-10 flex items-center justify-center bg-slate-950/20 backdrop-blur-md animate-in fade-in duration-500">
                 <div className="absolute inset-0" onClick={() => setIsGiphyPickerOpen(false)} />
@@ -489,7 +488,6 @@ const App: React.FC = () => {
               </div>
             )}
 
-            {/* Emoji Protocol Hub (Centered Focal Point Overlay) */}
             {isEmojiPickerOpen && (
               <div className="absolute inset-0 z-[2700] p-4 md:p-10 flex items-center justify-center bg-slate-950/20 backdrop-blur-md animate-in fade-in duration-500">
                 <div className="absolute inset-0" onClick={() => setIsEmojiPickerOpen(false)} />
@@ -499,7 +497,6 @@ const App: React.FC = () => {
               </div>
             )}
 
-            {/* Close Protocol Node */}
             <button 
               onClick={() => setIsCreateModalOpen(false)} 
               className="absolute top-8 right-8 z-[200] p-3.5 bg-slate-50 hover:bg-slate-100 text-slate-900 rounded-[1.4rem] transition-all active:scale-90 shadow-sm border border-slate-100"
@@ -536,7 +533,6 @@ const App: React.FC = () => {
             </div>
 
             <div className="p-10 md:p-14 pt-0 shrink-0 relative bg-white">
-               {/* Stylized Button Bar - UI 2026 Manifest */}
                <div className="flex items-center gap-4 mb-10">
                   <button 
                     onClick={() => fileInputRef.current?.click()} 
