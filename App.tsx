@@ -39,7 +39,8 @@ import {
   writeBatch,
   arrayUnion,
   arrayRemove,
-  or
+  or,
+  and
 } from 'firebase/firestore';
 import { uploadToCloudinary } from './services/cloudinary';
 import { ICONS, PRESENCE_CONFIG } from './constants';
@@ -158,17 +159,19 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [isAuthenticated, userData?.location]);
 
-  // Monitor Global Call Signal Bus - Fixed with proper ID filtering to satisfy security rules
+  // Monitor Global Call Signal Bus - Fixed: Wrapped composite filters in 'and' to resolve InvalidQuery error
   useEffect(() => {
     if (!isAuthenticated || !userData?.id || !db) return;
     
     // Check both incoming and outgoing ringing calls for the specific user
     const q = query(
       collection(db, 'calls'),
-      where('status', 'in', ['ringing', 'connected']),
-      or(
-        where('callerId', '==', userData.id),
-        where('receiverId', '==', userData.id)
+      and(
+        where('status', 'in', ['ringing', 'connected']),
+        or(
+          where('callerId', '==', userData.id),
+          where('receiverId', '==', userData.id)
+        )
       ),
       orderBy('timestamp', 'desc'),
       limit(1)
