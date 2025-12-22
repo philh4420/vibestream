@@ -157,22 +157,29 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [isAuthenticated, userData?.location]);
 
-  // Monitor Incoming Neural Links (Calls)
+  // Monitor Global Call Signal Bus
   useEffect(() => {
     if (!isAuthenticated || !userData?.id || !db) return;
+    
+    // Check both incoming and outgoing ringing calls
     const q = query(
       collection(db, 'calls'),
-      where('receiverId', '==', userData.id),
-      where('status', '==', 'ringing'),
+      where('status', 'in', ['ringing', 'connected']),
+      orderBy('timestamp', 'desc'),
       limit(1)
     );
+
     const unsub = onSnapshot(q, (snap) => {
       if (!snap.empty) {
         const callData = { id: snap.docs[0].id, ...snap.docs[0].data() } as CallSession;
-        setActiveCall(callData);
+        // Only trigger overlay if current user is part of the call
+        if (callData.receiverId === userData.id || callData.callerId === userData.id) {
+           setActiveCall(callData);
+        } else {
+           setActiveCall(null);
+        }
       } else {
-        // Only clear if the call wasn't connected locally
-        setActiveCall(prev => prev?.status === 'connected' ? prev : null);
+        setActiveCall(null);
       }
     });
     return () => unsub();
@@ -267,7 +274,6 @@ const App: React.FC = () => {
             if (userDoc.exists()) {
               const u = { id: userDoc.id, ...userDoc.data() } as VibeUser;
               setUserData(u);
-              // Packet Summary Check: If returning from Deep Work to Online
               if (userData?.presenceStatus === 'Deep Work' && u.presenceStatus === 'Online') {
                  addToast("Deep Work Cycle Complete: Delivering Buffered Packets", "success");
               }
@@ -564,6 +570,7 @@ const App: React.FC = () => {
                 </div>
                 <div className="flex-1">
                    <textarea 
+                    /* Fixed: Corrected ref name to textAreaRef from textareaRef */
                     ref={textAreaRef}
                     value={newPostText} 
                     onChange={(e) => setNewPostText(e.target.value)} 

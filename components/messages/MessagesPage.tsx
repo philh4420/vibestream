@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../../services/firebase';
 import { 
@@ -41,7 +42,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
   const [isClusterModalOpen, setIsClusterModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Termination Protocol State
   const [terminationTarget, setTerminationTarget] = useState<{ type: 'message' | 'chat', id: string, label: string } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -159,13 +159,15 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
     if (!targetId) return;
 
     const targetUser = allUsers.find(u => u.id === targetId);
-    if (targetUser?.presenceStatus === 'Deep Work') {
-       addToast("Target Node in Deep Work: Neural Links Intercepted", "error");
+    
+    // STRICT PROTOCOL: Recipient must be Online
+    if (!targetUser || targetUser.presenceStatus !== 'Online') {
+       addToast(`Target node is ${targetUser?.presenceStatus || 'Offline'}. Call refused.`, "error");
        return;
     }
 
     try {
-      const callId = `call_${Date.now()}`;
+      const callId = `call_${Date.now()}_${currentUser.id.slice(0,4)}`;
       await setDoc(doc(db, 'calls', callId), {
         callerId: currentUser.id,
         callerName: currentUser.displayName,
@@ -227,7 +229,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
   return (
     <div className="flex h-[calc(100vh-var(--header-h)-var(--bottom-nav-h)-2rem)] md:h-[calc(100vh-var(--header-h)-4rem)] -mx-4 sm:-mx-6 md:-mx-10 lg:-mx-14 bg-white md:rounded-[3rem] overflow-hidden shadow-heavy relative border border-slate-100 animate-in fade-in duration-500">
       
-      {/* Sidebar List */}
       <div className={`${view === 'chat' ? 'hidden md:flex' : 'flex'} w-full md:w-[360px] lg:w-[400px] border-r border-slate-50 flex-col bg-white shrink-0 z-20 shadow-xl relative`}>
         <div className="p-8 pb-4">
           <div className="flex items-start justify-between mb-8">
@@ -312,12 +313,10 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
         </div>
       </div>
 
-      {/* Chat Viewport */}
       <div className={`${view === 'list' ? 'hidden md:flex' : 'flex'} flex-1 flex-col min-w-0 bg-[#fdfdfe] relative`}>
         <AtmosphericBackground weather={weather}>
           {activeChat ? (
             <>
-              {/* Header */}
               <div className={`px-8 py-6 border-b flex items-center justify-between backdrop-blur-3xl sticky top-0 z-20 ${isDarkAtmos ? 'bg-black/20 border-white/5' : 'bg-white/60 border-slate-50'}`}>
                 <div className="flex items-center gap-5">
                   <button onClick={() => setView('list')} className={`md:hidden p-3 ${isDarkAtmos ? 'text-white/40' : 'text-slate-400'}`}><svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M15 19l-7-7 7-7" /></svg></button>
@@ -343,8 +342,10 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                         </>
                       ) : (
                         <>
-                          <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                          <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest font-mono">Grid_Uplink: Established</p>
+                          <div className={`w-1.5 h-1.5 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)] ${targetUserFull?.presenceStatus === 'Online' ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                          <p className={`text-[9px] font-black uppercase tracking-widest font-mono ${targetUserFull?.presenceStatus === 'Online' ? 'text-emerald-500' : 'text-slate-400'}`}>
+                            {targetUserFull?.presenceStatus === 'Online' ? 'Grid_Uplink: Established' : `Node: ${targetUserFull?.presenceStatus || 'Offline'}`}
+                          </p>
                         </>
                       )}
                     </div>
@@ -367,7 +368,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                 </div>
               </div>
 
-              {/* Messages */}
               <div ref={chatScrollRef} className="flex-1 overflow-y-auto no-scrollbar scroll-container p-8 space-y-8">
                 {messages.map((msg, idx) => {
                   const isMe = msg.senderId === currentUser.id;
@@ -384,7 +384,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                         <div className={`p-5 rounded-[2rem] text-sm font-bold shadow-sm backdrop-blur-xl relative group ${isMe ? 'bg-indigo-600 text-white rounded-tr-none' : isDarkAtmos ? 'bg-white/5 text-white border border-white/10 rounded-tl-none' : 'bg-white text-slate-800 rounded-tl-none border border-slate-50 shadow-float'}`}>
                           {msg.text}
                           
-                          {/* Message Actions */}
                           {isMe && (
                             <button 
                               onClick={() => setTerminationTarget({ type: 'message', id: msg.id, label: 'Data Packet Signal' })}
@@ -411,7 +410,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Input */}
               <div className={`p-8 border-t backdrop-blur-3xl ${isDarkAtmos ? 'bg-black/20 border-white/5' : 'bg-white border-slate-50'}`}>
                 <form onSubmit={handleSendMessage} className="flex gap-4 items-center">
                   <div className={`flex-1 border rounded-[2.5rem] px-8 py-4 shadow-inner flex items-center transition-all ${isDarkAtmos ? 'bg-white/5 border-white/10 focus-within:border-indigo-500' : 'bg-slate-50 border-slate-100 focus-within:border-indigo-100'}`}>
@@ -441,7 +439,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
         </AtmosphericBackground>
       </div>
 
-      {/* Termination Confirmation Portal */}
       <DeleteConfirmationModal 
         isOpen={!!terminationTarget}
         title="PROTOCOL_ALERT"
@@ -450,7 +447,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
         onCancel={() => setTerminationTarget(null)}
       />
 
-      {/* Direct Link Discovery */}
       {isDiscoveryOpen && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300">
            <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-2xl" onClick={() => setIsDiscoveryOpen(false)}></div>
@@ -468,7 +464,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                 {allUsers.filter(u => u.id !== currentUser.id && (u.displayName.toLowerCase().includes(searchQuery.toLowerCase()) || u.username.toLowerCase().includes(searchQuery.toLowerCase()))).map(user => (
                   <button key={user.id} onClick={() => initiateUplink(user)} className="w-full flex items-center justify-between p-5 bg-slate-50 hover:bg-white hover:shadow-xl rounded-3xl transition-all border border-transparent hover:border-slate-100 group">
                     <div className="flex items-center gap-4">
-                      {/* Fixed: Replaced invalid 'user' attribute with 'src' on img tag */}
                       <img src={user.avatarUrl} className="w-12 h-12 rounded-2xl group-hover:scale-105 transition-transform" alt="" />
                       <div className="text-left"><p className="font-black text-slate-900 text-sm uppercase italic">{user.displayName}</p><p className="text-[10px] font-mono text-indigo-500 uppercase tracking-widest">@{user.username}</p></div>
                     </div>
@@ -480,7 +475,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
         </div>
       )}
 
-      {/* Cluster Creation */}
       {isClusterModalOpen && (
         <ClusterCreationModal 
           currentUser={currentUser} 
