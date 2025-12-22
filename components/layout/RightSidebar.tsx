@@ -26,8 +26,12 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
 
   // System Time & Uptime Logic
   useEffect(() => {
-    const sessionStartValue = localStorage.getItem('vibestream_session_start_timestamp');
-    const sessionStart = sessionStartValue ? parseInt(sessionStartValue, 10) : Date.now();
+    // Initialise session timestamp if not exists for accurate uptime tracking
+    let sessionStart = parseInt(localStorage.getItem('vibestream_session_start_timestamp') || '0', 10);
+    if (!sessionStart) {
+      sessionStart = Date.now();
+      localStorage.setItem('vibestream_session_start_timestamp', sessionStart.toString());
+    }
     
     const timer = setInterval(() => {
       const now = new Date();
@@ -132,8 +136,10 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
           <div className="grid grid-cols-2 gap-4 relative z-10">
             <div className="p-3 bg-white/5 rounded-xl border border-white/10 backdrop-blur-md">
               <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest font-mono mb-1.5 text-center">Neural_Time</p>
-              <p className="text-base font-black text-center text-white font-mono">
-                {systemTime.toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit' })}
+              <p className="text-base font-black text-center text-white font-mono flex items-center justify-center gap-1">
+                <span>{systemTime.toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit' })}</span>
+                <span className="text-[10px] text-indigo-400 animate-pulse">:</span>
+                <span className="text-xs opacity-60">{systemTime.toLocaleTimeString('en-GB', { second: '2-digit' })}</span>
               </p>
             </div>
             <div className="p-3 bg-white/5 rounded-xl border border-white/10 backdrop-blur-md">

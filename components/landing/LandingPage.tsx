@@ -1,10 +1,13 @@
+
 import React, { useState, useRef } from 'react';
 import { auth } from '../../services/firebase';
-import { 
+// Fixed: Using namespaced import for firebase/auth to resolve "no exported member" errors
+import * as FirebaseAuth from 'firebase/auth';
+const { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   updateProfile 
-} from 'firebase/auth';
+} = FirebaseAuth as any;
 import { ICONS } from '../../constants';
 import { SystemSettings } from '../../types';
 

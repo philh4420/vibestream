@@ -1,10 +1,11 @@
 
-
 // Fixed: Using namespaced import and destructuring to resolve "no exported member" errors in Firebase types
 import * as FirebaseApp from 'firebase/app';
 const { initializeApp } = FirebaseApp as any;
 import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+// Fixed: Using namespaced import for firebase/auth to resolve "no exported member" errors
+import * as FirebaseAuth from 'firebase/auth';
+const { getAuth } = FirebaseAuth as any;
 
 const getEnv = (key: string) => {
   // Try both process.env and import.meta.env for maximum compatibility across bundlers

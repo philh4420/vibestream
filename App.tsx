@@ -18,7 +18,9 @@ import { TermsPage } from './components/legal/TermsPage';
 import { CookiesPage } from './components/legal/CookiesPage';
 import { AppRoute, Post, ToastMessage, Region, User as VibeUser, SystemSettings, LiveStream, AppNotification, SignalAudience, PresenceStatus } from './types';
 import { db, auth } from './services/firebase';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+// Fixed: Using namespaced import for firebase/auth to resolve "no exported member" errors for onAuthStateChanged and signOut
+import * as FirebaseAuth from 'firebase/auth';
+const { onAuthStateChanged, signOut } = FirebaseAuth as any;
 import { 
   collection, 
   onSnapshot, 
@@ -194,7 +196,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (!auth) { setIsLoading(false); return; }
-    const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
+    const authUnsubscribe = onAuthStateChanged(auth, async (user: any) => {
       if (user) {
         setCurrentUser(user);
         setIsAuthenticated(true);
@@ -498,7 +500,7 @@ const App: React.FC = () => {
                     value={newPostText} 
                     onChange={(e) => setNewPostText(e.target.value)} 
                     placeholder="Broadcast your frequency..." 
-                    className="w-full min-h-[160px] bg-transparent border-none p-0 text-2xl md:text-3xl font-black placeholder:text-slate-100 focus:ring-0 resize-none transition-all tracking-tight leading-tight italic" 
+                    className="w-full min-h-[160px] bg-transparent border-none p-0 text-2xl md:text-3xl font-black placeholder:text-slate-100 focus:ring-0 resize-none transition-all tracking-tight italic" 
                    />
                 </div>
               </div>

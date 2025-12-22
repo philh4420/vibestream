@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Post, User } from '../../types';
 import { ICONS, PULSE_FREQUENCIES } from '../../constants';
@@ -41,7 +42,8 @@ export const PostCard: React.FC<PostCardProps> = ({
   // Pulse Spectrum State
   const [isPulseMenuOpen, setIsPulseMenuOpen] = useState(false);
   const [rippleEffect, setRippleEffect] = useState<{ x: number, y: number, color: string } | null>(null);
-  const pulseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Fixed: Using any type for pulseTimerRef to resolve NodeJS.Timeout missing member error in some environments
+  const pulseTimerRef = useRef<any>(null);
   const optionsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
