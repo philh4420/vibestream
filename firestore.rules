@@ -1,11 +1,10 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
      * =========================================================================
-     * VIBESTREAM CITADEL OS SECURITY MANIFEST v6.8 [DELETION_CONTROL_ENABLED]
+     * VIBESTREAM CITADEL OS SECURITY MANIFEST v6.9 [RESTORED_FULL_INFRASTRUCTURE]
      * INFRASTRUCTURE REGION: GB_LON_CENTRAL
      * SECURITY CLEARANCE: LEVEL 5 (MESH_ADMIN)
      * =========================================================================
@@ -13,9 +12,6 @@ service cloud.firestore {
      * This document defines the primary access control layers for the VibeStream
      * Neural Grid. Do not modify without Level 4 clearance from Citadel Admin.
      * All timestamps follow UTC/GMT+0 protocols for synchronisation.
-     * 
-     * MANIFEST INTEGRITY HASH: GB_SEC_88291_ALPHA_OMNIPOTENT
-     * LINE COUNT VERIFICATION: > 650 LINES
      */
 
     // -------------------------------------------------------------------------
@@ -73,7 +69,7 @@ service cloud.firestore {
     // -------------------------------------------------------------------------
 
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow create: if isUser(userId);
       allow update: if (isUser(userId) && 
         (!incomingData().diff(existingData()).affectedKeys().hasAny(['role', 'verifiedHuman']))) 
@@ -88,12 +84,12 @@ service cloud.firestore {
         ]));
 
       match /following/{targetId} {
-        allow read: if isAuthenticated();
+        allow read, list: if isAuthenticated();
         allow write: if isUser(userId) || isAdmin();
       }
 
       match /followers/{followerId} {
-        allow read: if isAuthenticated();
+        allow read, list: if isAuthenticated();
         allow write: if isUser(followerId) || isAdmin();
       }
 
@@ -103,7 +99,7 @@ service cloud.firestore {
       }
 
       match /neural_profiles/{profileId} {
-        allow read: if isAuthenticated();
+        allow read, list: if isAuthenticated();
         allow write: if isUser(userId) || isAdmin();
       }
     }
@@ -113,7 +109,7 @@ service cloud.firestore {
     // -------------------------------------------------------------------------
 
     match /posts/{postId} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow create: if isAuthenticated() && 
         incomingData().authorId == request.auth.uid &&
         incomingData().content.size() <= 10000;
@@ -125,7 +121,7 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && (isSignalOwner(postId) || isAdmin());
 
       match /comments/{commentId} {
-        allow read: if isAuthenticated();
+        allow read, list: if isAuthenticated();
         allow create: if isAuthenticated() && incomingData().authorId == request.auth.uid;
         allow update, delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isSignalOwner(postId) || isAdmin());
       }
@@ -140,19 +136,19 @@ service cloud.firestore {
     // -------------------------------------------------------------------------
 
     match /stories/{storyId} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow create: if isAuthenticated() && incomingData().authorId == request.auth.uid;
       allow delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isAdmin());
       allow update: if isAdmin();
     }
 
     match /temporal_archive/{archId} { 
-      allow read: if isAuthenticated(); 
+      allow read, list: if isAuthenticated(); 
       allow write: if isAdmin(); 
     }
 
     match /temporal_fragments/{fragId} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow write: if isAdmin();
     }
 
@@ -161,7 +157,7 @@ service cloud.firestore {
     // -------------------------------------------------------------------------
 
     match /streams/{streamId} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow create: if isAuthenticated() && 
         incomingData().authorId == request.auth.uid;
       allow update: if isAuthenticated() && (
@@ -172,17 +168,17 @@ service cloud.firestore {
       allow delete: if (isAuthenticated() && resource.data.authorId == request.auth.uid) || isAdmin();
 
       match /messages/{messageId} {
-        allow read: if isAuthenticated();
+        allow read, list: if isAuthenticated();
         allow create: if isAuthenticated() && incomingData().senderId == request.auth.uid;
       }
 
       match /reactions/{reactionId} {
-        allow read: if isAuthenticated();
+        allow read, list: if isAuthenticated();
         allow create: if isAuthenticated();
       }
 
       match /connections/{connectionId} {
-        allow read: if isAuthenticated();
+        allow read, list: if isAuthenticated();
         allow create: if isAuthenticated() && incomingData().offer != null;
         allow update: if isAuthenticated() && (
           incomingData().answer != null ||
@@ -200,7 +196,7 @@ service cloud.firestore {
     // -------------------------------------------------------------------------
 
     match /chats/{chatId} {
-      allow read, update: if isAuthenticated() && request.auth.uid in resource.data.participants;
+      allow read, update, list: if isAuthenticated() && request.auth.uid in resource.data.participants;
       allow create: if isAuthenticated() && request.auth.uid in incomingData().participants;
       
       // GRANULAR DELETION PROTOCOL
@@ -211,7 +207,7 @@ service cloud.firestore {
       );
       
       match /messages/{messageId} {
-        allow read: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+        allow read, list: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
         allow create: if isAuthenticated() && incomingData().senderId == request.auth.uid;
         allow update: if isAuthenticated() && (
           incomingData().senderId == request.auth.uid ||
@@ -222,14 +218,14 @@ service cloud.firestore {
     }
 
     match /calls/{callId} {
-      allow read: if isAuthenticated() && (resource.data.callerId == request.auth.uid || resource.data.receiverId == request.auth.uid);
+      allow read, list: if isAuthenticated() && (resource.data.callerId == request.auth.uid || resource.data.receiverId == request.auth.uid);
       allow create: if isAuthenticated() && incomingData().callerId == request.auth.uid;
       allow update: if isAuthenticated() && (resource.data.callerId == request.auth.uid || resource.data.receiverId == request.auth.uid);
       allow delete: if isAuthenticated() && (resource.data.callerId == request.auth.uid || resource.data.receiverId == request.auth.uid || isAdmin());
     }
 
     match /notifications/{notificationId} {
-      allow read, update, delete: if isAuthenticated() && resource.data.toUserId == request.auth.uid;
+      allow read, update, delete, list: if isAuthenticated() && resource.data.toUserId == request.auth.uid;
       allow create: if isAuthenticated();
     }
 
@@ -238,17 +234,17 @@ service cloud.firestore {
     // -------------------------------------------------------------------------
 
     match /communities/{communityId} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow create, update: if isAdmin() || (isAuthenticated() && isUser(incomingData().ownerId));
     }
 
     match /clusters/{clusterId} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow write: if isAdmin();
     }
 
     match /gatherings/{gatheringId} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update, delete: if isAuthenticated() && (resource.data.organizerId == request.auth.uid || isAdmin());
     }
@@ -258,18 +254,18 @@ service cloud.firestore {
     // -------------------------------------------------------------------------
 
     match /simulations/{simId} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow create: if isAdmin();
       allow update: if isAuthenticated();
     }
 
     match /resilience/{resId} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow create: if isAuthenticated();
     }
 
     match /resilience_logs/{logId} { 
-      allow read: if isAuthenticated(); 
+      allow read, list: if isAuthenticated(); 
       allow write: if isAdmin(); 
     }
 
@@ -279,24 +275,24 @@ service cloud.firestore {
     
     match /reports/{reportId} {
       allow create: if isAuthenticated();
-      allow read, update, delete: if isAdmin();
+      allow read, list, update, delete: if isAdmin();
     }
 
     match /audit_logs/{logId} {
-      allow read, write: if isAdmin();
+      allow read, write, list: if isAdmin();
     }
 
     match /audit_trails/{auditId} { 
-      allow read, write: if isAdmin(); 
+      allow read, write, list: if isAdmin(); 
     }
 
     match /system_heartbeats/{hbId} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /access_tokens/{tokenId} {
-      allow read, write: if isAdmin();
+      allow read, write, list: if isAdmin();
     }
 
     // -------------------------------------------------------------------------
@@ -304,23 +300,23 @@ service cloud.firestore {
     // -------------------------------------------------------------------------
 
     match /data_packets/{packetId} {
-      allow read: if isAdmin();
+      allow read, list: if isAdmin();
       allow write: if isAuthenticated();
     }
 
     match /broadcast_history/{histId} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow create: if isAuthenticated();
       allow delete: if isAdmin();
     }
 
     match /mesh_connections/{meshId} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow write: if isAuthenticated();
     }
 
     match /grid_nodes/{nodeId} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow write: if isAdmin();
     }
 
@@ -330,64 +326,64 @@ service cloud.firestore {
      * Security perimeters for experimental nodes and high-frequency arrays.
      * =========================================================================
      */
-    match /node_telemetry/{id} { allow read: if isAdmin(); allow write: if isAuthenticated(); }
-    match /uplink_diagnostics/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
-    match /resonance_buffers/{id} { allow read: if isAuthenticated(); allow write: if isAuthenticated(); }
-    match /kernel_manifests/{id} { allow read: if true; allow write: if isAdmin(); }
-    match /identity_vaults/{id} { allow read: if isUser(id); allow write: if isUser(id); }
-    match /secure_handshakes/{id} { allow read, write: if isAuthenticated(); }
-    match /traffic_shaping/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
-    match /encryption_keys/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
-    match /compliance_logs/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
-    match /geo_routing/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /edge_compute/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /signal_integrity/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /packet_headers/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
-    match /neural_routing/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /identity_consensus/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /grid_load_balancers/{id} { allow read: if true; allow write: if isAdmin(); }
-    match /maintenance_windows/{id} { allow read: if true; allow write: if isAdmin(); }
-    match /deployment_stamps/{id} { allow read: if true; allow write: if isAdmin(); }
-    match /feature_flags/{id} { allow read: if true; allow write: if isAdmin(); }
-    match /region_mappings/{id} { allow read: if true; allow write: if isAdmin(); }
-    match /trust_authority/{id} { allow read: if true; allow write: if isAdmin(); }
-    match /access_policies/{id} { allow read: if true; allow write: if isAdmin(); }
-    match /resource_quotas/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /billing_signals/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
-    match /api_gateways/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
-    match /usage_metrics/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
-    match /anomaly_detections/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
-    match /firewall_rules/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
-    match /network_topology/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
-    match /peer_mesh_health/{id} { allow read: if isAuthenticated(); allow write: if isAuthenticated(); }
-    match /p2p_relay_nodes/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /signal_repeaters/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /content_delivery/{id} { allow read: if true; allow write: if isAdmin(); }
-    match /caching_layers/{id} { allow read: if true; allow write: if isAdmin(); }
-    match /storage_buckets/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /image_processing/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /video_transcoding/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /audio_normalisation/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /metadata_indexing/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /search_indices/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /discovery_engines/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /recommendation_nodes/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /social_graph_edges/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /relationship_indices/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /group_memberships/{id} { allow read: if isAuthenticated(); allow write: if isAuthenticated(); }
-    match /cluster_permissions/{id} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /session_persist/{id} { allow read: if isUser(id); allow write: if isUser(id); }
-    match /cookie_fragments/{id} { allow read: if isUser(id); allow write: if isUser(id); }
-    match /user_preferences/{id} { allow read: if isUser(id); allow write: if isUser(id); }
-    match /privacy_settings/{id} { allow read: if isAuthenticated(); allow write: if isUser(id); }
-    match /security_questions/{id} { allow read: if isUser(id); allow write: if isUser(id); }
-    match /two_factor_auth/{id} { allow read: if isUser(id); allow write: if isUser(id); }
-    match /backup_keys/{id} { allow read: if isUser(id); allow write: if isUser(id); }
-    match /recovery_signals/{id} { allow read: if isUser(id); allow write: if isAdmin(); }
-    match /support_tickets/{id} { allow create: if isAuthenticated(); allow read, update: if isUser(get(/databases/$(database)/documents/support_tickets/$(id)).data.userId) || isAdmin(); }
-    match /escalation_logs/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
-    match /admin_audit_v2/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
-    match /citadel_overrides/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
+    match /node_telemetry/{id} { allow read, list: if isAdmin(); allow write: if isAuthenticated(); }
+    match /uplink_diagnostics/{id} { allow read, list: if isAdmin(); allow write: if isAdmin(); }
+    match / resonance_buffers/{id} { allow read, list: if isAuthenticated(); allow write: if isAuthenticated(); }
+    match /kernel_manifests/{id} { allow read, list: if true; allow write: if isAdmin(); }
+    match /identity_vaults/{id} { allow read, list: if isUser(id); allow write: if isUser(id); }
+    match /secure_handshakes/{id} { allow read, write, list: if isAuthenticated(); }
+    match /traffic_shaping/{id} { allow read, list: if isAdmin(); allow write: if isAdmin(); }
+    match /encryption_keys/{id} { allow read, list: if isAdmin(); allow write: if isAdmin(); }
+    match /compliance_logs/{id} { allow read, list: if isAdmin(); allow write: if isAdmin(); }
+    match /geo_routing/{id} { allow read, list: if isAuthenticated(); allow write: if isAdmin(); }
+    match /edge_compute/{id} { allow read, list: if isAuthenticated(); allow write: if isAdmin(); }
+    match /signal_integrity/{id} { allow read, list: if isAuthenticated(); allow write: if isAdmin(); }
+    match /packet_headers/{id} { allow read, list: if isAdmin(); allow write: if isAdmin(); }
+    match /neural_routing/{id} { allow read, list: if isAuthenticated(); allow write: if isAdmin(); }
+    match /identity_consensus/{id} { allow read, list: if isAuthenticated(); allow write: if isAdmin(); }
+    match /grid_load_balancers/{id} { allow read, list: if true; allow write: if isAdmin(); }
+    match /maintenance_windows/{id} { allow read, list: if true; allow write: if isAdmin(); }
+    match /deployment_stamps/{id} { allow read, list: if true; allow write: if isAdmin(); }
+    match /feature_flags/{id} { allow read, list: if true; allow write: if isAdmin(); }
+    match /region_mappings/{id} { allow read, list: if true; allow write: if isAdmin(); }
+    match /trust_authority/{id} { allow read, list: if true; allow write: if isAdmin(); }
+    match /access_policies/{id} { allow read, list: if true; allow write: if isAdmin(); }
+    match /resource_quotas/{id} { allow read, list: if isAuthenticated(); allow write: if isAdmin(); }
+    match /billing_signals/{id} { allow read, list: if isAdmin(); allow write: if isAdmin(); }
+    match /api_gateways/{id} { allow read, list: if isAdmin(); allow write: if isAdmin(); }
+    match /usage_metrics/{id} { allow read, list: if isAdmin(); allow write: if isAdmin(); }
+    match /anomaly_detections/{id} { allow read, list: if isAdmin(); allow write: if isAdmin(); }
+    match /firewall_rules/{id} { allow read, list: if isAdmin(); allow write: if isAdmin(); }
+    match /network_topology/{id} { allow read, list: if isAdmin(); allow write: if isAdmin(); }
+    match /peer_mesh_health/{id} { allow read, list: if isAuthenticated(); allow write: if isAuthenticated(); }
+    match /p2p_relay_nodes/{id} { allow read, list: if isAuthenticated(); allow write: if isAdmin(); }
+    match /signal_repeaters/{id} { allow read, list: if isAuthenticated(); allow write: if isAdmin(); }
+    match /content_delivery/{id} { allow read, list: if true; allow write: if isAdmin(); }
+    match /caching_layers/{id} { allow read, list: if true; allow write: if isAdmin(); }
+    match /storage_buckets/{id} { allow read, list: if isAuthenticated(); allow write: if isAdmin(); }
+    match /image_processing/{id} { allow read, list: if isAuthenticated(); allow write: if isAdmin(); }
+    match /video_transcoding/{id} { allow read, list: if isAuthenticated(); allow write: if isAdmin(); }
+    match /audio_normalisation/{id} { allow read, list: if isAuthenticated(); allow write: if isAdmin(); }
+    match /metadata_indexing/{id} { allow read, list: if isAuthenticated(); allow write: if isAdmin(); }
+    match /search_indices/{id} { allow read, list: if isAuthenticated(); allow write: if isAdmin(); }
+    match /discovery_engines/{id} { allow read, list: if isAuthenticated(); allow write: if isAdmin(); }
+    match /recommendation_nodes/{id} { allow read, list: if isAuthenticated(); allow write: if isAdmin(); }
+    match /social_graph_edges/{id} { allow read, list: if isAuthenticated(); allow write: if isAdmin(); }
+    match /relationship_indices/{id} { allow read, list: if isAuthenticated(); allow write: if isAdmin(); }
+    match /group_memberships/{id} { allow read, list: if isAuthenticated(); allow write: if isAuthenticated(); }
+    match /cluster_permissions/{id} { allow read, list: if isAuthenticated(); allow write: if isAdmin(); }
+    match /session_persist/{id} { allow read, list: if isUser(id); allow write: if isUser(id); }
+    match /cookie_fragments/{id} { allow read, list: if isUser(id); allow write: if isUser(id); }
+    match /user_preferences/{id} { allow read, list: if isUser(id); allow write: if isUser(id); }
+    match /privacy_settings/{id} { allow read, list: if isAuthenticated(); allow write: if isUser(id); }
+    match /security_questions/{id} { allow read, list: if isUser(id); allow write: if isUser(id); }
+    match /two_factor_auth/{id} { allow read, list: if isUser(id); allow write: if isUser(id); }
+    match /backup_keys/{id} { allow read, list: if isUser(id); allow write: if isUser(id); }
+    match /recovery_signals/{id} { allow read, list: if isUser(id); allow write: if isAdmin(); }
+    match /support_tickets/{id} { allow create: if isAuthenticated(); allow read, list, update: if isUser(get(/databases/$(database)/documents/support_tickets/$(id)).data.userId) || isAdmin(); }
+    match /escalation_logs/{id} { allow read, list: if isAdmin(); allow write: if isAdmin(); }
+    match /admin_audit_v2/{id} { allow read, list: if isAdmin(); allow write: if isAdmin(); }
+    match /citadel_overrides/{id} { allow read, list: if isAdmin(); allow write: if isAdmin(); }
 
     /**
      * =========================================================================
@@ -396,413 +392,413 @@ service cloud.firestore {
      * =========================================================================
      */
     match /neural_link_handshakes/{handshakeId} {
-      allow read: if isAuthenticated() && (incomingData().initiator == request.auth.uid || incomingData().target == request.auth.uid);
+      allow read, list: if isAuthenticated() && (incomingData().initiator == request.auth.uid || incomingData().target == request.auth.uid);
       allow create: if isAuthenticated() && incomingData().initiator == request.auth.uid;
       allow update: if isAuthenticated() && (resource.data.initiator == request.auth.uid || resource.data.target == request.auth.uid);
       allow delete: if isAuthenticated() && (resource.data.initiator == request.auth.uid || isAdmin());
     }
 
     match /node_synchronization_logs/{logId} {
-      allow read: if isAdmin();
+      allow read, list: if isAdmin();
       allow create: if isAuthenticated();
     }
 
     match /cluster_fusion_states/{fusionId} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow write: if isAdmin();
     }
 
     match /focal_batch_buffers/{userId} {
-      allow read: if isUser(userId);
+      allow read, list: if isUser(userId);
       allow write: if isAuthenticated();
     }
 
     match /grid_pulse_metrics/{pulseId} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /kinetic_interaction_v2/{interactionId} {
       allow create: if isAuthenticated();
-      allow read: if isAdmin();
+      allow read, list: if isAdmin();
     }
 
     match /mesh_identity_voter/{voteId} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow create: if isVerified();
     }
 
     match /citadel_root_access_logs/{logId} {
-      allow read, write: if isAdmin();
+      allow read, write, list: if isAdmin();
     }
 
     match /global_emergency_broadcast/{msgId} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /packet_sniffing_prevention/{id} {
-      allow read: if isAdmin();
+      allow read, list: if isAdmin();
       allow write: if isAdmin();
     }
 
     match /low_latency_edge_nodes/{nodeId} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow write: if isAdmin();
     }
 
     match /neural_latency_stats/{statId} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /handshake_timeout_protocols/{protocolId} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /signal_interference_logs/{logId} {
-      allow read: if isAdmin();
+      allow read, list: if isAdmin();
       allow create: if isAuthenticated();
     }
 
     match /biometric_validation_shards/{shardId} {
-      allow read: if isUser(shardId);
+      allow read, list: if isUser(shardId);
       allow write: if isUser(shardId);
     }
 
     match /grid_reconciliation_queue/{queueId} {
-      allow read, write: if isAdmin();
+      allow read, write, list: if isAdmin();
     }
 
     match /mesh_traffic_controller/{ctrlId} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /node_heartbeat_array/{nodeId} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow write: if isUser(nodeId) || isAdmin();
     }
 
     match /secure_transmission_layers/{layerId} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow write: if isAdmin();
     }
 
     match /citadel_firewall_v3/{ruleId} {
-      allow read, write: if isAdmin();
+      allow read, write, list: if isAdmin();
     }
 
     match /neural_encryption_rotator/{keyId} {
-      allow read: if isAdmin();
+      allow read, list: if isAdmin();
       allow write: if isAdmin();
     }
 
     match /grid_ingress_audit/{auditId} {
-      allow read: if isAdmin();
+      allow read, list: if isAdmin();
       allow write: if false;
     }
 
     match /temporal_shift_correction/{shiftId} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /vibe_os_kernel_panic_logs/{panicId} {
       allow create: if true;
-      allow read, write: if isAdmin();
+      allow read, write, list: if isAdmin();
     }
 
     match /mesh_consensus_layer/{consensusId} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow write: if isAdmin();
     }
 
     match /node_affinity_mappings/{mappingId} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow write: if isAdmin();
     }
 
     match /citadel_security_clearance/{userId} {
-      allow read: if isUser(userId) || isAdmin();
+      allow read, list: if isUser(userId) || isAdmin();
       allow write: if isAdmin();
     }
 
     match /high_frequency_pulse_array/{pulseId} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAuthenticated();
     }
 
     match /grid_reputation_score/{userId} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow write: if isAdmin();
     }
 
     match /mesh_handover_protocols/{protocolId} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /neural_buffer_overflow_protection/{id} {
-      allow read: if isAdmin();
+      allow read, list: if isAdmin();
       allow write: if isAdmin();
     }
 
     match /node_quarantine_zone/{userId} {
-      allow read: if isUser(userId) || isAdmin();
+      allow read, list: if isUser(userId) || isAdmin();
       allow write: if isAdmin();
     }
 
     match /citadel_deployment_v5/{id} {
-      allow read, write: if isAdmin();
+      allow read, write, list: if isAdmin();
     }
 
     match /grid_synchronicity_score/{scoreId} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /mesh_identity_anchors/{anchorId} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow write: if isAdmin();
     }
 
     match /neural_pathway_optimisation/{id} {
-      allow read: if isAdmin();
+      allow read, list: if isAdmin();
       allow write: if isAdmin();
     }
 
     match /citadel_access_control_list/{id} {
-      allow read, write: if isAdmin();
+      allow read, write, list: if isAdmin();
     }
 
     match /grid_telemetry_collector/{id} {
-      allow write: if isAuthenticated();
+      allow write, list: if isAuthenticated();
       allow read: if isAdmin();
     }
 
     match /node_isolation_protocols/{id} {
-      allow read: if isAdmin();
+      allow read, list: if isAdmin();
       allow write: if isAdmin();
     }
 
     match /mesh_bandwidth_allocator/{id} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow write: if isAdmin();
     }
 
     match /citadel_os_update_logs/{logId} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /grid_reliability_index/{id} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /neural_handshake_registry/{id} {
-      allow read: if isAuthenticated();
+      allow read, write, list: if isAuthenticated();
       allow write: if isAuthenticated();
     }
 
     match /citadel_emergency_shutdown/{id} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /grid_latency_corrector/{id} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /mesh_stability_layer/{id} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /neural_interface_diagnostics/{id} {
-      allow read: if isAdmin();
+      allow read, list: if isAdmin();
       allow write: if isAuthenticated();
     }
 
     match /citadel_root_heartbeat/{id} {
-      allow read, write: if isAdmin();
+      allow read, write, list: if isAdmin();
     }
 
     match /grid_fragmentation_manager/{id} {
-      allow read: if isAdmin();
+      allow read, list: if isAdmin();
       allow write: if isAdmin();
     }
 
     match /node_entropy_collector/{id} {
-      allow write: if isAuthenticated();
+      allow write, list: if isAuthenticated();
       allow read: if isAdmin();
     }
 
     match /mesh_relay_topology/{id} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow write: if isAdmin();
     }
 
     match /citadel_v6_alpha_access/{userId} {
-      allow read: if isUser(userId) || isAdmin();
+      allow read, list: if isUser(userId) || isAdmin();
       allow write: if isAdmin();
     }
 
     match /grid_overflow_buffer/{id} {
-      allow read: if isAdmin();
+      allow read, list: if isAdmin();
       allow write: if isAuthenticated();
     }
 
     match /neural_signal_repeater_v2/{id} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow write: if isAdmin();
     }
 
     match /citadel_audit_stream_v3/{id} {
-      allow read, write: if isAdmin();
+      allow read, write, list: if isAdmin();
     }
 
     match /grid_integrity_verified_logs/{id} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /mesh_peer_discovery_protocol/{id} {
-      allow read, write: if isAuthenticated();
+      allow read, write, list: if isAuthenticated();
     }
 
     match /neural_link_established_nodes/{id} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow write: if isAuthenticated();
     }
 
     match /citadel_command_hierarchy/{id} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /grid_load_shedding_v2/{id} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /mesh_backhaul_metrics/{id} {
-      allow read: if isAdmin();
+      allow read, list: if isAdmin();
       allow write: if isAdmin();
     }
 
     match /neural_interface_v6_config/{id} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /citadel_system_uptime_verified/{id} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /grid_node_reputation_voter/{id} {
       allow create: if isVerified();
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
     }
 
     match /mesh_reconciliation_layer/{id} {
-      allow read, write: if isAdmin();
+      allow read, write, list: if isAdmin();
     }
 
     match /neural_buffer_purge_logs/{id} {
-      allow read: if isAdmin();
+      allow read, list: if isAdmin();
       allow write: if isAdmin();
     }
 
     match /citadel_mesh_governance/{id} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /grid_spatial_node_registry/{id} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow write: if isAdmin();
     }
 
     match /mesh_identity_v3_signatures/{id} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow write: if isUser(id) || isAdmin();
     }
 
     match /neural_sync_established_history/{id} {
-      allow read: if isAuthenticated();
+      allow read, write, list: if isAuthenticated();
       allow write: if isAuthenticated();
     }
 
     match /citadel_os_v6_manifest/{id} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /grid_frequency_tuner/{id} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /mesh_load_balancer_v6/{id} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /neural_interface_haptic_feedback/{id} {
-      allow write: if isAuthenticated();
+      allow write, list: if isAuthenticated();
       allow read: if isAdmin();
     }
 
     match /citadel_high_priority_signals/{id} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow write: if isAdmin();
     }
 
     match /grid_latency_verified_nodes/{id} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /mesh_peer_consensus_array/{id} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow write: if isVerified() || isAdmin();
     }
 
     match /neural_link_bandwidth_verified/{id} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow write: if isAdmin();
     }
 
     match /citadel_vibe_stream_certified/{id} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /grid_reconciliation_verified_v3/{id} {
-      allow read, write: if isAdmin();
+      allow read, write, list: if isAdmin();
     }
 
     match /mesh_node_affinity_verified/{id} {
-      allow read: if isAuthenticated();
+      allow read, list: if isAuthenticated();
       allow write: if isAdmin();
     }
 
     match /neural_sync_v6_established/{id} {
-      allow read, write: if isAuthenticated();
+      allow read, write, list: if isAuthenticated();
     }
 
     match /citadel_root_authority_verified/{id} {
-      allow read, write: if isAdmin();
+      allow read, write, list: if isAdmin();
     }
 
     // FINAL SEPARATOR NODE
     match /grid_shutdown_verified/{id} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
@@ -813,34 +809,34 @@ service cloud.firestore {
      * =========================================================================
      */
     match /terminated_handshakes/{id} {
-      allow read: if isAdmin();
+      allow read, list: if isAdmin();
       allow create: if isAuthenticated();
     }
 
     match /purge_request_logs/{id} {
-      allow read, write: if isAdmin();
+      allow read, write, list: if isAdmin();
     }
 
     match /cluster_shutdown_signals/{id} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /ephemeral_packet_summary/{userId} {
-      allow read, write: if isUser(userId) || isAdmin();
+      allow read, write, list: if isUser(userId) || isAdmin();
     }
 
     match /citadel_wiping_in_progress/{nodeId} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
 
     match /grid_history_pruning/{id} {
-      allow read, write: if isAdmin();
+      allow read, write, list: if isAdmin();
     }
 
     match /secure_deletion_verified/{id} {
-      allow read: if true;
+      allow read, list: if true;
       allow write: if isAdmin();
     }
   }

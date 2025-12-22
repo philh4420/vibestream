@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from './components/layout/Layout';
 import { FeedPage } from './components/feed/FeedPage'; 
@@ -53,12 +52,8 @@ const SESSION_KEY = 'vibestream_session_2026';
 const ROUTE_KEY = 'vibestream_active_route';
 
 const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(SESSION_KEY) === 'active';
-    }
-    return false;
-  });
+  // Use state without local storage pre-check to avoid unauthorized listener triggers
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userData, setUserData] = useState<VibeUser | null>(null);
@@ -129,6 +124,7 @@ const App: React.FC = () => {
     return () => window.removeEventListener('vibe-toast', handleGlobalToast);
   }, []);
 
+  // Sync Atmosphere (Weather)
   useEffect(() => {
     if (!isAuthenticated) return;
     const syncAtmosphere = async () => {
@@ -159,19 +155,16 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [isAuthenticated, userData?.location]);
 
-  // Monitor Global Call Signal Bus - Fixed: Wrapped composite filters in 'and' to resolve InvalidQuery error
+  // Monitor Global Call Signal Bus
   useEffect(() => {
-    if (!isAuthenticated || !userData?.id || !db) return;
+    if (!isAuthenticated || !userData?.id || !db || !auth.currentUser) return;
     
-    // Check both incoming and outgoing ringing calls for the specific user
     const q = query(
       collection(db, 'calls'),
-      and(
-        where('status', 'in', ['ringing', 'connected']),
-        or(
-          where('callerId', '==', userData.id),
-          where('receiverId', '==', userData.id)
-        )
+      where('status', 'in', ['ringing', 'connected']),
+      or(
+        where('callerId', '==', userData.id),
+        where('receiverId', '==', userData.id)
       ),
       orderBy('timestamp', 'desc'),
       limit(1)
@@ -185,7 +178,9 @@ const App: React.FC = () => {
         setActiveCall(null);
       }
     }, (error) => {
-      console.error("Grid_Call_Bus Sync Failure:", error);
+      if (error.code !== 'permission-denied') {
+        console.error("Grid_Call_Bus Sync Failure:", error);
+      }
     });
     return () => unsub();
   }, [isAuthenticated, userData?.id]);
@@ -268,7 +263,7 @@ const App: React.FC = () => {
     addToast("GIF Linked to Buffer", "success");
   };
 
-  // 1. Auth Observer
+  // 1. Core Auth State Synchronisation
   useEffect(() => {
     if (!auth) { setIsLoading(false); return; }
     const authUnsubscribe = onAuthStateChanged(auth, async (user: any) => {
@@ -287,34 +282,39 @@ const App: React.FC = () => {
     return () => authUnsubscribe();
   }, []);
 
-  // 2. User Data Listener
+  // 2. Individual Node Data Listener
   useEffect(() => {
-    if (!currentUser?.uid || !db) return;
+    if (!isAuthenticated || !currentUser?.uid || !db) return;
     const unsub = onSnapshot(doc(db, 'users', currentUser.uid), (userDoc) => {
       if (userDoc.exists()) {
         const u = { id: userDoc.id, ...userDoc.data() } as VibeUser;
         setUserData(u);
-        if (userData?.presenceStatus === 'Deep Work' && u.presenceStatus === 'Online') {
-           addToast("Deep Work Cycle Complete: Delivering Buffered Packets", "success");
-        }
+      }
+    }, (error) => {
+      if (error.code === 'permission-denied') {
+        console.warn("Identity Sync: Permission Buffering...");
       }
     });
     return () => unsub();
-  }, [currentUser?.uid, userData?.presenceStatus]);
+  }, [isAuthenticated, currentUser?.uid]);
 
-  // 3. Global Mesh Nodes Listener
+  // 3. Global Mesh Discovery Listener
   useEffect(() => {
-    if (!isAuthenticated || !db) return;
+    if (!isAuthenticated || !db || !auth.currentUser) return;
     const qUsers = query(collection(db, 'users'), limit(100));
     const unsub = onSnapshot(qUsers, (snap) => {
       setAllUsers(snap.docs.map(d => ({ id: d.id, ...d.data() } as VibeUser)));
+    }, (error) => {
+      if (error.code === 'permission-denied') {
+        addToast("Discovery Grid Access Refused: Resyncing...", "error");
+      }
     });
     return () => unsub();
   }, [isAuthenticated]);
 
-  // 4. Notifications Listener
+  // 4. Alerts Center Listener
   useEffect(() => {
-    if (!currentUser?.uid || !db) return;
+    if (!isAuthenticated || !currentUser?.uid || !db) return;
     const qNotif = query(
       collection(db, 'notifications'), 
       where('toUserId', '==', currentUser.uid), 
@@ -335,13 +335,17 @@ const App: React.FC = () => {
         });
       }
       isInitialLoad.current = false;
+    }, (error) => {
+      if (error.code !== 'permission-denied') {
+        console.error("Notification Bus Failure:", error);
+      }
     });
     return () => unsub();
-  }, [currentUser?.uid, userData?.presenceStatus]);
+  }, [isAuthenticated, currentUser?.uid, userData?.presenceStatus]);
 
   // 5. Grid Signals Listener
   useEffect(() => {
-    if (!db || !isAuthenticated) return;
+    if (!db || !isAuthenticated || !auth.currentUser) return;
     const q = query(collection(db, 'posts'), orderBy('timestamp', 'desc'), limit(100));
     return onSnapshot(q, (snapshot) => {
       const fetchedPosts = snapshot.docs.map(doc => ({ 
@@ -354,10 +358,14 @@ const App: React.FC = () => {
         const updated = fetchedPosts.find(p => p.id === selectedPost.id);
         if (updated) setSelectedPost(updated);
       }
+    }, (error) => {
+      if (error.code === 'permission-denied') {
+        addToast("Neural Frequency Access Blocked", "error");
+      }
     });
   }, [isAuthenticated, selectedPost?.id]);
 
-  // 6. System Settings Listener
+  // 6. Global Kernel Settings Listener
   useEffect(() => {
     if (!db) return;
     return onSnapshot(doc(db, 'settings', 'global'), (snap) => {
@@ -611,7 +619,6 @@ const App: React.FC = () => {
                 </div>
                 <div className="flex-1">
                    <textarea 
-                    /* Fixed: Corrected ref name to textAreaRef from textareaRef */
                     ref={textAreaRef}
                     value={newPostText} 
                     onChange={(e) => setNewPostText(e.target.value)} 
