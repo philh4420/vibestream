@@ -114,7 +114,6 @@ const App: React.FC = () => {
   const [userRegion, setUserRegion] = useState<Region>('en-GB');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
-  const isInitialLoad = useRef(true);
 
   const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -356,16 +355,25 @@ const App: React.FC = () => {
   // 4. Alerts Center Listener
   useEffect(() => {
     if (!isAuthenticated || !currentUser?.uid || !db) return;
+    
+    // We use a local flag to track if this is the first snapshot of THIS subscription instance.
+    // This handles the issue where userData updates cause re-subscription, and the initial snapshot
+    // of that new subscription contains existing data, which triggers the 'added' event logic.
+    let isFirstSubscriptionSnapshot = true;
+
     const qNotif = query(
       collection(db, 'notifications'), 
       where('toUserId', '==', currentUser.uid), 
       orderBy('timestamp', 'desc'), 
       limit(50)
     );
+    
     const unsub = onSnapshot(qNotif, (snap: any) => {
       const newNotifs = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as AppNotification));
       setNotifications(newNotifs);
-      if (!isInitialLoad.current) {
+      
+      // Only trigger toasts if this is NOT the initial snapshot of the current subscription
+      if (!isFirstSubscriptionSnapshot) {
         snap.docChanges().forEach((change: any) => {
           if (change.type === 'added') {
             const data = change.doc.data() as AppNotification;
@@ -375,7 +383,8 @@ const App: React.FC = () => {
           }
         });
       }
-      isInitialLoad.current = false;
+      
+      isFirstSubscriptionSnapshot = false;
     }, (error: any) => {
       if (error.code !== 'permission-denied') console.error("Notification Bus Failure:", error);
     });
