@@ -16,6 +16,7 @@ interface HeaderProps {
   onLogout: () => void;
   activeRoute: AppRoute;
   onNavigate: (route: AppRoute) => void;
+  onSearch: (query: string) => void;
 }
 
 const PRESENCE_DOTS: Record<PresenceStatus, string> = {
@@ -101,13 +102,17 @@ export const Header: React.FC<HeaderProps> = ({
   onRegionChange, 
   onLogout,
   activeRoute,
-  onNavigate
+  onNavigate,
+  onSearch
 }) => {
   const [isSystemMenuOpen, setIsSystemMenuOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isHubOpen, setIsHubOpen] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  
+  // Internal Search State
+  const [localSearch, setLocalSearch] = useState('');
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -150,6 +155,14 @@ export const Header: React.FC<HeaderProps> = ({
     { code: 'ja-JP', name: 'Tokyo Node', flag: '🇯🇵' },
   ];
 
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (localSearch.trim()) {
+      onSearch(localSearch.trim());
+      setIsSearchFocused(false);
+    }
+  };
+
   const DropdownNavItem = ({ route, icon: Icon, label, badge }: { route: AppRoute, icon: React.FC, label: string, badge?: string }) => {
     const isActive = activeRoute === route;
     return (
@@ -181,26 +194,43 @@ export const Header: React.FC<HeaderProps> = ({
         
         <div className="flex items-center gap-4 flex-1">
           <div 
-            className="w-10 h-10 md:w-11 md:h-11 bg-slate-900 rounded-full flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition-all shrink-0"
+            className="w-10 h-10 md:w-11 md:h-11 bg-slate-950 rounded-full flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition-all shrink-0"
             onClick={() => onNavigate(AppRoute.FEED)}
           >
             <span className="text-white font-black italic text-xl">V</span>
           </div>
 
-          <div className={`relative flex items-center transition-all duration-300 rounded-full ${isSearchFocused ? 'w-full max-w-xs md:max-w-sm' : 'w-10 h-10 md:w-auto'}`}>
-            <div className={`flex items-center gap-2 px-3 py-2.5 rounded-full transition-all ${isSearchFocused ? 'bg-white border-indigo-400 shadow-xl ring-4 ring-indigo-50 w-full' : 'bg-slate-100 md:w-48 lg:w-56'}`}>
-              <div className={`shrink-0 transition-colors ${isSearchFocused ? 'text-indigo-600' : 'text-slate-400'}`}>
+          <form 
+            onSubmit={handleSearchSubmit}
+            className={`relative flex items-center transition-all duration-500 rounded-full ${isSearchFocused ? 'w-full max-w-xs md:max-w-sm' : 'w-10 h-10 md:w-auto'}`}
+          >
+            <div className={`flex items-center gap-2 px-3 py-2.5 rounded-full transition-all duration-500 ${isSearchFocused ? 'bg-white border-indigo-400 shadow-xl ring-4 ring-indigo-50 w-full' : 'bg-slate-100 md:w-48 lg:w-56'}`}>
+              <button 
+                type="submit"
+                className={`shrink-0 transition-colors ${isSearchFocused ? 'text-indigo-600' : 'text-slate-400'}`}
+              >
                 <ICONS.Search />
-              </div>
+              </button>
               <input 
                 type="text" 
-                placeholder="Find..." 
+                placeholder="Find anything..." 
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
-                onBlur={() => setIsSearchFocused(false)}
+                onBlur={() => !localSearch && setIsSearchFocused(false)}
                 className={`bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-900 placeholder:text-slate-400 transition-all ${isSearchFocused ? 'w-full opacity-100' : 'hidden md:block w-full'}`}
               />
+              {localSearch && isSearchFocused && (
+                <button 
+                  type="button"
+                  onClick={() => setLocalSearch('')}
+                  className="p-1 hover:bg-slate-100 rounded-full text-slate-400"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              )}
             </div>
-          </div>
+          </form>
         </div>
 
         <div className="flex items-center gap-2 md:gap-5 justify-end">

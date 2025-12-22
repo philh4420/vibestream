@@ -101,6 +101,9 @@ const App: React.FC = () => {
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [isGiphyPickerOpen, setIsGiphyPickerOpen] = useState(false);
 
+  // Search Architecture
+  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
+
   const [userRegion, setUserRegion] = useState<Region>('en-GB');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
@@ -130,6 +133,13 @@ const App: React.FC = () => {
     }
     setActiveRoute(route);
     localStorage.setItem(ROUTE_KEY, route);
+  };
+
+  const handleSearch = (query: string) => {
+    setGlobalSearchQuery(query);
+    if (query.trim()) {
+      handleNavigate(AppRoute.EXPLORE);
+    }
   };
 
   const handleOpenPost = (post: Post) => {
@@ -400,6 +410,7 @@ const App: React.FC = () => {
       onLogout={handleLogout} userData={userData} notifications={notifications}
       onMarkRead={() => {}} onDeleteNotification={() => {}} userRole={userData?.role} currentRegion={userRegion}
       onRegionChange={setUserRegion}
+      onSearch={handleSearch}
     >
       {activeRoute === AppRoute.FEED && (
         <FeedPage 
@@ -411,7 +422,14 @@ const App: React.FC = () => {
         />
       )}
 
-      {activeRoute === AppRoute.EXPLORE && <ExplorePage posts={posts} onLike={handleLike} locale={userRegion} onViewPost={handleOpenPost} />}
+      {activeRoute === AppRoute.EXPLORE && (
+        <ExplorePage 
+          posts={posts} onLike={handleLike} locale={userRegion} 
+          onViewPost={handleOpenPost} 
+          searchQuery={globalSearchQuery}
+          onClearSearch={() => setGlobalSearchQuery('')}
+        />
+      )}
       
       {activeRoute === AppRoute.SINGLE_POST && selectedPost && (
         <SinglePostView 
@@ -546,7 +564,7 @@ const App: React.FC = () => {
                <button 
                  onClick={handleCreatePost} 
                  disabled={isUploading || (!newPostText.trim() && selectedFiles.length === 0 && selectedGifs.length === 0)} 
-                 className="w-full py-8 md:py-10 bg-indigo-600 text-white rounded-[2.5rem] font-black text-sm md:text-base uppercase tracking-[0.6em] shadow-[0_20px_50px_rgba(79,70,229,0.3)] hover:bg-indigo-700 transition-all active:scale-[0.97] flex items-center justify-center gap-4 italic"
+                 className="w-full py-8 md:py-10 bg-indigo-600 text-white rounded-[2.5rem] font-black text-sm md:text-base uppercase tracking-[0.6em] shadow-[0_20px_50px_rgba(79,70,229,0.35)] hover:bg-indigo-700 transition-all active:scale-[0.97] flex items-center justify-center gap-4 italic"
                >
                  {isUploading ? 'SYNCHRONIZING...' : 'Broadcast_Signal'}
                </button>

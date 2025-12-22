@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ICONS } from '../../constants';
 import { AppRoute, UserRole, Region, User as VibeUser, AppNotification } from '../../types';
@@ -18,6 +19,7 @@ interface LayoutProps {
   onDeleteNotification: (id: string) => void;
   currentRegion: Region;
   onRegionChange: (region: Region) => void;
+  onSearch: (query: string) => void;
 }
 
 export const Layout: React.FC<LayoutProps> = ({ 
@@ -32,7 +34,8 @@ export const Layout: React.FC<LayoutProps> = ({
   onMarkRead,
   onDeleteNotification,
   currentRegion,
-  onRegionChange
+  onRegionChange,
+  onSearch
 }) => {
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>(
     typeof window !== 'undefined' ? (window.innerHeight > window.innerWidth ? 'portrait' : 'landscape') : 'portrait'
@@ -59,6 +62,7 @@ export const Layout: React.FC<LayoutProps> = ({
         onLogout={onLogout} 
         activeRoute={activeRoute}
         onNavigate={onNavigate}
+        onSearch={onSearch}
       />
 
       <div className="flex-1 flex overflow-hidden">
