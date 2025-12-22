@@ -89,6 +89,13 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
   };
 
   const handleStartCall = async (type: 'voice' | 'video') => {
+    // Protocol Update: Feature Gate v2.6.4
+    const featureName = type === 'voice' ? 'Neural Voice Uplink' : 'Quantum Video Sync';
+    addToast(`${featureName} v3.0 Coming Soon to the Grid`, "info");
+    
+    // Underlying logic remains intact for future deployment
+    return;
+
     if (!activeChat || activeChat.isCluster || !db) return;
     const targetId = activeChat.participants.find(id => id !== currentUser.id);
     if (!targetId) return;
@@ -133,7 +140,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
     } catch (e) { addToast("Transmission Interrupted", "error"); } finally { setIsSending(false); }
   };
 
-  // Fixed: Added missing handleExecuteTermination function to resolve 'Cannot find name' error
   const handleExecuteTermination = async () => {
     if (!terminationTarget || !db) return;
     const { type, id } = terminationTarget;
@@ -251,7 +257,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                          <span className="text-[8px] font-black uppercase tracking-widest italic">Voice_Link</span>
                        </button>
                        <button onClick={() => handleStartCall('video')} className="px-5 py-3 bg-white hover:bg-emerald-50 text-emerald-600 rounded-2xl transition-all shadow-sm flex items-center gap-2 group active:scale-90">
-                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" /></svg>
+                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25z" /></svg>
                          <span className="text-[8px] font-black uppercase tracking-widest italic">Video_Sync</span>
                        </button>
                      </div>
