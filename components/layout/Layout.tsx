@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ICONS } from '../../constants';
-import { AppRoute, UserRole, Region, User as VibeUser, AppNotification } from '../../types';
+import { AppRoute, UserRole, Region, User as VibeUser, AppNotification, WeatherInfo } from '../../types';
 import { Header } from './Header';
 import { RightSidebar } from './RightSidebar';
 import { LeftSidebar } from './LeftSidebar';
@@ -20,6 +20,7 @@ interface LayoutProps {
   currentRegion: Region;
   onRegionChange: (region: Region) => void;
   onSearch: (query: string) => void;
+  weather?: WeatherInfo | null;
 }
 
 export const Layout: React.FC<LayoutProps> = ({ 
@@ -35,7 +36,8 @@ export const Layout: React.FC<LayoutProps> = ({
   onDeleteNotification,
   currentRegion,
   onRegionChange,
-  onSearch
+  onSearch,
+  weather = null
 }) => {
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>(
     typeof window !== 'undefined' ? (window.innerHeight > window.innerWidth ? 'portrait' : 'landscape') : 'portrait'
@@ -86,7 +88,7 @@ export const Layout: React.FC<LayoutProps> = ({
         </main>
 
         {/* Refined Right Sidebar - visible on large screens */}
-        <RightSidebar userData={userData} />
+        <RightSidebar userData={userData} weather={weather} />
       </div>
 
       {/* Portrait Mobile Tab Bar - Facebook Style Core Protocols */}

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../../services/firebase';
 import { 
@@ -9,24 +10,21 @@ import {
 } from 'firebase/firestore';
 import { User as VibeUser, PresenceStatus, Post, WeatherInfo } from '../../types';
 import { ICONS } from '../../constants';
-import { fetchWeather } from '../../services/weather';
 
 interface RightSidebarProps {
   userData: VibeUser | null;
+  weather: WeatherInfo | null;
 }
 
-export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
+export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather }) => {
   const [activeContacts, setActiveContacts] = useState<VibeUser[]>([]);
   const [trendingPosts, setTrendingPosts] = useState<Post[]>([]);
-  const [weather, setWeather] = useState<WeatherInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [systemTime, setSystemTime] = useState(new Date());
   const [uptime, setUptime] = useState('00:00:00');
-  const [gpsLock, setGpsLock] = useState(false);
 
   // System Time & Uptime Logic
   useEffect(() => {
-    // Initialise session timestamp if not exists for accurate uptime tracking
     let sessionStart = parseInt(localStorage.getItem('vibestream_session_start_timestamp') || '0', 10);
     if (!sessionStart) {
       sessionStart = Date.now();
@@ -49,40 +47,10 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
     return () => clearInterval(timer);
   }, []);
 
-  // Weather & Geolocation Logic
   useEffect(() => {
     if (!db) return;
     setIsLoading(true);
 
-    const loadAtmosphericData = async () => {
-      try {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            async (position) => {
-              const { latitude, longitude } = position.coords;
-              const weatherData = await fetchWeather({ coords: { lat: latitude, lon: longitude } });
-              setWeather(weatherData);
-              setGpsLock(true);
-            },
-            async (error) => {
-              const weatherData = await fetchWeather({ query: userData?.location || 'London' });
-              setWeather(weatherData);
-              setGpsLock(false);
-            },
-            { timeout: 10000 }
-          );
-        } else {
-          const weatherData = await fetchWeather({ query: userData?.location || 'London' });
-          setWeather(weatherData);
-        }
-      } catch (err) {
-        console.warn("Atmospheric sync interrupted");
-        setWeather(null);
-      }
-    };
-    
-    loadAtmosphericData();
-    
     const usersQuery = query(collection(db, 'users'), limit(12), orderBy('joinedAt', 'desc'));
     const unsubUsers = onSnapshot(usersQuery, (snap) => {
       const fetched = snap.docs
@@ -101,7 +69,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
       unsubUsers();
       unsubTrending();
     };
-  }, [userData?.id, userData?.location]);
+  }, [userData?.id]);
 
   const PRESENCE_DOTS: Record<PresenceStatus, string> = {
     'Online': 'bg-[#10b981]',
@@ -129,7 +97,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
             </div>
             <div className="text-right">
               <p className="text-[8px] font-black text-slate-500 uppercase tracking-[0.4em] font-mono mb-1">Local_Node</p>
-              <p className="text-[11px] font-bold text-slate-200">{gpsLock ? 'GPS_LOCK_READY' : 'GB-LON-026'}</p>
+              <p className="text-[11px] font-bold text-slate-200">{userData?.location || 'UK-HQ-026'}</p>
             </div>
           </div>
 
@@ -164,9 +132,9 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
 
           <div className="mt-6 flex items-center justify-between border-t border-white/5 pt-5 relative z-10">
              <div className="flex items-center gap-1.5">
-               <div className={`w-1 h-1 ${gpsLock ? 'bg-indigo-400' : 'bg-emerald-500'} rounded-full animate-pulse`} />
-               <span className={`text-[8px] font-black ${gpsLock ? 'text-indigo-400' : 'text-emerald-400'} uppercase tracking-widest font-mono`}>
-                 {gpsLock ? 'GPS_Precision_Active' : 'Kernel_Optimised'}
+               <div className={`w-1 h-1 bg-emerald-500 rounded-full animate-pulse`} />
+               <span className={`text-[8px] font-black text-emerald-400 uppercase tracking-widest font-mono`}>
+                 Kernel_Optimised
                </span>
              </div>
              <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest font-mono">v2.6.4</span>
@@ -241,7 +209,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData }) => {
                          <div className={`w-3 h-3 rounded-full border-[2.5px] border-white shadow-sm ${node.presenceStatus ? PRESENCE_DOTS[node.presenceStatus] : 'bg-slate-300'} ${node.presenceStatus === 'Online' ? 'animate-pulse' : ''}`} />
                       </div>
                     </div>
-                    <div className="text-left overflow-hidden">
+                    <div className="text-left overflow-hidden flex-1">
                        <p className="text-[12px] font-black text-slate-900 truncate tracking-tight group-hover:text-indigo-600 transition-colors">
                          {node.displayName || 'Unknown Node'}
                        </p>

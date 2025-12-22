@@ -16,7 +16,7 @@ import { SinglePostView } from './components/feed/SinglePostView';
 import { PrivacyPage } from './components/legal/PrivacyPage';
 import { TermsPage } from './components/legal/TermsPage';
 import { CookiesPage } from './components/legal/CookiesPage';
-import { AppRoute, Post, ToastMessage, Region, User as VibeUser, SystemSettings, LiveStream, AppNotification, SignalAudience, PresenceStatus } from './types';
+import { AppRoute, Post, ToastMessage, Region, User as VibeUser, SystemSettings, LiveStream, AppNotification, SignalAudience, PresenceStatus, WeatherInfo } from './types';
 import { db, auth } from './services/firebase';
 import * as FirebaseAuth from 'firebase/auth';
 const { onAuthStateChanged, signOut } = FirebaseAuth as any;
@@ -44,6 +44,7 @@ import { ICONS, PRESENCE_CONFIG } from './constants';
 import { EmojiPicker } from './components/ui/EmojiPicker';
 import { GiphyPicker } from './components/ui/GiphyPicker';
 import { GiphyGif } from './services/giphy';
+import { fetchWeather } from './services/weather';
 
 const SESSION_KEY = 'vibestream_session_2026';
 const ROUTE_KEY = 'vibestream_active_route';
@@ -59,6 +60,7 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userData, setUserData] = useState<VibeUser | null>(null);
   const [allUsers, setAllUsers] = useState<VibeUser[]>([]);
+  const [weather, setWeather] = useState<WeatherInfo | null>(null);
 
   const [systemSettings, setSystemSettings] = useState<SystemSettings>({
     maintenanceMode: false,
@@ -124,6 +126,35 @@ const App: React.FC = () => {
     window.addEventListener('vibe-toast', handleGlobalToast);
     return () => window.removeEventListener('vibe-toast', handleGlobalToast);
   }, []);
+
+  // Atmospheric Synch Protocol
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const syncAtmosphere = async () => {
+      try {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+              const info = await fetchWeather({ coords: { lat: pos.coords.latitude, lon: pos.coords.longitude } });
+              if (info) setWeather(info);
+            },
+            async () => {
+              const info = await fetchWeather({ query: userData?.location || 'London' });
+              if (info) setWeather(info);
+            }
+          );
+        } else {
+          const info = await fetchWeather({ query: userData?.location || 'London' });
+          if (info) setWeather(info);
+        }
+      } catch (err) { console.debug("Atmospheric link failed"); }
+    };
+
+    syncAtmosphere();
+    const interval = setInterval(syncAtmosphere, 1800000); // 30min sync
+    return () => clearInterval(interval);
+  }, [isAuthenticated, userData?.location]);
 
   const handleNavigate = (route: AppRoute) => {
     if (route !== AppRoute.SINGLE_POST) {
@@ -442,7 +473,7 @@ const App: React.FC = () => {
         />
       )}
 
-      {activeRoute === AppRoute.MESSAGES && userData && <MessagesPage currentUser={userData} locale={userRegion} addToast={addToast} />}
+      {activeRoute === AppRoute.MESSAGES && userData && <MessagesPage currentUser={userData} locale={userRegion} addToast={addToast} weather={weather} />}
       {activeRoute === AppRoute.NOTIFICATIONS && (
         <NotificationsPage 
           notifications={notifications} 
