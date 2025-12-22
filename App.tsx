@@ -161,10 +161,12 @@ const App: React.FC = () => {
     
     const q = query(
       collection(db, 'calls'),
-      where('status', 'in', ['ringing', 'connected']),
-      or(
-        where('callerId', '==', userData.id),
-        where('receiverId', '==', userData.id)
+      and(
+        where('status', 'in', ['ringing', 'connected']),
+        or(
+          where('callerId', '==', userData.id),
+          where('receiverId', '==', userData.id)
+        )
       ),
       orderBy('timestamp', 'desc'),
       limit(1)
