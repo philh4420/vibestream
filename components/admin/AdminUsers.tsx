@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { User, UserRole } from '../../types';
+import { ICONS } from '../../constants';
 
 interface AdminUsersProps {
   nodes: User[];
@@ -16,7 +17,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ nodes, searchQuery, setS
     <div className="bg-white border border-slate-100 rounded-[2rem] shadow-sm overflow-hidden animate-in fade-in duration-500">
       <div className="p-6 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50/20">
         <div>
-          <h3 className="text-lg font-black text-slate-900 tracking-tighter uppercase italic leading-none">Node_Registry</h3>
+          <h3 className="text-lg font-black text-slate-950 tracking-tighter uppercase italic leading-none">Node_Registry</h3>
           <p className="text-[9px] font-black text-slate-400 font-mono uppercase tracking-widest mt-1.5">Active Inhabitant Database • Global Sync</p>
         </div>
         <div className="relative w-full md:w-[280px]">
@@ -44,7 +45,10 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ nodes, searchQuery, setS
                   <div className="flex items-center gap-3">
                     <img src={user.avatarUrl} className="w-10 h-10 rounded-xl object-cover border border-slate-100 shadow-sm" alt="" />
                     <div className="min-w-0">
-                      <p className="font-bold text-slate-950 text-[13px] tracking-tight truncate leading-none mb-1">{user.displayName}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-bold text-slate-950 text-[13px] tracking-tight truncate leading-none mb-1">{user.displayName}</p>
+                        {user.verifiedHuman && <div className="text-indigo-500 scale-75"><ICONS.Verified /></div>}
+                      </div>
                       <p className="text-[8px] font-mono text-slate-400 uppercase tracking-widest truncate">@{user.username}</p>
                     </div>
                   </div>
@@ -68,6 +72,12 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ nodes, searchQuery, setS
                 </td>
                 <td className="px-6 py-4 text-right">
                    <div className="flex justify-end gap-2">
+                     <button 
+                       onClick={() => onManage(user.id, { verifiedHuman: !user.verifiedHuman })}
+                       className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all active:scale-95 ${user.verifiedHuman ? 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                     >
+                       {user.verifiedHuman ? 'REVOKE_VERIFY' : 'VERIFY_NODE'}
+                     </button>
                      <button 
                        onClick={() => onManage(user.id, { isSuspended: !user.isSuspended })}
                        className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all active:scale-95 ${user.isSuspended ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' : 'bg-rose-50 text-rose-500 hover:bg-rose-100'}`}
