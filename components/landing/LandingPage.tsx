@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { auth } from '../../services/firebase';
+import { auth, db } from '../../services/firebase';
 // Fixed: Using namespaced import for firebase/auth to resolve "no exported member" errors
 import * as FirebaseAuth from 'firebase/auth';
 const { 
@@ -8,6 +8,8 @@ const {
   createUserWithEmailAndPassword,
   updateProfile 
 } = FirebaseAuth as any;
+import * as Firestore from 'firebase/firestore';
+const { doc, setDoc, serverTimestamp } = Firestore as any;
 import { ICONS } from '../../constants';
 import { SystemSettings } from '../../types';
 
@@ -64,8 +66,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
         if (systemSettings.registrationDisabled) {
           throw new Error('REGISTRATION_DISABLED');
         }
+        // 1. Create Auth User
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        if (fullName) await updateProfile(userCredential.user, { displayName: fullName });
+        const user = userCredential.user;
+        
+        // 2. Update Auth Profile
+        if (fullName) await updateProfile(user, { displayName: fullName });
+
+        // 3. Create Firestore User Document
+        await setDoc(doc(db, 'users', user.uid), {
+          id: user.uid,
+          username: email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, ''),
+          displayName: fullName || 'New Node',
+          email: email,
+          bio: 'Digital identity synchronised.',
+          avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`,
+          coverUrl: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80',
+          followers: 0,
+          following: 0,
+          role: 'member',
+          location: 'Grid Node',
+          joinedAt: serverTimestamp(),
+          verifiedHuman: false,
+          presenceStatus: 'Online',
+          statusEmoji: '⚡',
+          statusMessage: 'Initializing uplink...',
+          trustTier: 'Gamma',
+          badges: ['New Arrival'],
+          tags: ['Novice'],
+          socialLinks: []
+        });
+
       } else {
         await signInWithEmailAndPassword(auth, email, password);
       }
