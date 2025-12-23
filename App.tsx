@@ -850,8 +850,8 @@ const App: React.FC = () => {
               
               if (!followersSnap.empty) {
                 const batch = writeBatch(db);
-                followersSnap.docs.forEach((doc: any) => {
-                  const followerId = doc.id; 
+                followersSnap.docs.forEach((followerDoc: any) => {
+                  const followerId = followerDoc.id; 
                   const notifRef = doc(collection(db, 'notifications'));
                   batch.set(notifRef, {
                     type: 'broadcast',
