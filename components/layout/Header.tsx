@@ -141,6 +141,7 @@ export const Header: React.FC<HeaderProps> = ({
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsSystemMenuOpen(false);
+        setIsHubOpen(false);
       }
       if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
         setIsNotifOpen(false);
@@ -271,7 +272,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* User Menu */}
           <div className="relative" ref={menuRef}>
             <button 
-              onClick={() => setIsSystemMenuOpen(!isSystemMenuOpen)}
+              onClick={() => { setIsSystemMenuOpen(!isSystemMenuOpen); setIsHubOpen(false); }}
               className="flex items-center gap-3 p-1.5 pr-1.5 md:pr-5 rounded-[1.4rem] bg-white border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-300 active:scale-95 group"
             >
               <div className="relative shrink-0">
@@ -293,18 +294,18 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
               
               <div className="hidden md:block text-slate-300 group-hover:text-slate-600 transition-colors">
-                 <svg className={`w-3 h-3 transition-transform duration-300 ${isSystemMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M19 9l-7 7-7-7" /></svg>
+                 <svg className={`w-3 h-3 transition-transform duration-300 ${isSystemMenuOpen || isHubOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M19 9l-7 7-7-7" /></svg>
               </div>
             </button>
 
-            {isSystemMenuOpen && (
+            {isSystemMenuOpen && !isHubOpen && (
               <div className="absolute right-0 top-full mt-4 w-[min(90vw,360px)] bg-white/95 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.25)] border border-white/20 ring-1 ring-slate-950/5 overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-4 duration-400 flex flex-col">
                   
-                  {/* Status Hub */}
+                  {/* Status Hub Trigger */}
                   <div className="p-2">
                     <button 
                       onClick={() => { setIsHubOpen(true); setIsSystemMenuOpen(false); }}
-                      className="w-full p-4 bg-slate-50/80 rounded-[2rem] hover:bg-white border border-slate-100 hover:border-indigo-100 hover:shadow-lg transition-all text-left group flex items-center gap-4"
+                      className="w-full p-4 bg-slate-50/80 rounded-[2rem] hover:bg-white border border-slate-100 hover:border-indigo-100 hover:shadow-lg transition-all text-left group flex items-start gap-4"
                     >
                       <div className="w-14 h-14 bg-white rounded-[1.4rem] flex items-center justify-center text-3xl shadow-sm border border-slate-100 shrink-0 group-hover:scale-110 transition-transform">
                          {userData?.statusEmoji || '⚡'}
@@ -373,94 +374,94 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
               </div>
             )}
+
+            {/* Hub Dropdown (Replacing Modal) */}
+            {isHubOpen && (
+              <div className="absolute right-0 top-full mt-4 w-[min(92vw,400px)] bg-white/95 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.25)] border border-white/20 ring-1 ring-slate-950/5 overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-4 duration-400 flex flex-col">
+                  
+                  <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-rose-500" />
+                  
+                  <div className="flex justify-between items-start p-6 pb-2">
+                     <div>
+                       <h2 className="text-xl font-black text-slate-950 tracking-tighter uppercase italic leading-none">Neural_State</h2>
+                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono mt-1">Broadcast Config</p>
+                     </div>
+                     <button onClick={() => { setIsHubOpen(false); setIsSystemMenuOpen(true); }} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all">
+                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
+                     </button>
+                  </div>
+
+                  <div className="space-y-6 p-6 pt-2 flex-1 overflow-y-auto no-scrollbar scroll-container max-h-[70vh]">
+                     <div className="flex items-center gap-4 bg-slate-50 p-3 rounded-[1.8rem] border border-slate-100">
+                        <div className="w-16 h-16 bg-white rounded-[1.4rem] flex items-center justify-center text-4xl shadow-sm border border-slate-100 shrink-0">
+                          {localStatus.statusEmoji}
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-[8px] font-black text-indigo-500 uppercase tracking-widest font-mono ml-1 mb-1 block">Signal_Message</label>
+                          <input 
+                            autoFocus
+                            type="text"
+                            value={localStatus.statusMessage}
+                            onChange={(e) => setLocalStatus(prev => ({ ...prev, statusMessage: e.target.value }))}
+                            onKeyDown={(e) => e.key === 'Enter' && updateNeuralStatus({})}
+                            className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-900 focus:ring-0 outline-none placeholder:text-slate-300 italic"
+                            placeholder="Status..."
+                          />
+                        </div>
+                     </div>
+
+                     <div>
+                        <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono mb-3 ml-1">Mode</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          {(['Online', 'Focus', 'Deep Work', 'Away', 'In-Transit', 'Invisible'] as const).map(status => (
+                            <button 
+                              key={status}
+                              onClick={() => setLocalStatus(prev => ({ 
+                                ...prev, 
+                                presenceStatus: status,
+                                statusEmoji: STATUS_EMOJI_MAP[status] || prev.statusEmoji
+                              }))}
+                              className={`p-3 rounded-xl border transition-all flex items-center gap-2 active:scale-95 ${localStatus.presenceStatus === status ? 'bg-slate-950 border-slate-950 text-white shadow-md' : 'bg-white border-slate-100 text-slate-500 hover:bg-slate-50'}`}
+                            >
+                              <div className={`w-2 h-2 rounded-full ${PRESENCE_DOTS[status].split(' ')[0]}`} />
+                              <span className="text-[9px] font-black uppercase tracking-widest font-mono truncate">
+                                {status}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                     </div>
+
+                     <div>
+                        <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono mb-3 ml-1">Glyphs</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {IDENTITY_SIGNALS.map(signal => (
+                            <button 
+                              key={signal}
+                              onClick={() => setLocalStatus(prev => ({ ...prev, statusEmoji: signal }))}
+                              className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all active:scale-90 ${localStatus.statusEmoji === signal ? 'bg-indigo-50 border-2 border-indigo-200 text-indigo-600 shadow-md' : 'bg-white border border-slate-100 text-slate-400 hover:bg-slate-50'}`}
+                            >
+                              {signal}
+                            </button>
+                          ))}
+                        </div>
+                     </div>
+                  </div>
+
+                  <div className="p-4 border-t border-slate-100 bg-slate-50/50 shrink-0">
+                     <button 
+                      onClick={() => { updateNeuralStatus({}); setIsHubOpen(false); }}
+                      className="w-full py-4 bg-indigo-600 text-white rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.3em] shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95 flex items-center justify-center gap-2"
+                     >
+                       {isUpdatingStatus ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <ICONS.Verified />}
+                       UPDATE_STATE
+                     </button>
+                  </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
-
-      {/* Hub Overlay Modal - Transparent Background */}
-      {isHubOpen && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-300">
-           <div className="absolute inset-0 bg-transparent" onClick={() => setIsHubOpen(false)}></div>
-           <div className="relative bg-white w-full max-w-xl rounded-[3rem] md:rounded-[3.5rem] p-8 md:p-12 shadow-2xl border border-white animate-in slide-in-from-bottom-12 duration-500 overflow-hidden flex flex-col max-h-[85vh]">
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-rose-500" />
-              
-              <div className="flex justify-between items-start mb-10">
-                 <div>
-                   <h2 className="text-3xl font-black text-slate-950 tracking-tighter uppercase italic leading-none">Neural_State</h2>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono mt-2">Broadcast Configuration</p>
-                 </div>
-                 <button onClick={() => setIsHubOpen(false)} className="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg></button>
-              </div>
-
-              <div className="space-y-8 flex-1 overflow-y-auto no-scrollbar scroll-container pb-4">
-                 <div className="flex items-center gap-6">
-                    <div className="w-20 h-20 bg-slate-50 border border-slate-100 rounded-[2rem] flex items-center justify-center text-5xl shadow-inner shrink-0 animate-bounce-slow">
-                      {localStatus.statusEmoji}
-                    </div>
-                    <div className="flex-1">
-                      <label className="text-[9px] font-black text-indigo-500 uppercase tracking-widest font-mono ml-1 mb-2 block">Current_Signal_Message</label>
-                      <input 
-                        autoFocus
-                        type="text"
-                        value={localStatus.statusMessage}
-                        onChange={(e) => setLocalStatus(prev => ({ ...prev, statusMessage: e.target.value }))}
-                        onKeyDown={(e) => e.key === 'Enter' && updateNeuralStatus({})}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-lg font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300 italic"
-                        placeholder="What's on your mind?"
-                      />
-                    </div>
-                 </div>
-
-                 <div>
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono mb-4 ml-1">Presence_Mode</h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {(['Online', 'Focus', 'Deep Work', 'Away', 'In-Transit', 'Invisible'] as const).map(status => (
-                        <button 
-                          key={status}
-                          onClick={() => setLocalStatus(prev => ({ 
-                            ...prev, 
-                            presenceStatus: status,
-                            statusEmoji: STATUS_EMOJI_MAP[status] || prev.statusEmoji
-                          }))}
-                          className={`p-4 rounded-[1.5rem] border transition-all flex items-center gap-3 active:scale-95 ${localStatus.presenceStatus === status ? 'bg-slate-950 border-slate-950 text-white shadow-xl scale-[1.02]' : 'bg-white border-slate-100 text-slate-500 hover:bg-slate-50'}`}
-                        >
-                          <div className={`w-2.5 h-2.5 rounded-full ${PRESENCE_DOTS[status].split(' ')[0]} shadow-sm`} />
-                          <span className="text-[10px] font-black uppercase tracking-widest font-mono truncate">
-                            {status}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                 </div>
-
-                 <div>
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono mb-4 ml-1">Glyph_Selector</h4>
-                    <div className="flex flex-wrap gap-3">
-                      {IDENTITY_SIGNALS.map(signal => (
-                        <button 
-                          key={signal}
-                          onClick={() => setLocalStatus(prev => ({ ...prev, statusEmoji: signal }))}
-                          className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all active:scale-90 ${localStatus.statusEmoji === signal ? 'bg-indigo-50 border-2 border-indigo-200 text-indigo-600 scale-110 shadow-lg' : 'bg-white border border-slate-100 text-slate-400 hover:bg-slate-50'}`}
-                        >
-                          {signal}
-                        </button>
-                      ))}
-                    </div>
-                 </div>
-              </div>
-
-              <div className="pt-6 border-t border-slate-100 shrink-0 mt-2">
-                 <button 
-                  onClick={() => { updateNeuralStatus({}); setIsHubOpen(false); }}
-                  className="w-full py-5 bg-indigo-600 text-white rounded-[2rem] font-black text-[11px] uppercase tracking-[0.3em] shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95 flex items-center justify-center gap-3"
-                 >
-                   {isUpdatingStatus ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <ICONS.Verified />}
-                   UPDATE_NEURAL_STATE
-                 </button>
-              </div>
-           </div>
-        </div>
-      )}
     </header>
   );
 };
