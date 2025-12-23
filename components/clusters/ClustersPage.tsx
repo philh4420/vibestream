@@ -88,10 +88,10 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
                  </div>
                  <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em] font-mono">SECURE_CHANNELS</span>
               </div>
-              <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter uppercase leading-none">
+              <h1 className="text-3xl md:text-5xl font-black italic tracking-tighter uppercase leading-none">
                 Neural_Clusters
               </h1>
-              <p className="text-sm font-medium text-slate-400 max-w-lg leading-relaxed">
+              <p className="text-xs md:text-sm font-medium text-slate-400 max-w-lg leading-relaxed">
                 Decentralized communication hubs. Establish high-bandwidth synchronization with multiple nodes simultaneously.
               </p>
            </div>
@@ -237,3 +237,4 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
     </div>
   );
 };
+    
