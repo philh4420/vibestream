@@ -76,6 +76,18 @@ export const PostCard: React.FC<PostCardProps> = ({
     return Math.round(totalEngagement / hoursElapsed * 10) / 10;
   }, [post.likes, post.comments, post.shares, post.timestamp]);
 
+  const formattedTimestamp = useMemo(() => {
+    if (post.timestamp && post.timestamp.toDate) {
+      return post.timestamp.toDate().toLocaleString(locale, {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+    return post.createdAt;
+  }, [post.timestamp, post.createdAt, locale]);
+
   const handlePurgeSignal = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isAuthor || !db) return;
@@ -221,7 +233,9 @@ export const PostCard: React.FC<PostCardProps> = ({
               </div>
               <div className="flex items-center gap-2 mt-1.5">
                  <div className="px-2 py-0.5 bg-slate-100 rounded-md border border-slate-200">
-                   <p className="text-[8px] text-slate-500 font-black uppercase tracking-widest font-mono leading-none">{post.createdAt}</p>
+                   <p className="text-[8px] text-slate-500 font-black uppercase tracking-widest font-mono leading-none whitespace-nowrap">
+                     {formattedTimestamp}
+                   </p>
                  </div>
                  {signalVelocity > 0.5 && (
                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-50 rounded-md border border-indigo-100">
