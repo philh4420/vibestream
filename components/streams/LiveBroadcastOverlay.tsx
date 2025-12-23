@@ -17,6 +17,7 @@ const {
 } = Firestore as any;
 import { User } from '../../types';
 import { ICONS } from '../../constants';
+import { uploadToCloudinary } from '../../services/cloudinary';
 
 interface LiveBroadcastOverlayProps {
   userData: User;
@@ -57,9 +58,12 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
   // Archive Modal State
   const [showEndDialog, setShowEndDialog] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
+  const [archiveProgress, setArchiveProgress] = useState('');
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
   const pcInstances = useRef<Record<string, RTCPeerConnection>>({});
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -91,11 +95,24 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
     };
   }, []);
 
-  // Live Logic
+  // Live Logic & Recording
   useEffect(() => {
     if (activeStreamId && db) {
       const timerInt = window.setInterval(() => setTimer(prev => prev + 1), 1000);
       
+      // Start Recording
+      if (streamRef.current && MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+        chunksRef.current = [];
+        const recorder = new MediaRecorder(streamRef.current, { mimeType: 'video/webm;codecs=vp9' });
+        
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunksRef.current.push(e.data);
+        };
+        
+        recorder.start(1000); // Collect chunks every second
+        mediaRecorderRef.current = recorder;
+      }
+
       // 1. Increment Viewer Count (Broadcaster Presence)
       updateDoc(doc(db, 'streams', activeStreamId), {
         viewerCount: increment(1)
@@ -127,9 +144,13 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
       });
 
       return () => { 
-        clearInterval(timerInt); 
-        // 2. Decrement Viewer Count on Exit - only if we didn't delete it yet (handled by onEnd)
-        // Note: onEnd deletes the doc, so this updateDoc might fail, which is fine.
+        clearInterval(timerInt);
+        // Stop recording
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
+        
+        // 2. Decrement Viewer Count on Exit
         updateDoc(doc(db, 'streams', activeStreamId), {
           viewerCount: increment(-1)
         }).catch((err: any) => {});
@@ -175,18 +196,34 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
   };
 
   const handleArchive = async (shouldArchive: boolean) => {
+    if (!shouldArchive) {
+      setShowEndDialog(false);
+      onEnd();
+      return;
+    }
+
     setIsArchiving(true);
-    if (shouldArchive && activeStreamId) {
+    setArchiveProgress('Processing video data...');
+
+    if (activeStreamId && chunksRef.current.length > 0) {
       try {
+        // 1. Compile Blob
+        const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+        const file = new File([blob], `broadcast_${activeStreamId}.webm`, { type: 'video/webm' });
+        
+        // 2. Upload to Cloudinary
+        setArchiveProgress('Uploading to Neural Cloud...');
+        const videoUrl = await uploadToCloudinary(file);
+        
+        // 3. Create Story Entry
         const durationStr = `${Math.floor(timer/60)}:${(timer%60).toString().padStart(2, '0')}`;
-        // Create archive entry in stories
         await addDoc(collection(db, 'stories'), {
           authorId: userData.id,
           authorName: userData.displayName,
           authorAvatar: userData.avatarUrl,
-          coverUrl: userData.avatarUrl, // Fallback as we don't record video
+          coverUrl: videoUrl, // Use the uploaded video URL
           timestamp: serverTimestamp(),
-          type: 'image', // Treat as image card with metadata
+          type: 'video', // Correctly set as video
           isArchivedStream: true,
           streamTitle: streamTitle || 'Untitled Signal',
           streamStats: {
@@ -194,15 +231,20 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
             duration: durationStr
           }
         });
+        
         window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Stream Archived to Temporal", type: 'success' } }));
       } catch (e) {
-        window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Archive Failed", type: 'error' } }));
+        console.error(e);
+        window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Archive Failed: Upload Error", type: 'error' } }));
       }
+    } else {
+        window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Archive Failed: No Data", type: 'error' } }));
     }
     
     setShowEndDialog(false);
     setIsArchiving(false);
-    onEnd(); // Clean up the live stream doc
+    setArchiveProgress('');
+    onEnd(); 
   };
 
   const isLive = !!activeStreamId;
@@ -351,21 +393,21 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
                  <button 
                    onClick={() => handleArchive(true)}
                    disabled={isArchiving}
-                   className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all shadow-lg active:scale-95"
+                   className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all shadow-lg active:scale-95 disabled:opacity-50"
                  >
-                   {isArchiving ? 'Archiving...' : 'Archive_To_Temporal'}
+                   {isArchiving ? archiveProgress : 'Archive_To_Temporal'}
                  </button>
                  <button 
                    onClick={() => handleArchive(false)}
                    disabled={isArchiving}
-                   className="w-full py-4 bg-slate-100 text-rose-500 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-rose-50 hover:text-rose-600 transition-all active:scale-95"
+                   className="w-full py-4 bg-slate-100 text-rose-500 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-rose-50 hover:text-rose-600 transition-all active:scale-95 disabled:opacity-50"
                  >
                    Discard_Signal
                  </button>
                  <button 
                    onClick={() => setShowEndDialog(false)}
                    disabled={isArchiving}
-                   className="w-full py-3 text-slate-400 font-bold text-[9px] uppercase tracking-widest hover:text-slate-600 transition-all"
+                   className="w-full py-3 text-slate-400 font-bold text-[9px] uppercase tracking-widest hover:text-slate-600 transition-all disabled:opacity-50"
                  >
                    Cancel
                  </button>
