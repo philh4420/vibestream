@@ -274,12 +274,11 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
   };
 
   return (
-    <div className="flex h-full w-full bg-[#fcfcfd] rounded-[2.5rem] overflow-hidden shadow-2xl relative animate-in fade-in duration-500 border border-white/50">
+    <div className="flex h-full w-full bg-transparent relative animate-in fade-in duration-500">
       
       {/* 
         MAIN CHAT STREAM 
         Designed to sit between global Left & Right Sidebars.
-        We do NOT use a static right pane here to avoid cramping.
       */}
       <div className="flex-1 flex flex-col min-w-0 relative bg-white/40 z-0">
         
@@ -423,7 +422,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
                  <button type="button" onClick={() => { setIsGiphyPickerOpen(!isGiphyPickerOpen); setIsEmojiPickerOpen(false); }} className={`p-3 rounded-2xl transition-all active:scale-90 border ${isGiphyPickerOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white hover:text-indigo-500 shadow-sm'}`}>
                     <span className="text-[10px] font-black font-mono">GIF</span>
                  </button>
-                 <button type="button" onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }} className={`p-3 rounded-2xl transition-all active:scale-90 border ${isEmojiPickerOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white hover:text-indigo-500 shadow-sm'}`}>
+                 <button type="button" onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }} className={`p-3 rounded-2xl transition-all active:scale-90 border ${isEmojiPickerOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-indigo-100 hover:text-indigo-500 shadow-sm'}`}>
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" /></svg>
                  </button>
               </div>
@@ -439,7 +438,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
               
               <button 
                 disabled={(!newMessage.trim() && !selectedFile && !selectedGif) || isSending} 
-                className="w-14 h-14 bg-slate-900 text-white rounded-[2rem] flex items-center justify-center transition-all active:scale-90 disabled:opacity-20 hover:bg-black shadow-lg shrink-0"
+                className="w-14 h-14 bg-slate-950 text-white rounded-[2rem] flex items-center justify-center transition-all active:scale-90 disabled:opacity-20 hover:bg-black shadow-lg shrink-0"
               >
                 {isSending ? (
                   <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />

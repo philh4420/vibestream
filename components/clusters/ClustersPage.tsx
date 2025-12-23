@@ -57,7 +57,7 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
   // If a cluster is active, show the specialized cluster chat interface
   if (activeClusterId && activeClusterData) {
     return (
-      <div className="h-[calc(100vh-var(--header-h)-var(--bottom-nav-h)-1rem)] md:h-[calc(100vh-var(--header-h)-3rem)] -mx-4 sm:-mx-6 md:-mx-10 lg:-mx-14 bg-[#fcfcfd] md:rounded-[3.5rem] overflow-hidden shadow-heavy relative border border-slate-100 animate-in fade-in duration-500">
+      <div className="h-[calc(100vh-var(--header-h)-var(--bottom-nav-h)-1rem)] md:h-[calc(100vh-var(--header-h)-3rem)] -mx-4 md:-mx-6 lg:-mx-4 xl:-mx-10 bg-[#fcfcfd] md:rounded-[3.5rem] overflow-hidden shadow-heavy relative border border-slate-100 animate-in fade-in duration-500">
          <AtmosphericBackground weather={weather || null}>
             <ClusterChatInterface 
                 chatId={activeClusterId}
