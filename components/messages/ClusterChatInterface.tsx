@@ -276,7 +276,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
         )}
 
         {(isEmojiPickerOpen || isGiphyPickerOpen) && (
-          <div className="fixed inset-0 z-[100] bg-white/30 backdrop-blur-md" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />
+          <div className="fixed inset-0 z-[100] bg-transparent" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />
         )}
         {isEmojiPickerOpen && (
           <div className="absolute bottom-24 left-4 z-[200]">
