@@ -264,8 +264,9 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
         addToast(`${selectedInviteIds.length} Nodes Injected`, 'success');
         setIsInviteModalOpen(false);
         setSelectedInviteIds([]);
-    } catch (e) {
-        addToast("Injection Failed", 'error');
+    } catch (e: any) {
+        console.error("Injection Failed:", e);
+        addToast(`Injection Failed: ${e.message}`, 'error');
     }
   };
 
