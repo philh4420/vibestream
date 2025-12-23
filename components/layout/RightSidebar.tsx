@@ -88,7 +88,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather })
       <div className="flex-1 scroll-viewport px-6 space-y-8 pb-10">
         
         {/* SECTION: SYSTEM MONITOR WIDGET */}
-        <div className="relative group overflow-hidden bg-slate-900 rounded-[2rem] p-6 text-white shadow-2xl transition-all duration-500 hover:shadow-indigo-500/20 min-h-[360px] flex flex-col justify-between">
+        <div className="relative group overflow-hidden bg-slate-900 rounded-[2rem] p-6 text-white shadow-2xl transition-all duration-500 hover:shadow-indigo-500/20 min-h-[280px] flex flex-col justify-between">
           <div className="absolute top-0 right-0 w-32 h-60 bg-indigo-500/20 blur-[60px] rounded-full -translate-y-1/2 translate-x-1/3" />
           
           <div className="flex justify-between items-start mb-6 relative z-10">
