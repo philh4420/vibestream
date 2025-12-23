@@ -16,7 +16,8 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
   const [isPaused, setIsPaused] = useState(false);
   
   const currentStory = stories[currentIndex];
-  const DURATION = 5000; // 5 seconds per shard
+  // Default duration for images is 5s. For videos, we could extend this or listen to events.
+  const DURATION = 5000; 
   const STEP = 50;
 
   useEffect(() => {
@@ -26,6 +27,8 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
   useEffect(() => {
     if (isPaused) return;
 
+    // Timer logic mainly for auto-progression. 
+    // If it's a video, we might want to pause this timer or sync it, but for a "lite" implementation:
     const timer = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
@@ -60,12 +63,18 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
     }
   };
 
+  const isVideo = currentStory.type === 'video' || currentStory.coverUrl.match(/\.(mp4|mov|webm)$/i);
+
   return (
     <div className="absolute inset-0 z-50 bg-black flex items-center justify-center animate-in zoom-in-95 duration-300">
       
       {/* Immersive Background Blur */}
       <div className="absolute inset-0 z-0 opacity-30 blur-3xl scale-110 pointer-events-none">
-        <img src={currentStory.coverUrl} className="w-full h-full object-cover" alt="" />
+        {isVideo ? (
+           <video src={currentStory.coverUrl} className="w-full h-full object-cover" muted loop />
+        ) : (
+           <img src={currentStory.coverUrl} className="w-full h-full object-cover" alt="" />
+        )}
       </div>
 
       {/* Main Shard Container */}
@@ -77,7 +86,19 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
         onTouchEnd={() => setIsPaused(false)}
       >
         {/* Media Layer */}
-        <img src={currentStory.coverUrl} className="absolute inset-0 w-full h-full object-cover" alt="" />
+        {isVideo ? (
+           <video 
+             src={currentStory.coverUrl} 
+             className="absolute inset-0 w-full h-full object-cover" 
+             autoPlay 
+             playsInline 
+             // Muted by default for auto-play policy, but could toggle
+             muted 
+             loop 
+           />
+        ) : (
+           <img src={currentStory.coverUrl} className="absolute inset-0 w-full h-full object-cover" alt="" />
+        )}
         
         {/* Scrim */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80 pointer-events-none" />

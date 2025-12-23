@@ -144,6 +144,7 @@ export interface Story {
   authorAvatar: string;
   coverUrl: string;
   timestamp: any;
+  type?: 'image' | 'video';
 }
 
 export interface LiveStream {

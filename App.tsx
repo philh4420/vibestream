@@ -157,6 +157,26 @@ const App: React.FC = () => {
     setActiveRoute(AppRoute.SINGLE_POST);
   };
 
+  const handleTransmitStory = async (file: File) => {
+    if (!db || !userData) return;
+    addToast("Initiating Temporal Injection...", "info");
+    
+    try {
+      const url = await uploadToCloudinary(file);
+      await addDoc(collection(db, 'stories'), {
+        authorId: userData.id,
+        authorName: userData.displayName,
+        authorAvatar: userData.avatarUrl,
+        coverUrl: url,
+        timestamp: serverTimestamp(),
+        type: file.type.startsWith('video/') ? 'video' : 'image'
+      });
+      addToast("Temporal Fragment Stabilized", "success");
+    } catch (error) {
+      addToast("Injection Failed: Signal Lost", "error");
+    }
+  };
+
   useEffect(() => {
     const handleGlobalToast = (e: any) => {
       if (e.detail?.msg) addToast(e.detail.msg, e.detail.type);
@@ -585,7 +605,7 @@ const App: React.FC = () => {
           onBookmark={handleBookmark}
           onViewPost={handleOpenPost}
           onOpenCreate={handleOpenCreate}
-          onTransmitStory={() => {}} onGoLive={() => setIsLiveOverlayOpen(true)}
+          onTransmitStory={handleTransmitStory} onGoLive={() => setIsLiveOverlayOpen(true)}
           onJoinStream={(s) => setWatchingStream(s)} locale={userRegion}
         />
       )}
