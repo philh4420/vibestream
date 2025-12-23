@@ -14,6 +14,7 @@ const {
   doc, 
   deleteDoc,
   arrayUnion,
+  arrayRemove,
   writeBatch
 } = Firestore as any;
 import { User, Message, Chat } from '../../types';
@@ -48,6 +49,9 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
   
   // Modal States
   const [terminationTarget, setTerminationTarget] = useState<{ id: string, label: string } | null>(null);
+  const [nodeToRemove, setNodeToRemove] = useState<{ id: string, name: string } | null>(null);
+  const [isLeaving, setIsLeaving] = useState(false);
+  
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [inviteSearch, setInviteSearch] = useState('');
   const [selectedInviteIds, setSelectedInviteIds] = useState<string[]>([]);
@@ -55,6 +59,8 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const isAdmin = chatData.clusterAdmin === currentUser.id;
 
   // Sync Messages
   useEffect(() => {
@@ -210,6 +216,52 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
       onBack();
     } catch (e) {
       addToast("Dissolution Failed", "error");
+    }
+  };
+
+  // --- REMOVAL LOGIC ---
+  const handleConfirmRemoval = async () => {
+    if (!nodeToRemove || !db) return;
+    try {
+      await updateDoc(doc(db, 'chats', chatId), {
+        participants: arrayRemove(nodeToRemove.id)
+      });
+      
+      // System Message
+      await addDoc(collection(db, 'chats', chatId, 'messages'), {
+        senderId: 'SYSTEM',
+        text: `Node ${nodeToRemove.name} disconnected from cluster.`,
+        timestamp: serverTimestamp(),
+        isRead: true
+      });
+
+      addToast(`Node Removed: ${nodeToRemove.name}`, "success");
+      setNodeToRemove(null);
+    } catch (e) {
+      addToast("Removal Protocol Failed", "error");
+    }
+  };
+
+  const handleLeaveCluster = async () => {
+    if (!db || !currentUser.id) return;
+    try {
+      await updateDoc(doc(db, 'chats', chatId), {
+        participants: arrayRemove(currentUser.id)
+      });
+      
+      await addDoc(collection(db, 'chats', chatId, 'messages'), {
+        senderId: 'SYSTEM',
+        text: `Node ${currentUser.displayName} has left the cluster.`,
+        timestamp: serverTimestamp(),
+        isRead: true
+      });
+
+      addToast("Disconnected from Cluster", "success");
+      onBack();
+    } catch (e) {
+      addToast("Leave Protocol Failed", "error");
+    } finally {
+      setIsLeaving(false);
     }
   };
 
@@ -489,14 +541,24 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
                            <img src={user.avatarUrl} className="w-10 h-10 rounded-xl object-cover border border-slate-100" alt="" />
                            <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${user.presenceStatus === 'Online' ? 'bg-emerald-500' : 'bg-slate-300'}`} />
                         </div>
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                            <p className="text-xs font-black text-slate-900 truncate">{user.displayName}</p>
                            <p className="text-[8px] font-mono text-slate-400 uppercase tracking-wider">{user.role || 'Member'}</p>
                         </div>
-                        {user.id === chatData.clusterAdmin && (
+                        {user.id === chatData.clusterAdmin ? (
                            <div className="ml-auto text-amber-500" title="Cluster Admin">
                               <ICONS.Verified />
                            </div>
+                        ) : (
+                           isAdmin && (
+                             <button 
+                               onClick={() => setNodeToRemove({ id: user.id, name: user.displayName })}
+                               className="ml-auto p-1.5 text-rose-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all active:scale-90"
+                               title="Remove Node"
+                             >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
+                             </button>
+                           )
                         )}
                      </div>
                   ))}
@@ -522,8 +584,8 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
             </div>
          </div>
 
-         {chatData.clusterAdmin === currentUser.id && (
-            <div className="p-6 border-t border-white/50 bg-rose-50/30">
+         <div className="p-6 border-t border-white/50 bg-slate-50/50">
+            {isAdmin ? (
                <button 
                  onClick={() => setTerminationTarget({ id: chatId, label: chatData.clusterName || 'Cluster' })}
                  className="w-full py-4 bg-white border border-rose-100 text-rose-500 rounded-2xl font-black text-[9px] uppercase tracking-[0.2em] hover:bg-rose-500 hover:text-white transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2"
@@ -531,8 +593,16 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" strokeWidth={2} /></svg>
                  DISSOLVE_CLUSTER
                </button>
-            </div>
-         )}
+            ) : (
+               <button 
+                 onClick={() => setIsLeaving(true)}
+                 className="w-full py-4 bg-white border border-slate-200 text-slate-500 rounded-2xl font-black text-[9px] uppercase tracking-[0.2em] hover:bg-slate-100 hover:text-slate-900 transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2"
+               >
+                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" strokeWidth={2} /></svg>
+                 LEAVE_CLUSTER
+               </button>
+            )}
+         </div>
       </div>
 
       {/* Hidden Inputs & Modals */}
@@ -548,7 +618,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
         <div className="fixed inset-0 z-[90]" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />
       )}
 
-      {/* INVITE MODAL - Z-Index 3000 to overlay global layout */}
+      {/* INVITE MODAL */}
       {isInviteModalOpen && (
         <div className="fixed inset-0 z-[3000] flex items-center justify-center p-6">
             <div className="absolute inset-0 bg-transparent" onClick={() => setIsInviteModalOpen(false)} />
@@ -608,6 +678,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
         </div>
       )}
 
+      {/* CONFIRMATION MODALS */}
       <DeleteConfirmationModal 
         isOpen={!!terminationTarget} 
         title="DISSOLVE_CLUSTER" 
@@ -615,6 +686,24 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
         onConfirm={handleExecuteTermination} 
         onCancel={() => setTerminationTarget(null)} 
         confirmText="CONFIRM_DISSOLUTION"
+      />
+
+      <DeleteConfirmationModal 
+        isOpen={!!nodeToRemove} 
+        title="REMOVE_NODE" 
+        description={`Forcibly disconnect "${nodeToRemove?.name}" from this cluster?`} 
+        onConfirm={handleConfirmRemoval} 
+        onCancel={() => setNodeToRemove(null)} 
+        confirmText="EJECT_NODE"
+      />
+
+      <DeleteConfirmationModal 
+        isOpen={isLeaving} 
+        title="LEAVE_CLUSTER" 
+        description="Disconnect from this frequency? You will need to be re-invited to rejoin." 
+        onConfirm={handleLeaveCluster} 
+        onCancel={() => setIsLeaving(false)} 
+        confirmText="CONFIRM_EXIT"
       />
     </div>
   );

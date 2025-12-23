@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -205,7 +206,11 @@ service cloud.firestore {
       
       match /messages/{messageId} {
         allow read, list: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
-        allow create: if isAuthenticated() && incomingData().senderId == request.auth.uid;
+        // Modified: Allow SYSTEM messages if user is a participant (for invite/update logs)
+        allow create: if isAuthenticated() && (
+          incomingData().senderId == request.auth.uid ||
+          (incomingData().senderId == 'SYSTEM' && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants)
+        );
         allow update: if isAuthenticated() && (
           incomingData().senderId == request.auth.uid ||
           incomingData().diff(existingData()).affectedKeys().hasOnly(['isRead'])
