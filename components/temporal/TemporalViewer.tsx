@@ -5,6 +5,7 @@ import { ICONS } from '../../constants';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
 const { deleteDoc, doc } = Firestore as any;
+import { DeleteConfirmationModal } from '../ui/DeleteConfirmationModal';
 
 interface TemporalViewerProps {
   stories: Story[];
@@ -18,6 +19,7 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [localStories, setLocalStories] = useState(stories);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   
   useEffect(() => {
     setLocalStories(stories);
@@ -34,7 +36,7 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
   }, [currentIndex]);
 
   useEffect(() => {
-    if (isPaused || !currentStory) return;
+    if (isPaused || !currentStory || showDeleteModal) return;
 
     const timer = setInterval(() => {
       setProgress((prev) => {
@@ -52,7 +54,7 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
     }, STEP);
 
     return () => clearInterval(timer);
-  }, [currentIndex, isPaused, localStories.length, onClose, currentStory]);
+  }, [currentIndex, isPaused, localStories.length, onClose, currentStory, showDeleteModal]);
 
   const handleNext = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -70,15 +72,15 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
     }
   };
 
-  const handleDelete = async (e: React.MouseEvent) => {
+  const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsPaused(true);
-    
-    if (!window.confirm("Purge this temporal fragment?")) {
-        setIsPaused(false);
-        return;
-    }
+    setShowDeleteModal(true);
+  };
 
+  const confirmDelete = async () => {
+    if (!currentStory) return;
+    
     try {
         await deleteDoc(doc(db, 'stories', currentStory.id));
         const updatedStories = localStories.filter(s => s.id !== currentStory.id);
@@ -98,6 +100,12 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
         window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Deletion Failed", type: 'error' } }));
         setIsPaused(false);
     }
+    setShowDeleteModal(false);
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setIsPaused(false);
   };
 
   if (!currentStory) return null;
@@ -121,10 +129,10 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
       {/* Main Shard Container */}
       <div 
         className="relative w-full h-full md:w-[450px] md:h-[95%] bg-slate-900 md:rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/10"
-        onMouseDown={() => setIsPaused(true)}
-        onMouseUp={() => setIsPaused(false)}
-        onTouchStart={() => setIsPaused(true)}
-        onTouchEnd={() => setIsPaused(false)}
+        onMouseDown={() => !showDeleteModal && setIsPaused(true)}
+        onMouseUp={() => !showDeleteModal && setIsPaused(false)}
+        onTouchStart={() => !showDeleteModal && setIsPaused(true)}
+        onTouchEnd={() => !showDeleteModal && setIsPaused(false)}
       >
         {/* Media Layer */}
         {isVideo ? (
@@ -191,7 +199,7 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
           <div className="flex items-center gap-2">
              {isOwner && (
                  <button 
-                    onClick={handleDelete}
+                    onClick={handleDeleteClick}
                     className="w-10 h-10 flex items-center justify-center bg-black/20 hover:bg-rose-600/80 backdrop-blur-md rounded-full text-white transition-all"
                  >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -229,6 +237,16 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
               </button>
            </div>
         </div>
+
+        {/* DELETE CONFIRMATION MODAL */}
+        <DeleteConfirmationModal 
+            isOpen={showDeleteModal}
+            title="PURGE_FRAGMENT"
+            description="Permanently delete this temporal record? This action cannot be undone."
+            onConfirm={confirmDelete}
+            onCancel={cancelDelete}
+            confirmText="CONFIRM_DELETE"
+        />
 
       </div>
     </div>
