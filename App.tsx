@@ -47,7 +47,8 @@ const {
   arrayUnion, 
   arrayRemove, 
   or, 
-  and 
+  and,
+  getDocs
 } = Firestore as any;
 import { uploadToCloudinary } from './services/cloudinary';
 import { ICONS, PRESENCE_CONFIG } from './constants';
@@ -833,6 +834,36 @@ const App: React.FC = () => {
               category: 'Global'
             });
             setActiveStreamId(streamRef.id);
+
+            // NOTIFICATION LOGIC
+            try {
+              const followersRef = collection(db, 'users', userData.id, 'followers');
+              const followersSnap = await getDocs(followersRef);
+              
+              if (!followersSnap.empty) {
+                const batch = writeBatch(db);
+                followersSnap.docs.forEach((doc: any) => {
+                  const followerId = doc.id; 
+                  const notifRef = doc(collection(db, 'notifications'));
+                  batch.set(notifRef, {
+                    type: 'broadcast',
+                    fromUserId: userData.id,
+                    fromUserName: userData.displayName,
+                    fromUserAvatar: userData.avatarUrl,
+                    toUserId: followerId,
+                    targetId: streamRef.id,
+                    text: `is LIVE: ${title}`,
+                    isRead: false,
+                    timestamp: serverTimestamp(),
+                    pulseFrequency: 'intensity'
+                  });
+                });
+                await batch.commit();
+                addToast("Network Alerted: Broadcast Signal Sent", "success");
+              }
+            } catch (e) {
+              console.error("Notification dispatch failed", e);
+            }
           }} 
           onEnd={async () => {
             if (activeStreamId) await deleteDoc(doc(db, 'streams', activeStreamId));

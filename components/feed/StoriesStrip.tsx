@@ -105,6 +105,24 @@ export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData, onTransmit
           </button>
         </div>
 
+        {/* 1.5 Quick Stream Setup */}
+        <div className="relative shrink-0 snap-start">
+          <button 
+            onClick={onGoLive}
+            className="flex flex-col justify-end w-[100px] h-[160px] md:w-[120px] md:h-[200px] rounded-[1.8rem] bg-slate-900 border border-slate-800 overflow-hidden relative group shadow-lg hover:shadow-rose-500/20 hover:border-rose-500/30 transition-all duration-500 active:scale-95"
+          >
+            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
+            <div className="absolute inset-0 bg-gradient-to-t from-rose-900/80 via-transparent to-transparent opacity-60" />
+            
+            <div className="relative z-10 flex flex-col items-center pb-4 w-full">
+              <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-rose-500 flex items-center justify-center shadow-lg mb-2 transition-all duration-300 group-hover:scale-110 group-hover:bg-rose-600 group-hover:text-white">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" /></svg>
+              </div>
+              <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white font-mono group-hover:text-rose-400 transition-colors">Go_Live</span>
+            </div>
+          </button>
+        </div>
+
         {/* 2. LIVE SIGNALS (Priority Highlighting) */}
         {activeStreams.map(stream => (
           <div key={stream.id} className="relative shrink-0 snap-start">
