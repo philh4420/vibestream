@@ -14,7 +14,7 @@ const {
 } = Firestore as any;
 import { Chat, User, Region } from '../../types';
 import { ICONS } from '../../constants';
-import { ClusterCreationModal } from '../messages/ClusterCreationModal';
+import { ClusterCreationModal } from '../clusters/ClusterCreationModal';
 import { ClusterChatInterface } from './ClusterChatInterface';
 import { AtmosphericBackground } from '../messages/AtmosphericBackground';
 
