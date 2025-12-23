@@ -40,26 +40,23 @@ const rtcConfig = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
   ],
-  iceCandidatePoolSize: 10,
 };
 
 export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, onLeave }) => {
   const [currentViewers, setCurrentViewers] = useState(stream.viewerCount);
-  const [status, setStatus] = useState<'handshaking' | 'p2p_sync' | 'established' | 'failed'>('handshaking');
+  const [status, setStatus] = useState<'connecting' | 'connected' | 'failed'>('connecting');
   const [messages, setMessages] = useState<StreamMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [reactions, setReactions] = useState<FloatingReaction[]>([]);
-  const [isMuted, setIsMuted] = useState(false);
-  const [showChatMobile, setShowChatMobile] = useState(true);
+  const [showChat, setShowChat] = useState(true);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const connectionIdRef = useRef<string>(`viewer_${auth.currentUser?.uid || 'anon'}_${Math.random().toString(36).substring(2, 10)}`);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // WebRTC & Data Listeners
+  // --- WebRTC Logic ---
   useEffect(() => {
     let unsubAnswer: () => void;
     let unsubHostCandidates: () => void;
@@ -73,19 +70,9 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
       pc.ontrack = (event) => {
         if (videoRef.current && event.streams[0]) {
           videoRef.current.srcObject = event.streams[0];
-          setStatus('established');
-          videoRef.current.play().catch(() => {
-            if (videoRef.current) videoRef.current.muted = true;
-            setIsMuted(true);
-            videoRef.current?.play().catch(console.error);
-          });
+          setStatus('connected');
+          videoRef.current.play().catch(console.error);
         }
-      };
-
-      pc.oniceconnectionstatechange = () => {
-        const state = pc.iceConnectionState;
-        if (state === 'connected' || state === 'completed') setStatus('established');
-        if (state === 'failed' || state === 'closed') setStatus('failed');
       };
 
       pc.onicecandidate = (e) => {
@@ -100,16 +87,12 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
         
-        // Register viewer connection
         await setDoc(doc(db, 'streams', stream.id, 'connections', connectionIdRef.current), { 
           offer: { sdp: offer.sdp, type: offer.type },
           viewerId: auth.currentUser.uid,
           createdAt: serverTimestamp()
         });
         
-        setStatus('p2p_sync');
-
-        // Listen for Answer
         unsubAnswer = onSnapshot(doc(db, 'streams', stream.id, 'connections', connectionIdRef.current), async (snap: any) => {
           const data = snap.data();
           if (data?.answer && !pc.currentRemoteDescription) {
@@ -121,7 +104,6 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
           }
         });
 
-        // Listen for Host ICE Candidates
         unsubHostCandidates = onSnapshot(collection(db, 'streams', stream.id, 'connections', connectionIdRef.current, 'hostCandidates'), (snap: any) => {
           snap.docChanges().forEach(async (change: any) => {
             if (change.type === 'added') {
@@ -136,26 +118,23 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
 
     connect();
 
-    // Stream Metadata Listener
     const unsubStream = onSnapshot(doc(db, 'streams', stream.id), (snap: any) => {
       if (snap.exists()) setCurrentViewers(snap.data().viewerCount);
-      else onLeave(); // Stream ended
+      else onLeave(); 
     });
 
-    // Chat Listener
     const chatQuery = query(collection(db, 'streams', stream.id, 'messages'), orderBy('timestamp', 'asc'), limit(50));
     const unsubChat = onSnapshot(chatQuery, (snap: any) => {
       setMessages(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as StreamMessage)));
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     });
 
-    // Reaction Listener
     const reactQuery = query(collection(db, 'streams', stream.id, 'reactions'), orderBy('timestamp', 'desc'), limit(1));
     const unsubReact = onSnapshot(reactQuery, (snap: any) => {
       snap.docChanges().forEach((change: any) => {
         if (change.type === 'added') {
           const id = Math.random().toString(36).substring(7);
-          const left = Math.floor(Math.random() * 80) + 10;
+          const left = Math.floor(Math.random() * 60) + 20; // Constrain to center-ish
           const emoji = change.doc.data().emoji || '❤️';
           setReactions(prev => [...prev, { id, emoji, left }]);
           setTimeout(() => setReactions(prev => prev.filter(r => r.id !== id)), 2500);
@@ -177,258 +156,142 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
     if (!chatInput.trim() || !db || !auth.currentUser) return;
     const text = chatInput.trim();
     setChatInput('');
-    try {
-      await addDoc(collection(db, 'streams', stream.id, 'messages'), {
-        senderId: auth.currentUser.uid,
-        senderName: auth.currentUser.displayName || 'Unnamed Node',
-        senderAvatar: auth.currentUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${auth.currentUser.uid}`,
-        text,
-        timestamp: serverTimestamp()
-      });
-    } catch (e) { console.error("Neural Comms Error"); }
+    await addDoc(collection(db, 'streams', stream.id, 'messages'), {
+      senderId: auth.currentUser.uid,
+      senderName: auth.currentUser.displayName || 'Anon',
+      senderAvatar: auth.currentUser.photoURL,
+      text,
+      timestamp: serverTimestamp()
+    });
   };
 
-  const triggerReaction = async (emoji: string = '❤️') => {
+  const triggerReaction = async (emoji: string) => {
     if (!db || !auth.currentUser) return;
-    // Local Optimistic Update
     const id = Math.random().toString(36).substring(7);
-    const left = Math.floor(Math.random() * 80) + 10;
+    const left = Math.floor(Math.random() * 30) + 60; // Float on right side
     setReactions(prev => [...prev, { id, emoji, left }]);
     setTimeout(() => setReactions(prev => prev.filter(r => r.id !== id)), 2500);
-
-    try {
-      await addDoc(collection(db, 'streams', stream.id, 'reactions'), {
-        userId: auth.currentUser.uid,
-        emoji,
-        timestamp: serverTimestamp()
-      });
-    } catch (e) { console.error("Pulse Error"); }
+    
+    await addDoc(collection(db, 'streams', stream.id, 'reactions'), {
+      userId: auth.currentUser.uid,
+      emoji,
+      timestamp: serverTimestamp()
+    });
   };
 
   return (
-    <div className="fixed inset-0 z-[2000] bg-black flex flex-col lg:flex-row items-stretch justify-center overflow-hidden selection:bg-indigo-500 font-sans">
+    <div className="fixed inset-0 z-[5000] bg-black text-white font-sans overflow-hidden flex flex-col selection:bg-rose-500">
       
-      {/* Cinematic Viewport */}
-      <div className="relative flex-1 bg-black flex items-center justify-center min-h-0 group/video">
-        <video 
-          ref={videoRef} autoPlay playsInline muted={isMuted}
-          className={`w-full h-full object-cover transition-all duration-1000 ${status === 'established' ? 'opacity-100 scale-100' : 'opacity-0 scale-105 blur-2xl'}`} 
-        />
-        
-        {/* Establishing Link Overlay - TRANSPARENT/BLURRED BACKGROUND */}
-        {status !== 'established' && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center p-8 text-center overflow-hidden">
-             {/* Thumbnail Background Blurriness */}
-             <img src={stream.thumbnailUrl} className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-60 scale-110 animate-pulse-slow" alt="" />
-             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-
-             {/* Center Card */}
-             <div className="relative z-10 bg-black/40 backdrop-blur-xl border border-white/10 p-8 rounded-[3rem] shadow-2xl flex flex-col items-center">
-                <div className="relative w-24 h-24 mb-6">
-                   <div className="absolute inset-0 border-4 border-indigo-500/30 rounded-full animate-ping" />
-                   <div className="absolute inset-0 border-4 border-indigo-500/60 rounded-full border-t-indigo-400 animate-spin" />
-                   <img src={stream.authorAvatar} className="w-full h-full rounded-full object-cover p-1.5" alt="" />
-                </div>
-                
-                <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter leading-none mb-2">{stream.authorName}</h2>
-                <p className="text-[10px] font-black text-indigo-300 uppercase tracking-[0.3em] font-mono animate-pulse">ESTABLISHING_UPLINK...</p>
-                
-                <button onClick={onLeave} className="mt-8 px-8 py-3 bg-white/10 hover:bg-white/20 text-white font-black uppercase text-[9px] tracking-widest rounded-xl transition-all active:scale-95 border border-white/10">
-                  ABORT
-                </button>
-             </div>
-          </div>
-        )}
-
-        {/* Reaction Layer */}
-        <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden">
-           {reactions.map(r => (
-             <div key={r.id} className="absolute bottom-1/3 text-6xl animate-float-up" style={{ left: `${r.left}%` }}>
-               {r.emoji}
-             </div>
-           ))}
-        </div>
-
-        {/* TOP HUD - Autohide on idle if needed, but keeping visible for pro feel */}
-        <div className="absolute top-0 left-0 right-0 p-4 md:p-8 flex justify-between items-start z-[60] pointer-events-none transition-opacity duration-300">
-           <div className="flex gap-3 pointer-events-auto">
-              <div className="bg-rose-600/90 backdrop-blur-md text-white px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl border border-white/10">
-                <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse shadow-white" />
-                LIVE
-              </div>
-              <div className="bg-black/40 backdrop-blur-md text-white px-4 py-2.5 rounded-xl text-[10px] font-black font-mono border border-white/10 shadow-xl flex items-center gap-2">
-                 <svg className="w-3 h-3 text-rose-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                 {currentViewers.toLocaleString()}
+      {/* 1. CINEMATIC VIDEO LAYER */}
+      <div className="absolute inset-0 z-0">
+         <video 
+           ref={videoRef} autoPlay playsInline 
+           className={`w-full h-full object-contain bg-black transition-opacity duration-1000 ${status === 'connected' ? 'opacity-100' : 'opacity-0'}`} 
+         />
+         {status !== 'connected' && (
+           <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
+              <div className="flex flex-col items-center">
+                 <img src={stream.thumbnailUrl} className="w-24 h-24 rounded-full object-cover mb-6 border-4 border-white/10 animate-pulse" alt="" />
+                 <p className="text-[10px] font-black uppercase tracking-[0.4em] font-mono animate-pulse">Establishing_Uplink...</p>
               </div>
            </div>
-           
-           <div className="flex gap-3 pointer-events-auto">
-              <button onClick={() => setIsMuted(!isMuted)} className="p-3 bg-black/40 hover:bg-white/10 backdrop-blur-md rounded-xl text-white border border-white/10 transition-all active:scale-90">
-                 {isMuted ? <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" /></svg> : <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>}
-              </button>
-              <button onClick={onLeave} className="p-3 bg-white/10 hover:bg-rose-600 hover:text-white text-white rounded-xl backdrop-blur-md border border-white/10 transition-all active:scale-90 shadow-lg">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-           </div>
-        </div>
-
-        {/* BOTTOM HUD - Mobile Only */}
-        <div className="lg:hidden absolute bottom-0 left-0 right-0 p-4 z-[60] bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-24 pointer-events-none">
-           <div className="pointer-events-auto pb-safe">
-              {/* Reactions Bar */}
-              <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar py-1">
-                 {['🔥', '❤️', '👏', '🚀'].map(emoji => (
-                   <button key={emoji} onClick={() => triggerReaction(emoji)} className="w-10 h-10 bg-white/10 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-lg active:scale-90 transition-transform shadow-lg">
-                     {emoji}
-                   </button>
-                 ))}
-              </div>
-
-              <div className="flex items-end gap-3">
-                 <div className="flex-1">
-                    <form onSubmit={handleSendMessage} className="relative">
-                       <input 
-                         type="text" 
-                         value={chatInput}
-                         onChange={(e) => setChatInput(e.target.value)}
-                         placeholder="Broadcast frequency..."
-                         className="w-full bg-white/10 border border-white/10 rounded-2xl pl-5 pr-12 py-3.5 text-white text-sm font-bold placeholder:text-white/40 focus:bg-white/20 outline-none backdrop-blur-md transition-all shadow-lg"
-                       />
-                       <button 
-                         type="submit" 
-                         disabled={!chatInput.trim()}
-                         className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-indigo-600 text-white rounded-xl disabled:opacity-50 active:scale-90 transition-transform shadow-md"
-                       >
-                         <svg className="w-4 h-4 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
-                       </button>
-                    </form>
-                 </div>
-                 <button 
-                   onClick={() => setShowChatMobile(!showChatMobile)}
-                   className={`p-3.5 rounded-2xl backdrop-blur-xl border transition-all active:scale-95 shadow-lg ${showChatMobile ? 'bg-white text-slate-900 border-white' : 'bg-white/10 text-white border-white/10'}`}
-                 >
-                   <ICONS.Messages />
-                 </button>
-              </div>
-           </div>
-        </div>
-
-        {/* MOBILE CHAT OVERLAY */}
-        {showChatMobile && (
-          <div className="lg:hidden absolute bottom-32 left-4 right-4 h-48 overflow-y-auto no-scrollbar z-[55] mask-linear-fade pointer-events-none">
-             <div className="flex flex-col justify-end min-h-full space-y-2 pb-2">
-               {messages.map((msg) => (
-                 <div key={msg.id} className="flex items-start gap-2 animate-in slide-in-from-bottom-4 duration-300">
-                    <img src={msg.senderAvatar} className="w-6 h-6 rounded-lg object-cover border border-white/10 shadow-md" alt="" />
-                    <div className="flex flex-col items-start max-w-[85%]">
-                       <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl rounded-tl-none border border-white/5 shadow-sm">
-                          <span className="text-[9px] font-black text-indigo-300 uppercase tracking-wide mr-2">{msg.senderName}</span>
-                          <span className="text-white text-xs font-medium">{msg.text}</span>
-                       </div>
-                    </div>
-                 </div>
-               ))}
-               <div ref={chatEndRef} />
-             </div>
-          </div>
-        )}
+         )}
+         {/* Top Gradient for text readability */}
+         <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/80 to-transparent pointer-events-none" />
+         {/* Bottom Gradient for chat readability */}
+         <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
       </div>
 
-      {/* DESKTOP SIDEBAR - Professional Comms Panel */}
-      <div className="hidden lg:flex w-[420px] xl:w-[480px] bg-slate-950 border-l border-white/10 flex-col z-[2000] relative shadow-2xl">
-         {/* Sidebar Header */}
-         <div className="p-8 border-b border-white/5 bg-white/5 backdrop-blur-md shrink-0">
-            <div className="flex items-center gap-5 mb-5">
-               <div className="relative">
-                  <img src={stream.authorAvatar} className="w-16 h-16 rounded-[1.5rem] object-cover border-2 border-slate-700 shadow-xl" alt="" />
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-slate-900 rounded-full animate-pulse" />
-               </div>
-               <div>
-                  <h3 className="text-xl font-black text-white uppercase italic tracking-tighter leading-none mb-1.5">{stream.authorName}</h3>
-                  <div className="flex gap-2">
-                     <span className="px-2 py-0.5 bg-indigo-500/20 border border-indigo-500/30 rounded-md text-[8px] font-black text-indigo-400 uppercase tracking-widest font-mono">HOST_NODE</span>
-                     <span className="px-2 py-0.5 bg-white/5 border border-white/10 rounded-md text-[8px] font-black text-slate-400 uppercase tracking-widest font-mono">UK_LON</span>
+      {/* 2. FLOATING REACTIONS (Right Side) */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
+         {reactions.map(r => (
+           <div key={r.id} className="absolute bottom-32 text-5xl animate-float-up" style={{ left: `${r.left}%` }}>{r.emoji}</div>
+         ))}
+      </div>
+
+      {/* 3. INTERFACE LAYER */}
+      <div className="relative z-30 flex flex-col h-full pointer-events-none">
+         
+         {/* TOP HUD */}
+         <div className="flex justify-between items-start p-4 md:p-6 pointer-events-auto">
+            <div className="flex items-center gap-3">
+               <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md rounded-full pl-1 pr-4 py-1 border border-white/10">
+                  <img src={stream.authorAvatar} className="w-8 h-8 rounded-full object-cover border border-white/20" alt="" />
+                  <div>
+                     <p className="text-[9px] font-black uppercase tracking-widest leading-none">{stream.authorName}</p>
+                     <p className="text-[8px] font-mono text-white/60">BROADCASTING</p>
                   </div>
                </div>
+               <div className="bg-rose-600 text-white px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest shadow-lg">LIVE</div>
+               <div className="bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-lg text-[9px] font-black font-mono border border-white/10 flex items-center gap-1.5">
+                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                  {currentViewers}
+               </div>
             </div>
-            <h4 className="text-sm font-bold text-slate-300 leading-relaxed line-clamp-2 italic border-l-2 border-rose-500 pl-4">"{stream.title}"</h4>
+            
+            <button onClick={onLeave} className="w-10 h-10 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10 transition-all active:scale-90">
+               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth={3} /></svg>
+            </button>
          </div>
 
-         {/* Chat Stream */}
-         <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-5 bg-black/20">
-            {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center opacity-20 text-center">
-                 <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4 border border-white/5"><ICONS.Messages /></div>
-                 <p className="text-[10px] font-black text-white uppercase tracking-widest font-mono">Signal_Quiet</p>
-                 <p className="text-[8px] text-slate-500 mt-2 font-mono">Be the first to transmit.</p>
-              </div>
-            ) : messages.map((msg) => (
-              <div key={msg.id} className="flex gap-4 animate-in slide-in-from-right-4 duration-300 group">
-                 <img src={msg.senderAvatar} className="w-10 h-10 rounded-xl object-cover shrink-0 border border-white/5 opacity-80 group-hover:opacity-100 transition-opacity bg-slate-900" alt="" />
-                 <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline justify-between mb-1.5">
-                       <span className="text-[10px] font-black text-rose-400 uppercase tracking-widest truncate">{msg.senderName}</span>
-                       <span className="text-[8px] font-mono text-slate-600">{msg.timestamp?.toDate ? msg.timestamp.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</span>
+         {/* BOTTOM AREA: Chat & Controls */}
+         <div className="mt-auto px-4 md:px-6 pb-6 md:pb-8 flex flex-col gap-4 max-w-2xl pointer-events-auto">
+            
+            {/* Chat Messages */}
+            {showChat && (
+               <div className="h-64 overflow-y-auto no-scrollbar flex flex-col justify-end space-y-2 mask-gradient-top">
+                  {messages.map((msg) => (
+                    <div key={msg.id} className="flex items-start gap-2 animate-in slide-in-from-left-4 duration-300">
+                       <img src={msg.senderAvatar} className="w-6 h-6 rounded-full object-cover border border-white/20" alt="" />
+                       <div className="flex flex-col items-start">
+                          <span className="text-[9px] font-black text-white/50 uppercase tracking-widest mb-0.5">{msg.senderName}</span>
+                          <span className="text-xs font-bold text-white drop-shadow-md">{msg.text}</span>
+                       </div>
                     </div>
-                    <p className="text-sm text-slate-200 font-medium leading-relaxed bg-white/5 p-3.5 rounded-2xl rounded-tl-none border border-white/5 shadow-sm group-hover:bg-white/10 transition-colors">{msg.text}</p>
-                 </div>
-              </div>
-            ))}
-            <div ref={chatEndRef} />
-         </div>
+                  ))}
+                  <div ref={chatEndRef} />
+               </div>
+            )}
 
-         {/* Desktop Input Area */}
-         <div className="p-6 border-t border-white/5 bg-white/5 backdrop-blur-md shrink-0">
-            <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar pb-2">
-               {['🔥', '❤️', '👏', '🚀', '🧠', '⚡', '💎'].map(emoji => (
-                 <button 
-                   key={emoji} 
-                   onClick={() => triggerReaction(emoji)}
-                   className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/20 border border-white/5 flex items-center justify-center text-lg transition-all active:scale-90 hover:-translate-y-1 shadow-sm"
-                 >
-                   {emoji}
-                 </button>
-               ))}
+            {/* Input Deck */}
+            <div className="flex items-end gap-3">
+               <form onSubmit={handleSendMessage} className="flex-1 relative">
+                  <input 
+                    type="text" 
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder="Inject message..."
+                    className="w-full bg-white/10 border border-white/20 rounded-full px-6 py-3.5 text-sm font-bold text-white placeholder:text-white/40 focus:bg-black/60 focus:border-white/40 outline-none backdrop-blur-md transition-all shadow-lg"
+                  />
+                  <button type="submit" disabled={!chatInput.trim()} className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-white text-black rounded-full disabled:opacity-0 transition-opacity">
+                     <svg className="w-4 h-4 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                  </button>
+               </form>
+               
+               <div className="flex gap-2">
+                  <button onClick={() => setShowChat(!showChat)} className={`w-12 h-12 rounded-full flex items-center justify-center border backdrop-blur-md transition-all active:scale-90 ${showChat ? 'bg-white text-black border-white' : 'bg-black/30 text-white border-white/20'}`}>
+                     <ICONS.Messages />
+                  </button>
+                  <button onClick={() => triggerReaction('❤️')} className="w-12 h-12 bg-rose-600 border border-rose-500 rounded-full flex items-center justify-center text-xl shadow-lg active:scale-90 transition-transform">
+                     ❤️
+                  </button>
+                  <button onClick={() => triggerReaction('🔥')} className="w-12 h-12 bg-white/10 border border-white/20 rounded-full flex items-center justify-center text-xl backdrop-blur-md active:scale-90 transition-transform">
+                     🔥
+                  </button>
+               </div>
             </div>
-            <form onSubmit={handleSendMessage} className="relative group">
-               <input 
-                 type="text" 
-                 value={chatInput}
-                 onChange={(e) => setChatInput(e.target.value)}
-                 placeholder="Transmit into the mesh..."
-                 className="w-full bg-black/40 border border-white/10 rounded-2xl pl-5 pr-14 py-4 text-white text-sm font-bold focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all placeholder:text-slate-600 group-hover:bg-black/60 shadow-inner"
-               />
-               <button 
-                 type="submit" 
-                 disabled={!chatInput.trim()}
-                 className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-indigo-600 text-white rounded-xl disabled:opacity-50 disabled:bg-slate-800 hover:bg-indigo-500 transition-all active:scale-90 shadow-lg"
-               >
-                 <svg className="w-4 h-4 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
-               </button>
-            </form>
          </div>
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .mask-linear-fade {
-          mask-image: linear-gradient(to top, black 0%, black 80%, transparent 100%);
-          -webkit-mask-image: linear-gradient(to top, black 0%, black 80%, transparent 100%);
-        }
-        .pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+        .mask-gradient-top { mask-image: linear-gradient(to top, black 80%, transparent 100%); }
         @keyframes float-up {
           0% { transform: translateY(0) scale(1) rotate(0deg); opacity: 0; }
-          10% { opacity: 1; }
-          90% { opacity: 1; }
-          100% { transform: translateY(-500px) scale(1.5) rotate(20deg); opacity: 0; }
+          15% { opacity: 1; }
+          85% { opacity: 1; }
+          100% { transform: translateY(-400px) scale(1.5) rotate(15deg); opacity: 0; }
         }
-        .animate-float-up {
-          animation: float-up 3s ease-out forwards;
-        }
-        @keyframes pulse-slow {
-          0%, 100% { opacity: 0.4; }
-          50% { opacity: 0.8; }
-        }
-        .animate-pulse-slow { animation: pulse-slow 3s ease-in-out infinite; }
+        .animate-float-up { animation: float-up 2.5s ease-out forwards; }
       `}} />
     </div>
   );
