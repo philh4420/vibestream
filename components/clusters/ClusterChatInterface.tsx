@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
 const { 
@@ -12,7 +12,9 @@ const {
   limit, 
   updateDoc, 
   doc, 
-  deleteDoc 
+  deleteDoc,
+  arrayUnion,
+  writeBatch
 } = Firestore as any;
 import { User, Message, Chat } from '../../types';
 import { ICONS } from '../../constants';
@@ -35,7 +37,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [showDetails, setShowDetails] = useState(false); // Mobile toggle for right sidebar
+  const [showDetails, setShowDetails] = useState(false);
   
   // Media & Picker State
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
@@ -44,12 +46,17 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
   const [selectedGif, setSelectedGif] = useState<GiphyGif | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   
+  // Modal States
   const [terminationTarget, setTerminationTarget] = useState<{ id: string, label: string } | null>(null);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [inviteSearch, setInviteSearch] = useState('');
+  const [selectedInviteIds, setSelectedInviteIds] = useState<string[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Sync Messages
   useEffect(() => {
     if (!db || !chatId) return;
     const q = query(collection(db, 'chats', chatId, 'messages'), orderBy('timestamp', 'asc'), limit(100));
@@ -59,6 +66,29 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
     });
     return () => unsub();
   }, [chatId]);
+
+  // Derived Data
+  const participants = useMemo(() => {
+    return chatData.participants.map(id => {
+      return allUsers.find(u => u.id === id) || { 
+        id, 
+        displayName: chatData.participantData?.[id]?.displayName || 'Unknown Node', 
+        avatarUrl: chatData.participantData?.[id]?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${id}`,
+        presenceStatus: 'Offline' as const,
+        role: 'member'
+      };
+    });
+  }, [chatData.participants, allUsers, chatData.participantData]);
+
+  const candidatesForInvite = useMemo(() => {
+    const query = inviteSearch.toLowerCase();
+    return allUsers.filter(u => 
+      !chatData.participants.includes(u.id) &&
+      (u.displayName.toLowerCase().includes(query) || u.username.toLowerCase().includes(query))
+    );
+  }, [allUsers, chatData.participants, inviteSearch]);
+
+  // --- Handlers ---
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -137,15 +167,17 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
         lastMessageTimestamp: serverTimestamp() 
       });
 
-      // Cluster Notification
+      // Cluster Notification (Batched)
+      const batch = writeBatch(db);
       const recipients = chatData.participants.filter(pId => pId !== currentUser.id);
       const notificationText = msgText 
         ? `posted in ${chatData.clusterName}: "${msgText.substring(0, 30)}${msgText.length > 30 ? '...' : ''}"`
         : `posted media in ${chatData.clusterName}`;
 
-      for (const recipientId of recipients) {
-          addDoc(collection(db, 'notifications'), {
-            type: 'cluster_invite',
+      recipients.forEach(recipientId => {
+          const ref = doc(collection(db, 'notifications'));
+          batch.set(ref, {
+            type: 'cluster_invite', // Reusing this type for generic cluster msg
             fromUserId: currentUser.id,
             fromUserName: currentUser.displayName,
             fromUserAvatar: currentUser.avatarUrl,
@@ -156,7 +188,8 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
             timestamp: serverTimestamp(),
             pulseFrequency: 'cognition'
           });
-      }
+      });
+      await batch.commit();
 
       setNewMessage('');
       clearMedia();
@@ -179,21 +212,70 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
     }
   };
 
-  const participants = chatData.participants.map(id => {
-    return allUsers.find(u => u.id === id) || { 
-      id, 
-      displayName: chatData.participantData?.[id]?.displayName || 'Unknown Node', 
-      avatarUrl: chatData.participantData?.[id]?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${id}`,
-      presenceStatus: 'Offline' as const,
-      role: 'member'
-    };
-  });
+  const handleInviteNodes = async () => {
+    if (selectedInviteIds.length === 0 || !db) return;
+    try {
+        const participantUpdates: any = {};
+        selectedInviteIds.forEach(id => {
+            const u = allUsers.find(user => user.id === id);
+            if (u) {
+                participantUpdates[`participantData.${id}`] = {
+                    displayName: u.displayName,
+                    avatarUrl: u.avatarUrl
+                };
+            }
+        });
+
+        // 1. Add to participants array
+        await updateDoc(doc(db, 'chats', chatId), {
+            participants: arrayUnion(...selectedInviteIds),
+            ...participantUpdates
+        });
+
+        // 2. Notify new members
+        const batch = writeBatch(db);
+        selectedInviteIds.forEach(id => {
+            const notifRef = doc(collection(db, 'notifications'));
+            batch.set(notifRef, {
+                type: 'cluster_invite',
+                fromUserId: currentUser.id,
+                fromUserName: currentUser.displayName,
+                fromUserAvatar: currentUser.avatarUrl,
+                toUserId: id,
+                targetId: chatId,
+                text: `invited you to join the cluster "${chatData.clusterName}"`,
+                isRead: false,
+                timestamp: serverTimestamp(),
+                pulseFrequency: 'intensity'
+            });
+        });
+        await batch.commit();
+
+        // 3. System Message in Chat
+        await addDoc(collection(db, 'chats', chatId, 'messages'), {
+            senderId: 'SYSTEM',
+            text: `Protocol Update: ${selectedInviteIds.length} new node(s) injected into cluster.`,
+            timestamp: serverTimestamp(),
+            isRead: true
+        });
+
+        addToast(`${selectedInviteIds.length} Nodes Injected`, 'success');
+        setIsInviteModalOpen(false);
+        setSelectedInviteIds([]);
+    } catch (e) {
+        addToast("Injection Failed", 'error');
+    }
+  };
+
+  const toggleInviteSelection = (id: string) => {
+      setSelectedInviteIds(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
+  };
 
   return (
     <div className="flex h-full w-full bg-[#fcfcfd] rounded-[2.5rem] overflow-hidden shadow-2xl relative animate-in fade-in duration-500 border border-white/50">
       
-      {/* LEFT: MAIN CHAT STREAM */}
-      <div className="flex-1 flex flex-col min-w-0 relative bg-white/40">
+      {/* MAIN CHAT STREAM (Takes full width, handles resizing via flex) */}
+      <div className="flex-1 flex flex-col min-w-0 relative bg-white/40 z-0">
         
         {/* Header */}
         <div className="px-6 py-4 border-b border-white/50 flex items-center justify-between bg-white/60 backdrop-blur-xl sticky top-0 z-20">
@@ -211,17 +293,25 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
               </div>
               <div>
                 <h3 className="font-black text-lg text-slate-900 uppercase tracking-tight italic leading-none">{chatData.clusterName}</h3>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono mt-1">{chatData.participants.length} Nodes Synced</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono mt-1">{participants.length} Nodes Synced</p>
               </div>
             </div>
           </div>
 
-          <button 
-            onClick={() => setShowDetails(!showDetails)}
-            className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all active:scale-90 border shadow-sm xl:hidden ${showDetails ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-400 border-slate-100'}`}
-          >
-            <ICONS.Profile />
-          </button>
+          <div className="flex items-center gap-3">
+             <button 
+                onClick={() => setIsInviteModalOpen(true)}
+                className="hidden sm:flex px-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all items-center gap-2 shadow-lg active:scale-95"
+             >
+                <ICONS.Create /> INVITE
+             </button>
+             <button 
+                onClick={() => setShowDetails(!showDetails)}
+                className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all active:scale-90 border shadow-sm ${showDetails ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-400 border-slate-100 hover:text-slate-900'}`}
+             >
+                <ICONS.Profile />
+             </button>
+          </div>
         </div>
 
         {/* Messages */}
@@ -238,8 +328,19 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
           
           {messages.map((msg, idx) => {
             const isMe = msg.senderId === currentUser.id;
+            const isSystem = msg.senderId === 'SYSTEM';
             const sender = participants.find(p => p.id === msg.senderId);
             const showHeader = idx === 0 || messages[idx-1]?.senderId !== msg.senderId;
+
+            if (isSystem) {
+                return (
+                    <div key={msg.id} className="flex justify-center py-2 animate-in fade-in">
+                        <span className="px-4 py-1.5 bg-slate-100 rounded-full text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">
+                            {msg.text}
+                        </span>
+                    </div>
+                );
+            }
 
             return (
               <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} group/msg animate-in fade-in slide-in-from-bottom-2 duration-300`}>
@@ -312,10 +413,10 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
                  <button type="button" onClick={() => fileInputRef.current?.click()} className={`p-3 rounded-2xl transition-all active:scale-90 border ${selectedFile ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white hover:text-indigo-500 shadow-sm'}`}>
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Z" /></svg>
                  </button>
-                 <button type="button" onClick={() => { setIsGiphyPickerOpen(!isGiphyPickerOpen); setIsEmojiPickerOpen(false); }} className={`p-3 rounded-2xl transition-all active:scale-90 border ${isGiphyPickerOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white hover:text-indigo-500 shadow-sm'}`}>
+                 <button type="button" onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }} className={`p-3 rounded-2xl transition-all active:scale-90 border ${isEmojiPickerOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white hover:text-indigo-500 shadow-sm'}`}>
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" /></svg>
                  </button>
-                 <button type="button" onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }} className={`p-3 rounded-2xl transition-all active:scale-90 border ${isEmojiPickerOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white hover:text-indigo-500 shadow-sm'}`}>
+                 <button type="button" onClick={() => { setIsGiphyPickerOpen(!isGiphyPickerOpen); setIsEmojiPickerOpen(false); }} className={`p-3 rounded-2xl transition-all active:scale-90 border ${isGiphyPickerOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white hover:text-indigo-500 shadow-sm'}`}>
                     <span className="text-[10px] font-black font-mono">GIF</span>
                  </button>
               </div>
@@ -343,29 +444,31 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
         </div>
       </div>
 
-      {/* RIGHT: CLUSTER DETAILS SIDEBAR (Desktop / Toggleable) */}
-      <div className={`${showDetails ? 'flex' : 'hidden xl:flex'} w-[340px] bg-white/60 backdrop-blur-2xl border-l border-white/50 flex-col absolute xl:relative right-0 top-0 bottom-0 z-30 shadow-2xl xl:shadow-none animate-in slide-in-from-right-10 duration-300`}>
-         <div className="p-8 border-b border-white/50 flex justify-between items-start">
+      {/* CLUSTER DETAILS DRAWER (Overlay for Layout Compliance) */}
+      <div 
+        className={`absolute top-0 right-0 bottom-0 w-[320px] bg-white/80 backdrop-blur-3xl border-l border-white/50 flex flex-col z-[50] transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] shadow-[-20px_0_50px_rgba(0,0,0,0.1)] ${showDetails ? 'translate-x-0' : 'translate-x-full'}`}
+      >
+         <div className="p-6 border-b border-white/50 flex justify-between items-start">
             <div>
                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono mb-4">Cluster_Manifest</h4>
                <div className="flex items-center gap-4">
                   <div className="p-1 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-[1.6rem] shadow-lg">
-                     <img src={chatData.clusterAvatar} className="w-20 h-20 rounded-[1.4rem] object-cover border-2 border-white" alt="" />
+                     <img src={chatData.clusterAvatar} className="w-16 h-16 rounded-[1.4rem] object-cover border-2 border-white" alt="" />
                   </div>
                   <div>
-                     <h3 className="text-xl font-black text-slate-900 uppercase italic tracking-tighter leading-none mb-1">{chatData.clusterName}</h3>
-                     <p className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest font-mono">ID: {chatData.id.slice(0, 6)}</p>
+                     <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tighter leading-none mb-1 line-clamp-1">{chatData.clusterName}</h3>
+                     <p className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest font-mono">ID: {chatData.id.slice(0, 4)}</p>
                   </div>
                </div>
             </div>
-            <button onClick={() => setShowDetails(false)} className="xl:hidden p-2 text-slate-400"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth={2} /></svg></button>
+            <button onClick={() => setShowDetails(false)} className="p-2 text-slate-400 hover:text-slate-900"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth={2} /></svg></button>
          </div>
 
          <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-6">
             <div>
                <div className="flex items-center justify-between mb-4">
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Active_Nodes ({participants.length})</p>
-                  <button className="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline">Invite</button>
+                  <button onClick={() => { setIsInviteModalOpen(true); setShowDetails(false); }} className="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline">Invite +</button>
                </div>
                <div className="space-y-3">
                   {participants.map(user => (
@@ -431,6 +534,66 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
       )}
       {(isEmojiPickerOpen || isGiphyPickerOpen) && (
         <div className="fixed inset-0 z-[90]" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />
+      )}
+
+      {/* INVITE MODAL */}
+      {isInviteModalOpen && (
+        <div className="fixed inset-0 z-[3000] flex items-center justify-center p-6">
+            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setIsInviteModalOpen(false)} />
+            <div className="relative bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col max-h-[80vh]">
+                <div className="mb-6">
+                    <h3 className="text-2xl font-black text-slate-900 uppercase italic">Inject_Nodes</h3>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono">Select peers to add to cluster</p>
+                </div>
+                
+                <input 
+                    type="text" 
+                    placeholder="Search Directory..." 
+                    value={inviteSearch} 
+                    onChange={e => setInviteSearch(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 mb-4 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 outline-none"
+                />
+
+                <div className="flex-1 overflow-y-auto no-scrollbar space-y-2 mb-6 min-h-[200px]">
+                    {candidatesForInvite.length > 0 ? (
+                        candidatesForInvite.map(user => {
+                            const selected = selectedInviteIds.includes(user.id);
+                            return (
+                                <button 
+                                    key={user.id} 
+                                    onClick={() => toggleInviteSelection(user.id)}
+                                    className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all ${selected ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-100 hover:border-slate-200'}`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <img src={user.avatarUrl} className="w-10 h-10 rounded-xl object-cover bg-slate-200" alt="" />
+                                        <div className="text-left">
+                                            <p className={`text-xs font-black uppercase ${selected ? 'text-white' : 'text-slate-900'}`}>{user.displayName}</p>
+                                            <p className={`text-[9px] font-mono ${selected ? 'text-white/60' : 'text-slate-400'}`}>@{user.username}</p>
+                                        </div>
+                                    </div>
+                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selected ? 'border-white bg-white/20' : 'border-slate-200'}`}>
+                                        {selected && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={4}><path d="M5 13l4 4L19 7" /></svg>}
+                                    </div>
+                                </button>
+                            )
+                        })
+                    ) : (
+                        <div className="text-center py-10 text-slate-300 font-mono text-xs uppercase tracking-widest">No available nodes found</div>
+                    )}
+                </div>
+
+                <div className="flex gap-3">
+                    <button onClick={() => setIsInviteModalOpen(false)} className="flex-1 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest bg-slate-50 text-slate-500 hover:bg-slate-100 transition-all">Cancel</button>
+                    <button 
+                        onClick={handleInviteNodes}
+                        disabled={selectedInviteIds.length === 0}
+                        className="flex-[2] py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest bg-slate-900 text-white hover:bg-indigo-600 disabled:opacity-50 disabled:bg-slate-900 transition-all shadow-lg"
+                    >
+                        Confirm Injection ({selectedInviteIds.length})
+                    </button>
+                </div>
+            </div>
+        </div>
       )}
 
       <DeleteConfirmationModal 
