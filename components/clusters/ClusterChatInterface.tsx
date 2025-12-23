@@ -266,7 +266,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
         setSelectedInviteIds([]);
     } catch (e: any) {
         console.error("Injection Failed:", e);
-        addToast(`Injection Failed: ${e.message}`, 'error');
+        addToast(`Injection Failed: ${e.message || 'Check Console'}`, 'error');
     }
   };
 
@@ -551,7 +551,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
       {/* INVITE MODAL - Z-Index 3000 to overlay global layout */}
       {isInviteModalOpen && (
         <div className="fixed inset-0 z-[3000] flex items-center justify-center p-6">
-            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setIsInviteModalOpen(false)} />
+            <div className="absolute inset-0 bg-transparent" onClick={() => setIsInviteModalOpen(false)} />
             <div className="relative bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col max-h-[80vh]">
                 <div className="mb-6">
                     <h3 className="text-2xl font-black text-slate-900 uppercase italic">Inject_Nodes</h3>
