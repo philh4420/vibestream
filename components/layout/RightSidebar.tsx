@@ -417,7 +417,6 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
                 })
               )}
            </div>
-          </div>
         </div>
 
         {/* 4. FOOTER MINI INFO */}
