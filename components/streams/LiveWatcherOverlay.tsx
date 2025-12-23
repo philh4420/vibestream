@@ -14,6 +14,8 @@ const {
   query, 
   orderBy, 
   limit,
+  updateDoc,
+  increment
 } = Firestore as any;
 import { LiveStream } from '../../types';
 import { ICONS } from '../../constants';
@@ -57,11 +59,24 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
   const connectionIdRef = useRef<string>(`viewer_${auth.currentUser?.uid || 'anon'}_${Math.random().toString(36).substring(2, 10)}`);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // --- WebRTC Logic ---
+  // --- WebRTC & Viewer Count Logic ---
   useEffect(() => {
     let unsubAnswer: () => void;
     let unsubHostCandidates: () => void;
     const hostCandidateQueue: RTCIceCandidateInit[] = [];
+
+    // 1. Increment Viewer Count on Entry
+    const incrementStats = async () => {
+      if (!db || !stream.id) return;
+      try {
+        await updateDoc(doc(db, 'streams', stream.id), {
+          viewerCount: increment(1)
+        });
+      } catch (e) {
+        console.error("Error updating viewer count:", e);
+      }
+    };
+    incrementStats();
 
     const connect = async () => {
       if (!db || !auth.currentUser) return;
@@ -144,6 +159,13 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
     });
 
     return () => {
+      // 2. Decrement Viewer Count on Exit
+      if (db && stream.id) {
+        updateDoc(doc(db, 'streams', stream.id), {
+          viewerCount: increment(-1)
+        }).catch(console.error);
+      }
+
       if (unsubAnswer) unsubAnswer();
       if (unsubHostCandidates) unsubHostCandidates();
       unsubStream(); unsubChat(); unsubReact();
