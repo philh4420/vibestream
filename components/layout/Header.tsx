@@ -1,7 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '../../services/firebase';
-// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
 import * as Firestore from 'firebase/firestore';
 const { doc, updateDoc } = Firestore as any;
 import { ICONS, IDENTITY_SIGNALS, PULSE_FREQUENCIES } from '../../constants';
@@ -22,13 +21,13 @@ interface HeaderProps {
 }
 
 const PRESENCE_DOTS: Record<PresenceStatus, string> = {
-  'Online': 'bg-[#10b981]',
-  'Focus': 'bg-[#f59e0b]',
-  'Deep Work': 'bg-[#e11d48]',
-  'In-Transit': 'bg-[#6366f1]',
+  'Online': 'bg-[#10b981] shadow-[0_0_8px_#10b981]',
+  'Focus': 'bg-[#f59e0b] shadow-[0_0_8px_#f59e0b]',
+  'Deep Work': 'bg-[#e11d48] shadow-[0_0_8px_#e11d48]',
+  'In-Transit': 'bg-[#6366f1] shadow-[0_0_8px_#6366f1]',
   'Away': 'bg-[#94a3b8]',
   'Invisible': 'bg-[#334155]',
-  'Syncing': 'bg-[#60a5fa]'
+  'Syncing': 'bg-[#60a5fa] animate-pulse shadow-[0_0_8px_#60a5fa]'
 };
 
 const STATUS_EMOJI_MAP: Record<PresenceStatus, string> = {
@@ -46,26 +45,34 @@ const NotificationItem = ({ notif, onDelete }: { notif: AppNotification; onDelet
   
   const iconMap: Record<string, any> = {
     like: (
-      <div className={`p-2 rounded-lg scale-75 transition-all duration-500 ${pulseConfig ? `bg-white shadow-lg ${pulseConfig.color}` : 'bg-rose-50 text-rose-500'}`}>
-        <div className={`absolute inset-0 rounded-lg animate-ping opacity-20 ${pulseConfig ? `bg-current` : 'bg-rose-500'}`} />
-        <span className="relative z-10 text-lg">{pulseConfig?.emoji || '❤️'}</span>
+      <div className={`p-2.5 rounded-xl scale-90 transition-all duration-500 ${pulseConfig ? `bg-white shadow-md border border-slate-100 ${pulseConfig.color}` : 'bg-rose-50 text-rose-500'}`}>
+        <span className="relative z-10 text-lg leading-none">{pulseConfig?.emoji || '❤️'}</span>
       </div>
     ),
-    follow: <div className="p-2 bg-indigo-50 text-indigo-500 rounded-lg scale-75"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M19 7.5v9m-4.5-4.5h9M3 13.5h9m-9-4.5h9m-9-4.5h9" /></svg></div>,
-    broadcast: <div className="p-2 bg-rose-600 text-white rounded-lg scale-75 shadow-lg shadow-rose-200 animate-pulse"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></div>,
-    system: <div className="p-2 bg-slate-900 text-white rounded-lg scale-75"><ICONS.Admin /></div>,
-    relay: <div className="p-2 bg-indigo-600 text-white rounded-lg scale-75"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg></div>,
-    call: <div className="p-2 bg-emerald-600 text-white rounded-lg scale-75"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg></div>,
-    packet_summary: <div className="p-2 bg-amber-500 text-white rounded-lg scale-75 shadow-lg shadow-amber-100"><ICONS.Temporal /></div>,
-    message: <div className="p-2 bg-indigo-500 text-white rounded-lg scale-75 shadow-md shadow-indigo-200"><ICONS.Messages /></div>
+    follow: <div className="p-2 bg-indigo-50 text-indigo-500 rounded-xl scale-90"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M19 7.5v9m-4.5-4.5h9M3 13.5h9m-9-4.5h9m-9-4.5h9" /></svg></div>,
+    broadcast: <div className="p-2 bg-rose-600 text-white rounded-xl scale-90 shadow-lg shadow-rose-200 animate-pulse"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></div>,
+    system: <div className="p-2 bg-slate-900 text-white rounded-xl scale-90"><ICONS.Admin /></div>,
+    relay: <div className="p-2 bg-indigo-600 text-white rounded-xl scale-90"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg></div>,
+    call: <div className="p-2 bg-emerald-600 text-white rounded-xl scale-90"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg></div>,
+    packet_summary: <div className="p-2 bg-amber-500 text-white rounded-xl scale-90 shadow-lg shadow-amber-100"><ICONS.Temporal /></div>,
+    message: <div className="p-2 bg-indigo-500 text-white rounded-xl scale-90 shadow-md shadow-indigo-200"><ICONS.Messages /></div>
   };
 
   return (
-    <div className={`group/item flex gap-4 p-4 hover:bg-slate-50 transition-all cursor-pointer border-l-4 relative overflow-hidden ${notif.isRead ? 'border-transparent' : 'border-indigo-500 bg-indigo-50/10'} ${notif.type === 'broadcast' ? 'bg-rose-50/5' : ''}`}>
-      <img src={notif.fromUserAvatar} className="w-11 h-11 rounded-[1.2rem] object-cover shrink-0 border border-slate-100 shadow-sm" alt="" />
-      <div className="flex-1 min-w-0">
-        <p className={`text-[13px] font-bold leading-tight text-slate-900`}>
-          <span className="font-black italic uppercase tracking-tight">{notif.fromUserName}</span> {notif.text}
+    <div className={`group/item flex gap-4 p-4 hover:bg-slate-50/80 transition-all cursor-pointer border-b border-slate-50 last:border-0 relative overflow-hidden active:scale-[0.98] ${!notif.isRead ? 'bg-indigo-50/30' : ''}`}>
+      {!notif.isRead && <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500" />}
+      
+      <div className="shrink-0 relative">
+        <img src={notif.fromUserAvatar} className="w-10 h-10 rounded-[1rem] object-cover border border-slate-100 shadow-sm bg-white" alt="" />
+        <div className="absolute -bottom-1.5 -right-1.5 shadow-sm bg-white rounded-full p-0.5">
+           {iconMap[notif.type] || iconMap.system}
+        </div>
+      </div>
+
+      <div className="flex-1 min-w-0 pt-0.5">
+        <p className="text-[12px] font-bold text-slate-800 leading-tight">
+          <span className="font-black uppercase tracking-tight text-slate-900">{notif.fromUserName}</span>
+          <span className="opacity-80"> {notif.text}</span>
         </p>
         <div className="flex items-center gap-2 mt-1.5">
            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">
@@ -73,29 +80,18 @@ const NotificationItem = ({ notif, onDelete }: { notif: AppNotification; onDelet
            </p>
            {pulseConfig && (
              <span className={`px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-widest border ${pulseConfig.color.replace('text', 'border')} ${pulseConfig.color.replace('text', 'bg-')}/5`}>
-               {pulseConfig.id}_frequency
+               {pulseConfig.id}
              </span>
            )}
-           {notif.type === 'broadcast' && (
-             <span className="px-2 py-0.5 bg-rose-100 text-rose-600 text-[8px] font-black uppercase tracking-widest rounded-md animate-pulse">Neural_Link_Live</span>
-           )}
-           {notif.type === 'packet_summary' && (
-             <span className="px-2 py-0.5 bg-amber-100 text-amber-600 text-[8px] font-black uppercase tracking-widest rounded-md">Buffered_Burst</span>
-           )}
         </div>
       </div>
-      <div className="shrink-0 flex items-center gap-2">
-        <div className="transition-transform group-hover/item:scale-90 group-hover/item:-translate-x-2">
-          {iconMap[notif.type] || iconMap.system}
-        </div>
-        <button 
-          onClick={(e) => { e.stopPropagation(); onDelete(notif.id); }}
-          className="p-2.5 bg-white text-rose-500 rounded-xl shadow-lg border border-slate-100 opacity-0 group-hover/item:opacity-100 transition-all active:scale-90 hover:bg-rose-50"
-          title="Purge Notification"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={4} viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" /></svg>
-        </button>
-      </div>
+      
+      <button 
+        onClick={(e) => { e.stopPropagation(); onDelete(notif.id); }}
+        className="self-center p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all active:scale-90"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
     </div>
   );
 };
@@ -120,6 +116,8 @@ export const Header: React.FC<HeaderProps> = ({
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   
   const [localSearch, setLocalSearch] = useState('');
+  const menuRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -138,6 +136,19 @@ export const Header: React.FC<HeaderProps> = ({
       });
     }
   }, [userData]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsSystemMenuOpen(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setIsNotifOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const updateNeuralStatus = async (updates: Partial<typeof localStatus>) => {
     if (!db || !auth.currentUser) return;
@@ -170,274 +181,240 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  const DropdownNavItem = ({ route, icon: Icon, label, badge }: { route: AppRoute, icon: React.FC, label: string, badge?: string }) => {
-    const isActive = activeRoute === route;
-    return (
-      <button 
-        onClick={() => { onNavigate(route); setIsSystemMenuOpen(false); }}
-        className={`flex items-center gap-3 p-3 rounded-2xl transition-all active:scale-95 ${isActive ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-slate-50 text-slate-600 border border-transparent hover:bg-slate-100'}`}
-      >
-        <div className={`shrink-0 ${isActive ? 'scale-110' : ''}`}>
-          <Icon />
-        </div>
-        <div className="flex-1 text-left flex items-center justify-between min-w-0">
-          <span className="text-[11px] font-black uppercase tracking-tight truncate">{label}</span>
-          {badge && <span className="text-[7px] font-black bg-rose-500 text-white px-1 py-0.5 rounded-md leading-none">{badge}</span>}
-        </div>
-      </button>
-    );
-  };
-
   return (
     <header 
-      className="fixed top-0 left-0 right-0 z-[200] glass-panel border-b border-precision flex items-center shadow-sm" 
+      className="fixed top-0 left-0 right-0 z-[1000] glass-panel border-b border-white/40 shadow-[0_4px_30px_rgba(0,0,0,0.03)] flex items-center transition-all duration-500 backdrop-blur-xl bg-white/70 supports-[backdrop-filter]:bg-white/60" 
       style={{ 
         height: 'var(--header-h)',
         paddingLeft: 'max(1rem, var(--sal))',
         paddingRight: 'max(1rem, var(--sar))'
       }}
     >
-      <div className="flex items-center justify-between w-full max-w-[2560px] mx-auto h-full px-4 md:px-6">
+      <div className="flex items-center justify-between w-full max-w-[2560px] mx-auto h-full px-4 md:px-6 relative">
         
-        <div className="flex items-center gap-4 flex-1">
-          <div 
-            className="w-10 h-10 md:w-11 md:h-11 bg-slate-950 rounded-full flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition-all shrink-0"
+        <div className="flex items-center gap-4 md:gap-6 flex-1 min-w-0">
+          <button 
+            className="w-10 h-10 md:w-11 md:h-11 bg-slate-950 rounded-[1.2rem] flex items-center justify-center shadow-lg active:scale-95 transition-all shrink-0 hover:bg-indigo-600 group relative overflow-hidden"
             onClick={() => onNavigate(AppRoute.FEED)}
           >
-            <span className="text-white font-black italic text-xl">V</span>
-          </div>
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <span className="text-white font-black italic text-xl group-hover:scale-110 transition-transform relative z-10">V</span>
+          </button>
 
           <form 
             onSubmit={handleSearchSubmit}
-            className={`relative flex items-center transition-all duration-500 rounded-full ${isSearchFocused ? 'w-full max-w-xs md:max-w-sm' : 'w-10 h-10 md:w-auto'}`}
+            className={`relative flex items-center transition-all duration-500 ${isSearchFocused ? 'w-full max-w-md z-50' : 'w-10 md:w-64'}`}
           >
-            <div className={`flex items-center gap-2 px-3 py-2.5 rounded-full transition-all duration-500 ${isSearchFocused ? 'bg-white border-indigo-400 shadow-xl ring-4 ring-indigo-50 w-full' : 'bg-slate-100 md:w-48 lg:w-56'}`}>
-              <button 
-                type="submit"
-                className={`shrink-0 transition-colors ${isSearchFocused ? 'text-indigo-600' : 'text-slate-400'}`}
-              >
+            <div className={`flex items-center gap-3 px-3.5 py-2.5 rounded-[1.2rem] transition-all duration-300 ${isSearchFocused ? 'bg-white border-indigo-200 shadow-xl ring-4 ring-indigo-50 w-full' : 'bg-slate-100/50 hover:bg-slate-100 border border-transparent w-full cursor-pointer md:cursor-text'}`}>
+              <button type="submit" className={`shrink-0 transition-colors ${isSearchFocused ? 'text-indigo-600' : 'text-slate-400'}`}>
                 <ICONS.Search />
               </button>
               <input 
                 type="text" 
-                placeholder="Find nodes..." 
+                placeholder="Scan grid nodes..." 
                 value={localSearch}
                 onChange={(e) => setLocalSearch(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => !localSearch && setIsSearchFocused(false)}
-                className={`bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-900 placeholder:text-slate-400 transition-all ${isSearchFocused ? 'w-full opacity-100' : 'hidden md:block w-full'}`}
+                className={`bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-900 placeholder:text-slate-400/80 transition-all w-full ${isSearchFocused ? 'opacity-100' : 'hidden md:block opacity-100'}`}
               />
             </div>
           </form>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-5 justify-end">
+        <div className="flex items-center gap-3 md:gap-5 justify-end pl-2">
           
-          {userData?.presenceStatus === 'Deep Work' && (
-            <div className="hidden lg:flex items-center gap-3 px-4 py-2 bg-rose-50 border border-rose-100 rounded-2xl animate-pulse">
-               <div className="w-2 h-2 bg-rose-600 rounded-full" />
-               <span className="text-[9px] font-black text-rose-600 uppercase tracking-widest font-mono">Deep_Work: Buffer_Active</span>
-            </div>
-          )}
-
-          <div className="relative">
+          {/* Notifications */}
+          <div className="relative" ref={notifRef}>
             <button 
               onClick={() => setIsNotifOpen(!isNotifOpen)}
-              className={`p-3 rounded-2xl transition-all relative touch-active ${isNotifOpen ? 'bg-indigo-50 text-indigo-600' : 'text-slate-400 hover:bg-slate-50'}`}
+              className={`w-10 h-10 md:w-11 md:h-11 rounded-[1.2rem] flex items-center justify-center transition-all relative touch-active border ${isNotifOpen ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-white text-slate-400 border-slate-200/60 hover:bg-slate-50 hover:text-slate-600'}`}
             >
               <ICONS.Bell />
               {unreadCount > 0 && (
-                <div className="absolute top-2 right-2 w-4 h-4 bg-rose-500 text-white text-[8px] font-black flex items-center justify-center rounded-full border-2 border-white animate-pulse">
-                  {unreadCount}
-                </div>
+                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 text-white text-[9px] font-black flex items-center justify-center rounded-full border-[3px] border-[#fcfcfd] animate-in zoom-in duration-300 shadow-sm">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
               )}
             </button>
 
             {isNotifOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setIsNotifOpen(false)}></div>
-                <div className="absolute right-0 md:right-[-120px] mt-4 w-[min(90vw,400px)] bg-white rounded-[2.5rem] shadow-[0_30px_90px_-20px_rgba(0,0,0,0.3)] border border-precision overflow-hidden z-20 animate-in zoom-in-95 slide-in-from-top-4 duration-500 flex flex-col max-h-[80vh]">
-                   <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-white sticky top-0 z-10">
-                     <div>
-                       <h3 className="text-lg font-black text-slate-900 tracking-tighter uppercase italic">Neural_Alerts</h3>
-                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Real-time Handshake Logs</p>
-                     </div>
-                     <div className="flex items-center gap-2">
-                       {unreadCount > 0 && (
-                         <button 
-                           onClick={() => { onMarkRead(); }}
-                           className="text-[9px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-all"
-                         >
-                           Mark_All_Read
-                         </button>
-                       )}
-                       <button onClick={() => setIsNotifOpen(false)} className="p-2 hover:bg-slate-50 rounded-lg"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth="2.5" /></svg></button>
-                     </div>
+              <div className="absolute right-0 md:right-[-80px] top-full mt-4 w-[min(92vw,420px)] bg-white/95 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.25)] border border-white/20 ring-1 ring-slate-950/5 overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-4 duration-400 flex flex-col max-h-[85vh]">
+                 <div className="p-6 pb-4 border-b border-slate-100/80 flex items-center justify-between bg-white/50 sticky top-0 z-10 backdrop-blur-md">
+                   <div>
+                     <h3 className="text-lg font-black text-slate-950 tracking-tighter uppercase italic">Neural_Alerts</h3>
+                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] font-mono mt-0.5">Secure Feed</p>
                    </div>
-                   <div className="flex-1 overflow-y-auto no-scrollbar pb-4 scroll-container">
-                     {notifications.length > 0 ? (
-                       notifications.map(n => <NotificationItem key={n.id} notif={n} onDelete={onDeleteNotification} />)
-                     ) : (
-                       <div className="py-20 text-center flex flex-col items-center opacity-30">
-                          <div className="scale-150 mb-6"><ICONS.Bell /></div>
-                          <p className="text-[10px] font-black uppercase tracking-[0.4em] font-mono">No signals in buffer</p>
-                       </div>
-                     )}
-                   </div>
-                </div>
-              </>
+                   {unreadCount > 0 && (
+                     <button 
+                       onClick={() => onMarkRead()}
+                       className="text-[9px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-all border border-indigo-100"
+                     >
+                       Clear_Buffer
+                     </button>
+                   )}
+                 </div>
+                 <div className="flex-1 overflow-y-auto no-scrollbar scroll-container bg-white/40">
+                   {notifications.length > 0 ? (
+                     notifications.map(n => <NotificationItem key={n.id} notif={n} onDelete={onDeleteNotification} />)
+                   ) : (
+                     <div className="py-24 text-center flex flex-col items-center opacity-30">
+                        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-400"><ICONS.Bell /></div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.4em] font-mono">Buffer_Empty</p>
+                     </div>
+                   )}
+                 </div>
+              </div>
             )}
           </div>
 
-          <div className="relative">
+          {/* User Menu */}
+          <div className="relative" ref={menuRef}>
             <button 
               onClick={() => setIsSystemMenuOpen(!isSystemMenuOpen)}
-              className="flex items-center gap-4 p-1.5 pr-6 rounded-full bg-white border border-slate-100 shadow-[0_2px_15px_rgba(0,0,0,0.03)] hover:shadow-md transition-all duration-300 active:scale-95 group"
+              className="flex items-center gap-3 p-1.5 pr-1.5 md:pr-5 rounded-[1.4rem] bg-white border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-300 active:scale-95 group"
             >
               <div className="relative shrink-0">
                 <img 
                   src={userData?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${auth.currentUser?.uid}`} 
-                  className="w-10 h-10 md:w-11 md:h-11 rounded-full object-cover shadow-sm ring-1 ring-slate-50" 
+                  className="w-8 h-8 md:w-9 md:h-9 rounded-[1rem] object-cover shadow-sm bg-slate-100" 
                   alt="User" 
                 />
-                <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-[2.5px] border-white shadow-sm ${PRESENCE_DOTS[userData?.presenceStatus || 'Online']}`} />
+                <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-[2px] border-white shadow-sm ${PRESENCE_DOTS[userData?.presenceStatus || 'Online']}`} />
               </div>
               
-              <div className="hidden xs:flex flex-col text-left overflow-hidden">
-                <div className="flex items-center gap-1.5 leading-none mb-0.5">
-                  <span className="text-[15px] font-black text-[#0f172a] tracking-tight">
-                    {(userData?.displayName || 'Node').split(' ')[0]}
-                  </span>
-                  <span className="text-[12px]">{userData?.statusEmoji || '⚡'}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <p className="text-[10px] font-bold text-slate-400 truncate max-w-[160px] leading-none tracking-tight">
-                    {userData?.statusMessage || 'Syncing...'}
-                  </p>
-                  <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest font-mono leading-none border-l border-slate-100 pl-2">
-                    {userData?.presenceStatus || 'OFFLINE'}
-                  </span>
-                </div>
+              <div className="hidden md:flex flex-col text-left overflow-hidden min-w-[80px]">
+                <span className="text-[13px] font-black text-slate-900 tracking-tight leading-none truncate">
+                  {(userData?.displayName || 'Node').split(' ')[0]}
+                </span>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono mt-0.5 leading-none">
+                  {userData?.statusEmoji || '⚡'} {userData?.presenceStatus || 'Ready'}
+                </span>
               </div>
-
-              <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-300 ${isSystemMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M19 9l-7 7-7-7" /></svg>
+              
+              <div className="hidden md:block text-slate-300 group-hover:text-slate-600 transition-colors">
+                 <svg className={`w-3 h-3 transition-transform duration-300 ${isSystemMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M19 9l-7 7-7-7" /></svg>
+              </div>
             </button>
 
             {isSystemMenuOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setIsSystemMenuOpen(false)}></div>
-                <div className="absolute right-0 mt-3 w-[min(90vw,380px)] bg-white rounded-[2.5rem] shadow-[0_30px_90px_-20px_rgba(0,0,0,0.25)] border border-precision overflow-hidden z-20 animate-in zoom-in-95 slide-in-from-top-4 duration-500 flex flex-col max-h-[85vh]">
+              <div className="absolute right-0 top-full mt-4 w-[min(90vw,360px)] bg-white/95 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.25)] border border-white/20 ring-1 ring-slate-950/5 overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-4 duration-400 flex flex-col">
                   
-                  <div className="flex-1 overflow-y-auto no-scrollbar py-5 scroll-container">
-                    
-                    <div className="px-5 mb-6">
-                      <button 
-                        onClick={() => { setIsHubOpen(true); setIsSystemMenuOpen(false); }}
-                        className="w-full flex items-center gap-4 p-5 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-all text-left border border-slate-200 group"
-                      >
-                        <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center text-4xl shadow-sm border border-slate-100 shrink-0">
-                           {userData?.statusEmoji || '⚡'}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono mb-0.5">Neural_Modality</p>
-                           <p className="text-[13px] font-bold text-slate-900 truncate tracking-tight italic">
-                             "{userData?.statusMessage || 'Establishing broadcast...'}"
-                           </p>
-                           <div className="flex items-center gap-1.5 mt-1.5">
-                              <span className={`w-2 h-2 rounded-full ${PRESENCE_DOTS[userData?.presenceStatus || 'Online']}`} />
-                              <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest font-mono leading-none">
-                                {userData?.presenceStatus || 'OFFLINE'}
-                              </p>
-                           </div>
-                        </div>
-                        <div className="p-2 bg-white rounded-lg shadow-sm border border-slate-100 text-indigo-600 group-hover:scale-110 transition-transform">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                        </div>
-                      </button>
-                    </div>
-
-                    <div className="lg:hidden px-5 pb-8 space-y-4">
-                      <div className="px-4 py-2 text-[9px] font-black text-slate-300 uppercase tracking-[0.4em] font-mono border-t border-slate-50 pt-6 mb-2">Grid_Layers</div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <DropdownNavItem route={AppRoute.FEED} icon={ICONS.Home} label="Hub" />
-                        <DropdownNavItem route={AppRoute.MESSAGES} icon={ICONS.Messages} label="Comms" />
-                        <DropdownNavItem route={AppRoute.CLUSTERS} icon={ICONS.Clusters} label="Clusters" />
-                        <DropdownNavItem route={AppRoute.STREAM_GRID} icon={ICONS.Streams} label="Live" badge="NEW" />
+                  {/* Status Hub */}
+                  <div className="p-2">
+                    <button 
+                      onClick={() => { setIsHubOpen(true); setIsSystemMenuOpen(false); }}
+                      className="w-full p-4 bg-slate-50/80 rounded-[2rem] hover:bg-white border border-slate-100 hover:border-indigo-100 hover:shadow-lg transition-all text-left group flex items-start gap-4"
+                    >
+                      <div className="w-14 h-14 bg-white rounded-[1.4rem] flex items-center justify-center text-3xl shadow-sm border border-slate-100 shrink-0 group-hover:scale-110 transition-transform">
+                         {userData?.statusEmoji || '⚡'}
                       </div>
-                    </div>
-                    
-                    <div className="px-5 pb-5">
-                      <button 
-                        onClick={() => { onNavigate(AppRoute.PROFILE); setIsSystemMenuOpen(false); }}
-                        className="w-full flex items-center gap-3 p-4 bg-[#4f46e5] text-white rounded-2xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all group"
-                      >
-                        <img src={userData?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${auth.currentUser?.uid}`} className="w-10 h-10 rounded-xl object-cover border border-white/20" alt="" />
-                        <div className="text-left overflow-hidden">
-                          <p className="font-black text-sm tracking-tight truncate">{userData?.displayName || 'Unknown Node'}</p>
-                          <p className="text-[9px] font-bold uppercase tracking-widest font-mono opacity-80">Local Core Node</p>
-                        </div>
-                      </button>
-                    </div>
-                    
-                    <div className="px-5 pb-5 space-y-1">
-                      <div className="px-4 py-2 text-[10px] font-black text-slate-300 uppercase tracking-widest font-mono border-t border-slate-50 pt-6 mb-2">Region_Settings</div>
-                      <div className="space-y-1">
-                        {regions.map(r => (
-                          <button 
-                            key={r.code}
-                            onClick={() => { onRegionChange(r.code); setIsSystemMenuOpen(false); }}
-                            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs transition-all ${currentRegion === r.code ? 'bg-indigo-50 text-indigo-700 font-extrabold' : 'hover:bg-slate-50 text-slate-600'}`}
-                          >
-                            <span className="flex items-center gap-3"><span>{r.flag}</span> {r.name}</span>
-                            {currentRegion === r.code && <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full" />}
+                      <div className="flex-1 min-w-0 py-1">
+                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono mb-1">Status_Beacon</p>
+                         <p className="text-sm font-bold text-slate-900 truncate tracking-tight italic">
+                           "{userData?.statusMessage || 'Transmitting...'}"
+                         </p>
+                         <div className="flex items-center gap-2 mt-2">
+                            <span className={`w-1.5 h-1.5 rounded-full ${PRESENCE_DOTS[userData?.presenceStatus || 'Online'].split(' ')[0]} animate-pulse`} />
+                            <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest font-mono">
+                              {userData?.presenceStatus || 'OFFLINE'}
+                            </p>
+                         </div>
+                      </div>
+                    </button>
+                  </div>
+
+                  <div className="p-6 space-y-6">
+                    {/* Mobile Nav Grid */}
+                    <div className="lg:hidden space-y-3">
+                      <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] font-mono ml-1">Navigation_Matrix</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { l: 'Hub', i: ICONS.Home, r: AppRoute.FEED },
+                          { l: 'Comms', i: ICONS.Messages, r: AppRoute.MESSAGES },
+                          { l: 'Clusters', i: ICONS.Clusters, r: AppRoute.CLUSTERS },
+                          { l: 'Live', i: ICONS.Streams, r: AppRoute.STREAM_GRID, b: 'LIVE' },
+                        ].map(item => (
+                          <button key={item.l} onClick={() => { onNavigate(item.r); setIsSystemMenuOpen(false); }} className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl hover:bg-indigo-50 hover:text-indigo-600 transition-all text-slate-600">
+                             <div className="scale-75"><item.i /></div>
+                             <span className="text-[10px] font-black uppercase tracking-wide">{item.l}</span>
+                             {item.b && <span className="ml-auto text-[7px] font-black bg-rose-500 text-white px-1.5 py-0.5 rounded animate-pulse">{item.b}</span>}
                           </button>
                         ))}
                       </div>
                     </div>
-
+                    
+                    {/* Region Selector */}
+                    <div className="space-y-3">
+                      <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] font-mono ml-1">Grid_Region</p>
+                      <div className="grid grid-cols-1 gap-1">
+                        {regions.map(r => (
+                          <button 
+                            key={r.code}
+                            onClick={() => { onRegionChange(r.code); setIsSystemMenuOpen(false); }}
+                            className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-[10px] font-bold transition-all ${currentRegion === r.code ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'hover:bg-slate-50 text-slate-500'}`}
+                          >
+                            <span className="flex items-center gap-3"><span className="text-sm">{r.flag}</span> {r.name}</span>
+                            {currentRegion === r.code && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                   
-                  <div className="p-3 border-t border-slate-50 bg-white shrink-0">
+                  <div className="p-2 border-t border-slate-100 bg-slate-50/50">
                     <button 
                       onClick={() => { onLogout(); setIsSystemMenuOpen(false); }}
-                      className="w-full flex items-center gap-3 px-4 py-4 text-rose-500 hover:bg-rose-50 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-4 text-rose-500 hover:bg-rose-50 rounded-[1.8rem] transition-all font-black text-[10px] uppercase tracking-widest active:scale-95 hover:shadow-sm"
                     >
-                      Terminate Session
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                      Terminate_Session
                     </button>
                   </div>
-                </div>
-              </>
+              </div>
             )}
           </div>
         </div>
       </div>
 
+      {/* Hub Overlay Modal */}
       {isHubOpen && (
-        <div className="fixed inset-0 z-[600] flex items-start justify-center p-6 pt-[calc(var(--header-h)+3.5rem)] animate-in fade-in duration-400">
-           <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-3xl" onClick={() => setIsHubOpen(false)}></div>
-           <div className="relative bg-white w-full max-w-2xl rounded-[4rem] p-10 md:p-14 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] border border-white animate-in zoom-in-95 slide-in-from-top-12 duration-500 overflow-hidden max-h-[85vh] flex flex-col">
-              <div className="relative z-10 overflow-y-auto no-scrollbar pb-6 flex-1 scroll-container">
-                 <div className="flex items-center gap-8 mb-12 pt-4">
-                    <div className="w-24 h-24 bg-slate-50 border border-slate-100 rounded-[2.5rem] flex items-center justify-center text-6xl shadow-inner shrink-0 transition-transform active:scale-90">
+        <div className="fixed inset-0 z-[2000] flex items-end md:items-center justify-center p-0 md:p-6 animate-in fade-in duration-300">
+           <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-2xl transition-opacity" onClick={() => setIsHubOpen(false)}></div>
+           <div className="relative bg-white w-full max-w-xl rounded-t-[3rem] md:rounded-[3.5rem] p-8 md:p-12 shadow-2xl border border-white animate-in slide-in-from-bottom-12 duration-500 overflow-hidden flex flex-col max-h-[90vh]">
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-rose-500" />
+              
+              <div className="flex justify-between items-start mb-10">
+                 <div>
+                   <h2 className="text-3xl font-black text-slate-950 tracking-tighter uppercase italic leading-none">Neural_State</h2>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono mt-2">Broadcast Configuration</p>
+                 </div>
+                 <button onClick={() => setIsHubOpen(false)} className="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg></button>
+              </div>
+
+              <div className="space-y-8 flex-1 overflow-y-auto no-scrollbar scroll-container pb-4">
+                 <div className="flex items-center gap-6">
+                    <div className="w-20 h-20 bg-slate-50 border border-slate-100 rounded-[2rem] flex items-center justify-center text-5xl shadow-inner shrink-0 animate-bounce-slow">
                       {localStatus.statusEmoji}
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1">
+                      <label className="text-[9px] font-black text-indigo-500 uppercase tracking-widest font-mono ml-1 mb-2 block">Current_Signal_Message</label>
                       <input 
                         autoFocus
                         type="text"
                         value={localStatus.statusMessage}
                         onChange={(e) => setLocalStatus(prev => ({ ...prev, statusMessage: e.target.value }))}
                         onKeyDown={(e) => e.key === 'Enter' && updateNeuralStatus({})}
-                        placeholder="Neural broadcast..."
-                        className="w-full bg-transparent border-none p-0 text-3xl font-black text-slate-900 focus:ring-0 placeholder:text-slate-100 tracking-tighter italic"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-lg font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300 italic"
+                        placeholder="What's on your mind?"
                       />
                     </div>
                  </div>
 
-                 <div className="space-y-6 mb-14">
-                    <h4 className="text-[12px] font-black text-[#94a3b8] uppercase tracking-[0.4em] font-mono ml-1">Current_State</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {(['Online', 'Focus', 'Deep Work', 'Away', 'In-Transit', 'Invisible', 'Syncing'] as const).map(status => (
+                 <div>
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono mb-4 ml-1">Presence_Mode</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {(['Online', 'Focus', 'Deep Work', 'Away', 'In-Transit', 'Invisible'] as const).map(status => (
                         <button 
                           key={status}
                           onClick={() => setLocalStatus(prev => ({ 
@@ -445,10 +422,10 @@ export const Header: React.FC<HeaderProps> = ({
                             presenceStatus: status,
                             statusEmoji: STATUS_EMOJI_MAP[status] || prev.statusEmoji
                           }))}
-                          className={`h-16 rounded-[2.2rem] border transition-all flex items-center gap-3 px-5 active:scale-95 ${localStatus.presenceStatus === status ? 'bg-[#0f172a] border-[#0f172a] text-white shadow-xl' : 'bg-white border-slate-100 text-[#94a3b8] hover:border-slate-200 shadow-sm'}`}
+                          className={`p-4 rounded-[1.5rem] border transition-all flex items-center gap-3 active:scale-95 ${localStatus.presenceStatus === status ? 'bg-slate-950 border-slate-950 text-white shadow-xl scale-[1.02]' : 'bg-white border-slate-100 text-slate-500 hover:bg-slate-50'}`}
                         >
-                          <div className={`w-2.5 h-2.5 rounded-full ${PRESENCE_DOTS[status]}`} />
-                          <span className="text-[10px] font-black uppercase tracking-widest font-mono">
+                          <div className={`w-2.5 h-2.5 rounded-full ${PRESENCE_DOTS[status].split(' ')[0]} shadow-sm`} />
+                          <span className="text-[10px] font-black uppercase tracking-widest font-mono truncate">
                             {status}
                           </span>
                         </button>
@@ -456,26 +433,29 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                  </div>
 
-                 <div className="space-y-6 mb-14 pt-8 border-t border-slate-50">
-                    <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] font-mono ml-1">Visual_Glyphs</h4>
-                    <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-11 gap-4">
+                 <div>
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono mb-4 ml-1">Glyph_Selector</h4>
+                    <div className="flex flex-wrap gap-3">
                       {IDENTITY_SIGNALS.map(signal => (
                         <button 
                           key={signal}
                           onClick={() => setLocalStatus(prev => ({ ...prev, statusEmoji: signal }))}
-                          className={`aspect-square rounded-full flex items-center justify-center text-2xl transition-all active:scale-90 ${localStatus.statusEmoji === signal ? 'bg-indigo-50 border-indigo-200 text-indigo-600 scale-110 ring-2 ring-indigo-500/20 shadow-md' : 'bg-white border border-slate-50 text-slate-400 hover:bg-slate-50 shadow-sm'}`}
+                          className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all active:scale-90 ${localStatus.statusEmoji === signal ? 'bg-indigo-50 border-2 border-indigo-200 text-indigo-600 scale-110 shadow-lg' : 'bg-white border border-slate-100 text-slate-400 hover:bg-slate-50'}`}
                         >
                           {signal}
                         </button>
                       ))}
                     </div>
                  </div>
+              </div>
 
+              <div className="pt-6 border-t border-slate-100 shrink-0 mt-2">
                  <button 
                   onClick={() => { updateNeuralStatus({}); setIsHubOpen(false); }}
-                  className="w-full py-6 bg-[#4f46e5] text-white rounded-[2.5rem] font-black text-[13px] uppercase tracking-[0.4em] shadow-[0_20px_50px_rgba(79,70,229,0.35)] hover:bg-[#4338ca] transition-all active:scale-95 mt-4"
+                  className="w-full py-5 bg-indigo-600 text-white rounded-[2rem] font-black text-[11px] uppercase tracking-[0.3em] shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95 flex items-center justify-center gap-3"
                  >
-                   {isUpdatingStatus ? 'SYNCHRONISING...' : 'SYNCHRONISE_GRID_STATE'}
+                   {isUpdatingStatus ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <ICONS.Verified />}
+                   UPDATE_NEURAL_STATE
                  </button>
               </div>
            </div>
