@@ -15,7 +15,7 @@ const {
 import { Chat, User, Region } from '../../types';
 import { ICONS } from '../../constants';
 import { ClusterCreationModal } from '../messages/ClusterCreationModal';
-import { ChatInterface } from '../messages/ChatInterface';
+import { ClusterChatInterface } from './ClusterChatInterface';
 import { AtmosphericBackground } from '../messages/AtmosphericBackground';
 
 interface ClustersPageProps {
@@ -53,12 +53,12 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
 
   const activeClusterData = clusters.find(c => c.id === activeClusterId);
 
-  // If a cluster is active, show the chat interface
+  // If a cluster is active, show the specialized cluster chat interface
   if (activeClusterId && activeClusterData) {
     return (
       <div className="h-[calc(100vh-var(--header-h)-var(--bottom-nav-h)-1rem)] md:h-[calc(100vh-var(--header-h)-3rem)] -mx-4 sm:-mx-6 md:-mx-10 lg:-mx-14 bg-[#fcfcfd] md:rounded-[3.5rem] overflow-hidden shadow-heavy relative border border-slate-100 animate-in fade-in duration-500">
          <AtmosphericBackground weather={null}>
-            <ChatInterface 
+            <ClusterChatInterface 
                 chatId={activeClusterId}
                 currentUser={currentUser}
                 allUsers={allUsers}

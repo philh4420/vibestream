@@ -12,7 +12,7 @@ const {
 import { User as VibeUser, Chat, Region, WeatherInfo } from '../../types';
 import { ICONS } from '../../constants';
 import { AtmosphericBackground } from './AtmosphericBackground';
-import { ChatInterface } from './ChatInterface';
+import { DirectChatInterface } from './DirectChatInterface';
 
 interface MessagesPageProps {
   currentUser: VibeUser;
@@ -108,7 +108,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
       <div className={`${view === 'list' ? 'hidden md:flex' : 'flex'} flex-1 flex-col min-w-0 bg-[#fdfdfe] relative`}>
         <AtmosphericBackground weather={weather}>
           {selectedChatId && activeChat ? (
-            <ChatInterface 
+            <DirectChatInterface 
                 chatId={selectedChatId} 
                 currentUser={currentUser} 
                 allUsers={allUsers} 
