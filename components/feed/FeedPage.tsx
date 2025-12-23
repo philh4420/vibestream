@@ -43,9 +43,10 @@ export const FeedPage: React.FC<FeedPageProps> = ({
   }, [posts, activeProtocol]);
 
   return (
-    <div className="relative min-h-screen pb-32">
-      {/* 1. Temporal Strip (Stories) - Clean & Native-like */}
-      <section className="pt-6 pb-2 animate-in fade-in slide-in-from-top-4 duration-700">
+    <div className="relative min-h-screen pb-32 w-full max-w-2xl mx-auto">
+      
+      {/* 1. Temporal Strip (Stories) */}
+      <section className="pt-2 pb-6 animate-in fade-in slide-in-from-top-4 duration-700">
         <StoriesStrip 
           userData={userData} 
           onTransmit={onTransmitStory} 
@@ -55,7 +56,7 @@ export const FeedPage: React.FC<FeedPageProps> = ({
       </section>
 
       {/* 2. Signal Composer */}
-      <section className="max-w-2xl mx-auto w-full px-4 md:px-0 mt-6 mb-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
+      <section className="mb-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
         <CreateSignalBox 
           userData={userData} 
           onOpen={() => onOpenCreate()} 
@@ -64,17 +65,14 @@ export const FeedPage: React.FC<FeedPageProps> = ({
       </section>
 
       {/* 3. Sticky Protocol Interface */}
-      {/* This container ensures the protocols look floating and professional while sticking */}
-      <section className="sticky top-[var(--header-h)] z-30 mb-8 -mx-4 md:mx-0">
-        <div className="px-4 py-4 bg-[#fcfcfd]/85 backdrop-blur-2xl border-y border-slate-200/40 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] transition-all">
-           <div className="max-w-2xl mx-auto">
-             <FeedProtocols active={activeProtocol} onChange={setActiveProtocol} />
-           </div>
+      <section className="sticky top-[calc(var(--header-h)+1rem)] z-30 mb-8">
+        <div className="py-2 bg-[#fcfcfd]/90 backdrop-blur-xl rounded-[2.5rem] border border-white/50 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.05)] transition-all">
+           <FeedProtocols active={activeProtocol} onChange={setActiveProtocol} />
         </div>
       </section>
 
       {/* 4. Transmission Stream */}
-      <section className="max-w-2xl mx-auto w-full px-4 md:px-0 space-y-6 min-h-[400px]">
+      <section className="space-y-6 min-h-[400px]">
         {filteredPosts.length > 0 ? (
           filteredPosts.map((post, idx) => (
             <div key={post.id} className="animate-in fade-in slide-in-from-bottom-8 duration-700 fill-mode-backwards" style={{ animationDelay: `${idx * 50}ms` }}>

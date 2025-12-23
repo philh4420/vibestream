@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ICONS } from '../../constants';
 import { AppRoute, UserRole, Region, User as VibeUser, AppNotification, WeatherInfo } from '../../types';
@@ -79,10 +80,11 @@ export const Layout: React.FC<LayoutProps> = ({
         />
 
         {/* Main Content Viewport with Global Atmosphere */}
-        <main className="flex-1 relative overflow-hidden flex flex-col">
+        <main className="flex-1 relative overflow-hidden flex flex-col min-w-0">
           <AtmosphericBackground weather={weather}>
-            <div className="flex-1 scroll-viewport px-4 sm:px-6 md:px-10 lg:px-14 py-6 relative z-10" style={{ paddingLeft: 'max(1.25rem, var(--sal))', paddingRight: 'max(1.25rem, var(--sar))' }}>
-              <div className="max-w-4xl mx-auto w-full pb-[calc(var(--bottom-nav-h)+4rem)] md:pb-24">
+            {/* Optimized Padding: Reduced on LG (2 cols active) to prevent squeeze, generous on mobile/XL */}
+            <div className="flex-1 scroll-viewport px-4 md:px-6 lg:px-4 xl:px-10 py-6 relative z-10" style={{ paddingLeft: 'max(1rem, var(--sal))', paddingRight: 'max(1rem, var(--sar))' }}>
+              <div className="w-full h-full pb-[calc(var(--bottom-nav-h)+4rem)] md:pb-24">
                 {children}
               </div>
             </div>
