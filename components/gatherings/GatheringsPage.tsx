@@ -71,11 +71,31 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({ currentUser, loc
 
   const handleRSVP = async (gatheringId: string, isAttending: boolean) => {
     if (!db || !currentUser) return;
+    const gathering = gatherings.find(g => g.id === gatheringId);
+    if (!gathering) return;
+
     try {
       const ref = doc(db, 'gatherings', gatheringId);
       await updateDoc(ref, {
         attendees: isAttending ? arrayRemove(currentUser.id) : arrayUnion(currentUser.id)
       });
+
+      // NOTIFICATION LOGIC: Notify Organizer if joining and not self
+      if (!isAttending && gathering.organizerId !== currentUser.id) {
+        await addDoc(collection(db, 'notifications'), {
+          type: 'gathering_rsvp',
+          fromUserId: currentUser.id,
+          fromUserName: currentUser.displayName,
+          fromUserAvatar: currentUser.avatarUrl,
+          toUserId: gathering.organizerId,
+          targetId: gatheringId,
+          text: `is attending your gathering: "${gathering.title}"`,
+          isRead: false,
+          timestamp: serverTimestamp(),
+          pulseFrequency: 'intensity'
+        });
+      }
+
       addToast(isAttending ? "Withdrawn from Gathering" : "RSVP Confirmed", "success");
     } catch (e) {
       addToast("RSVP Protocol Failed", "error");

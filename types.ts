@@ -64,7 +64,7 @@ export interface User {
   }[];
 }
 
-export type NotificationType = 'like' | 'comment' | 'follow' | 'mention' | 'broadcast' | 'system' | 'relay' | 'call' | 'cluster_invite' | 'packet_summary' | 'message';
+export type NotificationType = 'like' | 'comment' | 'follow' | 'mention' | 'broadcast' | 'system' | 'relay' | 'call' | 'cluster_invite' | 'packet_summary' | 'message' | 'gathering_rsvp';
 
 export interface AppNotification {
   id: string;

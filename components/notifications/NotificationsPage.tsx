@@ -33,7 +33,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
       case 'pulses':
         return notifications.filter(n => n.type === 'like' || n.type === 'relay' || n.type === 'follow');
       case 'system':
-        return notifications.filter(n => n.type === 'system' || n.type === 'broadcast' || n.type === 'packet_summary');
+        return notifications.filter(n => n.type === 'system' || n.type === 'broadcast' || n.type === 'packet_summary' || n.type === 'gathering_rsvp');
       default:
         return notifications;
     }
@@ -96,6 +96,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
         case 'relay': return <div className="w-10 h-10 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-200"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg></div>;
         case 'message': return <div className="w-10 h-10 bg-indigo-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100"><ICONS.Messages /></div>;
         case 'like': return <div className="w-10 h-10 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center border border-rose-100">❤️</div>;
+        case 'gathering_rsvp': return <div className="w-10 h-10 bg-purple-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-purple-200"><ICONS.Gatherings /></div>;
         default: return <div className="w-10 h-10 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg"><ICONS.Bell /></div>;
     }
   };
