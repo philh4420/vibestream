@@ -95,66 +95,74 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
   const activeChat = chats.find(c => c.id === selectedChatId);
   
   const PRESENCE_AURA: Record<string, string> = {
-    'Online': 'shadow-[0_0_15px_rgba(16,185,129,0.4)] bg-[#10b981]',
-    'Focus': 'shadow-[0_0_15px_rgba(245,158,11,0.4)] bg-[#f59e0b]',
-    'Deep Work': 'shadow-[0_0_15px_rgba(225,29,72,0.4)] bg-[#e11d48]',
-    'Away': 'bg-[#94a3b8]',
-    'Syncing': 'bg-[#60a5fa] animate-pulse'
+    'Online': 'bg-emerald-500 shadow-[0_0_8px_#10b981]',
+    'Focus': 'bg-amber-500 shadow-[0_0_8px_#f59e0b]',
+    'Deep Work': 'bg-rose-500 shadow-[0_0_8px_#e11d48]',
+    'Away': 'bg-slate-400',
+    'Syncing': 'bg-blue-400 animate-pulse'
   };
 
   return (
-    <div className="flex h-[calc(100vh-var(--header-h)-var(--bottom-nav-h)-1rem)] md:h-[calc(100vh-var(--header-h)-3rem)] -mx-4 sm:-mx-6 md:-mx-10 lg:-mx-14 bg-[#fcfcfd] md:rounded-[3.5rem] overflow-hidden shadow-heavy relative border border-slate-100 animate-in fade-in duration-700">
+    <div className="flex h-full w-full bg-[#fcfcfd] rounded-[2rem] md:rounded-[3rem] overflow-hidden shadow-sm border border-slate-200/60 relative animate-in fade-in duration-500">
       
       {/* SIDEBAR: CONTACTS FEED (1-to-1 Only) */}
-      <div className={`${view === 'chat' ? 'hidden md:flex' : 'flex'} w-full md:w-[380px] lg:w-[420px] border-r border-slate-50 flex-col bg-white shrink-0 z-20 relative overflow-hidden`}>
-        <div className="p-8 pb-4">
-          <div className="flex items-center justify-between mb-8">
-             <div className="flex flex-col">
-               <h2 className="text-3xl font-black text-slate-950 tracking-tighter uppercase italic leading-none">Neural_Comms</h2>
-               <div className="flex items-center gap-2 mt-2">
-                 <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(79,70,229,0.8)]" />
-                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Secure_P2P_Link</p>
+      <div className={`${view === 'chat' ? 'hidden md:flex' : 'flex'} w-full md:w-[360px] lg:w-[400px] border-r border-slate-100 flex-col bg-white shrink-0 z-20 relative overflow-hidden`}>
+        {/* Header Area */}
+        <div className="px-6 py-6 pb-2 shrink-0">
+          <div className="flex items-center justify-between mb-6">
+             <div>
+               <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">Comms_Log</h2>
+               <div className="flex items-center gap-2 mt-1.5">
+                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] font-mono">Secure_Uplink</p>
                </div>
              </div>
+             <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300">
+               <ICONS.Messages />
+             </div>
           </div>
-          <div className="relative group">
-             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 scale-90"><ICONS.Search /></div>
+          
+          <div className="relative group mb-2">
+             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 scale-90 transition-colors"><ICONS.Search /></div>
              <input 
                type="text" 
                value={searchQuery}
                onChange={(e) => setSearchQuery(e.target.value)}
-               placeholder="Scan private nodes..." 
-               className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-12 pr-6 py-4 text-xs font-bold outline-none focus:ring-4 focus:ring-indigo-500/5 focus:bg-white transition-all shadow-inner placeholder:text-slate-300" 
+               placeholder="Scan nodes..." 
+               className="w-full bg-slate-50 border border-slate-100 rounded-[1.2rem] pl-11 pr-4 py-3.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/10 focus:bg-white focus:border-indigo-100 transition-all placeholder:text-slate-400" 
              />
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar p-5 space-y-2">
+        <div className="flex-1 overflow-y-auto no-scrollbar px-3 pb-4 space-y-1">
           {searchQuery.trim() ? (
             // SEARCH RESULTS VIEW
             filteredUsers.length > 0 ? (
-              filteredUsers.map(user => (
-                <button 
-                  key={user.id} 
-                  onClick={() => handleStartChat(user)}
-                  disabled={isCreating}
-                  className="w-full flex items-center gap-4 p-4 rounded-[2rem] hover:bg-slate-50 transition-all duration-300 group text-left"
-                >
-                  <div className="relative shrink-0">
-                    <img src={user.avatarUrl} className="w-12 h-12 object-cover rounded-[1.4rem] border border-slate-100" alt="" />
-                    <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white ${PRESENCE_AURA[user.presenceStatus || 'Online']}`} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-black text-sm text-slate-900 truncate">{user.displayName}</p>
-                    <p className="text-[10px] font-mono text-slate-400 truncate">@{user.username}</p>
-                  </div>
-                  <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                  </div>
-                </button>
-              ))
+              <>
+                <p className="px-4 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Directory_Results</p>
+                {filteredUsers.map(user => (
+                  <button 
+                    key={user.id} 
+                    onClick={() => handleStartChat(user)}
+                    disabled={isCreating}
+                    className="w-full flex items-center gap-3 p-3 rounded-[1.5rem] hover:bg-slate-50 transition-all duration-300 group text-left active:scale-[0.98]"
+                  >
+                    <div className="relative shrink-0">
+                      <img src={user.avatarUrl} className="w-12 h-12 object-cover rounded-[1.2rem] border border-slate-100 bg-slate-100" alt="" />
+                      <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${PRESENCE_AURA[user.presenceStatus || 'Online']}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-black text-sm text-slate-900 truncate tracking-tight">{user.displayName}</p>
+                      <p className="text-[10px] font-mono text-slate-400 truncate">@{user.username}</p>
+                    </div>
+                    <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl opacity-0 group-hover:opacity-100 transition-all shadow-sm">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                    </div>
+                  </button>
+                ))}
+              </>
             ) : (
-              <div className="py-10 text-center opacity-40">
+              <div className="py-12 text-center opacity-40">
                 <p className="text-[10px] font-black uppercase tracking-widest font-mono">No nodes found in sector.</p>
               </div>
             )
@@ -171,31 +179,34 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                   <button 
                     key={chat.id} 
                     onClick={() => { setSelectedChatId(chat.id); setView('chat'); }} 
-                    className={`w-full flex items-center gap-4 p-5 rounded-[2.2rem] transition-all duration-500 relative group ${isActive ? 'bg-white shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] ring-1 ring-slate-100' : 'hover:bg-slate-50/70'}`}
+                    className={`w-full flex items-center gap-3.5 p-3.5 rounded-[1.8rem] transition-all duration-300 relative group active:scale-[0.99] border ${isActive ? 'bg-slate-900 border-slate-900 shadow-xl shadow-slate-900/10' : 'bg-white border-transparent hover:bg-slate-50'}`}
                   >
-                    {isActive && <div className="absolute left-2 top-6 bottom-6 w-1 bg-[#4f46e5] rounded-full" />}
                     <div className="relative shrink-0">
-                      <img src={pData?.avatarUrl} className={`w-14 h-14 object-cover border-2 border-white shadow-sm rounded-[1.8rem]`} alt="" />
+                      <img src={pData?.avatarUrl} className={`w-12 h-12 object-cover border-2 shadow-sm rounded-[1.2rem] ${isActive ? 'border-slate-700' : 'border-white'}`} alt="" />
                       {peerUser?.presenceStatus && (
-                        <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-4 border-white ${PRESENCE_AURA[peerUser.presenceStatus] || 'bg-slate-300'}`} />
+                        <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-[2.5px] ${isActive ? 'border-slate-900' : 'border-white'} ${PRESENCE_AURA[peerUser.presenceStatus] || 'bg-slate-300'}`} />
                       )}
                     </div>
-                    <div className="text-left overflow-hidden flex-1">
-                      <div className="flex justify-between items-center mb-1">
-                        <p className={`font-black text-[13px] uppercase tracking-tight truncate ${isActive ? 'text-indigo-600' : 'text-slate-950'}`}>{pData?.displayName}</p>
-                        <span className="text-[8px] font-black text-slate-300 font-mono italic">{chat.lastMessageTimestamp?.toDate ? chat.lastMessageTimestamp.toDate().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'NOW'}</span>
+                    <div className="text-left overflow-hidden flex-1 min-w-0">
+                      <div className="flex justify-between items-center mb-0.5">
+                        <p className={`font-black text-[13px] uppercase tracking-tight truncate ${isActive ? 'text-white' : 'text-slate-900'}`}>{pData?.displayName}</p>
+                        <span className={`text-[9px] font-black font-mono tracking-wide ${isActive ? 'text-slate-500' : 'text-slate-300'}`}>
+                          {chat.lastMessageTimestamp?.toDate ? chat.lastMessageTimestamp.toDate().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'NOW'}
+                        </span>
                       </div>
-                      <p className="text-[10px] text-slate-400 font-bold truncate italic leading-none opacity-80">{chat.lastMessage}</p>
+                      <p className={`text-[11px] font-bold truncate leading-relaxed ${isActive ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {chat.lastMessage}
+                      </p>
                     </div>
                   </button>
                 );
               })
             ) : (
-              <div className="py-20 text-center flex flex-col items-center opacity-40 px-6">
+              <div className="py-24 text-center flex flex-col items-center opacity-40 px-6">
                  <div className="w-16 h-16 bg-slate-50 rounded-[1.5rem] flex items-center justify-center mb-6 text-slate-300">
                     <ICONS.Messages />
                  </div>
-                 <p className="text-[10px] font-black uppercase tracking-[0.3em] font-mono leading-relaxed">Local comms buffer empty.<br/>Use search to establish new links.</p>
+                 <p className="text-[10px] font-black uppercase tracking-[0.3em] font-mono leading-relaxed text-slate-400">Buffer Empty.<br/>Initiate new link.</p>
               </div>
             )
           )}
@@ -203,7 +214,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
       </div>
 
       {/* MAIN VIEWPORT: CHAT STREAM */}
-      <div className={`${view === 'list' ? 'hidden md:flex' : 'flex'} flex-1 flex-col min-w-0 bg-[#fdfdfe] relative`}>
+      <div className={`${view === 'list' ? 'hidden md:flex' : 'flex'} flex-1 flex-col min-w-0 bg-[#f8fafc] relative z-10`}>
         <AtmosphericBackground weather={weather}>
           {selectedChatId && activeChat ? (
             <DirectChatInterface 
@@ -216,12 +227,16 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
             />
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
-               <div className="relative group">
-                 <div className="absolute inset-0 bg-indigo-500/10 blur-3xl rounded-full scale-150 animate-pulse" />
-                 <div className="relative w-32 h-32 md:w-48 md:h-48 bg-white rounded-[4rem] border-sharp shadow-heavy flex items-center justify-center text-slate-200 scale-110 mb-12"><ICONS.Messages /></div>
+               <div className="relative group cursor-default">
+                 <div className="absolute inset-0 bg-indigo-500/10 blur-[60px] rounded-full animate-pulse" />
+                 <div className="relative w-32 h-32 bg-white/80 backdrop-blur-xl rounded-[2.5rem] border border-white shadow-xl flex items-center justify-center text-slate-300 mb-8 transform group-hover:scale-105 transition-transform duration-500">
+                   <ICONS.Messages />
+                 </div>
                </div>
-               <h3 className="text-2xl font-black text-slate-950 tracking-tighter uppercase italic leading-none mb-4">Neural_Wait_State</h3>
-               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em] font-mono italic max-w-xs leading-loose">Select a secure node link to establish private frequency transmission.</p>
+               <h3 className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic leading-none mb-3">Neural_Comms_Ready</h3>
+               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono italic max-w-xs leading-loose">
+                 Select a node from the registry to establish a secure p2p frequency.
+               </p>
             </div>
           )}
         </AtmosphericBackground>
