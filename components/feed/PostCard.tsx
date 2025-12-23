@@ -3,7 +3,6 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Post, User } from '../../types';
 import { ICONS, PULSE_FREQUENCIES } from '../../constants';
 import { db } from '../../services/firebase';
-// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
 import * as Firestore from 'firebase/firestore';
 const { 
   deleteDoc, 
@@ -19,6 +18,7 @@ import { CommentSection } from './CommentSection';
 interface PostCardProps {
   post: Post;
   onLike: (id: string, frequency?: string) => void;
+  onBookmark?: (id: string) => void;
   onViewPost?: (post: Post) => void;
   locale?: string;
   isAuthor?: boolean;
@@ -29,6 +29,7 @@ interface PostCardProps {
 export const PostCard: React.FC<PostCardProps> = ({ 
   post, 
   onLike, 
+  onBookmark,
   onViewPost,
   locale = 'en-GB', 
   isAuthor = false, 
@@ -86,7 +87,6 @@ export const PostCard: React.FC<PostCardProps> = ({
         minute: '2-digit'
       });
     }
-    // Fallback for new posts or optimistic UI - ensuring year is shown
     const now = new Date();
     const dateStr = now.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
     return `${dateStr}, ${post.createdAt}`; 
@@ -199,6 +199,8 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   const isPulse = post.contentLengthTier === 'pulse';
   const isDeep = post.contentLengthTier === 'deep';
+  // @ts-ignore
+  const isBookmarked = post.isBookmarked || (post.bookmarkedBy && userData && post.bookmarkedBy.includes(userData.id));
 
   return (
     <article 
@@ -261,9 +263,14 @@ export const PostCard: React.FC<PostCardProps> = ({
             {showOptions && (
               <div className="absolute right-0 mt-3 w-48 bg-white/95 backdrop-blur-2xl border border-slate-100 rounded-[1.5rem] shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-2 duration-200">
                 <div className="p-1.5 space-y-0.5">
-                  <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all text-left group/opt">
-                    <div className="text-slate-400 group-hover/opt:text-indigo-500 transition-colors scale-75"><ICONS.Saved /></div>
-                    <span className="text-[9px] font-black uppercase tracking-widest font-mono">Save_Signal</span>
+                  <button 
+                    onClick={() => { onBookmark?.(post.id); setShowOptions(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all text-left group/opt"
+                  >
+                    <div className={`transition-colors scale-75 ${isBookmarked ? 'text-indigo-600' : 'text-slate-400 group-hover/opt:text-indigo-500'}`}><ICONS.Saved /></div>
+                    <span className="text-[9px] font-black uppercase tracking-widest font-mono">
+                      {isBookmarked ? 'Remove_Vault' : 'Save_Vault'}
+                    </span>
                   </button>
                   {isAuthor && (
                     <button onClick={handlePurgeSignal} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-50 transition-all text-left border-t border-slate-50 mt-1">
@@ -415,8 +422,11 @@ export const PostCard: React.FC<PostCardProps> = ({
             </button>
           </div>
 
-          <button onClick={(e) => e.stopPropagation()} className="h-12 w-12 md:h-14 md:w-14 flex items-center justify-center text-slate-300 hover:text-slate-900 hover:bg-slate-50 rounded-2xl transition-all duration-300 active:scale-90 border border-transparent hover:border-slate-100">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0-10.628a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5m0 10.628a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5" /></svg>
+          <button 
+            onClick={(e) => { e.stopPropagation(); onBookmark?.(post.id); }}
+            className={`h-12 w-12 md:h-14 md:w-14 flex items-center justify-center rounded-2xl transition-all duration-300 active:scale-90 border border-transparent ${isBookmarked ? 'text-indigo-600 bg-indigo-50 border-indigo-100' : 'text-slate-300 hover:text-slate-900 hover:bg-slate-50 hover:border-slate-100'}`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill={isBookmarked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0-10.628a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5m0 10.628a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5" /></svg>
           </button>
         </div>
 

@@ -7,6 +7,7 @@ interface ExplorePageProps {
   posts: Post[];
   users: User[];
   onLike: (id: string) => void;
+  onBookmark: (id: string) => void;
   onViewPost: (post: Post) => void;
   locale: Region;
   searchQuery?: string;
@@ -17,6 +18,7 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
   posts, 
   users,
   onLike, 
+  onBookmark,
   onViewPost, 
   locale,
   searchQuery = '',

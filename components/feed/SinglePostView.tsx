@@ -10,6 +10,7 @@ interface SinglePostViewProps {
   locale: Region;
   onClose: () => void;
   onLike: (id: string, freq?: string) => void;
+  onBookmark: (id: string) => void;
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
 }
 
@@ -19,6 +20,7 @@ export const SinglePostView: React.FC<SinglePostViewProps> = ({
   locale, 
   onClose, 
   onLike,
+  onBookmark,
   addToast 
 }) => {
   
@@ -149,6 +151,13 @@ export const SinglePostView: React.FC<SinglePostViewProps> = ({
                  <span className="text-[11px] font-black uppercase tracking-widest">RELAY</span>
                  <span className="text-[9px] font-mono opacity-60">{post.shares} Broadcasts</span>
                </div>
+             </button>
+             
+             <button 
+                onClick={() => onBookmark(post.id)}
+                className={`w-full sm:w-16 h-16 rounded-[1.8rem] flex items-center justify-center transition-all active:scale-95 shadow-lg ${post.bookmarkedBy?.includes(userData?.id || '') ? 'bg-indigo-50 border border-indigo-100 text-indigo-600' : 'bg-white border border-slate-200 text-slate-400 hover:text-indigo-500'}`}
+             >
+                <div className="scale-110"><ICONS.Saved /></div>
              </button>
           </div>
         </div>

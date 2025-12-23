@@ -17,16 +17,15 @@ import { PrivacyPage } from './components/legal/PrivacyPage';
 import { TermsPage } from './components/legal/TermsPage';
 import { CookiesPage } from './components/legal/CookiesPage';
 import { NeuralLinkOverlay } from './components/messages/NeuralLinkOverlay';
-// Newly Imported Components
 import { MeshPage } from './components/mesh/MeshPage';
 import { ClustersPage } from './components/clusters/ClustersPage';
 import { VerifiedNodesPage } from './components/explore/VerifiedNodesPage';
+import { DataVaultPage } from './components/vault/DataVaultPage'; // Imported
 
 import { AppRoute, Post, ToastMessage, Region, User as VibeUser, SystemSettings, LiveStream, AppNotification, SignalAudience, PresenceStatus, WeatherInfo, CallSession } from './types';
 import { db, auth } from './services/firebase';
 import * as FirebaseAuth from 'firebase/auth';
 const { onAuthStateChanged, signOut } = FirebaseAuth as any;
-// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
 import * as Firestore from 'firebase/firestore';
 const { 
   collection, 
@@ -60,9 +59,7 @@ const SESSION_KEY = 'vibestream_session_2026';
 const ROUTE_KEY = 'vibestream_active_route';
 
 const App: React.FC = () => {
-  // Use state without local storage pre-check to avoid unauthorized listener triggers
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userData, setUserData] = useState<VibeUser | null>(null);
   const [allUsers, setAllUsers] = useState<VibeUser[]>([]);
@@ -96,7 +93,7 @@ const App: React.FC = () => {
   const [watchingStream, setWatchingStream] = useState<LiveStream | null>(null);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [previousRoute, setPreviousRoute] = useState<AppRoute | null>(null);
-  const [viewingProfile, setViewingProfile] = useState<VibeUser | null>(null); // For handling profile navigation
+  const [viewingProfile, setViewingProfile] = useState<VibeUser | null>(null);
   
   const [newPostText, setNewPostText] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -128,14 +125,11 @@ const App: React.FC = () => {
     if (!db || !currentUser?.uid) return;
     const batch = writeBatch(db);
     const unread = notifications.filter(n => !n.isRead);
-    
     if (unread.length === 0) return;
-
     unread.forEach(n => {
       const ref = doc(db, 'notifications', n.id);
       batch.update(ref, { isRead: true });
     });
-
     try {
       await batch.commit();
       addToast("Signals Synchronised", "success");
@@ -166,20 +160,17 @@ const App: React.FC = () => {
     const handleGlobalToast = (e: any) => {
       if (e.detail?.msg) addToast(e.detail.msg, e.detail.type);
     };
-    
     const handleViewPostEvent = (e: any) => {
       if (e.detail?.post) handleOpenPost(e.detail.post);
     };
-
     window.addEventListener('vibe-toast', handleGlobalToast);
     window.addEventListener('vibe-view-post', handleViewPostEvent);
     return () => {
         window.removeEventListener('vibe-toast', handleGlobalToast);
         window.removeEventListener('vibe-view-post', handleViewPostEvent);
     };
-  }, [activeRoute]); // Re-attach when route changes to capture closure state if needed, though handleOpenPost sets state
+  }, [activeRoute]);
 
-  // Sync Atmosphere (Weather)
   useEffect(() => {
     if (!isAuthenticated) return;
     const syncAtmosphere = async () => {
@@ -210,7 +201,6 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [isAuthenticated, userData?.location]);
 
-  // Monitor Global Call Signal Bus
   useEffect(() => {
     if (!isAuthenticated || !userData?.id || !db || !auth.currentUser) return;
     const q = query(
@@ -225,7 +215,6 @@ const App: React.FC = () => {
       orderBy('timestamp', 'desc'),
       limit(1)
     );
-
     const unsub = onSnapshot(q, (snap) => {
       if (!snap.empty) {
         const callData = { id: snap.docs[0].id, ...snap.docs[0].data() } as CallSession;
@@ -244,7 +233,6 @@ const App: React.FC = () => {
       setPreviousRoute(activeRoute);
       setSelectedPost(null);
     }
-    // Reset view profile if navigating away from profile
     if (route !== AppRoute.PROFILE) setViewingProfile(null);
     setActiveRoute(route);
     localStorage.setItem(ROUTE_KEY, route);
@@ -318,7 +306,6 @@ const App: React.FC = () => {
     addToast("GIF Linked to Buffer", "success");
   };
 
-  // 1. Core Auth State Synchronisation
   useEffect(() => {
     if (!auth) { setIsLoading(false); return; }
     const authUnsubscribe = onAuthStateChanged(auth, async (user: any) => {
@@ -337,7 +324,6 @@ const App: React.FC = () => {
     return () => authUnsubscribe();
   }, []);
 
-  // 2. Individual Node Data Listener
   useEffect(() => {
     if (!isAuthenticated || !currentUser?.uid || !db) return;
     const unsub = onSnapshot(doc(db, 'users', currentUser.uid), (userDoc: any) => {
@@ -351,7 +337,6 @@ const App: React.FC = () => {
     return () => unsub();
   }, [isAuthenticated, currentUser?.uid]);
 
-  // 3. Global Mesh Discovery Listener
   useEffect(() => {
     if (!isAuthenticated || !db || !auth.currentUser) return;
     const qUsers = query(collection(db, 'users'), limit(100));
@@ -363,12 +348,10 @@ const App: React.FC = () => {
     return () => unsub();
   }, [isAuthenticated]);
 
-  // 4. Alerts Center Listener
   useEffect(() => {
     if (!isAuthenticated || !currentUser?.uid || !db) return;
     
     let isFirstSubscriptionSnapshot = true;
-
     const qNotif = query(
       collection(db, 'notifications'), 
       where('toUserId', '==', currentUser.uid), 
@@ -390,7 +373,6 @@ const App: React.FC = () => {
           }
         });
       }
-      
       isFirstSubscriptionSnapshot = false;
     }, (error: any) => {
       if (error.code !== 'permission-denied') console.error("Notification Bus Failure:", error);
@@ -398,7 +380,6 @@ const App: React.FC = () => {
     return () => unsub();
   }, [isAuthenticated, currentUser?.uid, userData?.presenceStatus]);
 
-  // 5. Grid Signals Listener
   useEffect(() => {
     if (!db || !isAuthenticated || !auth.currentUser) return;
     const q = query(collection(db, 'posts'), orderBy('timestamp', 'desc'), limit(100));
@@ -406,7 +387,8 @@ const App: React.FC = () => {
       const fetchedPosts = snapshot.docs.map((doc: any) => ({ 
         id: doc.id, 
         ...doc.data(),
-        isLiked: doc.data().likedBy?.includes(auth.currentUser?.uid)
+        isLiked: doc.data().likedBy?.includes(auth.currentUser?.uid),
+        isBookmarked: doc.data().bookmarkedBy?.includes(auth.currentUser?.uid)
       } as Post));
       setPosts(fetchedPosts);
       if (selectedPost) {
@@ -418,7 +400,6 @@ const App: React.FC = () => {
     });
   }, [isAuthenticated, selectedPost?.id]);
 
-  // 6. Global Kernel Settings Listener
   useEffect(() => {
     if (!db) return;
     return onSnapshot(doc(db, 'settings', 'global'), (snap: any) => {
@@ -494,9 +475,9 @@ const App: React.FC = () => {
         createdAt: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
         timestamp: serverTimestamp(),
         likedBy: [],
+        bookmarkedBy: [],
         location: postLocation,
-        audience: postAudience,
-        bookmarkedBy: []
+        audience: postAudience
       });
       setNewPostText('');
       setSelectedFiles([]);
@@ -556,6 +537,33 @@ const App: React.FC = () => {
     }
   };
 
+  const handleBookmark = async (postId: string) => {
+    if (!db || !auth.currentUser) return;
+    const postRef = doc(db, 'posts', postId);
+    const userId = auth.currentUser.uid;
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+    
+    // Explicitly check boolean flag we set in snapshot, or the array itself
+    const isBookmarked = post.bookmarkedBy?.includes(userId);
+
+    try {
+      if (isBookmarked) {
+        await updateDoc(postRef, {
+          bookmarkedBy: arrayRemove(userId)
+        });
+        addToast("Removed from Data Vault", "info");
+      } else {
+        await updateDoc(postRef, {
+          bookmarkedBy: arrayUnion(userId)
+        });
+        addToast("Secured in Data Vault", "success");
+      }
+    } catch (error) {
+      addToast("Vault access denied", "error");
+    }
+  };
+
   if (isLoading) return <div className="h-full w-full flex items-center justify-center font-black animate-pulse text-indigo-600 uppercase italic">Syncing_Neural_Buffer...</div>;
   if (!isAuthenticated) return <LandingPage onEnter={() => setIsAuthenticated(true)} systemSettings={systemSettings} />;
 
@@ -571,7 +579,9 @@ const App: React.FC = () => {
     >
       {activeRoute === AppRoute.FEED && (
         <FeedPage 
-          posts={posts} userData={userData} onLike={handleLike} 
+          posts={posts} userData={userData} 
+          onLike={handleLike} 
+          onBookmark={handleBookmark}
           onViewPost={handleOpenPost}
           onOpenCreate={handleOpenCreate}
           onTransmitStory={() => {}} onGoLive={() => setIsLiveOverlayOpen(true)}
@@ -583,7 +593,9 @@ const App: React.FC = () => {
         <ExplorePage 
           posts={posts} 
           users={allUsers}
-          onLike={handleLike} locale={userRegion} 
+          onLike={handleLike}
+          onBookmark={handleBookmark}
+          locale={userRegion} 
           onViewPost={handleOpenPost} 
           searchQuery={globalSearchQuery}
           onClearSearch={() => setGlobalSearchQuery('')}
@@ -597,6 +609,7 @@ const App: React.FC = () => {
           locale={userRegion} 
           onClose={() => handleNavigate(previousRoute || AppRoute.FEED)}
           onLike={handleLike}
+          onBookmark={handleBookmark}
           addToast={addToast}
         />
       )}
@@ -625,9 +638,18 @@ const App: React.FC = () => {
           currentUser={userData}
           locale={userRegion}
           addToast={addToast}
-          onOpenChat={(id) => { handleNavigate(AppRoute.MESSAGES); /* In a real app we'd pass the ID to open */ }}
+          onOpenChat={(id) => { handleNavigate(AppRoute.MESSAGES); }}
           allUsers={allUsers}
           weather={weather}
+        />
+      )}
+
+      {activeRoute === AppRoute.SAVED && userData && (
+        <DataVaultPage 
+          currentUser={userData}
+          locale={userRegion}
+          addToast={addToast}
+          onViewPost={handleOpenPost}
         />
       )}
 
@@ -755,7 +777,7 @@ const App: React.FC = () => {
                <input type="file" ref={fileInputRef} multiple className="hidden" accept="image/*,video/*,.heic,.heif,.avif,.webp" onChange={handleFileChange} />
                <button 
                  onClick={handleCreatePost} 
-                 disabled={isUploading || (!newPostText.trim() && selectedFiles.length === 0 && selectedGifs.length === 0)} 
+                 disabled={isUploading || (!newPostText.trim() && !selectedFiles.length && !selectedGifs.length)} 
                  className="w-full py-8 md:py-10 bg-indigo-600 text-white rounded-[2.5rem] font-black text-sm md:text-base uppercase tracking-[0.6em] shadow-[0_20px_50px_rgba(79,70,229,0.35)] hover:bg-indigo-700 transition-all active:scale-[0.97] flex items-center justify-center gap-4 italic"
                >
                  {isUploading ? 'SYNCHRONIZING...' : 'Broadcast_Signal'}

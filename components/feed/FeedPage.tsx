@@ -11,6 +11,7 @@ interface FeedPageProps {
   posts: Post[];
   userData: User | null;
   onLike: (id: string) => void;
+  onBookmark: (id: string) => void;
   onViewPost: (post: Post) => void;
   onOpenCreate: (initialFiles?: File[]) => void;
   onTransmitStory: (file: File) => void;
@@ -22,7 +23,8 @@ interface FeedPageProps {
 export const FeedPage: React.FC<FeedPageProps> = ({ 
   posts, 
   userData, 
-  onLike, 
+  onLike,
+  onBookmark,
   onViewPost,
   onOpenCreate,
   onTransmitStory,
@@ -79,6 +81,7 @@ export const FeedPage: React.FC<FeedPageProps> = ({
               <PostCard 
                 post={post} 
                 onLike={onLike} 
+                onBookmark={onBookmark}
                 onViewPost={onViewPost}
                 locale={locale} 
                 isAuthor={userData?.id === post.authorId}
