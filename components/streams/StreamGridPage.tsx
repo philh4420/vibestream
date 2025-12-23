@@ -3,16 +3,19 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
 const { collection, query, onSnapshot, orderBy, limit } = Firestore as any;
-import { LiveStream, Region } from '../../types';
+import { LiveStream, Region, User } from '../../types';
 import { ICONS } from '../../constants';
+import { StoriesStrip } from '../feed/StoriesStrip';
 
 interface StreamGridPageProps {
   locale: Region;
   onJoinStream: (stream: LiveStream) => void;
   onGoLive: () => void;
+  userData: User | null;
+  onTransmit: (file: File) => void;
 }
 
-export const StreamGridPage: React.FC<StreamGridPageProps> = ({ locale, onJoinStream, onGoLive }) => {
+export const StreamGridPage: React.FC<StreamGridPageProps> = ({ locale, onJoinStream, onGoLive, userData, onTransmit }) => {
   const [streams, setStreams] = useState<LiveStream[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -40,6 +43,16 @@ export const StreamGridPage: React.FC<StreamGridPageProps> = ({ locale, onJoinSt
   return (
     <div className="w-full h-full space-y-8 animate-in fade-in duration-700">
       
+      {/* 0. STREAM STORIES HEADER */}
+      <div className="mb-2">
+        <StoriesStrip 
+          userData={userData} 
+          onTransmit={onTransmit} 
+          onGoLive={onGoLive} 
+          onJoinStream={onJoinStream} 
+        />
+      </div>
+
       {/* 1. HERO COMMAND HEADER */}
       <div className="relative rounded-[3rem] bg-slate-900 p-8 md:p-12 text-white shadow-heavy border border-white/5 overflow-hidden group">
          {/* Dynamic Atmosphere */}

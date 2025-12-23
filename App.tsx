@@ -711,7 +711,15 @@ const App: React.FC = () => {
           onViewPost={handleOpenPost}
         />
       )}
-      {activeRoute === AppRoute.STREAM_GRID && <StreamGridPage locale={userRegion} onJoinStream={setWatchingStream} onGoLive={() => setIsLiveOverlayOpen(true)} />}
+      {activeRoute === AppRoute.STREAM_GRID && (
+        <StreamGridPage 
+          locale={userRegion} 
+          onJoinStream={setWatchingStream} 
+          onGoLive={() => setIsLiveOverlayOpen(true)} 
+          userData={userData}
+          onTransmit={handleTransmitStory}
+        />
+      )}
       {activeRoute === AppRoute.ADMIN && <AdminPanel addToast={addToast} locale={userRegion} systemSettings={systemSettings} />}
       {activeRoute === AppRoute.PRIVACY && <PrivacyPage />}
       {activeRoute === AppRoute.TERMS && <TermsPage />}
