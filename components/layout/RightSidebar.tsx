@@ -76,11 +76,23 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
     if (!db) return;
     setIsLoading(true);
 
-    const usersQuery = query(collection(db, 'users'), limit(20), orderBy('lastActionTimestamp', 'desc')); // Fetch more to filter client-side if needed
+    // Simplified query to ensure data appears even without complex indexes
+    const usersQuery = query(collection(db, 'users'), limit(30));
+    
     const unsubUsers = onSnapshot(usersQuery, (snap: any) => {
       const fetched = snap.docs
         .map((doc: any) => ({ id: doc.id, ...doc.data() } as VibeUser))
         .filter((user: VibeUser) => user.id !== auth.currentUser?.uid);
+      
+      // Client-side sort to prioritize Online users, then verified, then new
+      fetched.sort((a: VibeUser, b: VibeUser) => {
+        if (a.presenceStatus === 'Online' && b.presenceStatus !== 'Online') return -1;
+        if (b.presenceStatus === 'Online' && a.presenceStatus !== 'Online') return 1;
+        if (a.verifiedHuman && !b.verifiedHuman) return -1;
+        if (!a.verifiedHuman && b.verifiedHuman) return 1;
+        return 0;
+      });
+
       setActiveContacts(fetched);
       setIsLoading(false);
     });
@@ -119,7 +131,6 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
         batch.update(doc(db, 'users', currentUser.uid), { following: increment(1) });
         batch.update(doc(db, 'users', targetUser.id), { followers: increment(1) });
         
-        // Notify
         const notifRef = doc(collection(db, 'notifications'));
         batch.set(notifRef, {
           type: 'follow',
@@ -192,10 +203,6 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
     window.dispatchEvent(new CustomEvent('vibe-view-post', { detail: { post } }));
   };
 
-  const calculateVelocityScore = (post: Post) => {
-    return (post.likes || 0) * 1.5 + (post.comments || 0) * 3 + (post.shares || 0) * 5;
-  };
-
   const PRESENCE_DOTS: Record<PresenceStatus, string> = {
     'Online': 'bg-[#10b981]',
     'Focus': 'bg-[#f59e0b]',
@@ -207,20 +214,16 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
   };
 
   const filteredContacts = contactFilter === 'online' 
-    ? activeContacts.filter(u => u.presenceStatus === 'Online' || u.presenceStatus === 'Focus' || u.presenceStatus === 'Deep Work')
+    ? activeContacts.filter(u => ['Online', 'Focus', 'Deep Work', 'Syncing'].includes(u.presenceStatus || ''))
     : activeContacts;
 
   return (
     <aside className="hidden lg:flex flex-col w-[320px] xl:w-[380px] shrink-0 bg-[#f8fafc] border-l border-precision h-full overflow-hidden">
       
-      {/* 
-         NOTE: We utilize 'custom-scrollbar' here which should be defined in globals.css.
-         Ensure overflow-y-auto is present to enable scrolling.
-      */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-6 space-y-10 py-8">
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-6 space-y-8 py-8">
         
-        {/* SECTION: SYSTEM MONITOR WIDGET */}
-        <div className="bg-slate-900 rounded-[2.5rem] p-6 text-white shadow-2xl relative overflow-hidden group border border-white/5">
+        {/* 1. SYSTEM MONITOR WIDGET */}
+        <div className="bg-slate-950 rounded-[2.5rem] p-6 text-white shadow-2xl relative overflow-hidden group border border-white/5">
           <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-600/20 blur-[80px] rounded-full translate-x-1/3 -translate-y-1/2" />
           
           <div className="relative z-10">
@@ -238,14 +241,14 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
             </div>
 
             {/* Network Visualization */}
-            <div className="h-12 flex items-end gap-1 mb-6 opacity-60 group-hover:opacity-100 transition-opacity">
-               {Array.from({ length: 24 }).map((_, i) => (
+            <div className="h-10 flex items-end gap-1 mb-6 opacity-60 group-hover:opacity-100 transition-opacity">
+               {Array.from({ length: 20 }).map((_, i) => (
                  <div 
                    key={i} 
-                   className="flex-1 bg-indigo-500/40 rounded-t-sm animate-pulse" 
+                   className="flex-1 bg-indigo-500/40 rounded-t-sm" 
                    style={{ 
-                     height: `${Math.random() * 80 + 10}%`,
-                     animationDelay: `${i * 0.05}s`
+                     height: `${20 + Math.random() * 80}%`,
+                     transition: 'height 0.5s ease-in-out'
                    }} 
                  />
                ))}
@@ -269,7 +272,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
           </div>
         </div>
 
-        {/* SECTION: TRENDING SIGNALS */}
+        {/* 2. TOP SIGNALS (TRENDING) */}
         {trendingPosts.length > 0 && (
           <div className="space-y-5">
             <div className="flex items-center justify-between px-2">
@@ -285,15 +288,18 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
                 <div 
                   key={post.id} 
                   onClick={() => handleViewPost(post)}
-                  className={`group relative flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-[1.5rem] hover:border-indigo-100 hover:shadow-lg transition-all cursor-pointer ${idx === 0 ? 'bg-gradient-to-br from-white to-slate-50 border-indigo-100/50' : ''}`}
+                  className={`group relative flex items-center gap-3 p-3 rounded-[1.5rem] border transition-all cursor-pointer ${
+                    idx === 0 
+                      ? 'bg-gradient-to-br from-white to-indigo-50/30 border-indigo-100 shadow-md' 
+                      : 'bg-white border-slate-100 hover:border-indigo-100 hover:shadow-lg'
+                  }`}
                 >
-                  <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-slate-100">
+                  <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-slate-100 shadow-inner">
                     {post.media?.[0]?.url ? (
                       <img src={post.media[0].url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-slate-300 scale-75"><ICONS.Explore /></div>
                     )}
-                    <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                   
                   <div className="flex-1 min-w-0">
@@ -301,7 +307,9 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
                        <p className="text-[9px] font-black text-slate-950 uppercase tracking-tight truncate">{post.authorName}</p>
                        {idx === 0 && <span className="text-[7px] font-black text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded uppercase tracking-widest">#1</span>}
                     </div>
-                    <p className="text-[10px] font-medium text-slate-500 truncate leading-none italic group-hover:text-indigo-600 transition-colors">"{post.content}"</p>
+                    <p className="text-[10px] font-medium text-slate-500 truncate leading-none italic group-hover:text-indigo-600 transition-colors">
+                      "{post.content || 'Media Signal'}"
+                    </p>
                     <div className="flex items-center gap-2 mt-1.5">
                        <div className="h-0.5 w-full bg-slate-100 rounded-full overflow-hidden">
                           <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${Math.min((post.likes / 50) * 100, 100)}%` }} />
@@ -315,103 +323,111 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
           </div>
         )}
 
-        {/* SECTION: ACTIVE GRID (CONTACTS) */}
+        {/* 3. ACTIVE NODES (CONTACTS) */}
         <div className="space-y-5">
            <div className="flex items-center justify-between px-2">
               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono">Active_Nodes</h4>
               <div className="flex bg-slate-100 p-0.5 rounded-lg">
                  <button 
                    onClick={() => setContactFilter('all')}
-                   className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${contactFilter === 'all' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+                   className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${contactFilter === 'all' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
                  >
                    All
                  </button>
                  <button 
                    onClick={() => setContactFilter('online')}
-                   className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${contactFilter === 'online' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}
+                   className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${contactFilter === 'online' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}
                  >
                    Live
                  </button>
               </div>
            </div>
 
-           <div className="space-y-1.5">
+           <div className="space-y-2">
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 animate-pulse bg-slate-50 rounded-xl">
-                    <div className="w-10 h-10 bg-slate-200 rounded-xl" />
+                  <div key={i} className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-50">
+                    <div className="w-10 h-10 bg-slate-100 rounded-xl animate-pulse" />
                     <div className="space-y-1.5 flex-1">
-                      <div className="h-1.5 bg-slate-200 rounded w-1/2" />
-                      <div className="h-1 bg-slate-200 rounded w-1/3" />
+                      <div className="h-2 bg-slate-100 rounded w-1/2 animate-pulse" />
+                      <div className="h-1.5 bg-slate-50 rounded w-1/3 animate-pulse" />
                     </div>
                   </div>
                 ))
-              ) : filteredContacts.slice(0, 15).map(node => {
-                const isFollowing = followingIds.has(node.id);
-                const isProcessing = processingIds.has(node.id);
-                
-                return (
-                  <div 
-                    key={node.id}
-                    className="w-full flex items-center justify-between p-2.5 rounded-2xl hover:bg-white transition-all duration-300 group hover:shadow-md border border-transparent hover:border-slate-100"
-                  >
-                    <div className="flex items-center gap-3 overflow-hidden flex-1 min-w-0">
-                      <div className="relative shrink-0">
-                        <img src={node.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${node.id}`} className="w-10 h-10 rounded-xl object-cover border border-slate-100 bg-slate-50" alt="" />
-                        <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${PRESENCE_DOTS[node.presenceStatus || 'Invisible']}`} />
-                      </div>
-                      <div className="text-left overflow-hidden flex-1">
-                         <div className="flex items-center gap-1.5">
-                           <p className="text-[11px] font-black text-slate-900 truncate tracking-tight group-hover:text-indigo-600 transition-colors">
-                             {node.displayName}
+              ) : filteredContacts.length === 0 ? (
+                <div className="py-8 text-center border-2 border-dashed border-slate-100 rounded-[1.5rem]">
+                  <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] font-mono italic">No Nodes Detected</p>
+                </div>
+              ) : (
+                filteredContacts.slice(0, 15).map(node => {
+                  const isFollowing = followingIds.has(node.id);
+                  const isProcessing = processingIds.has(node.id);
+                  
+                  return (
+                    <div 
+                      key={node.id}
+                      className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-white hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all duration-300 group hover:shadow-md"
+                    >
+                      <div className="flex items-center gap-3 overflow-hidden flex-1 min-w-0">
+                        <div className="relative shrink-0">
+                          <img src={node.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${node.id}`} className="w-10 h-10 rounded-xl object-cover border border-slate-100 bg-slate-50" alt="" />
+                          <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${PRESENCE_DOTS[node.presenceStatus || 'Invisible']}`} />
+                        </div>
+                        <div className="text-left overflow-hidden flex-1">
+                           <div className="flex items-center gap-1.5">
+                             <p className="text-[11px] font-black text-slate-900 truncate tracking-tight group-hover:text-indigo-600 transition-colors">
+                               {node.displayName}
+                             </p>
+                             {node.verifiedHuman && <div className="text-indigo-500 scale-[0.6]"><ICONS.Verified /></div>}
+                           </div>
+                           <p className="text-[9px] text-slate-400 font-medium truncate tracking-tight opacity-80">
+                             {node.statusEmoji} {node.statusMessage || node.presenceStatus}
                            </p>
-                           {node.verifiedHuman && <div className="text-indigo-500 scale-[0.6]"><ICONS.Verified /></div>}
-                         </div>
-                         <p className="text-[9px] text-slate-400 font-medium truncate tracking-tight opacity-80">
-                           {node.statusEmoji} {node.statusMessage || node.presenceStatus}
-                         </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0 pl-2">
+                        <button 
+                          onClick={() => handleFollowToggle(node)}
+                          disabled={isProcessing}
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all shadow-sm ${isFollowing ? 'bg-white border border-slate-200 text-slate-400 hover:text-rose-500 hover:border-rose-200' : 'bg-slate-900 text-white hover:bg-indigo-600'}`}
+                          title={isFollowing ? 'Unlink' : 'Link'}
+                        >
+                          {isProcessing ? (
+                            <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                              {isFollowing 
+                                ? <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /> 
+                                : <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                              }
+                            </svg>
+                          )}
+                        </button>
+                        <button 
+                          onClick={() => handleMessage(node)}
+                          className="w-7 h-7 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg flex items-center justify-center transition-all shadow-sm"
+                          title="Message"
+                        >
+                          <ICONS.Messages />
+                        </button>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0">
-                      <button 
-                        onClick={() => handleFollowToggle(node)}
-                        disabled={isProcessing}
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${isFollowing ? 'bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500' : 'bg-slate-900 text-white hover:bg-indigo-600'}`}
-                      >
-                        {isProcessing ? (
-                          <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
-                            {isFollowing 
-                              ? <path strokeLinecap="round" strokeLinejoin="round" d="M22 10.5h-6m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" /> 
-                              : <path strokeLinecap="round" strokeLinejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
-                            }
-                          </svg>
-                        )}
-                      </button>
-                      <button 
-                        onClick={() => handleMessage(node)}
-                        className="w-7 h-7 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg flex items-center justify-center transition-all"
-                      >
-                        <ICONS.Messages />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
            </div>
            
            <button 
              onClick={() => onNavigate(AppRoute.EXPLORE)}
-             className="w-full py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] font-mono hover:text-indigo-600 transition-colors bg-white border border-slate-100 rounded-2xl hover:border-indigo-200 shadow-sm"
+             className="w-full py-4 text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] font-mono hover:text-indigo-600 hover:bg-white transition-all bg-slate-50 rounded-2xl hover:shadow-md border border-transparent hover:border-slate-100"
            >
              Expand_Grid_View
            </button>
         </div>
 
-        {/* FOOTER MINI INFO */}
-        <div className="px-2 pt-4 border-t border-slate-100">
+        {/* 4. FOOTER MINI INFO */}
+        <div className="px-2 pt-6 border-t border-slate-100">
            <div className="flex items-center justify-center gap-4 text-[8px] font-black text-slate-300 uppercase tracking-widest font-mono">
              <span>VIBE_OS 2.6</span>
              <span>•</span>
