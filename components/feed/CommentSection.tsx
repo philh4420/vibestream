@@ -190,7 +190,13 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
                 <div className="flex justify-between items-baseline mb-1">
                   <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest leading-none">{comment.authorName}</span>
                   <span className="text-[8px] font-mono font-bold text-slate-300">
-                    {comment.timestamp?.toDate ? comment.timestamp.toDate().toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) : 'SYNC...'}
+                    {comment.timestamp?.toDate ? comment.timestamp.toDate().toLocaleString(locale, { 
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    }) : 'SYNC...'}
                   </span>
                 </div>
                 
