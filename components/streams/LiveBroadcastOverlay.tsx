@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { db, auth } from '../../services/firebase'; // Added auth import
+import { db, auth } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
 const { 
   collection, 
@@ -13,6 +13,7 @@ const {
   query, 
   orderBy, 
   limit,
+  increment
 } = Firestore as any;
 import { User } from '../../types';
 import { ICONS } from '../../constants';
@@ -91,6 +92,11 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
     if (activeStreamId && db) {
       const timerInt = window.setInterval(() => setTimer(prev => prev + 1), 1000);
       
+      // 1. Increment Viewer Count (Broadcaster Presence)
+      updateDoc(doc(db, 'streams', activeStreamId), {
+        viewerCount: increment(1)
+      }).catch((err: any) => console.error("Broadcaster presence sync failed", err));
+
       // WebRTC Connection Handling
       const connectionsRef = collection(db, 'streams', activeStreamId, 'connections');
       const unsubConns = onSnapshot(connectionsRef, (snapshot: any) => {
@@ -118,6 +124,11 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
 
       return () => { 
         clearInterval(timerInt); 
+        // 2. Decrement Viewer Count on Exit
+        updateDoc(doc(db, 'streams', activeStreamId), {
+          viewerCount: increment(-1)
+        }).catch((err: any) => console.log("Stream cleanup (viewer count decrement) - likely stream deleted already."));
+        
         unsubConns(); unsubMeta(); unsubChat();
       };
     }
