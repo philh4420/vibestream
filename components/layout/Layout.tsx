@@ -90,7 +90,7 @@ export const Layout: React.FC<LayoutProps> = ({
         </main>
 
         {/* Refined Right Sidebar - visible on large screens */}
-        <RightSidebar userData={userData} weather={weather} />
+        <RightSidebar userData={userData} weather={weather} onNavigate={onNavigate} />
       </div>
 
       {/* Portrait Mobile Tab Bar - Facebook Style Core Protocols */}

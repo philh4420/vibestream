@@ -1,28 +1,39 @@
+
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../../services/firebase';
-// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
 import * as Firestore from 'firebase/firestore';
 const { 
   collection, 
   query, 
   orderBy,
   limit,
-  onSnapshot
+  onSnapshot,
+  doc,
+  writeBatch,
+  serverTimestamp,
+  increment,
+  addDoc,
+  where,
+  getDocs
 } = Firestore as any;
-import { User as VibeUser, PresenceStatus, Post, WeatherInfo } from '../../types';
+import { User as VibeUser, PresenceStatus, Post, WeatherInfo, AppRoute } from '../../types';
 import { ICONS } from '../../constants';
 
 interface RightSidebarProps {
   userData: VibeUser | null;
   weather: WeatherInfo | null;
+  onNavigate: (route: AppRoute) => void;
 }
 
-export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather }) => {
+export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, onNavigate }) => {
   const [activeContacts, setActiveContacts] = useState<VibeUser[]>([]);
   const [trendingPosts, setTrendingPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [systemTime, setSystemTime] = useState(new Date());
   const [uptime, setUptime] = useState('00:00:00');
+  
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
   // System Time & Uptime Logic
   useEffect(() => {
@@ -48,6 +59,18 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather })
     return () => clearInterval(timer);
   }, []);
 
+  // Fetch Following List
+  useEffect(() => {
+    if (!userData?.id || !db) return;
+    const q = collection(db, 'users', userData.id, 'following');
+    const unsub = onSnapshot(q, (snap: any) => {
+      const ids = new Set<string>(snap.docs.map((d: any) => String(d.id)));
+      setFollowingIds(ids);
+    });
+    return () => unsub();
+  }, [userData?.id]);
+
+  // Fetch Active Contacts & Trending
   useEffect(() => {
     if (!db) return;
     setIsLoading(true);
@@ -71,6 +94,101 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather })
       unsubTrending();
     };
   }, [userData?.id]);
+
+  const handleFollowToggle = async (targetUser: VibeUser) => {
+    if (!db || !auth.currentUser || processingIds.has(targetUser.id)) return;
+    
+    const currentUser = auth.currentUser;
+    const isFollowing = followingIds.has(targetUser.id);
+    setProcessingIds(prev => new Set(prev).add(targetUser.id));
+
+    try {
+      const batch = writeBatch(db);
+      const myRef = doc(db, 'users', currentUser.uid, 'following', targetUser.id);
+      const theirRef = doc(db, 'users', targetUser.id, 'followers', currentUser.uid);
+      
+      if (isFollowing) {
+        batch.delete(myRef);
+        batch.delete(theirRef);
+        batch.update(doc(db, 'users', currentUser.uid), { following: increment(-1) });
+        batch.update(doc(db, 'users', targetUser.id), { followers: increment(-1) });
+      } else {
+        batch.set(myRef, { linkedAt: serverTimestamp() });
+        batch.set(theirRef, { linkedAt: serverTimestamp() });
+        batch.update(doc(db, 'users', currentUser.uid), { following: increment(1) });
+        batch.update(doc(db, 'users', targetUser.id), { followers: increment(1) });
+        
+        // Notify
+        const notifRef = doc(collection(db, 'notifications'));
+        batch.set(notifRef, {
+          type: 'follow',
+          fromUserId: currentUser.uid,
+          fromUserName: currentUser.displayName || 'Neural Node',
+          fromUserAvatar: currentUser.photoURL || '',
+          toUserId: targetUser.id,
+          text: 'established a neural link with you',
+          isRead: false,
+          timestamp: serverTimestamp(),
+          pulseFrequency: 'cognition'
+        });
+      }
+      await batch.commit();
+      window.dispatchEvent(new CustomEvent('vibe-toast', { 
+        detail: { msg: isFollowing ? `Link Severed: ${targetUser.displayName}` : `Linked to ${targetUser.displayName}`, type: isFollowing ? 'info' : 'success' } 
+      }));
+    } catch (e) {
+      console.error(e);
+      window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Connection Protocol Failed", type: 'error' } }));
+    } finally {
+      setProcessingIds(prev => { const s = new Set(prev); s.delete(targetUser.id); return s; });
+    }
+  };
+
+  const handleMessage = async (targetUser: VibeUser) => {
+    if (!db || !auth.currentUser) return;
+    try {
+      // Check for existing chat
+      const q = query(
+        collection(db, 'chats'), 
+        where('participants', 'array-contains', auth.currentUser.uid)
+      );
+      const snap = await getDocs(q);
+      const existingChat = snap.docs.find((d: any) => {
+        const data = d.data();
+        return !data.isCluster && data.participants.includes(targetUser.id);
+      });
+
+      if (existingChat) {
+        // Just navigate to messages, user will find it in list (or we could improve App routing to open specific chat)
+        onNavigate(AppRoute.MESSAGES);
+      } else {
+        // Create new chat
+        const participantData = {
+          [auth.currentUser.uid]: { 
+            displayName: auth.currentUser.displayName, 
+            avatarUrl: auth.currentUser.photoURL 
+          },
+          [targetUser.id]: { 
+            displayName: targetUser.displayName, 
+            avatarUrl: targetUser.avatarUrl 
+          }
+        };
+
+        await addDoc(collection(db, 'chats'), {
+          participants: [auth.currentUser.uid, targetUser.id],
+          participantData,
+          lastMessage: 'Link established.',
+          lastMessageTimestamp: serverTimestamp(),
+          isCluster: false
+        });
+        
+        onNavigate(AppRoute.MESSAGES);
+        window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Secure Channel Opened", type: 'success' } }));
+      }
+    } catch (e) {
+      window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Comms Link Failed", type: 'error' } }));
+    }
+  };
 
   const PRESENCE_DOTS: Record<PresenceStatus, string> = {
     'Online': 'bg-[#10b981]',
@@ -182,7 +300,12 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather })
         <div className="space-y-4">
            <div className="flex items-center justify-between px-2">
               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono">Neural_Mesh</h4>
-              <button className="p-1.5 text-slate-300 hover:text-indigo-600 hover:bg-white rounded-lg transition-all scale-75"><ICONS.Search /></button>
+              <button 
+                onClick={() => onNavigate(AppRoute.EXPLORE)} 
+                className="p-1.5 text-slate-300 hover:text-indigo-600 hover:bg-white rounded-lg transition-all scale-75"
+              >
+                <ICONS.Search />
+              </button>
            </div>
 
            <div className="space-y-1">
@@ -196,40 +319,72 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather })
                     </div>
                   </div>
                 ))
-              ) : activeContacts.map(node => (
-                <button 
-                  key={node.id}
-                  className="w-full flex items-center justify-between p-3 bg-white/40 hover:bg-white border border-transparent hover:border-sharp rounded-[1.5rem] transition-all duration-300 group tap-feedback hover:shadow-float"
-                >
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="relative shrink-0">
-                      <div className="p-0.5 bg-white rounded-xl shadow-sm border border-slate-100 transition-transform group-hover:rotate-3">
-                        <img src={node.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${node.id}`} className="w-9 h-9 rounded-lg object-cover" alt="" />
+              ) : activeContacts.map(node => {
+                const isFollowing = followingIds.has(node.id);
+                const isProcessing = processingIds.has(node.id);
+                
+                return (
+                  <div 
+                    key={node.id}
+                    className="w-full flex items-center justify-between p-3 bg-white/40 hover:bg-white border border-transparent hover:border-sharp rounded-[1.5rem] transition-all duration-300 group tap-feedback hover:shadow-float"
+                  >
+                    <div className="flex items-center gap-3 overflow-hidden flex-1 min-w-0">
+                      <div className="relative shrink-0">
+                        <div className="p-0.5 bg-white rounded-xl shadow-sm border border-slate-100 transition-transform group-hover:rotate-3">
+                          <img src={node.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${node.id}`} className="w-9 h-9 rounded-lg object-cover" alt="" />
+                        </div>
+                        <div className="absolute -bottom-0.5 -right-0.5">
+                           <div className={`w-3 h-3 rounded-full border-[2.5px] border-white shadow-sm ${node.presenceStatus ? PRESENCE_DOTS[node.presenceStatus] : 'bg-slate-300'} ${node.presenceStatus === 'Online' ? 'animate-pulse' : ''}`} />
+                        </div>
                       </div>
-                      <div className="absolute -bottom-0.5 -right-0.5">
-                         <div className={`w-3 h-3 rounded-full border-[2.5px] border-white shadow-sm ${node.presenceStatus ? PRESENCE_DOTS[node.presenceStatus] : 'bg-slate-300'} ${node.presenceStatus === 'Online' ? 'animate-pulse' : ''}`} />
-                      </div>
-                    </div>
-                    <div className="text-left overflow-hidden flex-1">
-                       <p className="text-[12px] font-black text-slate-900 truncate tracking-tight group-hover:text-indigo-600 transition-colors">
-                         {node.displayName || 'Unknown Node'}
-                       </p>
-                       <div className="flex items-center gap-1 mt-0.5">
-                         <span className="text-[9px]">{node.statusEmoji || '⚡'}</span>
-                         <p className="text-[9px] text-slate-400 font-bold truncate tracking-tight font-mono italic opacity-80">
-                           {node.statusMessage || (node.presenceStatus ? node.presenceStatus.toUpperCase() : 'OFFLINE')}
+                      <div className="text-left overflow-hidden flex-1">
+                         <p className="text-[12px] font-black text-slate-900 truncate tracking-tight group-hover:text-indigo-600 transition-colors">
+                           {node.displayName || 'Unknown Node'}
                          </p>
-                       </div>
+                         <div className="flex items-center gap-1 mt-0.5">
+                           <span className="text-[9px]">{node.statusEmoji || '⚡'}</span>
+                           <p className="text-[9px] text-slate-400 font-bold truncate tracking-tight font-mono italic opacity-80">
+                             {node.statusMessage || (node.presenceStatus ? node.presenceStatus.toUpperCase() : 'OFFLINE')}
+                           </p>
+                         </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => handleFollowToggle(node)}
+                        disabled={isProcessing}
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${isFollowing ? 'bg-slate-100 text-slate-400 hover:bg-rose-50 hover:text-rose-500' : 'bg-slate-900 text-white hover:bg-indigo-600'}`}
+                        title={isFollowing ? "Disconnect" : "Connect"}
+                      >
+                        {isProcessing ? (
+                          <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                            {isFollowing 
+                              ? <path strokeLinecap="round" strokeLinejoin="round" d="M22 10.5h-6m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" /> 
+                              : <path strokeLinecap="round" strokeLinejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
+                            }
+                          </svg>
+                        )}
+                      </button>
+                      <button 
+                        onClick={() => handleMessage(node)}
+                        className="w-7 h-7 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg flex items-center justify-center transition-all"
+                        title="Start Secure Link"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.596.596 0 01-.474-.065.412.412 0 01-.205-.35c0-.18.01-.358.028-.53l.303-2.84A8.25 8.25 0 013 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" /></svg>
+                      </button>
                     </div>
                   </div>
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-indigo-50 text-indigo-600 rounded-lg scale-75">
-                    <ICONS.Messages />
-                  </div>
-                </button>
-              ))}
+                );
+              })}
            </div>
            
-           <button className="w-full py-3 text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] font-mono hover:text-indigo-600 transition-colors bg-slate-50/50 rounded-xl border border-dashed border-slate-200 hover:border-indigo-200">
+           <button 
+             onClick={() => onNavigate(AppRoute.EXPLORE)}
+             className="w-full py-3 text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] font-mono hover:text-indigo-600 transition-colors bg-slate-50/50 rounded-xl border border-dashed border-slate-200 hover:border-indigo-200"
+           >
              Load_More_Nodes...
            </button>
         </div>
