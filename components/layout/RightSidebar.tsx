@@ -84,7 +84,8 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
       setIsLoading(false);
     });
 
-    const trendingQuery = query(collection(db, 'posts'), orderBy('likes', 'desc'), limit(3));
+    // Increased limit to 5 for better leaderboard
+    const trendingQuery = query(collection(db, 'posts'), orderBy('likes', 'desc'), limit(5));
     const unsubTrending = onSnapshot(trendingQuery, (snap: any) => {
       setTrendingPosts(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Post)));
     });
@@ -159,10 +160,8 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
       });
 
       if (existingChat) {
-        // Just navigate to messages, user will find it in list (or we could improve App routing to open specific chat)
         onNavigate(AppRoute.MESSAGES);
       } else {
-        // Create new chat
         const participantData = {
           [auth.currentUser.uid]: { 
             displayName: auth.currentUser.displayName, 
@@ -190,6 +189,14 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
     }
   };
 
+  const handleViewPost = (post: Post) => {
+    window.dispatchEvent(new CustomEvent('vibe-view-post', { detail: { post } }));
+  };
+
+  const calculateVelocityScore = (post: Post) => {
+    return (post.likes || 0) * 1.5 + (post.comments || 0) * 3 + (post.shares || 0) * 5;
+  };
+
   const PRESENCE_DOTS: Record<PresenceStatus, string> = {
     'Online': 'bg-[#10b981]',
     'Focus': 'bg-[#f59e0b]',
@@ -203,7 +210,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
   return (
     <aside className="hidden lg:flex flex-col w-[320px] xl:w-[380px] shrink-0 bg-[#f8fafc] border-l border-precision h-full pt-6 pb-8 overflow-hidden custom-scrollbar">
       
-      <div className="flex-1 scroll-viewport px-6 space-y-8 pb-10">
+      <div className="flex-1 scroll-viewport px-6 space-y-10 pb-10">
         
         {/* SECTION: SYSTEM MONITOR WIDGET */}
         <div className="relative group overflow-hidden bg-slate-900 rounded-[2rem] p-6 text-white shadow-2xl transition-all duration-500 hover:shadow-indigo-500/20 min-h-[260px] flex flex-col justify-between">
@@ -260,38 +267,85 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
           </div>
         </div>
 
-        {/* SECTION: TRENDING SIGNALS */}
+        {/* SECTION: TRENDING SIGNALS (IMPROVED) */}
         {trendingPosts.length > 0 && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div className="flex items-center justify-between px-2">
-              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono">Trending_Signals</h4>
-              <div className="w-1 h-1 bg-rose-500 rounded-full animate-ping" />
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono">Grid_Velocity</h4>
+              </div>
+              <span className="text-[8px] font-black text-slate-300 font-mono bg-slate-50 px-2 py-0.5 rounded-md">LIVE</span>
             </div>
-            <div className="space-y-3">
-              {trendingPosts.map((post, idx) => (
-                <div key={post.id} className="group relative flex gap-4 p-3 bg-white rounded-[1.8rem] border-sharp hover:border-indigo-100 hover:shadow-float transition-all duration-500 cursor-pointer">
-                  <div className="absolute -top-1.5 -left-1.5 w-6 h-6 bg-slate-900 text-white text-[9px] font-black flex items-center justify-center rounded-lg shadow-lg group-hover:bg-indigo-600 transition-colors">
-                    {idx + 1}
+            
+            <div className="space-y-4">
+              {/* TOP TRENDING ITEM */}
+              {trendingPosts[0] && (
+                <div 
+                  onClick={() => handleViewPost(trendingPosts[0])}
+                  className="relative h-56 rounded-[2rem] overflow-hidden group cursor-pointer shadow-xl border border-slate-100 transition-all hover:scale-[1.02] active:scale-95"
+                >
+                  {trendingPosts[0].media?.[0]?.url ? (
+                    <img src={trendingPosts[0].media[0].url} className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="" />
+                  ) : (
+                    <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
+                      <div className="text-white opacity-10 scale-150"><ICONS.Explore /></div>
+                    </div>
+                  )}
+                  
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-90" />
+                  
+                  <div className="absolute top-4 left-4">
+                    <div className="bg-white/10 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                      <span className="text-[10px] font-black text-white italic">#01</span>
+                      <span className="text-[8px] font-bold text-rose-400 uppercase tracking-widest font-mono">DOMINANT</span>
+                    </div>
                   </div>
-                  <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border-sharp bg-slate-50">
-                    {post.media?.[0]?.url ? (
-                      <img src={post.media[0].url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-200 bg-slate-50 scale-75"><ICONS.Explore /></div>
-                    )}
-                  </div>
-                  <div className="flex flex-col justify-center min-w-0 flex-1">
-                    <p className="text-[11px] font-extrabold text-slate-900 leading-snug mb-1 group-hover:text-indigo-600 transition-colors line-clamp-2 italic tracking-tight">
-                      {post.content || "Neural Signal Entry..."}
-                    </p>
-                    <div className="flex items-center justify-between">
-                       <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] font-mono">
-                         {(post.likes || 0).toLocaleString('en-GB')} PULSES
-                       </span>
+
+                  <div className="absolute bottom-5 left-5 right-5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <img src={trendingPosts[0].authorAvatar} className="w-6 h-6 rounded-lg object-cover border border-white/20" alt="" />
+                      <p className="text-[9px] font-black text-white/80 uppercase tracking-widest truncate">{trendingPosts[0].authorName}</p>
+                    </div>
+                    <p className="text-sm font-bold text-white line-clamp-2 leading-tight italic">"{trendingPosts[0].content}"</p>
+                    <div className="mt-3 flex items-center gap-2 text-[8px] font-black font-mono uppercase tracking-widest text-indigo-400">
+                      <span>{calculateVelocityScore(trendingPosts[0]).toFixed(0)} VELOCITY</span>
+                      <div className="h-px bg-white/20 flex-1" />
                     </div>
                   </div>
                 </div>
-              ))}
+              )}
+
+              {/* LIST ITEMS */}
+              <div className="space-y-2">
+                {trendingPosts.slice(1, 5).map((post, idx) => (
+                  <div 
+                    key={post.id} 
+                    onClick={() => handleViewPost(post)}
+                    className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-2xl hover:border-indigo-100 hover:shadow-lg transition-all cursor-pointer group"
+                  >
+                    <div className="w-8 flex justify-center text-[10px] font-black text-slate-300 font-mono group-hover:text-indigo-500 transition-colors">
+                      {(idx + 2).toString().padStart(2, '0')}
+                    </div>
+                    
+                    <div className="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 bg-slate-50 border border-slate-50">
+                      {post.media?.[0]?.url ? (
+                        <img src={post.media[0].url} className="w-full h-full object-cover" alt="" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-300 scale-75"><ICONS.Explore /></div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center mb-0.5">
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest truncate">{post.authorName}</p>
+                        <span className="text-[7px] font-black text-indigo-500 font-mono">{post.likes} P</span>
+                      </div>
+                      <p className="text-[10px] font-bold text-slate-800 truncate leading-none group-hover:text-indigo-600 transition-colors">{post.content}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}

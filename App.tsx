@@ -154,13 +154,30 @@ const App: React.FC = () => {
     }
   };
 
+  const handleOpenPost = (post: Post) => {
+    setSelectedPost(post);
+    if (activeRoute !== AppRoute.SINGLE_POST) {
+        setPreviousRoute(activeRoute);
+    }
+    setActiveRoute(AppRoute.SINGLE_POST);
+  };
+
   useEffect(() => {
     const handleGlobalToast = (e: any) => {
       if (e.detail?.msg) addToast(e.detail.msg, e.detail.type);
     };
+    
+    const handleViewPostEvent = (e: any) => {
+      if (e.detail?.post) handleOpenPost(e.detail.post);
+    };
+
     window.addEventListener('vibe-toast', handleGlobalToast);
-    return () => window.removeEventListener('vibe-toast', handleGlobalToast);
-  }, []);
+    window.addEventListener('vibe-view-post', handleViewPostEvent);
+    return () => {
+        window.removeEventListener('vibe-toast', handleGlobalToast);
+        window.removeEventListener('vibe-view-post', handleViewPostEvent);
+    };
+  }, [activeRoute]); // Re-attach when route changes to capture closure state if needed, though handleOpenPost sets state
 
   // Sync Atmosphere (Weather)
   useEffect(() => {
@@ -244,12 +261,6 @@ const App: React.FC = () => {
       addToast(`Scanning Grid for "${query}"`, "info");
       handleNavigate(AppRoute.EXPLORE);
     }
-  };
-
-  const handleOpenPost = (post: Post) => {
-    setSelectedPost(post);
-    setPreviousRoute(activeRoute);
-    setActiveRoute(AppRoute.SINGLE_POST);
   };
 
   const handleOpenCreate = (initialFiles?: File[], action?: 'gif') => {
