@@ -145,6 +145,13 @@ export interface Story {
   coverUrl: string;
   timestamp: any;
   type?: 'image' | 'video';
+  // New Archive Fields
+  isArchivedStream?: boolean;
+  streamTitle?: string;
+  streamStats?: {
+    viewers: number;
+    duration: string;
+  };
 }
 
 export interface LiveStream {

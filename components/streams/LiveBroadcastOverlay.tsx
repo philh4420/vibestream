@@ -54,6 +54,10 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
   const [showChat, setShowChat] = useState(true);
   const [chatInput, setChatInput] = useState(''); // Broadcaster chat input
   
+  // Archive Modal State
+  const [showEndDialog, setShowEndDialog] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const pcInstances = useRef<Record<string, RTCPeerConnection>>({});
@@ -124,10 +128,11 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
 
       return () => { 
         clearInterval(timerInt); 
-        // 2. Decrement Viewer Count on Exit
+        // 2. Decrement Viewer Count on Exit - only if we didn't delete it yet (handled by onEnd)
+        // Note: onEnd deletes the doc, so this updateDoc might fail, which is fine.
         updateDoc(doc(db, 'streams', activeStreamId), {
           viewerCount: increment(-1)
-        }).catch((err: any) => console.log("Stream cleanup (viewer count decrement) - likely stream deleted already."));
+        }).catch((err: any) => {});
         
         unsubConns(); unsubMeta(); unsubChat();
       };
@@ -167,6 +172,37 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
       text,
       timestamp: serverTimestamp()
     });
+  };
+
+  const handleArchive = async (shouldArchive: boolean) => {
+    setIsArchiving(true);
+    if (shouldArchive && activeStreamId) {
+      try {
+        const durationStr = `${Math.floor(timer/60)}:${(timer%60).toString().padStart(2, '0')}`;
+        // Create archive entry in stories
+        await addDoc(collection(db, 'stories'), {
+          authorId: userData.id,
+          authorName: userData.displayName,
+          authorAvatar: userData.avatarUrl,
+          coverUrl: userData.avatarUrl, // Fallback as we don't record video
+          timestamp: serverTimestamp(),
+          type: 'image', // Treat as image card with metadata
+          isArchivedStream: true,
+          streamTitle: streamTitle || 'Untitled Signal',
+          streamStats: {
+            viewers: viewerCount,
+            duration: durationStr
+          }
+        });
+        window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Stream Archived to Temporal", type: 'success' } }));
+      } catch (e) {
+        window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Archive Failed", type: 'error' } }));
+      }
+    }
+    
+    setShowEndDialog(false);
+    setIsArchiving(false);
+    onEnd(); // Clean up the live stream doc
   };
 
   const isLive = !!activeStreamId;
@@ -252,7 +288,10 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
                  <button onClick={() => setShowChat(!showChat)} className={`p-2.5 rounded-xl border backdrop-blur-md transition-all ${showChat ? 'bg-white text-black border-white' : 'bg-black/40 text-white border-white/10'}`}>
                     <ICONS.Messages />
                  </button>
-                 <button onClick={onEnd} className="px-5 py-2.5 bg-white/10 hover:bg-rose-600 border border-white/10 backdrop-blur-md rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">
+                 <button 
+                   onClick={() => setShowEndDialog(true)} 
+                   className="px-5 py-2.5 bg-white/10 hover:bg-rose-600 border border-white/10 backdrop-blur-md rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
+                 >
                     END_SIGNAL
                  </button>
               </div>
@@ -290,6 +329,47 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
                    </form>
                 </div>
               )}
+           </div>
+        </div>
+      )}
+
+      {/* ARCHIVE CONFIRMATION DIALOG */}
+      {showEndDialog && (
+        <div className="absolute inset-0 z-[10000] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl border border-white/10 text-slate-900 animate-in zoom-in-95 duration-300">
+              <div className="text-center mb-6">
+                 <div className="w-16 h-16 bg-slate-950 text-white rounded-[1.5rem] flex items-center justify-center mx-auto mb-4 text-2xl shadow-lg">
+                    <ICONS.Saved />
+                 </div>
+                 <h3 className="text-2xl font-black uppercase italic tracking-tighter">Terminate_Signal</h3>
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono mt-1">
+                   Duration: {Math.floor(timer/60)}:{(timer%60).toString().padStart(2, '0')}
+                 </p>
+              </div>
+              
+              <div className="space-y-3">
+                 <button 
+                   onClick={() => handleArchive(true)}
+                   disabled={isArchiving}
+                   className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all shadow-lg active:scale-95"
+                 >
+                   {isArchiving ? 'Archiving...' : 'Archive_To_Temporal'}
+                 </button>
+                 <button 
+                   onClick={() => handleArchive(false)}
+                   disabled={isArchiving}
+                   className="w-full py-4 bg-slate-100 text-rose-500 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-rose-50 hover:text-rose-600 transition-all active:scale-95"
+                 >
+                   Discard_Signal
+                 </button>
+                 <button 
+                   onClick={() => setShowEndDialog(false)}
+                   disabled={isArchiving}
+                   className="w-full py-3 text-slate-400 font-bold text-[9px] uppercase tracking-widest hover:text-slate-600 transition-all"
+                 >
+                   Cancel
+                 </button>
+              </div>
            </div>
         </div>
       )}

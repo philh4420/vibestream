@@ -16,7 +16,8 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
   const [isPaused, setIsPaused] = useState(false);
   
   const currentStory = stories[currentIndex];
-  // Default duration for images is 5s. For videos, we could extend this or listen to events.
+  // Default duration for images is 5s. 
+  // Archived streams (metadata logs) are treated as images for viewing duration.
   const DURATION = 5000; 
   const STEP = 50;
 
@@ -27,8 +28,6 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
   useEffect(() => {
     if (isPaused) return;
 
-    // Timer logic mainly for auto-progression. 
-    // If it's a video, we might want to pause this timer or sync it, but for a "lite" implementation:
     const timer = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
@@ -63,7 +62,8 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
     }
   };
 
-  const isVideo = currentStory.type === 'video' || currentStory.coverUrl.match(/\.(mp4|mov|webm)$/i);
+  const isVideo = currentStory.type === 'video' || (currentStory.coverUrl && currentStory.coverUrl.match(/\.(mp4|mov|webm)$/i));
+  const isArchivedStream = currentStory.isArchivedStream;
 
   return (
     <div className="absolute inset-0 z-50 bg-black flex items-center justify-center animate-in zoom-in-95 duration-300">
@@ -92,16 +92,44 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
              className="absolute inset-0 w-full h-full object-cover" 
              autoPlay 
              playsInline 
-             // Muted by default for auto-play policy, but could toggle
              muted 
              loop 
            />
         ) : (
-           <img src={currentStory.coverUrl} className="absolute inset-0 w-full h-full object-cover" alt="" />
+           <img src={currentStory.coverUrl} className="absolute inset-0 w-full h-full object-cover opacity-90" alt="" />
         )}
         
         {/* Scrim */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80 pointer-events-none" />
+
+        {/* ARCHIVED STREAM OVERLAY */}
+        {isArchivedStream && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center z-10 p-8 text-center bg-black/40 backdrop-blur-[2px]">
+             <div className="w-20 h-20 rounded-[2rem] bg-white/10 border border-white/20 flex items-center justify-center mb-6 shadow-2xl backdrop-blur-md">
+                <div className="text-white scale-125"><ICONS.Streams /></div>
+             </div>
+             
+             <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-2 leading-none">
+               {currentStory.streamTitle || 'Signal_Log'}
+             </h2>
+             
+             <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-lg border border-white/10 mb-8">
+                <div className="w-1.5 h-1.5 bg-rose-500 rounded-full" />
+                <span className="text-[8px] font-black text-white uppercase tracking-[0.3em] font-mono">SIGNAL_TERMINATED</span>
+             </div>
+
+             <div className="grid grid-cols-2 gap-4 w-full">
+                <div className="bg-black/50 p-4 rounded-2xl border border-white/10">
+                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest font-mono mb-1">Duration</p>
+                   <p className="text-xl font-black text-white font-mono">{currentStory.streamStats?.duration || '00:00'}</p>
+                </div>
+                <div className="bg-black/50 p-4 rounded-2xl border border-white/10">
+                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest font-mono mb-1">Peak_Nodes</p>
+                   <p className="text-xl font-black text-white font-mono">{currentStory.streamStats?.viewers || 0}</p>
+                </div>
+             </div>
+          </div>
+        )}
 
         {/* HUD: Progress Bars */}
         <div className="absolute top-0 left-0 right-0 p-4 z-20 flex gap-1.5">
@@ -145,13 +173,16 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
 
         {/* HUD: Footer Controls */}
         <div className="absolute bottom-0 left-0 right-0 p-6 z-20 flex items-end justify-between pointer-events-none">
-           <div className="pointer-events-auto">
-              <button className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-xl border border-white/10 text-white active:scale-95 transition-all">
-                 <div className="scale-75"><ICONS.Saved /></div>
-                 <span className="text-[9px] font-black uppercase tracking-widest">Capture</span>
-              </button>
-           </div>
-           <div className="pointer-events-auto">
+           {!isArchivedStream && (
+             <div className="pointer-events-auto">
+                <button className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-xl border border-white/10 text-white active:scale-95 transition-all">
+                   <div className="scale-75"><ICONS.Saved /></div>
+                   <span className="text-[9px] font-black uppercase tracking-widest">Capture</span>
+                </button>
+             </div>
+           )}
+           
+           <div className="pointer-events-auto ml-auto">
               <button className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-900/50 active:scale-90 transition-all border border-white/20">
                  ❤️
               </button>
