@@ -8,11 +8,11 @@ const {
   onSnapshot, 
   addDoc, 
   serverTimestamp, 
-  orderBy,
-  limit,
-  updateDoc,
-  doc,
-  deleteDoc
+  orderBy, 
+  limit, 
+  updateDoc, 
+  doc, 
+  deleteDoc 
 } = Firestore as any;
 import { User, Message, Chat } from '../../types';
 import { ICONS } from '../../constants';
@@ -136,7 +136,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId, currentUse
         lastMessageTimestamp: serverTimestamp() 
       });
 
-      // Notification Logic (Simplified for component reuse)
+      // Notification Logic
       if (chatData) {
         const recipients = chatData.participants.filter(pId => pId !== currentUser.id);
         const notificationText = msgText 
@@ -181,11 +181,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId, currentUse
     }
   };
 
-  const otherParticipantId = chatData?.participants.find(id => id !== currentUser.id);
-  const otherParticipant = chatData?.participantData?.[otherParticipantId || ''];
-  const targetUserFull = allUsers.find(u => u.id === otherParticipantId);
-  
+  // Determine Header Info
   const isCluster = chatData?.isCluster;
+  const otherParticipantId = !isCluster ? chatData?.participants.find(id => id !== currentUser.id) : null;
+  const otherParticipant = otherParticipantId ? chatData?.participantData?.[otherParticipantId] : null;
+  const targetUserFull = otherParticipantId ? allUsers.find(u => u.id === otherParticipantId) : null;
+  
   const headerTitle = isCluster ? chatData?.clusterName : otherParticipant?.displayName;
   const headerAvatar = isCluster ? chatData?.clusterAvatar : otherParticipant?.avatarUrl;
 
