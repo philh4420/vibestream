@@ -353,7 +353,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
       {showDeleteModal && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300" onClick={(e) => e.stopPropagation()}>
-          <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-2xl" onClick={() => setShowDeleteModal(false)}></div>
+          <div className="absolute inset-0 bg-white/60 backdrop-blur-xl" onClick={() => setShowDeleteModal(false)}></div>
           <div className="relative bg-white w-full max-w-sm rounded-[3rem] p-10 shadow-2xl border border-white/10 overflow-hidden">
              <div className="absolute top-0 left-0 w-full h-1.5 bg-rose-600" />
              <div className="text-center space-y-4 mb-10">

@@ -377,10 +377,10 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Hub Overlay Modal */}
+      {/* Hub Overlay Modal - Frosted Glass Light Theme */}
       {isHubOpen && (
         <div className="fixed inset-0 z-[2000] flex items-end md:items-center justify-center p-0 md:p-6 animate-in fade-in duration-300">
-           <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-2xl transition-opacity" onClick={() => setIsHubOpen(false)}></div>
+           <div className="absolute inset-0 bg-white/60 backdrop-blur-xl transition-opacity" onClick={() => setIsHubOpen(false)}></div>
            <div className="relative bg-white w-full max-w-xl rounded-t-[3rem] md:rounded-[3.5rem] p-8 md:p-12 shadow-2xl border border-white animate-in slide-in-from-bottom-12 duration-500 overflow-hidden flex flex-col max-h-[90vh]">
               <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-rose-500" />
               

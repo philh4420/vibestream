@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from './components/layout/Layout';
 import { FeedPage } from './components/feed/FeedPage'; 
@@ -34,20 +33,20 @@ const {
   query, 
   orderBy, 
   addDoc, 
-  serverTimestamp,
-  updateDoc,
-  doc,
-  increment,
-  getDoc,
-  setDoc,
-  limit,
-  deleteDoc,
-  where,
-  writeBatch,
-  arrayUnion,
-  arrayRemove,
-  or,
-  and
+  serverTimestamp, 
+  updateDoc, 
+  doc, 
+  increment, 
+  getDoc, 
+  setDoc, 
+  limit, 
+  deleteDoc, 
+  where, 
+  writeBatch, 
+  arrayUnion, 
+  arrayRemove, 
+  or, 
+  and 
 } = Firestore as any;
 import { uploadToCloudinary } from './services/cloudinary';
 import { ICONS, PRESENCE_CONFIG } from './constants';
@@ -367,9 +366,6 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isAuthenticated || !currentUser?.uid || !db) return;
     
-    // We use a local flag to track if this is the first snapshot of THIS subscription instance.
-    // This handles the issue where userData updates cause re-subscription, and the initial snapshot
-    // of that new subscription contains existing data, which triggers the 'added' event logic.
     let isFirstSubscriptionSnapshot = true;
 
     const qNotif = query(
@@ -383,7 +379,6 @@ const App: React.FC = () => {
       const newNotifs = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as AppNotification));
       setNotifications(newNotifs);
       
-      // Only trigger toasts if this is NOT the initial snapshot of the current subscription
       if (!isFirstSubscriptionSnapshot) {
         snap.docChanges().forEach((change: any) => {
           if (change.type === 'added') {
@@ -679,7 +674,7 @@ const App: React.FC = () => {
           <div className="relative bg-white w-full max-w-2xl md:rounded-[4rem] h-[95vh] md:h-auto max-h-[95vh] flex flex-col shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-20 duration-700 overflow-hidden border border-white">
             
             {isGiphyPickerOpen && (
-              <div className="absolute inset-0 z-[2700] p-4 md:p-10 flex items-center justify-center bg-slate-950/20 backdrop-blur-md animate-in fade-in duration-500">
+              <div className="absolute inset-0 z-[2700] p-4 md:p-10 flex items-center justify-center bg-white/60 backdrop-blur-md animate-in fade-in duration-500">
                 <div className="absolute inset-0" onClick={() => setIsGiphyPickerOpen(false)} />
                 <div className="relative w-full max-w-lg shadow-2xl">
                    <GiphyPicker onSelect={handleGifSelect} onClose={() => setIsGiphyPickerOpen(false)} />
@@ -688,7 +683,7 @@ const App: React.FC = () => {
             )}
 
             {isEmojiPickerOpen && (
-              <div className="absolute inset-0 z-[2700] p-4 md:p-10 flex items-center justify-center bg-slate-950/20 backdrop-blur-md animate-in fade-in duration-500">
+              <div className="absolute inset-0 z-[2700] p-4 md:p-10 flex items-center justify-center bg-white/60 backdrop-blur-md animate-in fade-in duration-500">
                 <div className="absolute inset-0" onClick={() => setIsEmojiPickerOpen(false)} />
                 <div className="relative w-full max-w-lg shadow-2xl">
                    <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />

@@ -170,7 +170,7 @@ export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData, onTransmit
       {/* Protocol Selection Modal */}
       {isSelectionOpen && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300">
-          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-2xl" onClick={() => setIsSelectionOpen(false)}></div>
+          <div className="absolute inset-0 bg-white/60 backdrop-blur-2xl" onClick={() => setIsSelectionOpen(false)}></div>
           <div className="relative bg-white w-full max-w-sm rounded-[3rem] p-8 md:p-10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-500 overflow-hidden border border-white/20">
              {/* Decorative Top Bar */}
              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-rose-500" />

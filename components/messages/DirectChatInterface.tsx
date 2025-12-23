@@ -299,7 +299,7 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
         )}
 
         {(isEmojiPickerOpen || isGiphyPickerOpen) && (
-          <div className="fixed inset-0 z-[100] bg-black/10 backdrop-blur-[1px]" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />
+          <div className="fixed inset-0 z-[100] bg-white/30 backdrop-blur-md" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />
         )}
         {isEmojiPickerOpen && (
           <div className="absolute bottom-24 left-4 z-[200]">
