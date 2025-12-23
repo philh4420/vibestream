@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from './components/layout/Layout';
 import { FeedPage } from './components/feed/FeedPage'; 
@@ -669,12 +670,12 @@ const App: React.FC = () => {
 
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 md:p-6 overflow-hidden">
-          <div className="absolute inset-0" onClick={() => !isUploading && setIsCreateModalOpen(false)}></div>
+          <div className="absolute inset-0 bg-transparent" onClick={() => !isUploading && setIsCreateModalOpen(false)}></div>
           
           <div className="relative bg-white w-full max-w-2xl md:rounded-[4rem] h-[95vh] md:h-auto max-h-[95vh] flex flex-col shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-20 duration-700 overflow-hidden border border-white">
             
             {isGiphyPickerOpen && (
-              <div className="absolute inset-0 z-[2700] p-4 md:p-10 flex items-center justify-center bg-white/60 backdrop-blur-md animate-in fade-in duration-500">
+              <div className="absolute inset-0 z-[2700] p-4 md:p-10 flex items-center justify-center bg-transparent animate-in fade-in duration-500">
                 <div className="absolute inset-0" onClick={() => setIsGiphyPickerOpen(false)} />
                 <div className="relative w-full max-w-lg shadow-2xl">
                    <GiphyPicker onSelect={handleGifSelect} onClose={() => setIsGiphyPickerOpen(false)} />
@@ -683,7 +684,7 @@ const App: React.FC = () => {
             )}
 
             {isEmojiPickerOpen && (
-              <div className="absolute inset-0 z-[2700] p-4 md:p-10 flex items-center justify-center bg-white/60 backdrop-blur-md animate-in fade-in duration-500">
+              <div className="absolute inset-0 z-[2700] p-4 md:p-10 flex items-center justify-center bg-transparent animate-in fade-in duration-500">
                 <div className="absolute inset-0" onClick={() => setIsEmojiPickerOpen(false)} />
                 <div className="relative w-full max-w-lg shadow-2xl">
                    <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />

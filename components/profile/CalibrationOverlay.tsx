@@ -107,7 +107,7 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
 
   return (
     <div className="fixed inset-0 z-[600] flex items-center justify-center p-0 md:p-6 overflow-hidden">
-      <div className="absolute inset-0 bg-white/80 backdrop-blur-3xl" onClick={onClose}></div>
+      <div className="absolute inset-0 bg-transparent" onClick={onClose}></div>
       <div className="relative bg-white w-full max-w-6xl h-full md:h-[90vh] md:rounded-[3.5rem] shadow-2xl overflow-hidden flex flex-col border border-white/20 animate-in zoom-in-95 duration-500">
         
         <div className="shrink-0 p-6 md:p-10 flex justify-between items-center border-b border-slate-50 bg-white/50 backdrop-blur-md">

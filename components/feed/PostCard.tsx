@@ -8,10 +8,10 @@ import * as Firestore from 'firebase/firestore';
 const { 
   deleteDoc, 
   doc, 
-  updateDoc,
-  increment,
-  addDoc,
-  serverTimestamp,
+  updateDoc, 
+  increment, 
+  addDoc, 
+  serverTimestamp, 
   collection
 } = Firestore as any;
 import { CommentSection } from './CommentSection';
@@ -311,7 +311,7 @@ export const PostCard: React.FC<PostCardProps> = ({
               </button>
               {isPulseMenuOpen && (
                 <>
-                  <div className="fixed inset-0 z-[100]" onClick={() => setIsPulseMenuOpen(false)} />
+                  <div className="fixed inset-0 z-[100] bg-transparent" onClick={() => setIsPulseMenuOpen(false)} />
                   <div className="absolute bottom-14 left-0 bg-white/80 backdrop-blur-3xl rounded-full p-2 border border-slate-100 shadow-2xl flex gap-2 z-[110] animate-in slide-in-from-bottom-4 duration-300">
                      {PULSE_FREQUENCIES.map(freq => (
                        <button key={freq.id} onClick={(e) => selectFrequency(e, freq.id)} className="w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center text-xl lg:text-2xl hover:scale-125 transition-transform bg-white shadow-sm border border-slate-50">{freq.emoji}</button>
@@ -353,7 +353,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
       {showDeleteModal && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300" onClick={(e) => e.stopPropagation()}>
-          <div className="absolute inset-0 bg-white/60 backdrop-blur-xl" onClick={() => setShowDeleteModal(false)}></div>
+          <div className="absolute inset-0 bg-transparent" onClick={() => setShowDeleteModal(false)}></div>
           <div className="relative bg-white w-full max-w-sm rounded-[3rem] p-10 shadow-2xl border border-white/10 overflow-hidden">
              <div className="absolute top-0 left-0 w-full h-1.5 bg-rose-600" />
              <div className="text-center space-y-4 mb-10">
