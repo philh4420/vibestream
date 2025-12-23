@@ -627,6 +627,7 @@ const App: React.FC = () => {
           addToast={addToast}
           onOpenChat={(id) => { handleNavigate(AppRoute.MESSAGES); /* In a real app we'd pass the ID to open */ }}
           allUsers={allUsers}
+          weather={weather}
         />
       )}
 
