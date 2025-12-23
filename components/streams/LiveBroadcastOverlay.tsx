@@ -170,7 +170,7 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
       <div className="relative flex-1 bg-black flex items-center justify-center min-h-0">
         <video 
           ref={videoRef} autoPlay playsInline muted 
-          className={`w-full h-full object-cover transition-all duration-1000 mirror ${isLive ? 'opacity-100 scale-100' : 'opacity-40 blur-2xl scale-110'}`} 
+          className="w-full h-full object-cover transition-all duration-1000 mirror opacity-100 scale-100" 
         />
         
         {/* Floating Reactions Layer */}
@@ -184,10 +184,10 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
 
         {/* SETUP SCREEN */}
         {!isLive && (
-          <div className="absolute inset-0 z-[2600] flex flex-col items-center justify-center p-6 bg-slate-950/90 backdrop-blur-3xl overflow-y-auto no-scrollbar">
+          <div className="absolute inset-0 z-[2600] flex flex-col items-center justify-center p-6 bg-gradient-to-b from-black/80 via-transparent to-black/80 overflow-y-auto no-scrollbar">
             <div className="w-full max-w-2xl space-y-12 text-center animate-in fade-in zoom-in-95 duration-700">
                <div className="flex flex-col items-center gap-8">
-                 <div className="relative w-24 h-24 md:w-32 md:h-32 bg-slate-900 rounded-[2.5rem] flex items-center justify-center shadow-[0_0_50px_rgba(225,29,72,0.2)] border border-white/10 group">
+                 <div className="relative w-24 h-24 md:w-32 md:h-32 bg-slate-900/50 backdrop-blur-md rounded-[2.5rem] flex items-center justify-center shadow-[0_0_50px_rgba(225,29,72,0.2)] border border-white/10 group">
                     <div className="absolute inset-0 rounded-[2.5rem] border-2 border-rose-500/30 animate-pulse" />
                     <div className="absolute -inset-1 rounded-[2.8rem] border border-white/5" />
                     <svg className="w-10 h-10 md:w-14 md:h-14 text-rose-500 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
@@ -197,18 +197,18 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                        <span className="text-[9px] font-black text-emerald-500 uppercase tracking-[0.3em] font-mono">SYSTEM_CHECK_OK</span>
                     </div>
-                    <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase italic leading-none">Command_Deck</h2>
-                    <p className="text-[10px] md:text-xs font-black text-slate-500 uppercase tracking-[0.5em] font-mono italic">Protocol: Neural_Broadcast_v2.6.GB</p>
+                    <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase italic leading-none drop-shadow-xl">Command_Deck</h2>
+                    <p className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-[0.5em] font-mono italic drop-shadow-md">Protocol: Neural_Broadcast_v2.6.GB</p>
                  </div>
                </div>
 
-               <div className="space-y-8 bg-white/5 p-8 rounded-[3rem] border border-white/10 backdrop-blur-md">
+               <div className="space-y-8 bg-black/40 p-8 rounded-[3rem] border border-white/10 backdrop-blur-xl shadow-2xl">
                  <div className="relative group">
-                    <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono text-left ml-4 mb-2">Transmission_Identity</label>
+                    <label className="block text-[9px] font-black text-slate-300 uppercase tracking-widest font-mono text-left ml-4 mb-2">Transmission_Identity</label>
                     <input 
                       autoFocus type="text" placeholder="Enter signal title..." 
                       value={streamTitle} onChange={(e) => setStreamTitle(e.target.value)}
-                      className="w-full bg-slate-950/50 border border-white/10 rounded-[2rem] px-8 py-6 md:py-8 text-white font-black text-xl md:text-3xl outline-none text-center focus:ring-4 focus:ring-rose-500/20 focus:border-rose-500/50 transition-all placeholder:text-white/10 italic"
+                      className="w-full bg-slate-900/50 border border-white/20 rounded-[2rem] px-8 py-6 md:py-8 text-white font-black text-xl md:text-3xl outline-none text-center focus:ring-4 focus:ring-rose-500/20 focus:border-rose-500/50 transition-all placeholder:text-white/20 italic shadow-inner"
                     />
                  </div>
                </div>
@@ -228,7 +228,7 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
                      </>
                    )}
                  </button>
-                 <button onClick={onEnd} className="text-white/30 hover:text-white font-black uppercase text-[9px] tracking-[0.3em] transition-colors italic py-2 hover:underline">
+                 <button onClick={onEnd} className="text-white/30 hover:text-white font-black uppercase text-[9px] tracking-[0.3em] transition-colors italic py-2 hover:underline drop-shadow-md">
                    Abort_Sequence
                  </button>
                </div>

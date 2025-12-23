@@ -217,18 +217,23 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
         
         {/* Establishing Link Overlay */}
         {status !== 'established' && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center p-8 bg-slate-950/90 backdrop-blur-3xl text-center">
-             <div className="w-24 h-24 md:w-32 md:h-32 bg-white/5 rounded-[3rem] border border-white/10 flex items-center justify-center shadow-2xl relative mb-10">
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center p-8 text-center overflow-hidden">
+             {/* Thumbnail Background */}
+             <img src={stream.thumbnailUrl} className="absolute inset-0 w-full h-full object-cover blur-xl opacity-60 scale-110" alt="" />
+             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+
+             <div className="relative z-10 w-24 h-24 md:w-32 md:h-32 bg-white/5 rounded-[3rem] border border-white/10 flex items-center justify-center shadow-2xl mb-10">
                 <div className="absolute inset-0 rounded-[3rem] bg-indigo-500/20 animate-pulse" />
                 <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
              </div>
-             <div className="space-y-4">
-                <div className="flex items-center justify-center gap-3 opacity-60">
+             
+             <div className="relative z-10 space-y-4">
+                <div className="flex items-center justify-center gap-3 opacity-80">
                    <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-ping" />
-                   <span className="text-[9px] font-black font-mono tracking-widest uppercase">ENCRYPTED_HANDSHAKE</span>
+                   <span className="text-[9px] font-black font-mono tracking-widest uppercase text-white">ENCRYPTED_HANDSHAKE</span>
                 </div>
-                <h2 className="text-3xl md:text-5xl font-black text-white uppercase italic tracking-tighter leading-none">{stream.authorName}</h2>
-                <p className="text-[10px] md:text-xs font-black text-indigo-400 uppercase tracking-[0.6em] font-mono animate-pulse italic">DECRYPTING_SIGNAL...</p>
+                <h2 className="text-3xl md:text-5xl font-black text-white uppercase italic tracking-tighter leading-none drop-shadow-xl">{stream.authorName}</h2>
+                <p className="text-[10px] md:text-xs font-black text-indigo-400 uppercase tracking-[0.6em] font-mono animate-pulse italic drop-shadow-md">DECRYPTING_SIGNAL...</p>
                 <button onClick={onLeave} className="mt-12 px-10 py-4 bg-white/5 border border-white/10 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-white/10 transition-all active:scale-95 italic">Abort_Link</button>
              </div>
           </div>
