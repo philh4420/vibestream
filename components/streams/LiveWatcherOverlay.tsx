@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { db, auth } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
 const { 
@@ -179,8 +180,9 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
     });
   };
 
-  return (
-    <div className="fixed inset-0 z-[5000] bg-black text-white font-sans overflow-hidden flex flex-col selection:bg-rose-500">
+  // Render to Body (Portal)
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] bg-black text-white font-sans overflow-hidden flex flex-col h-[100dvh] selection:bg-rose-500">
       
       {/* 1. CINEMATIC VIDEO LAYER */}
       <div className="absolute inset-0 z-0">
@@ -213,7 +215,7 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
       <div className="relative z-30 flex flex-col h-full pointer-events-none">
          
          {/* TOP HUD */}
-         <div className="flex justify-between items-start p-4 md:p-6 pointer-events-auto">
+         <div className="flex justify-between items-start p-4 md:p-6 pointer-events-auto pt-[max(1.5rem,env(safe-area-inset-top))]">
             <div className="flex items-center gap-3">
                <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md rounded-full pl-1 pr-4 py-1 border border-white/10">
                   <img src={stream.authorAvatar} className="w-8 h-8 rounded-full object-cover border border-white/20" alt="" />
@@ -235,7 +237,7 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
          </div>
 
          {/* BOTTOM AREA: Chat & Controls */}
-         <div className="mt-auto px-4 md:px-6 pb-6 md:pb-8 flex flex-col gap-4 max-w-2xl pointer-events-auto">
+         <div className="mt-auto px-4 md:px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] flex flex-col gap-4 max-w-2xl pointer-events-auto">
             
             {/* Chat Messages */}
             {showChat && (
@@ -293,6 +295,7 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
         }
         .animate-float-up { animation: float-up 2.5s ease-out forwards; }
       `}} />
-    </div>
+    </div>,
+    document.body
   );
 };

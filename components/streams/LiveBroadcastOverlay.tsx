@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
 const { 
@@ -144,8 +145,9 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
 
   const isLive = !!activeStreamId;
 
-  return (
-    <div className="fixed inset-0 z-[5000] bg-black text-white font-sans overflow-hidden flex flex-col">
+  // Render to Body (Portal) to escape Layout constraints
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] bg-black text-white font-sans overflow-hidden flex flex-col h-[100dvh]">
       
       {/* VIDEO LAYER */}
       <video 
@@ -159,8 +161,8 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
 
       {/* --- PRE-FLIGHT (SETUP) MODE --- */}
       {!isLive && (
-        <div className="relative z-10 flex flex-col h-full items-center justify-center p-6">
-           <button onClick={onEnd} className="absolute top-6 right-6 w-10 h-10 bg-white/10 hover:bg-white/20 backdrop-blur-xl rounded-full flex items-center justify-center transition-all border border-white/10">
+        <div className="relative z-10 flex flex-col h-full items-center justify-center p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+           <button onClick={onEnd} className="absolute top-6 right-6 w-10 h-10 bg-white/10 hover:bg-white/20 backdrop-blur-xl rounded-full flex items-center justify-center transition-all border border-white/10 z-50">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth={3} /></svg>
            </button>
 
@@ -206,7 +208,7 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
         <div className="relative z-10 flex flex-col h-full pointer-events-none">
            
            {/* TOP HUD */}
-           <div className="flex items-start justify-between p-4 md:p-6 pointer-events-auto">
+           <div className="flex items-start justify-between p-4 md:p-6 pointer-events-auto pt-[max(1rem,env(safe-area-inset-top))]">
               <div className="flex flex-wrap gap-2">
                  <div className="px-3 py-1.5 bg-rose-600/90 backdrop-blur-md rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg border border-white/10">
                     <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
@@ -231,7 +233,7 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
            </div>
 
            {/* CHAT OVERLAY (Ghost Mode) */}
-           <div className="flex-1 flex flex-col justify-end px-4 md:px-6 pb-6 overflow-hidden">
+           <div className="flex-1 flex flex-col justify-end px-4 md:px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] overflow-hidden">
               {showChat && (
                 <div className="w-full max-w-sm pointer-events-auto mask-gradient-b">
                    <div className="h-[300px] overflow-y-auto no-scrollbar flex flex-col justify-end space-y-2 pb-2">
@@ -255,6 +257,7 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
         .mirror { transform: scaleX(-1); }
         .mask-gradient-b { mask-image: linear-gradient(to top, black 80%, transparent 100%); }
       `}} />
-    </div>
+    </div>,
+    document.body
   );
 };
