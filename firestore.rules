@@ -256,7 +256,12 @@ service cloud.firestore {
     match /gatherings/{gatheringId} {
       allow read, list: if isAuthenticated();
       allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (resource.data.organizerId == request.auth.uid || isAdmin());
+      allow update: if isAuthenticated() && (
+        resource.data.organizerId == request.auth.uid || 
+        isAdmin() || 
+        incomingData().diff(existingData()).affectedKeys().hasOnly(['attendees'])
+      );
+      allow delete: if isAuthenticated() && (resource.data.organizerId == request.auth.uid || isAdmin());
     }
 
     // -------------------------------------------------------------------------

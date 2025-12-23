@@ -5,6 +5,7 @@ import { PULSE_FREQUENCIES, ICONS } from '../../constants';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
 const { doc, writeBatch, updateDoc } = Firestore as any;
+import { DeleteConfirmationModal } from '../ui/DeleteConfirmationModal';
 
 interface NotificationsPageProps {
   notifications: AppNotification[];
@@ -27,6 +28,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
 }) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [activeFilter, setActiveFilter] = useState<SignalFilter>('all');
+  const [showPurgeModal, setShowPurgeModal] = useState(false);
 
   const filteredNotifications = useMemo(() => {
     switch (activeFilter) {
@@ -63,13 +65,14 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
     }
   };
 
-  const handlePurgeAll = async () => {
-    if (!db || !userData || notifications.length === 0) {
-      return;
-    }
-    
-    if(!window.confirm("CONFIRM: Purge all signal history? This cannot be undone.")) return;
+  const handlePurgeRequest = () => {
+    if (notifications.length === 0) return;
+    setShowPurgeModal(true);
+  };
 
+  const executePurgeAll = async () => {
+    if (!db || !userData) return;
+    
     const batch = writeBatch(db);
     notifications.forEach(n => {
       batch.delete(doc(db, 'notifications', n.id));
@@ -80,6 +83,8 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
       addToast("Signal Archive Purged", "success");
     } catch (e) {
       addToast("Purge Protocol Failed", "error");
+    } finally {
+      setShowPurgeModal(false);
     }
   };
 
@@ -134,7 +139,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
            </button>
            
            <button 
-             onClick={handlePurgeAll}
+             onClick={handlePurgeRequest}
              disabled={notifications.length === 0}
              className="h-12 w-12 bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 rounded-2xl flex items-center justify-center transition-all active:scale-90 shadow-sm disabled:opacity-50"
              title="Purge Archive"
@@ -240,6 +245,16 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
            <div className="h-1 w-12 bg-slate-300 rounded-full" />
         </div>
       )}
+
+      {/* Purge Modal */}
+      <DeleteConfirmationModal 
+        isOpen={showPurgeModal}
+        title="PURGE_SIGNAL_LOG"
+        description="Permanently delete all received notifications? This action cannot be reversed."
+        onConfirm={executePurgeAll}
+        onCancel={() => setShowPurgeModal(false)}
+        confirmText="CONFIRM_PURGE"
+      />
     </div>
   );
 };
