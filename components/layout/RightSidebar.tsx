@@ -88,7 +88,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather })
       <div className="flex-1 scroll-viewport px-6 space-y-8 pb-10">
         
         {/* SECTION: SYSTEM MONITOR WIDGET */}
-        <div className="relative group overflow-hidden bg-slate-900 rounded-[2rem] p-6 text-white shadow-2xl transition-all duration-500 hover:shadow-indigo-500/20">
+        <div className="relative group overflow-hidden bg-slate-900 rounded-[2rem] p-6 text-white shadow-2xl transition-all duration-500 hover:shadow-indigo-500/20 min-h-[360px] flex flex-col justify-between">
           <div className="absolute top-0 right-0 w-32 h-60 bg-indigo-500/20 blur-[60px] rounded-full -translate-y-1/2 translate-x-1/3" />
           
           <div className="flex justify-between items-start mb-6 relative z-10">
@@ -102,8 +102,8 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather })
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 relative z-10">
-            <div className="p-3 bg-white/5 rounded-xl border border-white/10 backdrop-blur-md">
+          <div className="grid grid-cols-2 gap-4 relative z-10 flex-1 content-center">
+            <div className="p-3 bg-white/5 rounded-xl border border-white/10 backdrop-blur-md flex flex-col justify-center min-h-[100px]">
               <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest font-mono mb-1.5 text-center">Neural_Time</p>
               <p className="text-base font-black text-center text-white font-mono flex items-center justify-center gap-1">
                 <span>{systemTime.toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit' })}</span>
@@ -111,7 +111,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather })
                 <span className="text-xs opacity-60">{systemTime.toLocaleTimeString('en-GB', { second: '2-digit' })}</span>
               </p>
             </div>
-            <div className="p-3 bg-white/5 rounded-xl border border-white/10 backdrop-blur-md">
+            <div className="p-3 bg-white/5 rounded-xl border border-white/10 backdrop-blur-md flex flex-col justify-center min-h-[100px]">
               <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest font-mono mb-1.5 text-center">Atmospherics</p>
               {weather ? (
                 <div className="flex items-center justify-center gap-1.5">
