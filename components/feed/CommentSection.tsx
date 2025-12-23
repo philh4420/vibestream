@@ -238,7 +238,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
     <div className="mt-8 pt-8 border-t border-slate-100 animate-in slide-in-from-bottom-2 duration-500">
       {(isEmojiPickerOpen || isGiphyPickerOpen) && (
         <div 
-          className="fixed inset-0 z-[1500] bg-white/30 backdrop-blur-md animate-in fade-in duration-300"
+          className="fixed inset-0 z-[1500] bg-transparent animate-in fade-in duration-300"
           onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }}
         />
       )}

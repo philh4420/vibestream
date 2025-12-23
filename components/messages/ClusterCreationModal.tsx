@@ -25,7 +25,7 @@ export const ClusterCreationModal: React.FC<ClusterCreationModalProps> = ({ avai
 
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-6 animate-in fade-in duration-300">
-      <div className="absolute inset-0 bg-white/60 backdrop-blur-2xl" onClick={onClose}></div>
+      <div className="absolute inset-0 bg-transparent" onClick={onClose}></div>
       <div className="relative bg-white w-full max-w-xl rounded-[3.5rem] p-12 shadow-heavy border border-white/10 animate-in zoom-in-95 duration-500 overflow-hidden flex flex-col h-[85vh]">
         
         <div className="shrink-0 flex justify-between items-start mb-10">
