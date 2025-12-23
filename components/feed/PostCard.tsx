@@ -81,11 +81,15 @@ export const PostCard: React.FC<PostCardProps> = ({
       return post.timestamp.toDate().toLocaleString(locale, {
         day: '2-digit',
         month: 'short',
+        year: 'numeric',
         hour: '2-digit',
         minute: '2-digit'
       });
     }
-    return post.createdAt;
+    // Fallback for new posts or optimistic UI - ensuring year is shown
+    const now = new Date();
+    const dateStr = now.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
+    return `${dateStr}, ${post.createdAt}`; 
   }, [post.timestamp, post.createdAt, locale]);
 
   const handlePurgeSignal = async (e: React.MouseEvent) => {
