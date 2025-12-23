@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { db } from '../../services/firebase';
-// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
 import * as Firestore from 'firebase/firestore';
 const { 
   collection, 
@@ -16,6 +15,8 @@ const {
 import { Chat, User, Region } from '../../types';
 import { ICONS } from '../../constants';
 import { ClusterCreationModal } from '../messages/ClusterCreationModal';
+import { ChatInterface } from '../messages/ChatInterface';
+import { AtmosphericBackground } from '../messages/AtmosphericBackground';
 
 interface ClustersPageProps {
   currentUser: User;
@@ -29,6 +30,7 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
   const [clusters, setClusters] = useState<Chat[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [activeClusterId, setActiveClusterId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!db || !currentUser.id) return;
@@ -48,6 +50,26 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
 
     return () => unsub();
   }, [currentUser.id]);
+
+  const activeClusterData = clusters.find(c => c.id === activeClusterId);
+
+  // If a cluster is active, show the chat interface
+  if (activeClusterId && activeClusterData) {
+    return (
+      <div className="h-[calc(100vh-var(--header-h)-var(--bottom-nav-h)-1rem)] md:h-[calc(100vh-var(--header-h)-3rem)] -mx-4 sm:-mx-6 md:-mx-10 lg:-mx-14 bg-[#fcfcfd] md:rounded-[3.5rem] overflow-hidden shadow-heavy relative border border-slate-100 animate-in fade-in duration-500">
+         <AtmosphericBackground weather={null}>
+            <ChatInterface 
+                chatId={activeClusterId}
+                currentUser={currentUser}
+                allUsers={allUsers}
+                onBack={() => setActiveClusterId(null)}
+                addToast={addToast}
+                chatData={activeClusterData}
+            />
+         </AtmosphericBackground>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-700 min-h-screen pb-20">
@@ -84,7 +106,7 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
            {clusters.map(cluster => (
              <div 
                key={cluster.id}
-               onClick={() => onOpenChat(cluster.id)}
+               onClick={() => setActiveClusterId(cluster.id)}
                className="group bg-white border border-slate-100 rounded-[3rem] p-8 hover:shadow-2xl hover:border-indigo-100 transition-all duration-500 cursor-pointer relative overflow-hidden flex flex-col min-h-[300px]"
              >
                 {/* Visual Header */}
@@ -175,7 +197,7 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
                   });
                   addToast("Cluster Fusion Complete", "success");
                   setIsModalOpen(false);
-                  onOpenChat(clusterId);
+                  setActiveClusterId(clusterId); // Open chat immediately
                 } catch(e) { addToast("Fusion Failed", "error"); }
              };
              create();
