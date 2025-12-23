@@ -164,7 +164,7 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
   const isLive = !!activeStreamId;
 
   return (
-    <div className="fixed inset-0 z-[2500] bg-slate-950 flex flex-col lg:flex-row overflow-hidden selection:bg-rose-500 font-sans">
+    <div className="fixed inset-0 z-[2500] bg-black flex flex-col lg:flex-row overflow-hidden selection:bg-rose-500 font-sans">
       
       {/* Cinematic Viewport Container */}
       <div className="relative flex-1 bg-black flex items-center justify-center min-h-0">
@@ -182,55 +182,64 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
            ))}
         </div>
 
-        {/* SETUP SCREEN */}
+        {/* SETUP SCREEN - COMPLETELY TRANSPARENT BACKGROUND */}
         {!isLive && (
-          <div className="absolute inset-0 z-[2600] flex flex-col items-center justify-center p-6 bg-gradient-to-b from-black/80 via-transparent to-black/80 overflow-y-auto no-scrollbar">
-            <div className="w-full max-w-2xl space-y-12 text-center animate-in fade-in zoom-in-95 duration-700">
-               <div className="flex flex-col items-center gap-8">
-                 <div className="relative w-24 h-24 md:w-32 md:h-32 bg-slate-900/50 backdrop-blur-md rounded-[2.5rem] flex items-center justify-center shadow-[0_0_50px_rgba(225,29,72,0.2)] border border-white/10 group">
-                    <div className="absolute inset-0 rounded-[2.5rem] border-2 border-rose-500/30 animate-pulse" />
-                    <div className="absolute -inset-1 rounded-[2.8rem] border border-white/5" />
-                    <svg className="w-10 h-10 md:w-14 md:h-14 text-rose-500 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                 </div>
-                 <div className="space-y-3">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                       <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                       <span className="text-[9px] font-black text-emerald-500 uppercase tracking-[0.3em] font-mono">SYSTEM_CHECK_OK</span>
-                    </div>
-                    <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase italic leading-none drop-shadow-xl">Command_Deck</h2>
-                    <p className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-[0.5em] font-mono italic drop-shadow-md">Protocol: Neural_Broadcast_v2.6.GB</p>
-                 </div>
+          <div className="absolute inset-0 z-[2600] flex flex-col justify-between p-6 pointer-events-none">
+            
+            {/* Top Bar - Minimal */}
+            <div className="flex justify-between items-start pointer-events-auto">
+               <button onClick={onEnd} className="px-4 py-2 bg-black/40 backdrop-blur-md rounded-xl text-white text-xs font-black uppercase tracking-widest border border-white/10 hover:bg-white/10 transition-all">
+                 Cancel
+               </button>
+               <div className="px-4 py-2 bg-black/40 backdrop-blur-md rounded-xl border border-white/10 flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${hwStatus === 'ready' ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-amber-500 animate-pulse'}`} />
+                  <span className="text-[10px] font-black text-white uppercase tracking-widest font-mono">
+                    {hwStatus === 'ready' ? 'CAMERA_ONLINE' : 'INITIALIZING...'}
+                  </span>
                </div>
+            </div>
 
-               <div className="space-y-8 bg-black/40 p-8 rounded-[3rem] border border-white/10 backdrop-blur-xl shadow-2xl">
-                 <div className="relative group">
-                    <label className="block text-[9px] font-black text-slate-300 uppercase tracking-widest font-mono text-left ml-4 mb-2">Transmission_Identity</label>
-                    <input 
-                      autoFocus type="text" placeholder="Enter signal title..." 
-                      value={streamTitle} onChange={(e) => setStreamTitle(e.target.value)}
-                      className="w-full bg-slate-900/50 border border-white/20 rounded-[2rem] px-8 py-6 md:py-8 text-white font-black text-xl md:text-3xl outline-none text-center focus:ring-4 focus:ring-rose-500/20 focus:border-rose-500/50 transition-all placeholder:text-white/20 italic shadow-inner"
-                    />
-                 </div>
-               </div>
+            {/* Bottom HUD Control Panel */}
+            <div className="w-full max-w-lg mx-auto pointer-events-auto animate-in slide-in-from-bottom-10 duration-500">
+               <div className="bg-black/60 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden">
+                  {/* Decorative Elements */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-1 bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-50" />
+                  
+                  <div className="space-y-6">
+                     <div className="text-center">
+                        <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase mb-1">Prepare_Signal</h2>
+                        <p className="text-[10px] text-slate-400 font-mono uppercase tracking-widest">Configure broadcast parameters</p>
+                     </div>
 
-               <div className="flex flex-col gap-5 max-w-md mx-auto pt-4">
-                 <button 
-                   onClick={() => { setIsInitializing(true); onStart(streamTitle); }}
-                   disabled={!streamTitle.trim() || hwStatus !== 'ready' || isInitializing}
-                   className="w-full py-6 md:py-8 bg-white text-slate-950 rounded-[2.2rem] font-black text-xs md:text-sm uppercase tracking-[0.4em] shadow-[0_0_40px_rgba(255,255,255,0.1)] hover:bg-rose-600 hover:text-white active:scale-95 transition-all disabled:opacity-20 flex items-center justify-center gap-4 group"
-                 >
-                   {isInitializing ? (
-                     <span className="animate-pulse">INITIALIZING_UPLINK...</span>
-                   ) : (
-                     <>
-                        <span>INITIATE_BROADCAST</span>
-                        <svg className="w-5 h-5 group-hover:translate-x-1.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
-                     </>
-                   )}
-                 </button>
-                 <button onClick={onEnd} className="text-white/30 hover:text-white font-black uppercase text-[9px] tracking-[0.3em] transition-colors italic py-2 hover:underline drop-shadow-md">
-                   Abort_Sequence
-                 </button>
+                     <div className="relative group">
+                        <input 
+                          type="text" 
+                          placeholder="Enter transmission title..." 
+                          value={streamTitle} 
+                          onChange={(e) => setStreamTitle(e.target.value)}
+                          className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white font-bold text-center placeholder:text-white/20 focus:bg-white/10 focus:border-white/30 focus:ring-0 outline-none transition-all"
+                          autoFocus
+                        />
+                     </div>
+
+                     <button 
+                       onClick={() => { setIsInitializing(true); onStart(streamTitle); }}
+                       disabled={!streamTitle.trim() || hwStatus !== 'ready' || isInitializing}
+                       className="w-full py-5 bg-white text-black rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:bg-slate-200 active:scale-95 transition-all disabled:opacity-30 disabled:scale-100 flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+                     >
+                       {isInitializing ? (
+                         <>
+                           <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                           INITIALIZING...
+                         </>
+                       ) : (
+                         <>
+                           <div className="w-3 h-3 bg-rose-600 rounded-full animate-pulse" />
+                           GO_LIVE
+                         </>
+                       )}
+                     </button>
+                  </div>
                </div>
             </div>
           </div>
@@ -242,39 +251,32 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
              {/* Top Control Bar */}
              <div className="flex justify-between items-start pointer-events-auto">
                 <div className="flex flex-wrap gap-2 md:gap-3 max-w-[70%]">
-                   <div className="bg-rose-600/90 backdrop-blur-md text-white px-4 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg border border-white/10">
+                   <div className="bg-rose-600/90 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg border border-white/10">
                       <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
                    </div>
-                   <div className="bg-black/60 backdrop-blur-md text-white px-4 py-3 rounded-2xl text-[10px] font-black font-mono border border-white/10 shadow-lg">
+                   <div className="bg-black/40 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl text-[10px] font-black font-mono border border-white/10">
                       {Math.floor(timer/60)}:{(timer%60).toString().padStart(2, '0')}
                    </div>
-                   <div className="bg-white/10 backdrop-blur-md text-white px-4 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 border border-white/10">
+                   <div className="bg-black/40 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 border border-white/10">
                       <svg className="w-3 h-3 text-rose-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                       {viewerCount}
                    </div>
                 </div>
                 <button 
                   onClick={onEnd} 
-                  className="bg-slate-900/80 hover:bg-rose-600 text-white px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest border border-white/10 backdrop-blur-md transition-all active:scale-95 shadow-xl hover:border-rose-500"
+                  className="bg-black/40 hover:bg-rose-600/90 text-white px-6 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest border border-white/10 backdrop-blur-md transition-all active:scale-95 shadow-lg"
                 >
-                  END_TRANSMISSION
+                  END
                 </button>
              </div>
 
-             {/* Bottom Profile Identity Block */}
-             <div className="mt-auto flex items-end justify-between pointer-events-none">
-                <div className="flex items-center gap-6 bg-black/60 backdrop-blur-2xl p-6 rounded-[2.5rem] border border-white/10 shadow-2xl max-w-[90%] md:max-w-xl">
-                   <div className="relative shrink-0 hidden sm:block">
-                      <div className="p-1 bg-gradient-to-tr from-rose-500 to-indigo-600 rounded-[1.8rem] shadow-xl">
-                         <img src={userData.avatarUrl} className="w-16 h-16 rounded-[1.5rem] object-cover border-2 border-slate-950" alt="" />
-                      </div>
-                   </div>
-                   <div className="text-left min-w-0">
-                      <div className="flex items-center gap-3 mb-1">
-                         <div className="px-2 py-0.5 bg-rose-500/20 rounded-md border border-rose-500/30 text-[7px] font-black text-rose-400 uppercase tracking-widest font-mono">HOST</div>
-                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono truncate">{userData.username}</p>
-                      </div>
-                      <h3 className="text-xl md:text-2xl font-black text-white uppercase italic tracking-tighter leading-none truncate">{streamTitle}</h3>
+             {/* Bottom Profile Identity Block - Left Aligned */}
+             <div className="mt-auto flex items-end justify-between pointer-events-none pb-safe">
+                <div className="bg-black/40 backdrop-blur-xl p-4 rounded-[2rem] border border-white/10 shadow-lg max-w-[80%] flex items-center gap-4">
+                   <img src={userData.avatarUrl} className="w-12 h-12 rounded-[1.2rem] object-cover border border-white/20" alt="" />
+                   <div className="min-w-0">
+                      <h3 className="text-sm font-black text-white uppercase italic tracking-wide truncate leading-none mb-1">{streamTitle}</h3>
+                      <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest font-mono truncate">{userData.username}</p>
                    </div>
                 </div>
              </div>
@@ -282,7 +284,7 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
         )}
       </div>
 
-      {/* Responsive Chat Command Center */}
+      {/* Responsive Chat Command Center - Desktop Sidebar / Mobile Drawer */}
       <div className={`flex flex-col bg-slate-950 transition-all duration-700 h-[40vh] lg:h-full lg:w-[400px] xl:w-[450px] border-t lg:border-t-0 lg:border-l border-white/10 absolute bottom-0 left-0 right-0 lg:relative lg:translate-y-0 z-50 ${!isLive ? 'hidden' : 'flex'}`}>
          
          {/* Chat Header */}
@@ -341,6 +343,7 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
 
       <style dangerouslySetInnerHTML={{ __html: `
         .mirror { transform: scaleX(-1); }
+        .pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
         @keyframes float-up {
           0% { transform: translateY(0) scale(1) rotate(0deg); opacity: 0; }
           15% { opacity: 1; }

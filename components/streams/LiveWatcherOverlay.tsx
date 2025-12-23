@@ -215,26 +215,27 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
           className={`w-full h-full object-cover transition-all duration-1000 ${status === 'established' ? 'opacity-100 scale-100' : 'opacity-0 scale-105 blur-2xl'}`} 
         />
         
-        {/* Establishing Link Overlay */}
+        {/* Establishing Link Overlay - TRANSPARENT/BLURRED BACKGROUND */}
         {status !== 'established' && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center p-8 text-center overflow-hidden">
-             {/* Thumbnail Background */}
-             <img src={stream.thumbnailUrl} className="absolute inset-0 w-full h-full object-cover blur-xl opacity-60 scale-110" alt="" />
-             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+             {/* Thumbnail Background Blurriness */}
+             <img src={stream.thumbnailUrl} className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-60 scale-110 animate-pulse-slow" alt="" />
+             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
 
-             <div className="relative z-10 w-24 h-24 md:w-32 md:h-32 bg-white/5 rounded-[3rem] border border-white/10 flex items-center justify-center shadow-2xl mb-10">
-                <div className="absolute inset-0 rounded-[3rem] bg-indigo-500/20 animate-pulse" />
-                <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
-             </div>
-             
-             <div className="relative z-10 space-y-4">
-                <div className="flex items-center justify-center gap-3 opacity-80">
-                   <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-ping" />
-                   <span className="text-[9px] font-black font-mono tracking-widest uppercase text-white">ENCRYPTED_HANDSHAKE</span>
+             {/* Center Card */}
+             <div className="relative z-10 bg-black/40 backdrop-blur-xl border border-white/10 p-8 rounded-[3rem] shadow-2xl flex flex-col items-center">
+                <div className="relative w-24 h-24 mb-6">
+                   <div className="absolute inset-0 border-4 border-indigo-500/30 rounded-full animate-ping" />
+                   <div className="absolute inset-0 border-4 border-indigo-500/60 rounded-full border-t-indigo-400 animate-spin" />
+                   <img src={stream.authorAvatar} className="w-full h-full rounded-full object-cover p-1.5" alt="" />
                 </div>
-                <h2 className="text-3xl md:text-5xl font-black text-white uppercase italic tracking-tighter leading-none drop-shadow-xl">{stream.authorName}</h2>
-                <p className="text-[10px] md:text-xs font-black text-indigo-400 uppercase tracking-[0.6em] font-mono animate-pulse italic drop-shadow-md">DECRYPTING_SIGNAL...</p>
-                <button onClick={onLeave} className="mt-12 px-10 py-4 bg-white/5 border border-white/10 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-white/10 transition-all active:scale-95 italic">Abort_Link</button>
+                
+                <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter leading-none mb-2">{stream.authorName}</h2>
+                <p className="text-[10px] font-black text-indigo-300 uppercase tracking-[0.3em] font-mono animate-pulse">ESTABLISHING_UPLINK...</p>
+                
+                <button onClick={onLeave} className="mt-8 px-8 py-3 bg-white/10 hover:bg-white/20 text-white font-black uppercase text-[9px] tracking-widest rounded-xl transition-all active:scale-95 border border-white/10">
+                  ABORT
+                </button>
              </div>
           </div>
         )}
@@ -255,7 +256,7 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
                 <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse shadow-white" />
                 LIVE
               </div>
-              <div className="bg-black/60 backdrop-blur-md text-white px-4 py-2.5 rounded-xl text-[10px] font-black font-mono border border-white/10 shadow-xl flex items-center gap-2">
+              <div className="bg-black/40 backdrop-blur-md text-white px-4 py-2.5 rounded-xl text-[10px] font-black font-mono border border-white/10 shadow-xl flex items-center gap-2">
                  <svg className="w-3 h-3 text-rose-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                  {currentViewers.toLocaleString()}
               </div>
@@ -272,8 +273,8 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
         </div>
 
         {/* BOTTOM HUD - Mobile Only */}
-        <div className="lg:hidden absolute bottom-0 left-0 right-0 p-4 z-[60] bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-24 pointer-events-none">
-           <div className="pointer-events-auto">
+        <div className="lg:hidden absolute bottom-0 left-0 right-0 p-4 z-[60] bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-24 pointer-events-none">
+           <div className="pointer-events-auto pb-safe">
               {/* Reactions Bar */}
               <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar py-1">
                  {['🔥', '❤️', '👏', '🚀'].map(emoji => (
@@ -314,7 +315,7 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
 
         {/* MOBILE CHAT OVERLAY */}
         {showChatMobile && (
-          <div className="lg:hidden absolute bottom-28 left-4 right-4 h-48 overflow-y-auto no-scrollbar z-[55] mask-linear-fade pointer-events-none">
+          <div className="lg:hidden absolute bottom-32 left-4 right-4 h-48 overflow-y-auto no-scrollbar z-[55] mask-linear-fade pointer-events-none">
              <div className="flex flex-col justify-end min-h-full space-y-2 pb-2">
                {messages.map((msg) => (
                  <div key={msg.id} className="flex items-start gap-2 animate-in slide-in-from-bottom-4 duration-300">
@@ -413,6 +414,7 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
           mask-image: linear-gradient(to top, black 0%, black 80%, transparent 100%);
           -webkit-mask-image: linear-gradient(to top, black 0%, black 80%, transparent 100%);
         }
+        .pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
         @keyframes float-up {
           0% { transform: translateY(0) scale(1) rotate(0deg); opacity: 0; }
           10% { opacity: 1; }
@@ -422,6 +424,11 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
         .animate-float-up {
           animation: float-up 3s ease-out forwards;
         }
+        @keyframes pulse-slow {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 0.8; }
+        }
+        .animate-pulse-slow { animation: pulse-slow 3s ease-in-out infinite; }
       `}} />
     </div>
   );
