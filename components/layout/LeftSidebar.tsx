@@ -22,6 +22,9 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
 }) => {
   
   const unreadCount = notifications.filter(n => !n.isRead).length;
+  
+  // Determine verification status based on role or explicit flag
+  const isVerified = userData?.verifiedHuman || ['verified', 'creator', 'admin'].includes(userData?.role || '');
 
   const NavItem = ({ route, icon: Icon, label, customIcon, collapsed = false, badge }: { 
     route?: AppRoute, 
@@ -102,10 +105,19 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           </div>
           {!collapsed && (
             <div className="text-left overflow-hidden flex-1">
-              <p className={`text-sm font-black tracking-tight truncate ${activeRoute === AppRoute.PROFILE ? 'text-indigo-700' : 'text-slate-900'}`}>
-                {(userData?.displayName || 'Identity Node').split(' ')[0]}
+              <div className="flex items-center gap-1.5">
+                <p className={`text-sm font-black tracking-tight truncate ${activeRoute === AppRoute.PROFILE ? 'text-indigo-700' : 'text-slate-900'}`}>
+                  {(userData?.displayName || 'Identity Node').split(' ')[0]}
+                </p>
+                {isVerified && (
+                  <div className="text-indigo-500 scale-75 flex-shrink-0">
+                    <ICONS.Verified />
+                  </div>
+                )}
+              </div>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono opacity-60 truncate">
+                {userData?.role === 'admin' ? 'Citadel Command' : (isVerified ? 'Verified Node' : 'Standard Node')}
               </p>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono opacity-60">Verified Member</p>
             </div>
           )}
         </button>
