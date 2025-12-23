@@ -304,7 +304,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <div className="p-2">
                     <button 
                       onClick={() => { setIsHubOpen(true); setIsSystemMenuOpen(false); }}
-                      className="w-full p-4 bg-slate-50/80 rounded-[2rem] hover:bg-white border border-slate-100 hover:border-indigo-100 hover:shadow-lg transition-all text-left group flex items-start gap-4"
+                      className="w-full p-4 bg-slate-50/80 rounded-[2rem] hover:bg-white border border-slate-100 hover:border-indigo-100 hover:shadow-lg transition-all text-left group flex items-center gap-4"
                     >
                       <div className="w-14 h-14 bg-white rounded-[1.4rem] flex items-center justify-center text-3xl shadow-sm border border-slate-100 shrink-0 group-hover:scale-110 transition-transform">
                          {userData?.statusEmoji || '⚡'}
