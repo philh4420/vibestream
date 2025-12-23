@@ -37,7 +37,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
+  const [showDetails, setShowDetails] = useState(false); // Drawer state
   
   // Media & Picker State
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
@@ -67,7 +67,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
     return () => unsub();
   }, [chatId]);
 
-  // Derived Data
+  // Derived Data: Participants
   const participants = useMemo(() => {
     return chatData.participants.map(id => {
       return allUsers.find(u => u.id === id) || { 
@@ -80,11 +80,12 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
     });
   }, [chatData.participants, allUsers, chatData.participantData]);
 
+  // Derived Data: Invite Candidates (People NOT in the cluster)
   const candidatesForInvite = useMemo(() => {
-    const query = inviteSearch.toLowerCase();
+    const queryStr = inviteSearch.toLowerCase();
     return allUsers.filter(u => 
       !chatData.participants.includes(u.id) &&
-      (u.displayName.toLowerCase().includes(query) || u.username.toLowerCase().includes(query))
+      (u.displayName.toLowerCase().includes(queryStr) || u.username.toLowerCase().includes(queryStr))
     );
   }, [allUsers, chatData.participants, inviteSearch]);
 
@@ -212,6 +213,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
     }
   };
 
+  // --- INVITE LOGIC ---
   const handleInviteNodes = async () => {
     if (selectedInviteIds.length === 0 || !db) return;
     try {
@@ -274,7 +276,11 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
   return (
     <div className="flex h-full w-full bg-[#fcfcfd] rounded-[2.5rem] overflow-hidden shadow-2xl relative animate-in fade-in duration-500 border border-white/50">
       
-      {/* MAIN CHAT STREAM (Takes full width, handles resizing via flex) */}
+      {/* 
+        MAIN CHAT STREAM 
+        Designed to sit between global Left & Right Sidebars.
+        We do NOT use a static right pane here to avoid cramping.
+      */}
       <div className="flex-1 flex flex-col min-w-0 relative bg-white/40 z-0">
         
         {/* Header */}
@@ -305,6 +311,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
              >
                 <ICONS.Create /> INVITE
              </button>
+             {/* Toggle Drawer */}
              <button 
                 onClick={() => setShowDetails(!showDetails)}
                 className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all active:scale-90 border shadow-sm ${showDetails ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-400 border-slate-100 hover:text-slate-900'}`}
@@ -413,11 +420,11 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
                  <button type="button" onClick={() => fileInputRef.current?.click()} className={`p-3 rounded-2xl transition-all active:scale-90 border ${selectedFile ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white hover:text-indigo-500 shadow-sm'}`}>
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Z" /></svg>
                  </button>
-                 <button type="button" onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }} className={`p-3 rounded-2xl transition-all active:scale-90 border ${isEmojiPickerOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white hover:text-indigo-500 shadow-sm'}`}>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" /></svg>
-                 </button>
                  <button type="button" onClick={() => { setIsGiphyPickerOpen(!isGiphyPickerOpen); setIsEmojiPickerOpen(false); }} className={`p-3 rounded-2xl transition-all active:scale-90 border ${isGiphyPickerOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white hover:text-indigo-500 shadow-sm'}`}>
                     <span className="text-[10px] font-black font-mono">GIF</span>
+                 </button>
+                 <button type="button" onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }} className={`p-3 rounded-2xl transition-all active:scale-90 border ${isEmojiPickerOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-white hover:text-indigo-500 shadow-sm'}`}>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" /></svg>
                  </button>
               </div>
 
@@ -444,7 +451,12 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
         </div>
       </div>
 
-      {/* CLUSTER DETAILS DRAWER (Overlay for Layout Compliance) */}
+      {/* 
+        CLUSTER DETAILS DRAWER (Absolute Overlay)
+        Used absolute positioning here to overlay the chat content without pushing
+        global layout boundaries, respecting the user's requirement to fit within
+        the existing 2-sidebar layout of the parent App.
+      */}
       <div 
         className={`absolute top-0 right-0 bottom-0 w-[320px] bg-white/80 backdrop-blur-3xl border-l border-white/50 flex flex-col z-[50] transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] shadow-[-20px_0_50px_rgba(0,0,0,0.1)] ${showDetails ? 'translate-x-0' : 'translate-x-full'}`}
       >
@@ -536,7 +548,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
         <div className="fixed inset-0 z-[90]" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />
       )}
 
-      {/* INVITE MODAL */}
+      {/* INVITE MODAL - Z-Index 3000 to overlay global layout */}
       {isInviteModalOpen && (
         <div className="fixed inset-0 z-[3000] flex items-center justify-center p-6">
             <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setIsInviteModalOpen(false)} />
