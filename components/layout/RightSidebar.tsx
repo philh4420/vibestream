@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../../services/firebase';
 // Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
@@ -84,13 +83,13 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather })
   };
 
   return (
-    <aside className="hidden lg:flex flex-col w-[320px] xl:w-[380px] shrink-0 bg-[#f8fafc] border-l border-precision h-full pt-[calc(var(--header-h)+1rem)] pb-8 overflow-hidden">
+    <aside className="hidden lg:flex flex-col w-[320px] xl:w-[380px] shrink-0 bg-[#f8fafc] border-l border-precision h-full pt-6 pb-8 overflow-hidden custom-scrollbar">
       
       <div className="flex-1 scroll-viewport px-6 space-y-8 pb-10">
         
         {/* SECTION: SYSTEM MONITOR WIDGET */}
         <div className="relative group overflow-hidden bg-slate-900 rounded-[2rem] p-6 text-white shadow-2xl transition-all duration-500 hover:shadow-indigo-500/20">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 blur-[60px] rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 blur-[60px] rounded-full -translate-y-1/2 translate-x-1/3" />
           
           <div className="flex justify-between items-start mb-6 relative z-10">
             <div>

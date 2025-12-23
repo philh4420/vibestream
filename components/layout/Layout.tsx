@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ICONS } from '../../constants';
 import { AppRoute, UserRole, Region, User as VibeUser, AppNotification, WeatherInfo } from '../../types';
@@ -68,7 +67,7 @@ export const Layout: React.FC<LayoutProps> = ({
         onSearch={onSearch}
       />
 
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className="flex-1 flex overflow-hidden relative mt-[var(--header-h)] h-[calc(100dvh-var(--header-h))]">
         
         {/* Dynamic Left Navigation System */}
         <LeftSidebar 
@@ -80,7 +79,7 @@ export const Layout: React.FC<LayoutProps> = ({
         />
 
         {/* Main Content Viewport with Global Atmosphere */}
-        <main className="flex-1 relative overflow-hidden flex flex-col pt-[var(--header-h)]">
+        <main className="flex-1 relative overflow-hidden flex flex-col">
           <AtmosphericBackground weather={weather}>
             <div className="flex-1 scroll-viewport px-4 sm:px-6 md:px-10 lg:px-14 py-6 relative z-10" style={{ paddingLeft: 'max(1.25rem, var(--sal))', paddingRight: 'max(1.25rem, var(--sar))' }}>
               <div className="max-w-4xl mx-auto w-full pb-[calc(var(--bottom-nav-h)+4rem)] md:pb-24">

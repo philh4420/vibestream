@@ -16,16 +16,16 @@
     margin: 0;
     padding: 0;
     font: inherit;
-    /* Universal Scrollbar Eraser */
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
+    /* Universal Scrollbar Eraser - Overridden by .custom-scrollbar where needed */
+    scrollbar-width: none; 
+    -ms-overflow-style: none;
   }
 
   *::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-    background: transparent !important;
+    display: none;
+    width: 0;
+    height: 0;
+    background: transparent;
   }
 
   html {
@@ -125,14 +125,39 @@
   overflow-y: auto !important;
   overflow-x: hidden !important;
   -webkit-overflow-scrolling: touch !important;
-  scrollbar-width: none !important;
+  scrollbar-width: none;
   overscroll-behavior-y: contain !important;
   display: flex;
   flex-direction: column;
 }
 
 .scroll-viewport::-webkit-scrollbar {
-  display: none !important;
+  display: none;
+}
+
+/* Specific Override for Visible Scrollbars */
+.custom-scrollbar {
+  scrollbar-width: thin !important;
+  scrollbar-color: oklch(0.85 0.01 240) transparent !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  display: block !important;
+  width: 4px !important;
+  height: 4px !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: oklch(0.85 0.01 240) !important;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: oklch(0.75 0.02 240) !important;
 }
 
 .glass-layer {

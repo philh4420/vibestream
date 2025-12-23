@@ -181,14 +181,14 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   return (
     <>
       <aside 
-        className="hidden lg:flex flex-col w-[300px] shrink-0 border-r border-precision bg-[#fcfcfd] p-4 pt-[calc(var(--header-h)+1.5rem)] scroll-viewport h-full sticky top-0"
+        className="hidden lg:flex flex-col w-[300px] shrink-0 border-r border-precision bg-[#fcfcfd] p-4 pt-6 scroll-viewport h-full custom-scrollbar"
         style={{ paddingLeft: 'max(1rem, var(--sal))' }}
       >
         {sidebarContent(false)}
       </aside>
 
       <aside 
-        className="hidden md:flex lg:hidden flex-col shrink-0 border-r border-precision bg-[#fcfcfd] py-6 items-center pt-[calc(var(--header-h)+1.5rem)] h-full scroll-viewport" 
+        className="hidden md:flex lg:hidden flex-col shrink-0 border-r border-precision bg-[#fcfcfd] py-6 items-center pt-6 h-full scroll-viewport custom-scrollbar" 
         style={{ 
           width: 'calc(5.5rem + var(--sal))',
           paddingLeft: 'var(--sal)'
