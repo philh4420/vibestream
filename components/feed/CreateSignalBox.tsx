@@ -51,7 +51,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
           className="flex flex-col items-center justify-center gap-2 py-3 hover:bg-indigo-50/50 rounded-2xl transition-all duration-300 text-slate-500 group/btn touch-active"
         >
           <div className="text-indigo-500 group-hover/btn:scale-125 transition-transform duration-500 scale-90 md:scale-100">
-            <ICONS.Create />
+            <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Z" /></svg>
           </div>
           <span className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] font-mono leading-none">
             Artifact
@@ -66,24 +66,41 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
           onChange={handleFileChange} 
         />
 
-        {[
-          { icon: <span className="text-sm font-black font-mono">GIF</span>, label: 'GIF_Fragment', color: 'text-amber-500', bg: 'hover:bg-amber-50/50', action: () => onOpen('gif') },
-          { icon: <ICONS.Streams />, label: 'Live_Stream', color: 'text-rose-500', bg: 'hover:bg-rose-50/50', action: () => onOpen() },
-          { icon: <ICONS.Explore />, label: 'Deep_Sync', color: 'text-emerald-500', bg: 'hover:bg-emerald-50/50', action: () => onOpen() }
-        ].map((action, i) => (
-          <button 
-            key={i}
-            onClick={action.action} 
-            className={`flex flex-col items-center justify-center gap-2 py-3 ${action.bg} rounded-2xl transition-all duration-300 text-slate-500 group/btn touch-active`}
-          >
-            <div className={`${action.color} group-hover/btn:scale-125 transition-transform duration-500 scale-90 md:scale-100`}>
-              {action.icon}
-            </div>
-            <span className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] font-mono leading-none">
-              {action.label}
-            </span>
-          </button>
-        ))}
+        <button 
+          onClick={() => onOpen('gif')}
+          className="flex flex-col items-center justify-center gap-2 py-3 hover:bg-amber-50/50 rounded-2xl transition-all duration-300 text-slate-500 group/btn touch-active"
+        >
+          <div className="text-amber-500 group-hover/btn:scale-125 transition-transform duration-500 scale-90 md:scale-100">
+            <span className="text-xs md:text-sm font-black font-mono border-2 border-current rounded px-1">GIF</span>
+          </div>
+          <span className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] font-mono leading-none">
+            Fragment
+          </span>
+        </button>
+
+        <button 
+          onClick={() => onOpen()}
+          className="flex flex-col items-center justify-center gap-2 py-3 hover:bg-rose-50/50 rounded-2xl transition-all duration-300 text-slate-500 group/btn touch-active"
+        >
+          <div className="text-rose-500 group-hover/btn:scale-125 transition-transform duration-500 scale-90 md:scale-100">
+            <ICONS.Streams />
+          </div>
+          <span className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] font-mono leading-none">
+            Live_Link
+          </span>
+        </button>
+
+        <button 
+          onClick={() => onOpen()}
+          className="flex flex-col items-center justify-center gap-2 py-3 hover:bg-emerald-50/50 rounded-2xl transition-all duration-300 text-slate-500 group/btn touch-active"
+        >
+          <div className="text-emerald-500 group-hover/btn:scale-125 transition-transform duration-500 scale-90 md:scale-100">
+            <ICONS.Explore />
+          </div>
+          <span className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] font-mono leading-none">
+            Deep_Sync
+          </span>
+        </button>
       </div>
     </div>
   );
