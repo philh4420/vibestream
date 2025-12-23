@@ -145,7 +145,6 @@ export interface Story {
   coverUrl: string;
   timestamp: any;
   type?: 'image' | 'video';
-  // New Archive Fields
   isArchivedStream?: boolean;
   streamTitle?: string;
   streamStats?: {
@@ -164,6 +163,22 @@ export interface LiveStream {
   viewerCount: number;
   startedAt: any;
   category: string;
+}
+
+export interface Gathering {
+  id: string;
+  organizerId: string;
+  organizerName: string;
+  organizerAvatar: string;
+  title: string;
+  description: string;
+  date: string; // ISO String
+  location: string;
+  type: 'physical' | 'virtual';
+  category: 'Social' | 'Tech' | 'Gaming' | 'Nightlife' | 'Workshop';
+  coverUrl: string;
+  attendees: string[]; // Array of User IDs
+  createdAt: any;
 }
 
 export interface Chat {
@@ -197,7 +212,6 @@ export interface CallSession {
   callerName: string;
   callerAvatar: string;
   receiverId: string;
-  // Added missing receiver metadata to resolve type error in NeuralLinkOverlay component
   receiverName: string;
   receiverAvatar: string;
   status: 'ringing' | 'connected' | 'ended' | 'rejected';

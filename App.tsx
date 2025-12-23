@@ -21,7 +21,8 @@ import { MeshPage } from './components/mesh/MeshPage';
 import { ClustersPage } from './components/clusters/ClustersPage';
 import { VerifiedNodesPage } from './components/explore/VerifiedNodesPage';
 import { DataVaultPage } from './components/vault/DataVaultPage';
-import { TemporalPage } from './components/temporal/TemporalPage'; // Imported
+import { TemporalPage } from './components/temporal/TemporalPage';
+import { GatheringsPage } from './components/gatherings/GatheringsPage'; // Imported
 
 import { AppRoute, Post, ToastMessage, Region, User as VibeUser, SystemSettings, LiveStream, AppNotification, SignalAudience, PresenceStatus, WeatherInfo, CallSession } from './types';
 import { db, auth } from './services/firebase';
@@ -680,6 +681,15 @@ const App: React.FC = () => {
           currentUser={userData}
           locale={userRegion}
           addToast={addToast}
+        />
+      )}
+
+      {activeRoute === AppRoute.GATHERINGS && userData && (
+        <GatheringsPage 
+          currentUser={userData}
+          locale={userRegion}
+          addToast={addToast}
+          allUsers={allUsers}
         />
       )}
 
