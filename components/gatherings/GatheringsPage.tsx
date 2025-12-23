@@ -13,7 +13,9 @@ const {
   doc,
   arrayUnion,
   arrayRemove,
-  where
+  where,
+  writeBatch,
+  getDocs
 } = Firestore as any;
 import { User, Gathering, Region } from '../../types';
 import { ICONS } from '../../constants';
@@ -54,7 +56,8 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({ currentUser, loc
   const handleCreate = async (data: any) => {
     if (!db || !currentUser) return;
     try {
-      await addDoc(collection(db, 'gatherings'), {
+      // 1. Create Gathering Document
+      const docRef = await addDoc(collection(db, 'gatherings'), {
         ...data,
         organizerId: currentUser.id,
         organizerName: currentUser.displayName,
@@ -62,9 +65,36 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({ currentUser, loc
         attendees: [currentUser.id],
         createdAt: serverTimestamp()
       });
+
+      // 2. Broadcast Notification to Followers
+      const batch = writeBatch(db);
+      const followersRef = collection(db, 'users', currentUser.id, 'followers');
+      const followersSnap = await getDocs(followersRef);
+
+      if (!followersSnap.empty) {
+        followersSnap.docs.forEach((followerDoc: any) => {
+          const followerId = followerDoc.id; 
+          const notifRef = doc(collection(db, 'notifications'));
+          batch.set(notifRef, {
+            type: 'gathering_create',
+            fromUserId: currentUser.id,
+            fromUserName: currentUser.displayName,
+            fromUserAvatar: currentUser.avatarUrl,
+            toUserId: followerId,
+            targetId: docRef.id,
+            text: `initialized a new gathering: "${data.title}"`,
+            isRead: false,
+            timestamp: serverTimestamp(),
+            pulseFrequency: 'intensity'
+          });
+        });
+        await batch.commit();
+      }
+
       addToast("Gathering Initialized Successfully", "success");
       setIsCreateOpen(false);
     } catch (e) {
+      console.error(e);
       addToast("Failed to Initialize Gathering", "error");
     }
   };
