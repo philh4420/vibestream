@@ -96,12 +96,31 @@ export const TemporalPage: React.FC<TemporalPageProps> = ({ currentUser, locale,
                  onClick={() => handleOpenStory(idx)}
                  className="break-inside-avoid relative rounded-[2.5rem] overflow-hidden group cursor-pointer border border-slate-100 bg-slate-900 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:z-10"
                >
-                 <img src={story.coverUrl} className="w-full h-auto object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700" alt="" />
+                 {story.type === 'video' ? (
+                   <video 
+                     src={story.coverUrl} 
+                     className="w-full h-auto object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700" 
+                     muted 
+                     loop 
+                     playsInline
+                     onMouseOver={e => e.currentTarget.play().catch(() => {})}
+                     onMouseOut={e => e.currentTarget.pause()}
+                   />
+                 ) : (
+                   <img src={story.coverUrl} className="w-full h-auto object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700" alt="" />
+                 )}
+                 
                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
                  
                  <div className="absolute top-4 left-4">
                     <div className={`w-2 h-2 rounded-full ${activeMode === 'FLUX' ? 'bg-indigo-500 animate-pulse shadow-[0_0_10px_#6366f1]' : 'bg-amber-500'}`} />
                  </div>
+
+                 {story.isArchivedStream && (
+                    <div className="absolute top-4 right-4 bg-rose-600 text-white px-2 py-1 rounded text-[7px] font-black uppercase tracking-widest">
+                       REC
+                    </div>
+                 )}
 
                  <div className="absolute bottom-0 left-0 right-0 p-5 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
                     <div className="flex items-center gap-3">

@@ -65,6 +65,20 @@ export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData, onTransmit
     setIsSelectionOpen(false);
   };
 
+  const handleViewStory = (story: Story) => {
+    // Currently FeedPage doesn't have a way to open the TemporalViewer directly from here easily 
+    // without lifting state up or using an event. For now, we'll dispatch an event similar to toasts.
+    // However, since TemporalViewer is page-specific in this architecture, 
+    // a simple navigation to the Temporal Page is a robust fallback for the MVP.
+    // Or we could trigger a custom event that App.tsx listens to, but App doesn't render TemporalViewer.
+    // The Temporal Page is where the viewer lives.
+    
+    // Dispatching event for 'vibe-view-story' which could be caught if implemented globally, 
+    // but standard behavior here: navigate to Temporal route.
+    const event = new CustomEvent('vibe-navigate', { detail: { route: 'temporal' } });
+    window.dispatchEvent(event);
+  };
+
   return (
     <div className="relative group/strip">
       <div className="flex gap-3 md:gap-4 overflow-x-auto no-scrollbar pb-6 px-4 -mx-4 md:px-0 md:mx-0 snap-x snap-mandatory">
@@ -131,18 +145,36 @@ export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData, onTransmit
           stories.map(story => (
             <div key={story.id} className="relative shrink-0 snap-start">
               <button 
+                onClick={() => handleViewStory(story)}
                 className="w-[100px] h-[160px] md:w-[120px] md:h-[200px] rounded-[1.8rem] bg-slate-800 overflow-hidden relative group shadow-sm hover:shadow-xl transition-all active:scale-95"
               >
-                <img 
-                  src={story.coverUrl} 
-                  className="w-full h-full object-cover opacity-90 group-hover:scale-110 transition-transform duration-[5s]" 
-                  alt="" 
-                />
+                {story.type === 'video' ? (
+                  <video 
+                    src={story.coverUrl} 
+                    className="w-full h-full object-cover opacity-90 group-hover:scale-110 transition-transform duration-[5s]" 
+                    muted 
+                    loop 
+                    playsInline // Important for iOS
+                    onMouseOver={e => e.currentTarget.play().catch(() => {})}
+                    onMouseOut={e => e.currentTarget.pause()}
+                  />
+                ) : (
+                  <img 
+                    src={story.coverUrl} 
+                    className="w-full h-full object-cover opacity-90 group-hover:scale-110 transition-transform duration-[5s]" 
+                    alt="" 
+                  />
+                )}
+                
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
                 
                 <div className="absolute top-3 left-3 p-0.5 rounded-full border border-indigo-400 shadow-sm bg-black/20 backdrop-blur-sm">
                   <img src={story.authorAvatar} className="w-6 h-6 rounded-full object-cover" alt="" />
                 </div>
+
+                {story.isArchivedStream && (
+                    <div className="absolute top-3 right-3 bg-rose-600 w-2 h-2 rounded-full shadow-sm" title="Archived Broadcast" />
+                )}
 
                 <div className="absolute bottom-3 left-3 right-3 text-left">
                    <p className="text-white text-[9px] font-black uppercase tracking-tight truncate leading-none mb-1">{story.authorName}</p>
