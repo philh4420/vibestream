@@ -417,13 +417,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
                 })
               )}
            </div>
-           
-           <button 
-             onClick={() => onNavigate(AppRoute.EXPLORE)}
-             className="w-full py-4 text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] font-mono hover:text-indigo-600 hover:bg-white transition-all bg-slate-50 rounded-2xl hover:shadow-md border border-transparent hover:border-slate-100"
-           >
-             Expand_Grid_View
-           </button>
+          </div>
         </div>
 
         {/* 4. FOOTER MINI INFO */}
