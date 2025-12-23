@@ -198,9 +198,8 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
               </div>
            </div>
          )}
-         {/* Top Gradient for text readability */}
+         {/* Gradients for readability */}
          <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/80 to-transparent pointer-events-none" />
-         {/* Bottom Gradient for chat readability */}
          <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
       </div>
 
@@ -241,7 +240,7 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
             
             {/* Chat Messages */}
             {showChat && (
-               <div className="h-64 overflow-y-auto no-scrollbar flex flex-col justify-end space-y-2 mask-gradient-top">
+               <div className="h-64 overflow-y-auto no-scrollbar flex flex-col justify-end space-y-2 mask-gradient-top relative z-10">
                   {messages.map((msg) => (
                     <div key={msg.id} className="flex items-start gap-2 animate-in slide-in-from-left-4 duration-300">
                        <img src={msg.senderAvatar} className="w-6 h-6 rounded-full object-cover border border-white/20" alt="" />
@@ -256,7 +255,7 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
             )}
 
             {/* Input Deck */}
-            <div className="flex items-end gap-3">
+            <div className="flex items-end gap-3 relative z-20">
                <form onSubmit={handleSendMessage} className="flex-1 relative">
                   <input 
                     type="text" 
@@ -286,7 +285,10 @@ export const LiveWatcherOverlay: React.FC<LiveWatcherOverlayProps> = ({ stream, 
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .mask-gradient-top { mask-image: linear-gradient(to top, black 80%, transparent 100%); }
+        .mask-gradient-top { 
+          -webkit-mask-image: linear-gradient(to top, black 80%, transparent 100%);
+          mask-image: linear-gradient(to top, black 80%, transparent 100%);
+        }
         @keyframes float-up {
           0% { transform: translateY(0) scale(1) rotate(0deg); opacity: 0; }
           15% { opacity: 1; }

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { db } from '../../services/firebase';
+import { db, auth } from '../../services/firebase'; // Added auth import
 import * as Firestore from 'firebase/firestore';
 const { 
   collection, 
@@ -51,6 +51,7 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
   const [hwStatus, setHwStatus] = useState<'checking' | 'ready' | 'failed'>('checking');
   const [messages, setMessages] = useState<StreamMessage[]>([]);
   const [showChat, setShowChat] = useState(true);
+  const [chatInput, setChatInput] = useState(''); // Broadcaster chat input
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -143,9 +144,23 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
     } catch (e) { pc.close(); delete pcInstances.current[id]; }
   };
 
+  const handleBroadcastMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim() || !activeStreamId || !db) return;
+    const text = chatInput.trim();
+    setChatInput('');
+    await addDoc(collection(db, 'streams', activeStreamId, 'messages'), {
+      senderId: userData.id,
+      senderName: userData.displayName,
+      senderAvatar: userData.avatarUrl,
+      text,
+      timestamp: serverTimestamp()
+    });
+  };
+
   const isLive = !!activeStreamId;
 
-  // Render to Body (Portal) to escape Layout constraints
+  // Render to Body (Portal)
   return createPortal(
     <div className="fixed inset-0 z-[9999] bg-black text-white font-sans overflow-hidden flex flex-col h-[100dvh]">
       
@@ -157,7 +172,7 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
       />
       
       {/* OVERLAY - GRADIENTS FOR READABILITY */}
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/60 via-transparent to-black/60" />
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/70 via-transparent to-black/80" />
 
       {/* --- PRE-FLIGHT (SETUP) MODE --- */}
       {!isLive && (
@@ -232,14 +247,15 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
               </div>
            </div>
 
-           {/* CHAT OVERLAY (Ghost Mode) */}
+           {/* CHAT OVERLAY */}
            <div className="flex-1 flex flex-col justify-end px-4 md:px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] overflow-hidden">
               {showChat && (
-                <div className="w-full max-w-sm pointer-events-auto mask-gradient-b">
-                   <div className="h-[300px] overflow-y-auto no-scrollbar flex flex-col justify-end space-y-2 pb-2">
+                <div className="w-full max-w-sm pointer-events-auto flex flex-col gap-2">
+                   {/* Messages Container */}
+                   <div className="h-[250px] overflow-y-auto no-scrollbar flex flex-col justify-end space-y-2 pb-2 mask-gradient-b">
                       {messages.map((msg) => (
                         <div key={msg.id} className="flex items-start gap-2 animate-in slide-in-from-left-4 duration-300">
-                           <div className="bg-black/30 backdrop-blur-md px-3 py-2 rounded-xl rounded-tl-none border border-white/5 shadow-sm max-w-[90%]">
+                           <div className="bg-black/40 backdrop-blur-md px-3 py-2 rounded-xl rounded-tl-none border border-white/5 shadow-sm max-w-[90%]">
                               <span className="text-[9px] font-black text-rose-300 uppercase tracking-wide mr-2">{msg.senderName}:</span>
                               <span className="text-xs font-medium text-white/90">{msg.text}</span>
                            </div>
@@ -247,6 +263,20 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
                       ))}
                       <div ref={chatEndRef} />
                    </div>
+
+                   {/* Broadcaster Input */}
+                   <form onSubmit={handleBroadcastMessage} className="relative">
+                      <input 
+                        type="text" 
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        placeholder="Reply to chat..."
+                        className="w-full bg-white/10 border border-white/20 rounded-full px-4 py-2.5 text-xs font-bold text-white placeholder:text-white/40 focus:bg-black/60 outline-none backdrop-blur-md transition-all shadow-lg"
+                      />
+                      <button type="submit" disabled={!chatInput.trim()} className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 bg-white text-black rounded-full disabled:opacity-0 transition-opacity">
+                         <svg className="w-3 h-3 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                      </button>
+                   </form>
                 </div>
               )}
            </div>
@@ -255,7 +285,10 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
 
       <style dangerouslySetInnerHTML={{ __html: `
         .mirror { transform: scaleX(-1); }
-        .mask-gradient-b { mask-image: linear-gradient(to top, black 80%, transparent 100%); }
+        .mask-gradient-b { 
+          -webkit-mask-image: linear-gradient(to top, black 80%, transparent 100%);
+          mask-image: linear-gradient(to top, black 80%, transparent 100%);
+        }
       `}} />
     </div>,
     document.body
