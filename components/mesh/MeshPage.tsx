@@ -32,7 +32,7 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
   const [searchQuery, setSearchQuery] = useState('');
   const [processingIds, setProcessingIds] = useState<string[]>([]);
   
-  // Track who the current user follows to toggle buttons correctly in "Discover" or "Followers" mode
+  // Track who the current user follows
   const [myFollowingIds, setMyFollowingIds] = useState<Set<string>>(new Set());
 
   // Initial Data Fetch
@@ -44,13 +44,11 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
       try {
         let fetchedUsers: User[] = [];
         const myFollowingSnap = await getDocs(collection(db, 'users', currentUser.id, 'following'));
-        // Explicitly type the Set as Set<string> to avoid type inference errors
         const currentFollowing = new Set<string>(myFollowingSnap.docs.map((d: any) => String(d.id)));
         setMyFollowingIds(currentFollowing);
 
         if (activeTab === 'discover') {
-          // Fetch all users, filter out self and already following
-          // Optimized: Real app would use a recommendation engine or paginated query
+          // Optimized discovery query
           const q = query(collection(db, 'users'), where('id', '!=', currentUser.id)); 
           const snap = await getDocs(q);
           
@@ -60,9 +58,6 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
             .slice(0, 50);
 
         } else if (activeTab === 'following') {
-          // Fetch details of users I follow
-          // Note: Firestore 'in' query supports max 10. For production, fetch in batches or denormalize basic user data.
-          // Falling back to parallel fetching for this architecture scale.
           const ids = Array.from(currentFollowing);
           if (ids.length > 0) {
             const promises = ids.map(id => getDoc(doc(db, 'users', id)));
@@ -96,17 +91,15 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
   const handleToggleFollow = async (targetUser: User) => {
     if (!db || !currentUser.id) return;
     
-    // Optimistic UI Update
     const isFollowing = myFollowingIds.has(targetUser.id);
     const action = isFollowing ? 'unfollow' : 'follow';
     
     setProcessingIds(prev => [...prev, targetUser.id]);
 
-    // Update local state immediately
+    // Optimistic Update
     if (action === 'follow') {
       setMyFollowingIds(prev => new Set(prev).add(targetUser.id));
       if (activeTab === 'discover') {
-        // Remove from discover list visually
         setUsers(prev => prev.filter(u => u.id !== targetUser.id));
       }
     } else {
@@ -114,7 +107,6 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
       newSet.delete(targetUser.id);
       setMyFollowingIds(newSet);
       if (activeTab === 'following') {
-        // Remove from following list visually
         setUsers(prev => prev.filter(u => u.id !== targetUser.id));
       }
     }
@@ -132,7 +124,6 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
         batch.update(myRef, { following: increment(1) });
         batch.update(theirRef, { followers: increment(1) });
         
-        // Add Notification
         const notifRef = doc(collection(db, 'notifications'));
         batch.set(notifRef, {
           type: 'follow',
@@ -158,7 +149,7 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
       }
     } catch (e) {
       addToast("Handshake Protocol Failed", "error");
-      // Revert optimistic update on failure
+      // Revert optimistic update
       if (action === 'follow') {
         setMyFollowingIds(prev => { const s = new Set(prev); s.delete(targetUser.id); return s; });
       } else {
@@ -174,129 +165,157 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
     u.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const tabs = [
-    { id: 'following', label: 'Network', count: currentUser.following },
-    { id: 'followers', label: 'Audience', count: currentUser.followers },
-    { id: 'discover', label: 'Discover', count: null }
-  ];
-
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 min-h-screen pb-20">
+    <div className="w-full max-w-[2400px] mx-auto pb-32 animate-in fade-in duration-700">
       
-      {/* 1. Header & Stats Cluster */}
-      <div className="bg-white border-precision rounded-[2.5rem] p-6 md:p-8 shadow-sm relative overflow-hidden">
-         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/5 blur-[80px] rounded-full translate-x-1/3 -translate-y-1/3 pointer-events-none" />
+      {/* 1. Neural Command Header */}
+      <div className="relative rounded-[3rem] bg-slate-950 p-8 md:p-12 text-white shadow-2xl border border-white/10 overflow-hidden mb-8 group">
+         <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/20 blur-[120px] rounded-full translate-x-1/3 -translate-y-1/3 group-hover:bg-indigo-500/30 transition-colors duration-1000" />
+         <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 blur-[100px] rounded-full -translate-x-1/3 translate-y-1/3" />
          
-         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-           <div>
-             <div className="flex items-center gap-3 mb-3">
-                <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg"><ICONS.Profile /></div>
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] font-mono">NEURAL_MESH_v2.6</span>
+         <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8">
+           <div className="space-y-4">
+             <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/10 backdrop-blur-md rounded-xl border border-white/10 text-indigo-300">
+                   <ICONS.Profile />
+                </div>
+                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em] font-mono">Mesh_Control_v2.6</span>
              </div>
-             <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic leading-none mb-2">My_Connections</h1>
+             <h1 className="text-3xl md:text-5xl font-black italic tracking-tighter uppercase leading-none">
+               Neural_Network
+             </h1>
+             <p className="text-xs md:text-sm font-medium text-slate-400 max-w-lg leading-relaxed">
+               Visualizing active connections and potential resonance points within your local cluster.
+             </p>
            </div>
-           
-           <div className="flex gap-4">
-              <div className="text-center px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100">
-                 <div className="text-xl font-black text-slate-900 leading-none">{currentUser.following}</div>
-                 <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest font-mono mt-1">Following</div>
-              </div>
-              <div className="text-center px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100">
-                 <div className="text-xl font-black text-slate-900 leading-none">{currentUser.followers}</div>
-                 <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest font-mono mt-1">Followers</div>
-              </div>
-           </div>
-         </div>
 
-         {/* Navigation Tabs */}
-         <div className="flex items-center gap-2 mt-8 overflow-x-auto no-scrollbar pb-1">
-            {tabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex-1 md:flex-none px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap ${activeTab === tab.id ? 'bg-slate-950 text-white border-slate-950 shadow-lg' : 'bg-white text-slate-500 border-slate-100 hover:border-slate-300'}`}
-              >
-                {tab.label}
-              </button>
-            ))}
+           <div className="flex gap-4 w-full lg:w-auto">
+              <div className="flex-1 lg:flex-none px-8 py-5 bg-white/5 backdrop-blur-md border border-white/10 rounded-[2rem] flex flex-col items-center justify-center min-w-[140px] hover:bg-white/10 transition-colors">
+                 <span className="text-3xl font-black text-white leading-none tracking-tighter">{currentUser.following}</span>
+                 <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest mt-1.5">Outbound</span>
+              </div>
+              <div className="flex-1 lg:flex-none px-8 py-5 bg-white/5 backdrop-blur-md border border-white/10 rounded-[2rem] flex flex-col items-center justify-center min-w-[140px] hover:bg-white/10 transition-colors">
+                 <span className="text-3xl font-black text-white leading-none tracking-tighter">{currentUser.followers}</span>
+                 <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest mt-1.5">Inbound</span>
+              </div>
+           </div>
          </div>
       </div>
 
-      {/* 2. Search & List Container */}
-      <div className="bg-white border-precision rounded-[2.5rem] shadow-sm min-h-[500px] flex flex-col">
-        {/* Search Bar */}
-        <div className="p-6 border-b border-slate-50 sticky top-0 bg-white/95 backdrop-blur-xl z-20 rounded-t-[2.5rem]">
-           <div className="relative group">
-              <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors"><ICONS.Search /></div>
-              <input 
-                type="text" 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={`Search ${activeTab}...`}
-                className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-14 pr-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/5 focus:bg-white transition-all placeholder:text-slate-300"
-              />
-           </div>
-        </div>
+      {/* 2. Sticky Control Bar */}
+      <div className="sticky top-[calc(var(--header-h)+1rem)] z-30 mb-8 px-2 md:px-0">
+         <div className="bg-white/80 backdrop-blur-xl border border-white/60 p-2 rounded-[2.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] flex flex-col md:flex-row items-center justify-between gap-3">
+            
+            {/* Tabs */}
+            <div className="flex bg-slate-100/80 p-1 rounded-[2rem] w-full md:w-auto">
+               {[
+                 { id: 'following', label: 'Network' },
+                 { id: 'followers', label: 'Audience' },
+                 { id: 'discover', label: 'Discover' }
+               ].map(tab => (
+                 <button
+                   key={tab.id}
+                   onClick={() => setActiveTab(tab.id as any)}
+                   className={`flex-1 md:flex-none px-6 py-3 rounded-[1.8rem] text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative ${activeTab === tab.id ? 'bg-white text-indigo-600 shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                 >
+                   {tab.label}
+                 </button>
+               ))}
+            </div>
 
-        {/* User List */}
-        <div className="flex-1 p-4 md:p-6 space-y-4">
-           {isLoading ? (
-             Array.from({ length: 6 }).map((_, i) => (
-               <div key={i} className="flex items-center gap-4 p-4 rounded-3xl bg-slate-50 animate-pulse">
-                  <div className="w-14 h-14 bg-slate-200 rounded-2xl" />
-                  <div className="flex-1 space-y-2">
-                     <div className="h-3 w-1/3 bg-slate-200 rounded-full" />
-                     <div className="h-2 w-1/4 bg-slate-200 rounded-full" />
-                  </div>
+            {/* Search */}
+            <div className="relative w-full md:w-80 group">
+               <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors scale-90">
+                 <ICONS.Search />
                </div>
-             ))
-           ) : filteredUsers.length > 0 ? (
-             filteredUsers.map(user => {
+               <input 
+                 type="text" 
+                 value={searchQuery}
+                 onChange={(e) => setSearchQuery(e.target.value)}
+                 placeholder={`Scan ${activeTab} nodes...`}
+                 className="w-full bg-white border border-slate-200 rounded-[2rem] pl-12 pr-6 py-3.5 text-xs font-bold outline-none focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-200 transition-all placeholder:text-slate-300 shadow-inner"
+               />
+            </div>
+         </div>
+      </div>
+
+      {/* 3. Node Grid */}
+      <div className="min-h-[400px]">
+         {isLoading ? (
+           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+             {Array.from({ length: 9 }).map((_, i) => (
+               <div key={i} className="h-40 bg-slate-50 rounded-[2.5rem] animate-pulse border border-slate-100" />
+             ))}
+           </div>
+         ) : filteredUsers.length > 0 ? (
+           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+             {filteredUsers.map(user => {
                const isFollowing = myFollowingIds.has(user.id);
                const isMe = user.id === currentUser.id;
                const isProcessing = processingIds.includes(user.id);
 
                return (
-                 <div key={user.id} className="flex items-center gap-4 p-4 rounded-[2rem] bg-white border border-slate-100 hover:border-indigo-100 hover:shadow-lg transition-all group">
-                    <div className="relative cursor-pointer shrink-0" onClick={() => onViewProfile(user)}>
-                       <img src={user.avatarUrl} className="w-14 h-14 rounded-2xl object-cover border-2 border-slate-50 shadow-sm" alt="" />
-                       <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 border-2 border-white rounded-full ${user.presenceStatus === 'Online' ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onViewProfile(user)}>
-                       <div className="flex items-center gap-2">
-                          <h3 className="font-black text-slate-900 text-sm uppercase italic tracking-tight truncate">{user.displayName}</h3>
-                          {user.verifiedHuman && <div className="text-indigo-500 scale-75"><ICONS.Verified /></div>}
+                 <div 
+                   key={user.id} 
+                   className="group bg-white border border-slate-100 rounded-[2.5rem] p-5 hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] hover:border-indigo-100 transition-all duration-300 relative flex flex-col overflow-hidden"
+                 >
+                    {/* Decorative Top Line */}
+                    <div className={`absolute top-0 left-0 right-0 h-1 ${user.presenceStatus === 'Online' ? 'bg-emerald-500' : 'bg-slate-200'} opacity-0 group-hover:opacity-100 transition-opacity`} />
+
+                    <div className="flex items-start justify-between mb-4 relative z-10">
+                       <div className="flex items-center gap-4 cursor-pointer" onClick={() => onViewProfile(user)}>
+                          <div className="relative">
+                             <img src={user.avatarUrl} className="w-16 h-16 rounded-[1.5rem] object-cover border-2 border-slate-50 shadow-sm group-hover:scale-105 transition-transform duration-500" alt="" />
+                             {user.verifiedHuman && (
+                               <div className="absolute -bottom-1 -right-1 bg-white text-indigo-500 p-0.5 rounded-full border border-slate-50 shadow-sm">
+                                  <ICONS.Verified />
+                               </div>
+                             )}
+                          </div>
+                          <div>
+                             <h3 className="font-black text-slate-900 text-sm uppercase italic tracking-tight truncate max-w-[140px]">{user.displayName}</h3>
+                             <p className="text-[9px] font-bold text-slate-400 font-mono tracking-wider truncate mb-1">@{user.username}</p>
+                             <div className="flex items-center gap-1.5">
+                                <div className={`w-1.5 h-1.5 rounded-full ${user.presenceStatus === 'Online' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
+                                <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">{user.presenceStatus || 'OFFLINE'}</span>
+                             </div>
+                          </div>
                        </div>
-                       <p className="text-[10px] font-bold text-slate-400 font-mono tracking-wider truncate mb-0.5">@{user.username}</p>
-                       <p className="text-[10px] text-slate-500 font-medium truncate opacity-0 group-hover:opacity-100 transition-opacity">
-                         {user.bio || 'Node active.'}
-                       </p>
                     </div>
 
-                    {!isMe && (
-                      <button 
-                        onClick={() => handleToggleFollow(user)}
-                        disabled={isProcessing}
-                        className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 shrink-0 ${isFollowing ? 'bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-500' : 'bg-slate-950 text-white hover:bg-indigo-600 shadow-lg'}`}
-                      >
-                        {isProcessing ? '...' : (isFollowing ? 'Following' : 'Follow')}
-                      </button>
-                    )}
+                    <p className="text-[10px] text-slate-500 font-medium leading-relaxed line-clamp-2 mb-6 px-1 h-8">
+                      {user.bio || 'Neural node active. Establishing resonance.'}
+                    </p>
+
+                    <div className="mt-auto flex gap-2">
+                       {!isMe && (
+                         <button 
+                           onClick={() => handleToggleFollow(user)}
+                           disabled={isProcessing}
+                           className={`flex-1 py-3 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 disabled:opacity-50 ${isFollowing ? 'bg-slate-50 text-slate-600 hover:bg-rose-50 hover:text-rose-500 border border-slate-100' : 'bg-slate-900 text-white hover:bg-indigo-600 shadow-lg'}`}
+                         >
+                           {isProcessing ? '...' : (isFollowing ? 'Disconnect' : 'Connect')}
+                         </button>
+                       )}
+                       <button onClick={() => onViewProfile(user)} className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-300 hover:text-indigo-500 hover:border-indigo-100 transition-all active:scale-90 shadow-sm">
+                          <ICONS.Profile />
+                       </button>
+                    </div>
                  </div>
                );
-             })
-           ) : (
-             <div className="py-20 text-center flex flex-col items-center opacity-40">
-                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-300">
-                   <ICONS.Search />
-                </div>
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] font-mono italic">
-                  {searchQuery ? 'No nodes found matching query.' : 'Grid sector empty.'}
-                </p>
-             </div>
-           )}
-        </div>
+             })}
+           </div>
+         ) : (
+           <div className="py-32 flex flex-col items-center justify-center text-center opacity-40 bg-slate-50/50 rounded-[3rem] border border-dashed border-slate-200">
+              <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mb-6 text-slate-300 shadow-sm">
+                 <ICONS.Search />
+              </div>
+              <h3 className="text-lg font-black uppercase tracking-widest italic text-slate-900">Scan_Complete</h3>
+              <p className="text-[9px] font-black uppercase tracking-[0.3em] font-mono mt-1 text-slate-400">
+                {searchQuery ? 'No nodes found matching query.' : 'Grid sector empty.'}
+              </p>
+           </div>
+         )}
       </div>
     </div>
   );
