@@ -259,6 +259,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
     }
   };
 
+  // --- TERMS ACCEPTANCE LOGIC ---
+  const handleAcceptTerms = () => {
+    setAcceptedTerms(true);
+    setAuthMode('register');
+    setShowRegisterModal(true);
+    setCurrentView('auth');
+    addToast("Protocols Accepted", "success");
+  };
+
   // RENDER CONTENT FOR LEGAL PAGES
   const renderLegalContent = () => {
     const commonClasses = "max-w-4xl mx-auto pt-24 pb-12 px-6 min-h-screen";
@@ -273,7 +282,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
     );
 
     if (currentView === 'privacy') return <div className={commonClasses}><BackButton /><PrivacyPage /></div>;
-    if (currentView === 'terms') return <div className={commonClasses}><BackButton /><TermsPage /></div>;
+    // Pass handleAcceptTerms so the button appears and works
+    if (currentView === 'terms') return <div className={commonClasses}><BackButton /><TermsPage onAccept={handleAcceptTerms} /></div>;
     if (currentView === 'cookies') return <div className={commonClasses}><BackButton /><CookiesPage /></div>;
     return null;
   };
