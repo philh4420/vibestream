@@ -229,6 +229,35 @@ export default function App() {
     }
   }, [activeRoute]);
 
+  // --- APPEARANCE & SETTINGS EFFECT ---
+  useEffect(() => {
+    if (userData?.settings?.appearance) {
+      const { theme, reducedMotion, highContrast } = userData.settings.appearance;
+      const root = document.documentElement;
+
+      // Theme Application
+      if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+
+      // Reduced Motion Application
+      if (reducedMotion) {
+        root.classList.add('reduced-motion');
+      } else {
+        root.classList.remove('reduced-motion');
+      }
+
+      // High Contrast Application
+      if (highContrast) {
+        root.classList.add('high-contrast');
+      } else {
+        root.classList.remove('high-contrast');
+      }
+    }
+  }, [userData?.settings?.appearance]);
+
   // --- AUTH & USER SYNC ---
   useEffect(() => {
     // Safety Timeout: Force stop loading if Auth listener hangs or network fails
@@ -319,9 +348,6 @@ export default function App() {
   // --- GLOBAL DATA SYNC ---
   useEffect(() => {
     // Sync Settings Globally
-    // We use functional update setSystemSettings(prev => ({...prev, ...data})) to ensure
-    // we merge partial data from Firestore with our robust defaults, preventing
-    // undefined values from breaking features like registration disable.
     const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (docSnap: any) => {
       if (docSnap.exists()) {
         setSystemSettings(prev => ({

@@ -1,3 +1,4 @@
+
 /* =========================================================================
    VIBESTREAM 2026+ ULTIMATE CSS RESET & MODERN DESIGN MANIFEST
    OKLCH CORE | ZERO-SCROLLBAR ARCHITECTURE | MOBILE-FIRST
@@ -118,6 +119,45 @@
   --shadow-flat: 0 1px 3px oklch(0 0 0 / 0.05);
   --shadow-float: 0 10px 30px -10px oklch(0 0 0 / 0.08);
   --shadow-heavy: 0 40px 80px -20px oklch(0 0 0 / 0.12);
+}
+
+/* 2a. DARK MODE OVERRIDES */
+html.dark {
+  --bg-main: oklch(0.15 0.02 240);
+  --text-main: oklch(0.95 0.01 240);
+  --text-muted: oklch(0.70 0.02 240);
+  --glass-surface: oklch(0.15 0.02 240 / 0.85);
+  --glass-border: oklch(1 1 1 / 0.1);
+  color-scheme: dark;
+}
+
+/* Force dark styles on utility classes when .dark is present */
+html.dark .bg-white { background-color: #1e293b !important; color: #f8fafc; }
+html.dark .bg-slate-50 { background-color: #0f172a !important; border-color: #334155; }
+html.dark .text-slate-900 { color: #f1f5f9 !important; }
+html.dark .text-slate-500 { color: #94a3b8 !important; }
+html.dark .text-slate-400 { color: #64748b !important; }
+html.dark .border-slate-100,
+html.dark .border-slate-200 { border-color: #334155 !important; }
+html.dark .bg-slate-100 { background-color: #334155 !important; }
+html.dark .bg-slate-900 { background-color: #020617 !important; border-color: #1e293b; }
+html.dark .shadow-sm, html.dark .shadow-md, html.dark .shadow-lg, html.dark .shadow-xl { box-shadow: none !important; }
+
+/* 2b. HIGH CONTRAST OVERRIDES */
+html.high-contrast {
+  filter: contrast(1.2);
+}
+html.high-contrast .text-slate-400 { color: #475569 !important; }
+html.high-contrast .border-slate-100 { border-color: #94a3b8 !important; }
+
+/* 2c. REDUCED MOTION OVERRIDES */
+html.reduced-motion *, 
+html.reduced-motion *::before, 
+html.reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
 }
 
 /* 3. MODERN UTILITIES */

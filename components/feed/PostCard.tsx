@@ -48,6 +48,9 @@ export const PostCard: React.FC<PostCardProps> = ({
   const pulseTimerRef = useRef<any>(null);
   const optionsRef = useRef<HTMLDivElement>(null);
 
+  // Settings Check
+  const shouldAutoPlay = userData?.settings?.appearance?.autoPlayVideo !== false;
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (optionsRef.current && !optionsRef.current.contains(event.target as Node)) {
@@ -326,7 +329,14 @@ export const PostCard: React.FC<PostCardProps> = ({
                   {item.type === 'image' ? (
                     <img src={item.url} alt="" className="w-full h-full object-cover" loading="lazy" />
                   ) : (
-                    <video src={item.url} className="w-full h-full object-cover" controls playsInline />
+                    <video 
+                      src={item.url} 
+                      className="w-full h-full object-cover" 
+                      controls 
+                      playsInline
+                      autoPlay={shouldAutoPlay}
+                      muted={shouldAutoPlay} // Mute if autoplaying to avoid audio blast
+                    />
                   )}
                   {/* Cinematic Vignette */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover/carousel:opacity-100 transition-opacity pointer-events-none" />

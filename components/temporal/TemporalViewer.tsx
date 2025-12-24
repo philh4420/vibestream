@@ -21,13 +21,14 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
   const [localStories, setLocalStories] = useState(stories);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   
+  // Settings check
+  const shouldAutoPlay = currentUser?.settings?.appearance?.autoPlayVideo !== false;
+
   useEffect(() => {
     setLocalStories(stories);
   }, [stories]);
 
   const currentStory = localStories[currentIndex];
-  // Default duration for images is 5s. 
-  // Archived streams (metadata logs) are treated as images for viewing duration.
   const DURATION = 5000; 
   const STEP = 50;
 
@@ -38,6 +39,11 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
   useEffect(() => {
     if (isPaused || !currentStory || showDeleteModal) return;
 
+    // Pause timer if video and not auto-playing? No, standard story behavior is auto-advance.
+    // If autoPlay is off, maybe we should pause initially? 
+    // For VibeStream 2026 UX, 'AutoPlay Video' mostly applies to feed. Stories are explicit intent.
+    // However, respecting the setting means videos shouldn't auto-play sound or motion.
+    
     const timer = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
@@ -89,7 +95,6 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
             onClose();
         } else {
             setLocalStories(updatedStories);
-            // If we deleted the last one, step back, otherwise stay on current index (which will be next story)
             if (currentIndex >= updatedStories.length) {
                 setCurrentIndex(updatedStories.length - 1);
             }
@@ -120,7 +125,7 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
       {/* Immersive Background Blur */}
       <div className="absolute inset-0 z-0 opacity-30 blur-3xl scale-110 pointer-events-none">
         {isVideo ? (
-           <video src={currentStory.coverUrl} className="w-full h-full object-cover" muted loop />
+           <video src={currentStory.coverUrl} className="w-full h-full object-cover" muted loop autoPlay={shouldAutoPlay} />
         ) : (
            <img src={currentStory.coverUrl} className="w-full h-full object-cover" alt="" />
         )}
@@ -139,9 +144,9 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
            <video 
              src={currentStory.coverUrl} 
              className="absolute inset-0 w-full h-full object-cover" 
-             autoPlay 
+             autoPlay={shouldAutoPlay}
              playsInline 
-             muted={!isArchivedStream} // Unmute archived streams by default if desired, or keep muted. Usually muted for stories.
+             muted={!isArchivedStream || !shouldAutoPlay} // Mute if archived or autoplay disabled
              loop 
            />
         ) : (
@@ -154,8 +159,6 @@ export const TemporalViewer: React.FC<TemporalViewerProps> = ({ stories, initial
         {/* ARCHIVED STREAM OVERLAY (Metadata Only) */}
         {isArchivedStream && (
           <div className="absolute inset-0 flex flex-col items-center justify-center z-10 p-8 text-center bg-black/20 pointer-events-none">
-             {/* Only show heavy overlay if it's NOT a video playback, but here coverUrl IS the video. 
-                 So we just show minimal badges. */}
              <div className="absolute top-20 right-4 bg-rose-600 text-white px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest">
                 ARCHIVED_SIGNAL
              </div>

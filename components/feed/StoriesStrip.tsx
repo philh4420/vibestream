@@ -21,6 +21,9 @@ export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData, onTransmit
   const [isSelectionOpen, setIsSelectionOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Check Autoplay setting
+  const shouldAutoPlay = userData?.settings?.appearance?.autoPlayVideo !== false;
+
   useEffect(() => {
     if (!db) return;
 
@@ -66,15 +69,6 @@ export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData, onTransmit
   };
 
   const handleViewStory = (story: Story) => {
-    // Currently FeedPage doesn't have a way to open the TemporalViewer directly from here easily 
-    // without lifting state up or using an event. For now, we'll dispatch an event similar to toasts.
-    // However, since TemporalViewer is page-specific in this architecture, 
-    // a simple navigation to the Temporal Page is a robust fallback for the MVP.
-    // Or we could trigger a custom event that App.tsx listens to, but App doesn't render TemporalViewer.
-    // The Temporal Page is where the viewer lives.
-    
-    // Dispatching event for 'vibe-view-story' which could be caught if implemented globally, 
-    // but standard behavior here: navigate to Temporal route.
     const event = new CustomEvent('vibe-navigate', { detail: { route: 'temporal' } });
     window.dispatchEvent(event);
   };
@@ -149,15 +143,26 @@ export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData, onTransmit
                 className="w-[100px] h-[160px] md:w-[120px] md:h-[200px] rounded-[1.8rem] bg-slate-800 overflow-hidden relative group shadow-sm hover:shadow-xl transition-all active:scale-95"
               >
                 {story.type === 'video' ? (
-                  <video 
-                    src={story.coverUrl} 
-                    className="w-full h-full object-cover opacity-90 group-hover:scale-110 transition-transform duration-[5s]" 
-                    muted 
-                    loop 
-                    playsInline // Important for iOS
-                    onMouseOver={e => e.currentTarget.play().catch(() => {})}
-                    onMouseOut={e => e.currentTarget.pause()}
-                  />
+                  shouldAutoPlay ? (
+                    <video 
+                      src={story.coverUrl} 
+                      className="w-full h-full object-cover opacity-90 group-hover:scale-110 transition-transform duration-[5s]" 
+                      muted 
+                      loop 
+                      playsInline 
+                      autoPlay
+                    />
+                  ) : (
+                    <video 
+                      src={story.coverUrl} 
+                      className="w-full h-full object-cover opacity-90 group-hover:scale-110 transition-transform duration-[5s]" 
+                      muted 
+                      loop 
+                      playsInline
+                      onMouseOver={e => e.currentTarget.play().catch(() => {})}
+                      onMouseOut={e => e.currentTarget.pause()}
+                    />
+                  )
                 ) : (
                   <img 
                     src={story.coverUrl} 

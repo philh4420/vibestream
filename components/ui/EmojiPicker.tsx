@@ -1,4 +1,8 @@
+
 import React, { useState, useRef, useEffect } from 'react';
+import { auth, db } from '../../services/firebase';
+import * as Firestore from 'firebase/firestore';
+const { getDoc, doc } = Firestore as any;
 
 interface EmojiPickerProps {
   onSelect: (emoji: string) => void;
@@ -46,8 +50,28 @@ const EMOJI_DATA = [
 
 export const EmojiPicker: React.FC<EmojiPickerProps> = ({ onSelect, onClose }) => {
   const [activeCategory, setActiveCategory] = useState(EMOJI_DATA[0].id);
+  const [shouldVibrate, setShouldVibrate] = useState(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const categoriesRef = useRef<Record<string, HTMLDivElement | null>>({});
+
+  // Check user settings for haptic feedback
+  useEffect(() => {
+    const fetchSettings = async () => {
+      if (!auth.currentUser || !db) return;
+      try {
+        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          if (userData.settings?.appearance?.hapticFeedback === false) {
+            setShouldVibrate(false);
+          }
+        }
+      } catch (e) {
+        console.warn("Haptic preference sync failed");
+      }
+    };
+    fetchSettings();
+  }, []);
 
   const handleCategoryClick = (id: string) => {
     const el = categoriesRef.current[id];
@@ -145,7 +169,7 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({ onSelect, onClose }) =
                       key={`${cat.id}-${i}`}
                       onClick={() => {
                         onSelect(emoji);
-                        if ('vibrate' in navigator) navigator.vibrate(10);
+                        if (shouldVibrate && 'vibrate' in navigator) navigator.vibrate(10);
                         window.dispatchEvent(new CustomEvent('vibe-toast', { 
                           detail: { msg: `Glyph ${emoji} Synchronised`, type: 'success' } 
                         }));
