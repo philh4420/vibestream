@@ -1,10 +1,18 @@
 
 import React, { useState } from 'react';
 import { User, UserSettings } from '../../types';
-import { db, auth } from '../../services/firebase';
+import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
 const { doc, updateDoc } = Firestore as any;
 import { ICONS } from '../../constants';
+
+// Modular Sections
+import { SettingsAccount } from './sections/SettingsAccount';
+import { SettingsPrivacy } from './sections/SettingsPrivacy';
+import { SettingsNotifications } from './sections/SettingsNotifications';
+import { SettingsAppearance } from './sections/SettingsAppearance';
+import { SettingsSafety } from './sections/SettingsSafety';
+import { SettingsData } from './sections/SettingsData';
 
 interface SettingsOverlayProps {
   userData: User;
@@ -67,9 +75,8 @@ export const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ userData, onCl
   });
   
   const [isSaving, setIsSaving] = useState(false);
-  const [hiddenWordInput, setHiddenWordInput] = useState('');
 
-  // -- Feature Handlers --
+  // -- Master State Handlers --
 
   const handleToggle = (category: keyof UserSettings, key: string) => {
     setSettings(prev => ({
@@ -91,82 +98,6 @@ export const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ userData, onCl
     }));
   };
 
-  const addHiddenWord = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!hiddenWordInput.trim()) return;
-    const word = hiddenWordInput.trim().toLowerCase();
-    if (!settings.safety.hiddenWords.includes(word)) {
-      setSettings(prev => ({
-        ...prev,
-        safety: { ...prev.safety, hiddenWords: [...prev.safety.hiddenWords, word] }
-      }));
-      addToast(`Shield Updated: "${word}" blocked`, "info");
-    }
-    setHiddenWordInput('');
-  };
-
-  const removeHiddenWord = (word: string) => {
-    setSettings(prev => ({
-      ...prev,
-      safety: { ...prev.safety, hiddenWords: prev.safety.hiddenWords.filter(w => w !== word) }
-    }));
-  };
-
-  // --- Real Implementation Handlers ---
-
-  const handleClearCache = () => {
-    try {
-      localStorage.removeItem('vibestream_cache');
-      localStorage.removeItem('vibestream_session_start_timestamp');
-      // We don't clear the active route to prevent disorientation
-      addToast("Local Storage Fragments Purged (142MB Freed)", "success");
-    } catch (e) {
-      addToast("Cache Purge Failed", "error");
-    }
-  };
-
-  const handleDataDownload = () => {
-    try {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(userData, null, 2));
-      const downloadAnchorNode = document.createElement('a');
-      downloadAnchorNode.setAttribute("href", dataStr);
-      downloadAnchorNode.setAttribute("download", `vibestream_archive_${userData.username}_${Date.now()}.json`);
-      document.body.appendChild(downloadAnchorNode);
-      downloadAnchorNode.click();
-      downloadAnchorNode.remove();
-      addToast("Neural Archive Extracted Successfully", "success");
-    } catch (e) {
-      addToast("Extraction Protocol Failed", "error");
-    }
-  };
-
-  const handleDeactivateAccount = async () => {
-    const confirmed = window.confirm("CRITICAL WARNING: This will suspend your node and hide all signals from the grid. You will be logged out. Continue?");
-    if (!confirmed) return;
-
-    setIsSaving(true);
-    try {
-      await updateDoc(doc(db, 'users', userData.id), {
-        isSuspended: true,
-        presenceStatus: 'Offline'
-      });
-      addToast("Node Deactivation Confirmed. Terminating...", "info");
-      setTimeout(() => {
-        onLogout();
-      }, 1500);
-    } catch (e) {
-      console.error(e);
-      addToast("Deactivation Sequence Failed", "error");
-      setIsSaving(false);
-    }
-  };
-
-  const handleTwoFactorToggle = () => {
-    // In a real app, this would trigger an SMS/Authenticator flow.
-    // For the demo, we simulate the toggle request.
-    addToast("2FA Request Sent: Check your secure device", "info");
-  };
-
   const saveSettings = async () => {
     if (!db || !userData.id) return;
     setIsSaving(true);
@@ -182,7 +113,7 @@ export const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ userData, onCl
     }
   };
 
-  // -- Components --
+  // -- UI Components --
 
   const TabButton = ({ id, label, icon: Icon }: { id: SettingTab, label: string, icon: any }) => (
     <button
@@ -199,28 +130,6 @@ export const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ userData, onCl
       <span className="text-[10px] font-black uppercase tracking-[0.2em] font-mono whitespace-nowrap">{label}</span>
       {activeTab === id && <div className="ml-auto w-1.5 h-1.5 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse" />}
     </button>
-  );
-
-  const Toggle = ({ label, checked, onChange, description }: { label: string, checked: boolean, onChange: () => void, description?: string }) => (
-    <div 
-      onClick={onChange}
-      className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 hover:border-indigo-100 transition-all group cursor-pointer active:scale-[0.99]"
-    >
-      <div className="flex flex-col pr-4">
-        <span className="text-xs font-bold text-slate-900 group-hover:text-indigo-900 transition-colors">{label}</span>
-        {description && <span className="text-[9px] font-medium text-slate-400 mt-0.5 leading-tight">{description}</span>}
-      </div>
-      <div className={`w-11 h-6 rounded-full p-1 transition-all duration-300 relative shrink-0 ${checked ? 'bg-indigo-600' : 'bg-slate-200'}`}>
-        <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-300 absolute top-1 ${checked ? 'left-[22px]' : 'left-1'}`} />
-      </div>
-    </div>
-  );
-
-  const SectionHeader = ({ title, subtitle }: { title: string, subtitle: string }) => (
-    <div className="mb-6 pl-1">
-      <h3 className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] font-mono mb-1">{title}</h3>
-      <p className="text-lg font-black text-slate-900 italic tracking-tight">{subtitle}</p>
-    </div>
   );
 
   return (
@@ -269,318 +178,24 @@ export const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ userData, onCl
           </div>
 
           <div className="flex-1 overflow-y-auto p-6 md:p-12 space-y-10 scroll-container">
-            
             {activeTab === 'account' && (
-              <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
-                 <div className="p-8 rounded-[2.5rem] bg-slate-900 text-white shadow-xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 blur-[80px] rounded-full translate-x-1/3 -translate-y-1/3" />
-                    <div className="relative z-10 flex items-center gap-6">
-                      <div className="relative">
-                        <img src={userData.avatarUrl} className="w-24 h-24 rounded-[1.8rem] object-cover bg-slate-800 border-4 border-white/10" alt="" />
-                        {userData.verifiedHuman && <div className="absolute -bottom-2 -right-2 bg-emerald-500 p-1.5 rounded-xl text-white shadow-lg border-2 border-slate-900"><ICONS.Verified /></div>}
-                      </div>
-                      <div>
-                         <div className="flex flex-wrap items-center gap-3 mb-1">
-                           <h4 className="text-2xl font-black italic tracking-tight">{userData.displayName}</h4>
-                           <span className="px-2 py-0.5 rounded-md bg-white/10 text-[8px] font-black uppercase tracking-widest border border-white/10">{userData.role}</span>
-                         </div>
-                         <p className="text-sm font-mono text-slate-400 mb-4">ID: {userData.id.slice(0,8).toUpperCase()}</p>
-                         <button className="text-[9px] font-black uppercase tracking-widest text-indigo-300 hover:text-white transition-colors flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5 hover:bg-white/10">
-                           Request_Verification_Badge <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                         </button>
-                      </div>
-                    </div>
-                 </div>
-
-                 <div>
-                    <SectionHeader title="Security_Protocol" subtitle="Credentials & Access" />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                       <button 
-                         onClick={handleTwoFactorToggle}
-                         className="p-6 rounded-[2rem] border border-slate-200 hover:border-indigo-200 bg-white hover:shadow-lg transition-all text-left group active:scale-[0.98]"
-                       >
-                          <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                             <ICONS.Admin />
-                          </div>
-                          <p className="text-xs font-black text-slate-900 uppercase tracking-wide mb-1">2-Factor Auth</p>
-                          <p className="text-[10px] text-slate-500 font-medium">Secure your node with biometric hardware keys.</p>
-                       </button>
-                       <button 
-                         onClick={handleDataDownload}
-                         className="p-6 rounded-[2rem] border border-slate-200 hover:border-indigo-200 bg-white hover:shadow-lg transition-all text-left group active:scale-[0.98]"
-                       >
-                          <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                             <ICONS.Saved />
-                          </div>
-                          <p className="text-xs font-black text-slate-900 uppercase tracking-wide mb-1">Data Download</p>
-                          <p className="text-[10px] text-slate-500 font-medium">Export your neural footprint archive.</p>
-                       </button>
-                    </div>
-                 </div>
-
-                 <div className="pt-8 border-t border-slate-100">
-                    <h4 className="text-[10px] font-black text-rose-500 uppercase tracking-[0.3em] font-mono mb-4">Danger_Zone</h4>
-                    <div className="p-6 rounded-[2rem] bg-rose-50/50 border border-rose-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                       <div>
-                          <p className="text-sm font-black text-rose-900">Deactivate Node</p>
-                          <p className="text-[10px] text-rose-700/60 mt-1 max-w-sm">This will temporarily hide your profile and signals. You can reactivate anytime by logging in.</p>
-                       </div>
-                       <button 
-                         onClick={handleDeactivateAccount}
-                         className="px-6 py-3 bg-white border border-rose-200 text-rose-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-rose-600 hover:text-white transition-all shadow-sm active:scale-95"
-                       >
-                          Deactivate
-                       </button>
-                    </div>
-                 </div>
-              </div>
+              <SettingsAccount userData={userData} onLogout={onLogout} addToast={addToast} />
             )}
-
             {activeTab === 'privacy' && (
-              <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
-                 <div>
-                    <SectionHeader title="Visibility_Matrix" subtitle="Who sees your signals" />
-                    <div className="space-y-3">
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <button 
-                            onClick={() => handleChange('privacy', 'profileVisibility', 'public')}
-                            className={`p-6 rounded-[2rem] border text-left transition-all active:scale-[0.98] ${settings.privacy.profileVisibility === 'public' ? 'bg-indigo-600 text-white border-indigo-600 shadow-xl ring-4 ring-indigo-100' : 'bg-white border-slate-200 text-slate-500 hover:border-indigo-200'}`}
-                          >
-                             <div className="mb-4 text-2xl"><ICONS.Globe /></div>
-                             <p className="font-black uppercase tracking-widest text-xs">Public Node</p>
-                             <p className="text-[10px] opacity-70 mt-1 leading-relaxed">Visible to the entire grid. Signals are indexable.</p>
-                          </button>
-                          <button 
-                            onClick={() => handleChange('privacy', 'profileVisibility', 'private')}
-                            className={`p-6 rounded-[2rem] border text-left transition-all active:scale-[0.98] ${settings.privacy.profileVisibility === 'private' ? 'bg-slate-900 text-white border-slate-900 shadow-xl ring-4 ring-slate-100' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-800'}`}
-                          >
-                             <div className="mb-4 text-2xl"><ICONS.Verified /></div>
-                             <p className="font-black uppercase tracking-widest text-xs">Private Mesh</p>
-                             <p className="text-[10px] opacity-70 mt-1 leading-relaxed">Only approved connections can decipher your signals.</p>
-                          </button>
-                       </div>
-                    </div>
-                 </div>
-
-                 <div>
-                    <SectionHeader title="Interaction_Log" subtitle="Data Exchange" />
-                    <div className="space-y-3">
-                       <Toggle 
-                         label="Activity Status" 
-                         description="Allow others to see when your node is online."
-                         checked={settings.privacy.activityStatus} 
-                         onChange={() => handleToggle('privacy', 'activityStatus')} 
-                       />
-                       <Toggle 
-                         label="Read Receipts" 
-                         description="Send 'Signal Received' confirmation in chats."
-                         checked={settings.privacy.readReceipts} 
-                         onChange={() => handleToggle('privacy', 'readReceipts')} 
-                       />
-                       <Toggle 
-                         label="Allow Tagging" 
-                         description="Let others link your ID in their broadcasts."
-                         checked={settings.privacy.allowTagging} 
-                         onChange={() => handleToggle('privacy', 'allowTagging')} 
-                       />
-                       <Toggle 
-                         label="Geospatial Data" 
-                         description="Attach coordinates to your new signals by default."
-                         checked={settings.privacy.showLocation} 
-                         onChange={() => handleToggle('privacy', 'showLocation')} 
-                       />
-                    </div>
-                 </div>
-              </div>
+              <SettingsPrivacy settings={settings} handleChange={handleChange} handleToggle={handleToggle} />
             )}
-
             {activeTab === 'notifications' && (
-              <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
-                 <SectionHeader title="Alert_Grid" subtitle="Signal Sensitivity" />
-                 
-                 <div className="bg-slate-50 p-6 rounded-[2.5rem] border border-slate-100 mb-6">
-                    <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest font-mono mb-4">Global_Switches</h4>
-                    <div className="flex gap-4">
-                       <div className="flex-1">
-                          <Toggle label="Push Notifications" checked={settings.notifications.push} onChange={() => handleToggle('notifications', 'push')} />
-                       </div>
-                       <div className="flex-1">
-                          <Toggle label="Email Summaries" checked={settings.notifications.email} onChange={() => handleToggle('notifications', 'email')} />
-                       </div>
-                    </div>
-                 </div>
-
-                 <div className="space-y-3">
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono pl-2 mb-2">Trigger_Events</h4>
-                    <Toggle label="New Followers" checked={settings.notifications.follows} onChange={() => handleToggle('notifications', 'follows')} />
-                    <Toggle label="Mentions & Replies" checked={settings.notifications.mentions} onChange={() => handleToggle('notifications', 'mentions')} />
-                    <Toggle label="Likes & Reactions" checked={settings.notifications.likes} onChange={() => handleToggle('notifications', 'likes')} />
-                    <Toggle label="Live Broadcasts" checked={settings.notifications.broadcasts} onChange={() => handleToggle('notifications', 'broadcasts')} />
-                 </div>
-              </div>
+              <SettingsNotifications settings={settings} handleToggle={handleToggle} />
             )}
-
             {activeTab === 'appearance' && (
-              <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
-                 <div>
-                    <SectionHeader title="Visual_Engine" subtitle="Interface Calibration" />
-                    <div className="grid grid-cols-3 gap-3 mb-8">
-                       {['system', 'light', 'dark'].map((theme) => (
-                         <button
-                           key={theme}
-                           onClick={() => handleChange('appearance', 'theme', theme)}
-                           className={`py-6 rounded-[2rem] text-[10px] font-black uppercase tracking-widest border transition-all active:scale-95 ${
-                             settings.appearance.theme === theme 
-                               ? 'bg-indigo-50 border-indigo-600 text-indigo-700 shadow-inner' 
-                               : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'
-                           }`}
-                         >
-                           {theme}
-                         </button>
-                       ))}
-                    </div>
-                 </div>
-
-                 <div className="space-y-3">
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono pl-2 mb-2">Accessibility_&_Motion</h4>
-                    <Toggle 
-                      label="Reduced Motion" 
-                      description="Minimize interface animations and parallax effects."
-                      checked={settings.appearance.reducedMotion} 
-                      onChange={() => handleToggle('appearance', 'reducedMotion')} 
-                    />
-                    <Toggle 
-                      label="Autoplay Video" 
-                      description="Automatically play visual media in stream."
-                      checked={settings.appearance.autoPlayVideo} 
-                      onChange={() => handleToggle('appearance', 'autoPlayVideo')} 
-                    />
-                    <Toggle 
-                      label="Haptic Feedback" 
-                      description="Vibration response on interactions."
-                      checked={settings.appearance.hapticFeedback} 
-                      onChange={() => handleToggle('appearance', 'hapticFeedback')} 
-                    />
-                    <Toggle 
-                      label="High Contrast" 
-                      description="Increase border visibility and text contrast."
-                      checked={settings.appearance.highContrast} 
-                      onChange={() => handleToggle('appearance', 'highContrast')} 
-                    />
-                 </div>
-              </div>
+              <SettingsAppearance settings={settings} handleChange={handleChange} handleToggle={handleToggle} />
             )}
-
             {activeTab === 'safety' && (
-              <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
-                 <SectionHeader title="Guard_Rails" subtitle="Content Safety" />
-                 
-                 <div className="space-y-4">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono pl-2">Filter_Intensity</p>
-                    <div className="grid grid-cols-3 gap-3">
-                       {(['standard', 'strict', 'relaxed'] as const).map((level) => (
-                         <button
-                           key={level}
-                           onClick={() => handleChange('safety', 'filterLevel', level)}
-                           className={`py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest border transition-all active:scale-95 ${
-                             settings.safety.filterLevel === level 
-                               ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm' 
-                               : 'bg-white border-slate-200 text-slate-400 hover:bg-slate-50'
-                           }`}
-                         >
-                           {level}
-                         </button>
-                       ))}
-                    </div>
-                    <p className="text-[10px] text-slate-400 px-2 leading-relaxed">
-                      * <strong>Strict:</strong> Hides all potentially sensitive media and aggressive language.<br/>
-                      * <strong>Standard:</strong> Blurs sensitive media, filters hate speech.<br/>
-                      * <strong>Relaxed:</strong> Minimal filtering. Use at own risk.
-                    </p>
-                 </div>
-
-                 <div className="pt-6 border-t border-slate-100">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono pl-2 mb-4">Keyword_Shield</p>
-                    <form onSubmit={addHiddenWord} className="flex gap-2 mb-4">
-                       <input 
-                         type="text" 
-                         value={hiddenWordInput}
-                         onChange={(e) => setHiddenWordInput(e.target.value)}
-                         placeholder="Add word or phrase to hide..."
-                         className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-100 placeholder:text-slate-400"
-                       />
-                       <button type="submit" className="px-6 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all active:scale-95">Add</button>
-                    </form>
-                    <div className="flex flex-wrap gap-2">
-                       {settings.safety.hiddenWords.map(word => (
-                         <button 
-                           key={word} 
-                           onClick={() => removeHiddenWord(word)}
-                           className="px-3 py-1.5 bg-slate-100 rounded-lg text-[10px] font-bold text-slate-600 hover:bg-rose-100 hover:text-rose-600 flex items-center gap-2 transition-colors border border-transparent hover:border-rose-200"
-                         >
-                           {word} <span className="text-[8px]">✕</span>
-                         </button>
-                       ))}
-                       {settings.safety.hiddenWords.length === 0 && <p className="text-xs text-slate-400 italic px-2">No active keyword filters.</p>}
-                    </div>
-                 </div>
-              </div>
+              <SettingsSafety settings={settings} handleChange={handleChange} addToast={addToast} />
             )}
-
             {activeTab === 'data' && (
-              <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
-                 <SectionHeader title="Data_Stream" subtitle="Usage & Quality" />
-                 
-                 <div className="space-y-4">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono pl-2">Media_Fidelity</p>
-                    <div className="flex flex-col gap-3">
-                       {[
-                         { id: 'high', label: 'Maximum Fidelity', desc: 'Always load 4K/HD assets. High data usage.' },
-                         { id: 'standard', label: 'Balanced', desc: 'HD on WiFi, Standard on Cellular.' },
-                         { id: 'data-saver', label: 'Data Saver', desc: 'Lower resolution, no autoplay. Minimal usage.' }
-                       ].map((opt) => (
-                         <button
-                           key={opt.id}
-                           onClick={() => handleChange('dataUsage', 'mediaQuality', opt.id)}
-                           className={`p-4 rounded-[1.8rem] border text-left transition-all active:scale-[0.98] ${
-                             settings.dataUsage.mediaQuality === opt.id 
-                               ? 'bg-indigo-50 border-indigo-600 relative overflow-hidden ring-1 ring-indigo-200' 
-                               : 'bg-white border-slate-200 hover:border-slate-300'
-                           }`}
-                         >
-                           <div className="relative z-10">
-                             <p className={`text-xs font-black uppercase tracking-wide ${settings.dataUsage.mediaQuality === opt.id ? 'text-indigo-900' : 'text-slate-900'}`}>{opt.label}</p>
-                             <p className="text-[10px] text-slate-500 mt-1">{opt.desc}</p>
-                           </div>
-                         </button>
-                       ))}
-                    </div>
-                 </div>
-
-                 <div className="space-y-4 pt-6 border-t border-slate-100">
-                    <Toggle 
-                      label="Preload Content" 
-                      description="Download predicted content in background for instant viewing."
-                      checked={settings.dataUsage.preloadContent} 
-                      onChange={() => handleToggle('dataUsage', 'preloadContent')} 
-                    />
-                    
-                    <button 
-                      onClick={handleClearCache}
-                      className="w-full flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 hover:border-rose-200 group transition-all active:scale-[0.98]"
-                    >
-                       <div className="flex flex-col text-left">
-                          <span className="text-xs font-bold text-slate-900 group-hover:text-rose-600 transition-colors">Clear Local Cache</span>
-                          <span className="text-[9px] font-medium text-slate-400 mt-0.5">Free up space (142 MB)</span>
-                       </div>
-                       <div className="p-2 bg-slate-50 rounded-lg text-slate-400 group-hover:bg-rose-50 group-hover:text-rose-500 transition-colors">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                       </div>
-                    </button>
-                 </div>
-              </div>
+              <SettingsData settings={settings} handleChange={handleChange} handleToggle={handleToggle} addToast={addToast} />
             )}
-
           </div>
 
           {/* Persistent Footer */}
