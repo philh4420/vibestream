@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 // Fixed: Using namespaced import for firebase/auth to resolve "no exported member" errors
 import * as FirebaseAuth from 'firebase/auth';
@@ -99,19 +98,7 @@ export default function App() {
 
   // --- AUTH & USER SYNC ---
   useEffect(() => {
-    // Safety Timeout: Force stop loading if Auth listener hangs (e.g., network issues)
-    const safetyTimer = setTimeout(() => {
-        setLoading((current) => {
-            if (current) {
-                console.warn("VibeStream Protocol: Auth handshake timed out. Forcing entry.");
-                return false;
-            }
-            return current;
-        });
-    }, 3500);
-
     const unsubscribe = onAuthStateChanged(auth, async (authUser: any) => {
-      clearTimeout(safetyTimer);
       setUser(authUser);
       if (authUser) {
         // Sync User Data
@@ -121,11 +108,9 @@ export default function App() {
             const data = doc.data() as User;
             setUserData({ ...data, id: doc.id });
             
-            // Fetch Weather based on location - with Error Catching to prevent app hang
+            // Fetch Weather based on location
             if (data.location) {
-              fetchWeather({ query: data.location })
-                .then(setWeather)
-                .catch(err => console.warn("Atmospheric sync deferred:", err));
+              fetchWeather({ query: data.location }).then(setWeather);
             }
           }
         });
@@ -168,10 +153,7 @@ export default function App() {
       setLoading(false);
     });
 
-    return () => {
-        clearTimeout(safetyTimer);
-        unsubscribe();
-    }
+    return () => unsubscribe();
   }, []);
 
   // --- GLOBAL DATA SYNC ---
@@ -341,10 +323,7 @@ export default function App() {
   if (loading) {
     return (
       <div className="fixed inset-0 bg-[#020617] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] font-mono animate-pulse">Initializing_Grid...</p>
-        </div>
+        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
