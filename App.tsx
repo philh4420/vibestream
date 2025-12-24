@@ -58,6 +58,7 @@ import { Toast } from './components/ui/Toast';
 import { LiveBroadcastOverlay } from './components/streams/LiveBroadcastOverlay';
 import { LiveWatcherOverlay } from './components/streams/LiveWatcherOverlay';
 import { NeuralLinkOverlay } from './components/messages/NeuralLinkOverlay';
+import { SimulationsPage } from './components/simulations/SimulationsPage';
 
 // Services
 import { fetchWeather } from './services/weather';
@@ -532,11 +533,14 @@ export default function App() {
         {activeRoute === AppRoute.PRIVACY && <PrivacyPage />}
         {activeRoute === AppRoute.TERMS && <TermsPage />}
         {activeRoute === AppRoute.COOKIES && <CookiesPage />}
+        
+        {/* New Simulations Page */}
+        {activeRoute === AppRoute.SIMULATIONS && <SimulationsPage />}
 
-        {/* Placeholders for routes without explicit components in list */}
-        {(activeRoute === AppRoute.SIMULATIONS || activeRoute === AppRoute.RESILIENCE) && (
+        {/* Resilience Placeholder */}
+        {activeRoute === AppRoute.RESILIENCE && (
            <div className="flex items-center justify-center h-full text-slate-400 font-mono text-sm uppercase tracking-widest">
-             Module Under Construction
+             Resilience Module Under Construction
            </div>
         )}
 
