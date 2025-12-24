@@ -26,7 +26,8 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
         type: initialData.type,
         category: initialData.category,
         coverUrl: initialData.coverUrl,
-        maxAttendees: initialData.maxAttendees || 0
+        maxAttendees: initialData.maxAttendees || 0,
+        recurrence: initialData.recurrence || 'none'
       };
     }
     return {
@@ -38,7 +39,8 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
       type: 'physical' as 'physical' | 'virtual',
       category: 'Social' as 'Social' | 'Tech' | 'Gaming' | 'Nightlife' | 'Workshop',
       coverUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=2000',
-      maxAttendees: 0
+      maxAttendees: 0,
+      recurrence: 'none' as 'none' | 'weekly' | 'monthly'
     };
   });
 
@@ -187,6 +189,21 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
                     />
                  </div>
               </div>
+
+              {!isEditing && (
+                <div className="space-y-2">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono ml-2">Recurrence Protocol</label>
+                    <select 
+                      value={formData.recurrence} 
+                      onChange={e => setFormData({...formData, recurrence: e.target.value as any})}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all"
+                    >
+                       <option value="none">Single Instance</option>
+                       <option value="weekly">Weekly Loop (x4)</option>
+                       <option value="monthly">Monthly Loop (x3)</option>
+                    </select>
+                </div>
+              )}
 
               <div className="space-y-2">
                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono ml-2">Manifest</label>

@@ -7,7 +7,6 @@ const {
   query, 
   orderBy, 
   onSnapshot, 
-  addDoc, 
   serverTimestamp,
   updateDoc,
   doc,
@@ -65,41 +64,88 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
   const handleCreate = async (data: any) => {
     if (!db || !currentUser) return;
     try {
-      // 1. Create Gathering Document
-      const gatheringRef = await addDoc(collection(db, 'gatherings'), {
-        ...data,
-        organizerId: currentUser.id,
-        organizerName: currentUser.displayName,
-        organizerAvatar: currentUser.avatarUrl,
-        attendees: [currentUser.id],
-        waitlist: [],
-        createdAt: serverTimestamp()
-      });
-
-      // 2. Create Linked Neural Lobby (Chat)
-      const chatRef = await addDoc(collection(db, 'chats'), {
-        participants: [currentUser.id],
-        participantData: {
-            [currentUser.id]: { displayName: currentUser.displayName, avatarUrl: currentUser.avatarUrl }
-        },
-        lastMessage: 'Neural Lobby initialized.',
-        lastMessageTimestamp: serverTimestamp(),
-        isCluster: true,
-        isEventLobby: true,
-        clusterName: `LOBBY: ${data.title}`,
-        clusterAvatar: data.coverUrl,
-        clusterAdmin: currentUser.id
-      });
-
-      // 3. Link Chat to Gathering
-      await updateDoc(gatheringRef, { linkedChatId: chatRef.id });
-
-      // 4. Broadcast Notification to Followers
       const batch = writeBatch(db);
+      
+      const recurrence = data.recurrence || 'none';
+      let iterations = 1;
+      let recurrenceId = '';
+
+      if (recurrence === 'weekly') {
+        iterations = 4;
+        recurrenceId = `series_${Math.random().toString(36).substring(2, 9)}`;
+      } else if (recurrence === 'monthly') {
+        iterations = 3;
+        recurrenceId = `series_${Math.random().toString(36).substring(2, 9)}`;
+      }
+
+      const baseDate = new Date(data.date);
+      const notificationsToSend: any[] = [];
+
+      // Loop to create multiple instances if recurring
+      for (let i = 0; i < iterations; i++) {
+        const newGatheringRef = doc(collection(db, 'gatherings'));
+        const newChatRef = doc(collection(db, 'chats'));
+        
+        // Calculate date offset
+        const instanceDate = new Date(baseDate);
+        if (recurrence === 'weekly') {
+            instanceDate.setDate(baseDate.getDate() + (7 * i));
+        } else if (recurrence === 'monthly') {
+            instanceDate.setMonth(baseDate.getMonth() + i);
+        }
+
+        const gatheringPayload: any = {
+            ...data,
+            date: instanceDate.toISOString(),
+            organizerId: currentUser.id,
+            organizerName: currentUser.displayName,
+            organizerAvatar: currentUser.avatarUrl,
+            attendees: [currentUser.id],
+            waitlist: [],
+            createdAt: serverTimestamp(),
+            linkedChatId: newChatRef.id
+        };
+
+        if (recurrence !== 'none') {
+            gatheringPayload.recurrence = recurrence;
+            gatheringPayload.recurrenceId = recurrenceId;
+            gatheringPayload.seriesIndex = i + 1;
+            gatheringPayload.title = `${data.title} (Session ${i + 1})`;
+        }
+
+        // 1. Queue Gathering Doc
+        batch.set(newGatheringRef, gatheringPayload);
+
+        // 2. Queue Chat Lobby
+        batch.set(newChatRef, {
+            participants: [currentUser.id],
+            participantData: {
+                [currentUser.id]: { displayName: currentUser.displayName, avatarUrl: currentUser.avatarUrl }
+            },
+            lastMessage: 'Neural Lobby initialized.',
+            lastMessageTimestamp: serverTimestamp(),
+            isCluster: true,
+            isEventLobby: true,
+            clusterName: `LOBBY: ${gatheringPayload.title}`,
+            clusterAvatar: data.coverUrl,
+            clusterAdmin: currentUser.id
+        });
+
+        // Only send notification for the first instance to avoid spam
+        if (i === 0) {
+            notificationsToSend.push({
+                targetId: newGatheringRef.id,
+                title: gatheringPayload.title
+            });
+        }
+      }
+
+      // 4. Queue Notifications
       const followersRef = collection(db, 'users', currentUser.id, 'followers');
       const followersSnap = await getDocs(followersRef);
 
-      if (!followersSnap.empty) {
+      if (!followersSnap.empty && notificationsToSend.length > 0) {
+        const firstEvent = notificationsToSend[0];
         followersSnap.docs.forEach((followerDoc: any) => {
           const followerId = followerDoc.id; 
           const notifRef = doc(collection(db, 'notifications'));
@@ -109,17 +155,18 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
             fromUserName: currentUser.displayName,
             fromUserAvatar: currentUser.avatarUrl,
             toUserId: followerId,
-            targetId: gatheringRef.id,
-            text: `initialized a new gathering: "${data.title}"`,
+            targetId: firstEvent.targetId,
+            text: `initialized a new gathering: "${firstEvent.title}" ${recurrence !== 'none' ? '(Series)' : ''}`,
             isRead: false,
             timestamp: serverTimestamp(),
             pulseFrequency: 'intensity'
           });
         });
-        await batch.commit();
       }
 
-      addToast("Gathering & Lobby Initialized", "success");
+      await batch.commit();
+
+      addToast(recurrence !== 'none' ? "Recurring Protocol Initialized" : "Gathering & Lobby Initialized", "success");
       setIsCreateOpen(false);
     } catch (e) {
       console.error(e);
@@ -244,9 +291,16 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
                     {/* Content */}
                     <div className="px-2 flex-1 flex flex-col">
                        <div className="flex justify-between items-start mb-3">
-                          <h3 className="text-xl font-black text-slate-900 uppercase italic tracking-tighter leading-tight line-clamp-2 group-hover:text-purple-600 transition-colors">
-                            {gathering.title}
-                          </h3>
+                          <div>
+                            <h3 className="text-xl font-black text-slate-900 uppercase italic tracking-tighter leading-tight line-clamp-2 group-hover:text-purple-600 transition-colors">
+                                {gathering.title}
+                            </h3>
+                            {gathering.recurrence && gathering.recurrence !== 'none' && (
+                                <span className="inline-block mt-1 text-[8px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded uppercase tracking-widest border border-indigo-100">
+                                    Recurring: {gathering.recurrence}
+                                </span>
+                            )}
+                          </div>
                        </div>
                        
                        <div className="flex items-center gap-2 mb-4 text-slate-500">

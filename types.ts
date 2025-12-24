@@ -186,6 +186,9 @@ export interface Gathering {
     message: string;
     timestamp: any;
   };
+  recurrence?: 'none' | 'weekly' | 'monthly';
+  recurrenceId?: string;
+  seriesIndex?: number;
 }
 
 export interface Chat {
