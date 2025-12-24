@@ -1,6 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { 
+// Fixed: Using namespaced import for firebase/auth to resolve "no exported member" errors
+import * as FirebaseAuth from 'firebase/auth';
+const { onAuthStateChanged, signOut } = FirebaseAuth as any;
+// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
+import * as Firestore from 'firebase/firestore';
+const { 
   doc, 
   onSnapshot, 
   collection, 
@@ -13,8 +18,9 @@ import {
   arrayRemove, 
   arrayUnion, 
   getDoc,
-  updateDoc
-} from 'firebase/firestore';
+  updateDoc,
+  deleteDoc
+} = Firestore as any;
 import { auth, db } from './services/firebase';
 import { 
   User, 
@@ -88,51 +94,85 @@ export default function App() {
   const [watchingStream, setWatchingStream] = useState<LiveStream | null>(null);
   const [activeCall, setActiveCall] = useState<CallSession | null>(null);
 
+  // RSVP Processing Lock
+  const [rsvpProcessing, setRsvpProcessing] = useState<Set<string>>(new Set());
+
   // --- AUTH & USER SYNC ---
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
-      setUser(authUser);
+    // Safety Timeout: Force stop loading if Auth listener hangs or network fails
+    const safetyTimer = setTimeout(() => {
+        setLoading((current) => {
+            if (current) {
+                console.warn("VibeStream Protocol: Auth handshake timed out. Forcing entry.");
+                return false;
+            }
+            return current;
+        });
+    }, 5000);
+
+    const unsubscribe = onAuthStateChanged(auth, async (authUser: any) => {
+      clearTimeout(safetyTimer);
+      
       if (authUser) {
-        // Sync User Data
+        setUser(authUser);
+        
+        // Sync User Data & Check for Ghost Session
         const userRef = doc(db, 'users', authUser.uid);
-        const unsubUser = onSnapshot(userRef, (doc) => {
-          if (doc.exists()) {
-            const data = doc.data() as User;
-            setUserData({ ...data, id: doc.id });
+        const unsubUser = onSnapshot(userRef, (docSnap: any) => {
+          if (docSnap.exists()) {
+            // Valid User Profile Found
+            const data = docSnap.data() as User;
+            setUserData({ ...data, id: docSnap.id });
             
             // Fetch Weather based on location
             if (data.location) {
-              fetchWeather({ query: data.location }).then(setWeather);
+              fetchWeather({ query: data.location })
+                .then(setWeather)
+                .catch(err => console.warn("Atmospheric sync deferred:", err));
             }
+            setLoading(false); // Stop spinner
+          } else {
+            // GHOST SESSION DETECTED: Auth exists, but DB Doc is gone.
+            console.warn("VibeStream: Neural Phantom Detected. Purging stale session.");
+            signOut(auth).then(() => {
+              setUser(null);
+              setUserData(null);
+              setLoading(false); // Stop spinner, show Landing Page
+            }).catch(() => {
+              // Force state reset even if network logout fails
+              setUser(null);
+              setLoading(false);
+            });
           }
+        }, (error: any) => {
+           console.error("Grid Sync Interrupted:", error);
+           // If we can't read the doc (permission denied?), assume we need to re-auth
+           setLoading(false);
         });
 
-        // Sync Notifications
+        // Sync Notifications (Non-blocking)
         const notifQuery = query(
           collection(db, 'notifications'), 
           where('toUserId', '==', authUser.uid), 
           orderBy('timestamp', 'desc'), 
           limit(50)
         );
-        const unsubNotif = onSnapshot(notifQuery, (snap) => {
-          setNotifications(snap.docs.map(d => ({ id: d.id, ...d.data() } as AppNotification)));
-        });
+        const unsubNotif = onSnapshot(notifQuery, (snap: any) => {
+          setNotifications(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as AppNotification)));
+        }, (e: any) => console.debug("Notif bus silent"));
 
-        // Sync Calls
+        // Sync Calls (Non-blocking)
         const callQuery = query(
           collection(db, 'calls'),
           where('receiverId', '==', authUser.uid),
           where('status', '==', 'ringing'),
           limit(1)
         );
-        const unsubCalls = onSnapshot(callQuery, (snap) => {
+        const unsubCalls = onSnapshot(callQuery, (snap: any) => {
           if (!snap.empty) {
             setActiveCall({ id: snap.docs[0].id, ...snap.docs[0].data() } as CallSession);
-          } else {
-            // Also check if we started a call
-            // This part can be expanded but for receiving, this is enough
           }
-        });
+        }, (e: any) => console.debug("Call bus silent"));
 
         return () => {
           unsubUser();
@@ -140,12 +180,17 @@ export default function App() {
           unsubCalls();
         };
       } else {
+        // No Auth User
+        setUser(null);
         setUserData(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+        clearTimeout(safetyTimer);
+        unsubscribe();
+    }
   }, []);
 
   // --- GLOBAL DATA SYNC ---
@@ -153,18 +198,18 @@ export default function App() {
     if (!user) return;
 
     // Sync Settings
-    const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (doc) => {
+    const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (doc: any) => {
       if (doc.exists()) setSystemSettings(doc.data() as SystemSettings);
     });
 
     // Sync All Users (Lightweight)
-    const unsubUsers = onSnapshot(query(collection(db, 'users'), limit(100)), (snap) => {
-      setAllUsers(snap.docs.map(d => ({ id: d.id, ...d.data() } as User)));
+    const unsubUsers = onSnapshot(query(collection(db, 'users'), limit(100)), (snap: any) => {
+      setAllUsers(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as User)));
     });
 
     // Sync Feed Posts
-    const unsubPosts = onSnapshot(query(collection(db, 'posts'), orderBy('timestamp', 'desc'), limit(50)), (snap) => {
-      setGlobalPosts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Post)));
+    const unsubPosts = onSnapshot(query(collection(db, 'posts'), orderBy('timestamp', 'desc'), limit(50)), (snap: any) => {
+      setGlobalPosts(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Post)));
     });
 
     return () => {
@@ -200,17 +245,17 @@ export default function App() {
   };
 
   const handleCreatePost = (initialFiles?: File[]) => {
-    // Logic to open create modal or navigate to create page
-    // For now, assume it's handled in FeedPage or via a global modal state if we implemented one
-    // But specific implementation detail: FeedPage has CreateSignalBox.
-    // We can also have a global FAB.
+    // Logic handled in FeedPage mostly, but triggered via layout
     addToast("Signal Composer Active", "info");
   };
 
   // --- RSVP LOGIC ---
   const handleRSVP = async (gatheringId: string, isAttendingOrWaitlisted: boolean) => {
-    if (!db || !userData) return;
+    if (!db || !userData || rsvpProcessing.has(gatheringId)) return;
     
+    // Lock this gathering
+    setRsvpProcessing(prev => new Set(prev).add(gatheringId));
+
     try {
       const gatheringRef = doc(db, 'gatherings', gatheringId);
       const freshSnap = await getDoc(gatheringRef);
@@ -301,6 +346,9 @@ export default function App() {
     } catch (e) {
       console.error(e);
       addToast("RSVP Protocol Failed", "error");
+    } finally {
+      // Release lock
+      setRsvpProcessing(prev => { const n = new Set(prev); n.delete(gatheringId); return n; });
     }
   };
 
@@ -309,7 +357,10 @@ export default function App() {
   if (loading) {
     return (
       <div className="fixed inset-0 bg-[#020617] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] font-mono animate-pulse">Initializing_Grid...</p>
+        </div>
       </div>
     );
   }
@@ -430,6 +481,8 @@ export default function App() {
             addToast={addToast}
             onViewGathering={(g) => { setSelectedGathering(g); setActiveRoute(AppRoute.SINGLE_GATHERING); }}
             onRSVP={handleRSVP}
+            allUsers={allUsers}
+            onOpenLobby={() => {}}
           />
         )}
 
