@@ -1,25 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
 import { db } from '../../services/firebase';
-import * as Firestore from 'firebase/firestore';
-const { 
+import { 
   collection, 
   query, 
   orderBy, 
   onSnapshot, 
   addDoc, 
-  serverTimestamp,
-  updateDoc,
-  doc,
-  arrayUnion,
-  arrayRemove,
-  where,
-  writeBatch,
-  getDocs,
-  getDoc,
-  setDoc
-} = Firestore as any;
-import { User, Gathering, Region } from '../../types';
+  serverTimestamp, 
+  limit 
+} from 'firebase/firestore';
+import { Gathering, User, Region } from '../../types';
 import { ICONS } from '../../constants';
 import { CreateGatheringModal } from './CreateGatheringModal';
 
@@ -27,407 +17,175 @@ interface GatheringsPageProps {
   currentUser: User;
   locale: Region;
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
-  allUsers: User[];
-  onOpenLobby: (clusterId: string) => void;
   onViewGathering: (gathering: Gathering) => void;
+  onRSVP: (id: string, isAttendingOrWaitlisted: boolean) => void;
 }
 
 export const GatheringsPage: React.FC<GatheringsPageProps> = ({ 
   currentUser, 
   locale, 
   addToast, 
-  allUsers, 
-  onOpenLobby,
-  onViewGathering
+  onViewGathering, 
+  onRSVP 
 }) => {
   const [gatherings, setGatherings] = useState<Gathering[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState<'All' | 'Social' | 'Tech' | 'Gaming' | 'Nightlife' | 'Workshop'>('All');
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [filter, setFilter] = useState<'all' | 'attending' | 'hosting'>('all');
 
   useEffect(() => {
     if (!db) return;
     
-    const now = new Date().toISOString();
-    // Fetch upcoming gatherings
     const q = query(
       collection(db, 'gatherings'),
-      where('date', '>=', now),
-      orderBy('date', 'asc')
+      orderBy('date', 'asc'),
+      limit(50)
     );
 
-    const unsub = onSnapshot(q, (snap: any) => {
-      setGatherings(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Gathering)));
-      setIsLoading(false);
+    const unsub = onSnapshot(q, (snap) => {
+      const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Gathering));
+      setGatherings(data);
+      setLoading(false);
     });
 
     return () => unsub();
   }, []);
 
   const handleCreate = async (data: any) => {
-    if (!db || !currentUser) return;
     try {
-      // 1. Create Gathering Document
-      const gatheringRef = await addDoc(collection(db, 'gatherings'), {
+      await addDoc(collection(db, 'gatherings'), {
         ...data,
         organizerId: currentUser.id,
         organizerName: currentUser.displayName,
         organizerAvatar: currentUser.avatarUrl,
-        attendees: [currentUser.id],
+        attendees: [currentUser.id], // Organizer auto-attends
         waitlist: [],
         createdAt: serverTimestamp()
       });
-
-      // 2. Create Linked Neural Lobby (Chat)
-      const chatRef = await addDoc(collection(db, 'chats'), {
-        participants: [currentUser.id],
-        participantData: {
-            [currentUser.id]: { displayName: currentUser.displayName, avatarUrl: currentUser.avatarUrl }
-        },
-        lastMessage: 'Neural Lobby initialized.',
-        lastMessageTimestamp: serverTimestamp(),
-        isCluster: true,
-        isEventLobby: true,
-        clusterName: `LOBBY: ${data.title}`,
-        clusterAvatar: data.coverUrl,
-        clusterAdmin: currentUser.id
-      });
-
-      // 3. Link Chat to Gathering
-      await updateDoc(gatheringRef, { linkedChatId: chatRef.id });
-
-      // 4. Broadcast Notification to Followers
-      const batch = writeBatch(db);
-      const followersRef = collection(db, 'users', currentUser.id, 'followers');
-      const followersSnap = await getDocs(followersRef);
-
-      if (!followersSnap.empty) {
-        followersSnap.docs.forEach((followerDoc: any) => {
-          const followerId = followerDoc.id; 
-          const notifRef = doc(collection(db, 'notifications'));
-          batch.set(notifRef, {
-            type: 'gathering_create',
-            fromUserId: currentUser.id,
-            fromUserName: currentUser.displayName,
-            fromUserAvatar: currentUser.avatarUrl,
-            toUserId: followerId,
-            targetId: gatheringRef.id,
-            text: `initialized a new gathering: "${data.title}"`,
-            isRead: false,
-            timestamp: serverTimestamp(),
-            pulseFrequency: 'intensity'
-          });
-        });
-        await batch.commit();
-      }
-
-      addToast("Gathering & Lobby Initialized", "success");
-      setIsCreateOpen(false);
+      addToast("Gathering Protocol Initiated", "success");
+      setIsCreateModalOpen(false);
     } catch (e) {
-      console.error(e);
-      addToast("Failed to Initialize Gathering", "error");
+      addToast("Protocol Failed", "error");
     }
   };
 
-  const handleRSVP = async (gatheringId: string, isAttendingOrWaitlisted: boolean) => {
-    if (!db || !currentUser) return;
-    const gathering = gatherings.find(g => g.id === gatheringId);
-    if (!gathering) return;
-
-    try {
-      const gatheringRef = doc(db, 'gatherings', gatheringId);
-      // Fetch fresh data for capacity check
-      const freshSnap = await getDoc(gatheringRef);
-      if (!freshSnap.exists()) return;
-      const freshData = freshSnap.data() as Gathering;
-
-      const userId = currentUser.id;
-      const isCurrentlyAttending = freshData.attendees.includes(userId);
-      const isCurrentlyWaitlisted = freshData.waitlist?.includes(userId);
-      const max = freshData.maxAttendees || 0;
-      const currentCount = freshData.attendees.length;
-
-      const batch = writeBatch(db);
-
-      if (isAttendingOrWaitlisted) {
-        // --- WITHDRAWING ---
-        if (isCurrentlyAttending) {
-            batch.update(gatheringRef, { attendees: arrayRemove(userId) });
-            
-            // Auto-promote
-            if (freshData.waitlist && freshData.waitlist.length > 0) {
-                const nextUserId = freshData.waitlist[0];
-                batch.update(gatheringRef, {
-                    waitlist: arrayRemove(nextUserId),
-                    attendees: arrayUnion(nextUserId)
-                });
-                
-                // Notify promoted user
-                const notifRef = doc(collection(db, 'notifications'));
-                batch.set(notifRef, {
-                    type: 'gathering_promote',
-                    fromUserId: 'SYSTEM',
-                    fromUserName: 'VibeStream Protocol',
-                    fromUserAvatar: '',
-                    toUserId: nextUserId,
-                    targetId: gatheringId,
-                    text: `You have been promoted from the waitlist for "${gathering.title}"`,
-                    isRead: false,
-                    timestamp: serverTimestamp(),
-                    pulseFrequency: 'velocity'
-                });
-            }
-
-            if (gathering.linkedChatId) {
-                batch.update(doc(db, 'chats', gathering.linkedChatId), { participants: arrayRemove(userId) });
-            }
-            addToast("Withdrawn from Gathering", "info");
-
-        } else if (isCurrentlyWaitlisted) {
-            batch.update(gatheringRef, { waitlist: arrayRemove(userId) });
-            addToast("Removed from Waitlist", "info");
-        }
-
-      } else {
-        // --- JOINING ---
-        if (max > 0 && currentCount >= max) {
-            batch.update(gatheringRef, { waitlist: arrayUnion(userId) });
-            addToast("Joined Waitlist", "info");
-        } else {
-            batch.update(gatheringRef, { attendees: arrayUnion(userId) });
-            
-            if (gathering.linkedChatId) {
-                const chatRef = doc(db, 'chats', gathering.linkedChatId);
-                const participantUpdate: any = {};
-                participantUpdate[`participantData.${userId}`] = { 
-                    displayName: currentUser.displayName, 
-                    avatarUrl: currentUser.avatarUrl 
-                };
-                batch.update(chatRef, { 
-                    participants: arrayUnion(userId),
-                    ...participantUpdate
-                });
-            }
-
-            // Notify Organizer
-            if (gathering.organizerId !== currentUser.id) {
-                const notifRef = doc(collection(db, 'notifications'));
-                batch.set(notifRef, {
-                  type: 'gathering_rsvp',
-                  fromUserId: currentUser.id,
-                  fromUserName: currentUser.displayName,
-                  fromUserAvatar: currentUser.avatarUrl,
-                  toUserId: gathering.organizerId,
-                  targetId: gatheringId,
-                  text: `is attending your gathering: "${gathering.title}"`,
-                  isRead: false,
-                  timestamp: serverTimestamp(),
-                  pulseFrequency: 'intensity'
-                });
-            }
-            addToast("RSVP Confirmed", "success");
-        }
-      }
-
-      await batch.commit();
-    } catch (e) {
-      addToast("RSVP Protocol Failed", "error");
-    }
-  };
-
-  const filteredGatherings = activeFilter === 'All' 
-    ? gatherings 
-    : gatherings.filter(g => g.category === activeFilter);
+  const filteredGatherings = gatherings.filter(g => {
+    if (filter === 'attending') return g.attendees.includes(currentUser.id);
+    if (filter === 'hosting') return g.organizerId === currentUser.id;
+    return true;
+  });
 
   return (
     <div className="w-full max-w-[2400px] mx-auto space-y-8 pb-24 animate-in fade-in duration-700">
       
-      {/* 1. Command Header */}
-      <div className="relative rounded-[3rem] bg-slate-950 p-10 md:p-14 text-white shadow-2xl border border-white/10 overflow-hidden group">
-         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-purple-600/20 blur-[120px] rounded-full translate-x-1/4 -translate-y-1/4 group-hover:bg-purple-500/30 transition-colors duration-1000" />
-         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-indigo-500/10 blur-[100px] rounded-full -translate-x-1/3 translate-y-1/3" />
-         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay" />
-
+      {/* 1. Header */}
+      <div className="relative rounded-[3rem] bg-slate-950 p-10 md:p-12 text-white shadow-2xl border border-white/10 overflow-hidden group">
+         <div className="absolute top-0 right-0 w-96 h-96 bg-purple-600/20 blur-[120px] rounded-full translate-x-1/3 -translate-y-1/3 group-hover:bg-purple-500/30 transition-colors duration-1000" />
+         <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/10 blur-[100px] rounded-full -translate-x-1/3 translate-y-1/3" />
+         
          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
-            <div className="space-y-4 max-w-xl">
-               <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/10">
-                  <ICONS.Gatherings />
-                  <span className="text-[9px] font-black text-white uppercase tracking-[0.3em] font-mono">Gather_Protocol_v4.2</span>
+            <div className="space-y-4">
+               <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/10 backdrop-blur-md rounded-xl border border-white/10 text-purple-300">
+                     <ICONS.Gatherings />
+                  </div>
+                  <span className="text-[10px] font-black text-purple-400 uppercase tracking-[0.4em] font-mono">Social_Protocol_v4.0</span>
                </div>
-               <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter uppercase leading-none text-white">
+               <h1 className="text-3xl md:text-5xl font-black italic tracking-tighter uppercase leading-none">
                  Gatherings
                </h1>
-               <p className="text-xs font-medium text-slate-300 leading-relaxed">
-                 Coordinate physical and neural meetups. Synchronise with local nodes or establish global virtual assemblies.
+               <p className="text-xs md:text-sm font-medium text-slate-400 max-w-lg leading-relaxed">
+                 Coordinate physical and virtual convergence points. Establish new social nodes within the grid.
                </p>
             </div>
 
             <div className="flex gap-4 w-full md:w-auto">
-               <div className="px-8 py-5 bg-white/5 backdrop-blur-md border border-white/10 rounded-[2rem] flex flex-col items-center justify-center min-w-[120px] hover:bg-white/10 transition-colors">
-                  <span className="text-3xl font-black text-white leading-none tracking-tighter">{gatherings.length}</span>
-                  <span className="text-[8px] font-black text-purple-400 uppercase tracking-widest mt-1.5">Upcoming</span>
-               </div>
                <button 
-                 onClick={() => setIsCreateOpen(true)}
-                 className="px-8 py-5 bg-white text-slate-950 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.2em] shadow-[0_0_30px_rgba(255,255,255,0.15)] hover:shadow-[0_0_50px_rgba(255,255,255,0.3)] hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 group/btn"
+                 onClick={() => setIsCreateModalOpen(true)}
+                 className="flex-1 md:flex-none px-8 py-4 bg-white text-slate-950 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:shadow-[0_0_50px_rgba(255,255,255,0.4)] hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 group/btn"
                >
-                 <div className="group-hover/btn:rotate-90 transition-transform"><ICONS.Create /></div>
-                 INITIATE_GATHERING
+                 <div className="group-hover/btn:rotate-90 transition-transform duration-500"><ICONS.Create /></div>
+                 INITIATE_EVENT
                </button>
             </div>
          </div>
       </div>
 
-      {/* 2. Filter Bar */}
+      {/* 2. Filters */}
       <div className="sticky top-[calc(var(--header-h)+1rem)] z-30 mb-8 px-2 md:px-0">
-         <div className="bg-white/90 backdrop-blur-xl border border-white/60 p-2 rounded-[2.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] overflow-x-auto no-scrollbar">
-            <div className="flex gap-2 min-w-max">
-               {(['All', 'Social', 'Tech', 'Gaming', 'Nightlife', 'Workshop'] as const).map(cat => (
-                 <button
-                   key={cat}
-                   onClick={() => setActiveFilter(cat)}
-                   className={`px-6 py-3 rounded-[1.8rem] text-[10px] font-black uppercase tracking-widest transition-all ${activeFilter === cat ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-700'}`}
-                 >
-                   {cat}
-                 </button>
-               ))}
-            </div>
+         <div className="bg-white/80 backdrop-blur-xl border border-white/60 p-2 rounded-[2.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] inline-flex gap-2">
+            {[
+              { id: 'all', label: 'All Events' },
+              { id: 'attending', label: 'My Calendar' },
+              { id: 'hosting', label: 'Hosting' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setFilter(tab.id as any)}
+                className={`px-6 py-3 rounded-[1.8rem] text-[9px] font-black uppercase tracking-widest transition-all ${filter === tab.id ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+              >
+                {tab.label}
+              </button>
+            ))}
          </div>
       </div>
 
-      {/* 3. Event Grid */}
+      {/* 3. Grid */}
       <div className="min-h-[400px]">
-         {isLoading ? (
+         {loading ? (
            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
              {[1,2,3,4,5,6].map(i => (
-               <div key={i} className="h-[420px] bg-slate-50 rounded-[3rem] animate-pulse border border-slate-100" />
+               <div key={i} className="h-[400px] bg-slate-50 rounded-[3rem] animate-pulse border border-slate-100" />
              ))}
            </div>
          ) : filteredGatherings.length > 0 ? (
            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-             {filteredGatherings.map((gathering, idx) => {
-               const dateObj = new Date(gathering.date);
-               const isAttending = gathering.attendees.includes(currentUser.id);
-               const isWaitlisted = gathering.waitlist?.includes(currentUser.id);
-               const isOrganizer = gathering.organizerId === currentUser.id;
-               
-               const capacity = gathering.maxAttendees || 0;
-               const currentCount = gathering.attendees.length;
-               const isFull = capacity > 0 && currentCount >= capacity;
+             {filteredGatherings.map(g => {
+               const isAttending = g.attendees.includes(currentUser.id);
+               const isWaitlisted = g.waitlist?.includes(currentUser.id);
+               const isHosting = g.organizerId === currentUser.id;
+               const dateObj = new Date(g.date);
 
                return (
                  <div 
-                   key={gathering.id} 
-                   onClick={() => onViewGathering(gathering)}
-                   className="group bg-white border border-slate-100 rounded-[3rem] p-4 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] hover:border-purple-200 transition-all duration-500 relative flex flex-col h-full hover:-translate-y-1 cursor-pointer"
-                   style={{ animationDelay: `${idx * 50}ms` }}
+                   key={g.id}
+                   onClick={() => onViewGathering(g)}
+                   className="group bg-white rounded-[3rem] overflow-hidden border border-slate-100 hover:shadow-2xl hover:border-purple-200 transition-all duration-500 cursor-pointer flex flex-col hover:-translate-y-1"
                  >
-                    {/* Image Layer */}
-                    <div className="relative aspect-video rounded-[2.5rem] overflow-hidden bg-slate-100 mb-6">
-                       <img src={gathering.coverUrl} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="" />
-                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
-                       
-                       <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md rounded-2xl px-3 py-2 text-center min-w-[60px] shadow-lg">
-                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{dateObj.toLocaleDateString(locale, { month: 'short' })}</p>
-                          <p className="text-xl font-black text-slate-900 leading-none">{dateObj.getDate()}</p>
+                    <div className="h-48 overflow-hidden relative">
+                       <img src={g.coverUrl} className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110" alt="" />
+                       <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent" />
+                       <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest border border-white/50">
+                          {g.category}
                        </div>
-
-                       <div className="absolute top-4 right-4 flex gap-1">
-                          {isWaitlisted && (
-                              <span className="px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest text-white shadow-sm border border-white/20 backdrop-blur-md bg-amber-500/90">
-                                  WAITLISTED
-                              </span>
-                          )}
-                          {isFull && !isAttending && !isWaitlisted && (
-                              <span className="px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest text-white shadow-sm border border-white/20 backdrop-blur-md bg-rose-500/90">
-                                  FULL
-                              </span>
-                          )}
-                          <span className={`px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest text-white shadow-sm border border-white/20 backdrop-blur-md ${gathering.type === 'virtual' ? 'bg-purple-600/80' : 'bg-emerald-600/80'}`}>
-                             {gathering.type === 'virtual' ? 'NEURAL' : 'GEO'}
-                          </span>
+                       <div className="absolute bottom-4 left-6 text-white">
+                          <p className="text-[8px] font-black uppercase tracking-widest mb-1 opacity-80">{dateObj.toLocaleDateString(locale)}</p>
+                          <h3 className="text-xl font-black italic tracking-tight uppercase leading-none">{g.title}</h3>
                        </div>
                     </div>
 
-                    {/* Content */}
-                    <div className="px-2 flex-1 flex flex-col">
-                       <div className="flex justify-between items-start mb-3">
-                          <h3 className="text-xl font-black text-slate-900 uppercase italic tracking-tighter leading-tight line-clamp-2 group-hover:text-purple-600 transition-colors">
-                            {gathering.title}
-                          </h3>
-                       </div>
-                       
-                       <div className="flex items-center gap-2 mb-4 text-slate-500">
-                          <ICONS.Globe />
-                          <p className="text-[10px] font-bold font-mono uppercase tracking-wide truncate">{gathering.location}</p>
-                       </div>
-
-                       {capacity > 0 && (
-                           <div className="mb-4">
-                               <div className="flex justify-between items-end mb-1">
-                                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Capacity</span>
-                                   <span className={`text-[8px] font-black font-mono ${isFull ? 'text-rose-500' : 'text-slate-600'}`}>{currentCount}/{capacity}</span>
-                               </div>
-                               <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                   <div className={`h-full rounded-full ${isFull ? 'bg-rose-500' : 'bg-purple-600'}`} style={{ width: `${Math.min((currentCount / capacity) * 100, 100)}%` }} />
-                               </div>
-                           </div>
-                       )}
-
-                       <p className="text-[11px] text-slate-500 font-medium leading-relaxed line-clamp-2 mb-6">
-                         {gathering.description}
+                    <div className="p-6 flex-1 flex flex-col">
+                       <p className="text-[10px] text-slate-500 font-medium leading-relaxed line-clamp-3 mb-6">
+                         {g.description}
                        </p>
 
-                       {/* Attendees Pile */}
-                       <div className="mt-auto pt-6 border-t border-slate-50 flex items-center justify-between">
-                          <div className="flex -space-x-2 pl-2">
-                             {gathering.attendees.slice(0, 4).map((attId, i) => {
-                               const attendee = allUsers.find(u => u.id === attId);
-                               return (
-                                 <img 
-                                   key={i} 
-                                   src={attendee?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${attId}`} 
-                                   className="w-8 h-8 rounded-full border-2 border-white bg-slate-100 object-cover shadow-sm" 
-                                   alt="" 
-                                 />
-                               );
-                             })}
-                             {gathering.attendees.length > 4 && (
-                               <div className="w-8 h-8 rounded-full border-2 border-white bg-slate-900 text-white flex items-center justify-center text-[8px] font-black shadow-sm">
-                                 +{gathering.attendees.length - 4}
-                               </div>
-                             )}
+                       <div className="mt-auto flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                             <img src={g.organizerAvatar} className="w-8 h-8 rounded-xl object-cover border border-slate-100" alt="" />
+                             <div className="flex flex-col">
+                                <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Host</span>
+                                <span className="text-[9px] font-bold text-slate-900 truncate max-w-[80px]">{g.organizerName}</span>
+                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2">
-                              {isAttending && gathering.linkedChatId && (
-                                  <button 
-                                    onClick={(e) => { e.stopPropagation(); onOpenLobby(gathering.linkedChatId!); }}
-                                    className="px-4 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all border border-indigo-200"
-                                  >
-                                    LOBBY
-                                  </button>
-                              )}
-                              {!isOrganizer && (
-                                <button 
-                                  onClick={(e) => { e.stopPropagation(); handleRSVP(gathering.id, isAttending || isWaitlisted || false); }}
-                                  className={`px-5 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg ${
-                                      isAttending 
-                                      ? 'bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-500' 
-                                      : isWaitlisted 
-                                      ? 'bg-amber-100 text-amber-600 hover:bg-rose-50 hover:text-rose-500'
-                                      : isFull
-                                      ? 'bg-amber-500 text-white hover:bg-amber-600'
-                                      : 'bg-slate-900 text-white hover:bg-purple-600'
-                                  }`}
-                                >
-                                  {isAttending ? 'WITHDRAW' : isWaitlisted ? 'LEAVE_QUEUE' : isFull ? 'JOIN_WAITLIST' : 'RSVP_CONFIRM'}
-                                </button>
-                              )}
-                              {isOrganizer && (
-                                <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg">ORGANIZER</span>
-                              )}
-                          </div>
+                          {!isHosting && (
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); onRSVP(g.id, isAttending || !!isWaitlisted); }}
+                              className={`px-5 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-[0.2em] transition-all shadow-sm ${isAttending ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : isWaitlisted ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-slate-900 text-white hover:bg-purple-600'}`}
+                            >
+                              {isAttending ? 'GOING' : isWaitlisted ? 'WAITLIST' : 'RSVP'}
+                            </button>
+                          )}
                        </div>
                     </div>
                  </div>
@@ -439,19 +197,19 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
               <div className="w-24 h-24 bg-white rounded-[2.5rem] flex items-center justify-center mb-8 text-slate-300 shadow-sm border border-slate-100">
                  <ICONS.Gatherings />
               </div>
-              <h3 className="text-2xl font-black uppercase tracking-widest italic text-slate-900">No_Signals</h3>
+              <h3 className="text-2xl font-black uppercase tracking-widest italic text-slate-900">Agenda_Clear</h3>
               <p className="text-[10px] font-black uppercase tracking-[0.3em] font-mono mt-3 text-slate-400 max-w-xs leading-relaxed">
-                No gatherings detected in this frequency band. Initialize one to start the sync.
+                No active gatherings detected in your sector.
               </p>
            </div>
          )}
       </div>
 
-      {isCreateOpen && (
+      {isCreateModalOpen && (
         <CreateGatheringModal 
-          currentUser={currentUser} 
-          onClose={() => setIsCreateOpen(false)} 
-          onConfirm={handleCreate} 
+          currentUser={currentUser}
+          onClose={() => setIsCreateModalOpen(false)}
+          onConfirm={handleCreate}
         />
       )}
     </div>
