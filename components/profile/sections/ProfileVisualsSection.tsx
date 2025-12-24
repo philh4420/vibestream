@@ -22,19 +22,28 @@ export const ProfileVisualsSection: React.FC<ProfileVisualsSectionProps> = ({ po
            <p className="text-[11px] font-black text-slate-300 uppercase tracking-[0.4em] font-mono italic">No visual signals recorded in local buffer...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-6">
           {mediaPosts.map(post => (
             <div 
               key={post.id} 
               onClick={() => onViewPost(post)}
-              className="aspect-square rounded-[2.5rem] overflow-hidden border border-slate-100 bg-slate-100 group cursor-pointer relative shadow-sm"
+              className="aspect-square rounded-[2.2rem] overflow-hidden border border-slate-100 bg-slate-50 group cursor-pointer relative shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
             >
-               <img 
-                 src={post.media[0].url} 
-                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                 alt="" 
-                 loading="lazy"
-               />
+               {post.media[0].type === 'video' ? (
+                 <video 
+                   src={post.media[0].url} 
+                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                   muted 
+                   playsInline
+                 />
+               ) : (
+                 <img 
+                   src={post.media[0].url} 
+                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                   alt="" 
+                   loading="lazy"
+                 />
+               )}
                <div className="absolute inset-0 bg-indigo-600/0 group-hover:bg-indigo-600/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100 backdrop-blur-[4px]">
                   <span className="text-white font-black text-[10px] uppercase tracking-[0.4em] font-mono">Sync_View</span>
                </div>

@@ -26,6 +26,7 @@ import { ProfileAboutSection } from './sections/ProfileAboutSection';
 import { ProfileVisualsSection } from './sections/ProfileVisualsSection';
 import { ProfileResonanceSection } from './sections/ProfileResonanceSection';
 import { ProfileChronologySection } from './sections/ProfileChronologySection';
+import { ProfileConnectionsSection } from './sections/ProfileConnectionsSection';
 
 interface ProfilePageProps {
   userData: User;
@@ -156,22 +157,24 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
   const renderTabContent = () => {
     switch (activeTab) {
       case 'identity':
-        return <div className="max-w-5xl mx-auto"><ProfileAboutSection userData={profileData} locale={locale} /></div>;
+        return <div className="max-w-[2560px] mx-auto"><ProfileAboutSection userData={profileData} locale={locale} /></div>;
       case 'visuals':
-        return <div className="max-w-5xl mx-auto"><ProfileVisualsSection posts={userPosts} onViewPost={onViewPost} /></div>;
+        return <div className="max-w-[2560px] mx-auto"><ProfileVisualsSection posts={userPosts} onViewPost={onViewPost} /></div>;
       case 'resonance':
-        return <div className="max-w-5xl mx-auto"><ProfileResonanceSection userData={profileData} /></div>;
+        return <div className="max-w-[2560px] mx-auto"><ProfileResonanceSection userData={profileData} /></div>;
       case 'chronology':
-        return <div className="max-w-5xl mx-auto"><ProfileChronologySection userData={profileData} locale={locale} /></div>;
+        return <div className="max-w-[2560px] mx-auto"><ProfileChronologySection userData={profileData} locale={locale} /></div>;
+      case 'connections':
+        return <div className="max-w-[2560px] mx-auto"><ProfileConnectionsSection userData={profileData} currentUser={userData} onViewProfile={(u) => console.log('View', u)} /></div>; // Note: onViewProfile logic needs to navigate, assuming simple log for now or passed prop if needed to change route
       default:
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-5xl mx-auto items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-[2560px] mx-auto items-start">
             <div className="lg:col-span-5 space-y-4 lg:sticky lg:top-[var(--header-h)]">
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+              <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
                  <h3 className="text-xl font-black text-slate-900 tracking-tight mb-4 italic">Intro</h3>
                  <div className="space-y-4">
                     {profileData.statusMessage && (
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-center">
                         <p className="text-sm font-bold text-slate-700 italic">"{profileData.statusMessage}"</p>
                       </div>
                     )}
@@ -182,14 +185,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
                     <div className="space-y-4 py-2">
                        {profileData.occupation && (
                           <div className="flex items-center gap-3 text-slate-600">
-                            <span className="text-xs font-bold uppercase tracking-widest text-slate-400">ROLE:</span>
-                            <span className="text-sm font-bold text-slate-900">{profileData.occupation}</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">ROLE:</span>
+                            <span className="text-xs font-bold text-slate-900 uppercase">{profileData.occupation}</span>
                           </div>
                        )}
                        {profileData.location && (
                           <div className="flex items-center gap-3 text-slate-600">
-                            <span className="text-xs font-bold uppercase tracking-widest text-slate-400">NODE:</span>
-                            <span className="text-sm font-bold text-slate-900">{profileData.location}</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">NODE:</span>
+                            <span className="text-xs font-bold text-slate-900 uppercase">{profileData.location}</span>
                           </div>
                        )}
                     </div>

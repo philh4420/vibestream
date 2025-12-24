@@ -35,6 +35,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 }) => {
   const navTabs = [
     { id: 'broadcasting', label: 'Timeline' },
+    { id: 'connections', label: 'Friends' }, // New Tab
     { id: 'identity', label: 'About' },
     { id: 'visuals', label: 'Photos' },
     { id: 'resonance', label: 'Resonance' },
@@ -44,68 +45,73 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   return (
     <div className="w-full bg-white shadow-sm border-b border-slate-200">
       {/* 1. COVER PHOTO */}
-      <div className="max-w-6xl mx-auto relative h-[25vh] md:h-[380px] bg-slate-100 md:rounded-b-2xl overflow-hidden group">
+      <div className="max-w-[2560px] mx-auto relative h-[25vh] md:h-[420px] bg-slate-100 md:rounded-b-[2.5rem] overflow-hidden group">
         <img 
           src={userData.coverUrl || 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80'} 
           className="w-full h-full object-cover transition-transform duration-[5s] group-hover:scale-105" 
           alt="Cover" 
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
         
         {isOwnProfile && (
           <button 
             onClick={onEdit}
-            className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-md hover:bg-white text-slate-900 px-4 py-2 rounded-xl flex items-center gap-2 transition-all font-bold text-xs shadow-xl active:scale-95"
+            className="absolute bottom-6 right-6 bg-white/10 backdrop-blur-md hover:bg-white text-white hover:text-slate-900 px-6 py-3 rounded-2xl flex items-center gap-2 transition-all font-black text-[9px] uppercase tracking-widest shadow-xl active:scale-95 border border-white/20"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
-            </svg>
-            Edit Cover
+            <ICONS.Create /> Edit Cover
           </button>
         )}
       </div>
 
       {/* 2. IDENTITY OVERLAP & ACTIONS */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-8">
-        <div className="flex flex-col md:flex-row items-center md:items-end gap-4 md:gap-6 -mt-16 md:-mt-20 pb-6">
+      <div className="max-w-[2560px] mx-auto px-6 sm:px-10 lg:px-14">
+        <div className="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-10 -mt-20 md:-mt-24 pb-8">
           {/* Avatar Area */}
           <div className="relative group">
-            <div className="p-1.5 bg-white rounded-full shadow-2xl">
+            <div className="p-2 bg-white rounded-full shadow-2xl">
               <img 
                 src={userData.avatarUrl} 
-                className="w-36 h-36 md:w-44 md:h-44 rounded-full object-cover border-4 border-white transition-transform duration-500 group-hover:scale-[1.02]" 
+                className="w-32 h-32 md:w-48 md:h-48 rounded-full object-cover border-[6px] border-slate-50 transition-transform duration-500 group-hover:scale-[1.02]" 
                 alt={userData.displayName} 
               />
             </div>
-            <div className="absolute bottom-3 right-3 w-8 h-8 md:w-10 md:h-10 bg-white rounded-full p-1 shadow-xl flex items-center justify-center border-4 border-white">
+            <div className="absolute bottom-4 right-4 w-8 h-8 md:w-12 md:h-12 bg-white rounded-full p-1.5 shadow-xl flex items-center justify-center border-[4px] border-slate-50">
               <div className={`w-full h-full rounded-full ${PRESENCE_DOTS[userData.presenceStatus || 'Online']} animate-pulse`} />
             </div>
           </div>
 
           {/* Text Identity */}
-          <div className="flex-1 text-center md:text-left md:pb-4">
-            <div className="flex flex-col md:flex-row items-center gap-2 mb-1">
-              <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
+          <div className="flex-1 text-center md:text-left md:pb-6">
+            <div className="flex flex-col md:flex-row items-center gap-3 mb-2">
+              <h1 className="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tighter leading-none">
                 {userData.displayName}
               </h1>
-              {userData.verifiedHuman && <ICONS.Verified />}
-              {userData.statusEmoji && <span className="text-2xl ml-1">{userData.statusEmoji}</span>}
+              {userData.verifiedHuman && <div className="text-indigo-500 scale-125"><ICONS.Verified /></div>}
+              {userData.statusEmoji && <span className="text-3xl ml-1">{userData.statusEmoji}</span>}
             </div>
-            <div className="flex items-center justify-center md:justify-start gap-4">
-              <p className="text-slate-500 font-bold text-sm">@{userData.username}</p>
-              <div className="flex gap-4 text-sm">
-                 <span className="font-bold text-slate-900">{userData.following || 0} <span className="text-slate-500 font-normal">Following</span></span>
-                 <span className="font-bold text-slate-900">{userData.followers || 0} <span className="text-slate-500 font-normal">Followers</span></span>
+            
+            <div className="flex items-center justify-center md:justify-start gap-6">
+              <p className="text-slate-400 font-bold font-mono text-sm tracking-wide">@{userData.username}</p>
+              <div className="h-4 w-px bg-slate-300" />
+              <div className="flex gap-6 text-sm">
+                 <div className="flex items-center gap-1.5">
+                    <span className="font-black text-slate-900">{userData.following || 0}</span> 
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Following</span>
+                 </div>
+                 <div className="flex items-center gap-1.5">
+                    <span className="font-black text-slate-900">{userData.followers || 0}</span> 
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Followers</span>
+                 </div>
               </div>
             </div>
           </div>
 
           {/* Header Action Buttons */}
-          <div className="flex items-center gap-2 md:pb-4 w-full md:w-auto">
+          <div className="flex items-center gap-3 md:pb-6 w-full md:w-auto">
             {isOwnProfile ? (
               <button 
                 onClick={onEdit}
-                className="flex-1 md:flex-none h-12 px-6 bg-slate-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black transition-all active:scale-95 shadow-lg"
+                className="flex-1 md:flex-none h-14 px-8 bg-slate-950 text-white rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-indigo-600 transition-all active:scale-95 shadow-lg border border-transparent"
               >
                 <ICONS.Create /> Edit Profile
               </button>
@@ -113,11 +119,11 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               <>
                 <button 
                   onClick={onFollowToggle}
-                  className={`flex-1 md:flex-none h-12 px-8 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg ${isFollowing ? 'bg-white border border-slate-200 text-slate-900 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-100' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100'}`}
+                  className={`flex-1 md:flex-none h-14 px-10 rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg ${isFollowing ? 'bg-white border border-slate-200 text-slate-900 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-100' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100'}`}
                 >
-                  {isFollowing ? 'Following' : 'Follow'}
+                  {isFollowing ? 'Linked' : 'Connect'}
                 </button>
-                <button className="flex-1 md:flex-none h-12 px-6 bg-slate-100 text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-200 transition-all active:scale-95">
+                <button className="h-14 w-14 bg-white border border-slate-200 text-slate-400 rounded-[1.8rem] flex items-center justify-center hover:text-indigo-600 hover:border-indigo-200 transition-all active:scale-90 shadow-sm">
                   <ICONS.Messages />
                 </button>
               </>
@@ -126,13 +132,13 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         </div>
 
         {/* 3. STICKY NAV BAR */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar border-t border-slate-100">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar border-t border-slate-100 pt-1">
           {navTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className={`px-4 md:px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] font-mono transition-all relative whitespace-nowrap ${
-                activeTab === tab.id ? 'text-indigo-600' : 'text-slate-500 hover:bg-slate-50'
+              className={`px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] font-mono transition-all relative whitespace-nowrap ${
+                activeTab === tab.id ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-700'
               }`}
             >
               {tab.label}

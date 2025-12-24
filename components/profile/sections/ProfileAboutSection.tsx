@@ -14,7 +14,7 @@ const MasteryBar = ({ label, level }: { label: string; level: number }) => (
       <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest font-mono">{label}</p>
       <p className="text-[9px] font-black text-indigo-500 font-mono">{level}%</p>
     </div>
-    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-50">
       <div 
         className="h-full bg-indigo-600 rounded-full transition-all duration-1000 group-hover:bg-indigo-400" 
         style={{ width: `${level}%` }} 
@@ -39,12 +39,12 @@ const SocialCard = ({ platform, url, isPrimary = false }: { platform: string; ur
   return (
     <a 
       href={url} target="_blank" rel="noopener noreferrer"
-      className={`flex items-center gap-4 p-5 rounded-2xl transition-all duration-300 group ${isPrimary ? brandColors['Primary'] : `bg-slate-50 border border-slate-100 ${brandColors[platform] || 'hover:bg-indigo-600 hover:text-white'}`}`}
+      className={`flex items-center gap-4 p-5 rounded-[1.5rem] transition-all duration-300 group ${isPrimary ? brandColors['Primary'] : `bg-slate-50 border border-slate-100 ${brandColors[platform] || 'hover:bg-indigo-600 hover:text-white'}`}`}
     >
       <div className={`${isPrimary ? 'scale-125' : 'scale-110'}`}><Icon /></div>
       <div className="flex flex-col min-w-0">
         <span className="text-[10px] font-black uppercase tracking-widest leading-none mb-1 truncate">{isPrimary ? 'Primary_Domain' : platform}</span>
-        <span className={`text-[9px] font-bold truncate opacity-60`}>{url.replace(/^https?:\/\//, '')}</span>
+        <span className={`text-[9px] font-bold truncate opacity-60 font-mono`}>{url.replace(/^https?:\/\//, '')}</span>
       </div>
     </a>
   );
@@ -66,7 +66,7 @@ export const ProfileAboutSection: React.FC<ProfileAboutSectionProps> = ({ userDa
       
       {/* Column 1: Identity & Biosignals */}
       <div className="lg:col-span-4 space-y-8">
-        <div className="bg-white rounded-[3rem] p-10 shadow-sm border border-slate-100 space-y-10 relative overflow-hidden h-full">
+        <div className="bg-white rounded-[3.5rem] p-10 shadow-sm border border-slate-100 space-y-10 relative overflow-hidden h-full">
            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2" />
            
            <div className="flex items-center gap-4 mb-2">
@@ -98,14 +98,14 @@ export const ProfileAboutSection: React.FC<ProfileAboutSectionProps> = ({ userDa
                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest font-mono">Trust_Tier</span>
                  <span className="text-xs font-black text-indigo-600 uppercase tracking-widest">{userData.trustTier || 'Gamma'}</span>
               </div>
-              <div className="px-4 py-2 bg-slate-50 rounded-xl text-[9px] font-black font-mono">ID: {userData.id.slice(0, 8).toUpperCase()}</div>
+              <div className="px-4 py-2 bg-slate-50 rounded-xl text-[9px] font-black font-mono shadow-sm border border-slate-100">ID: {userData.id.slice(0, 8).toUpperCase()}</div>
            </div>
         </div>
       </div>
 
       {/* Column 2: Professional Mastery */}
       <div className="lg:col-span-4 space-y-8">
-        <div className="bg-slate-900 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden h-full">
+        <div className="bg-slate-900 rounded-[3.5rem] p-10 text-white shadow-2xl relative overflow-hidden h-full">
            <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-indigo-500/10 to-transparent" />
            
            <div className="flex items-center gap-4 mb-10 relative z-10">
@@ -133,16 +133,16 @@ export const ProfileAboutSection: React.FC<ProfileAboutSectionProps> = ({ userDa
 
       {/* Column 3: Digital Footprint (Ecosystem) */}
       <div className="lg:col-span-4 space-y-8">
-        <div className="bg-white rounded-[3rem] p-10 shadow-sm border border-slate-100 space-y-8 h-full flex flex-col">
+        <div className="bg-white rounded-[3.5rem] p-10 shadow-sm border border-slate-100 space-y-8 h-full flex flex-col">
            <div className="flex items-center gap-4 mb-4">
-             <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><ICONS.Globe /></div>
+             <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl"><ICONS.Globe /></div>
              <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em] font-mono">Digital_Ecosystem</h2>
            </div>
 
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 overflow-y-auto no-scrollbar max-h-[500px] pr-2">
+           <div className="grid grid-cols-1 gap-4 overflow-y-auto no-scrollbar max-h-[500px] pr-2">
               {/* Highlighted Primary Website Tile */}
               {userData.website && (
-                <div className="sm:col-span-2 lg:col-span-1">
+                <div className="col-span-full">
                   <SocialCard platform="Primary" url={userData.website} isPrimary={true} />
                 </div>
               )}
