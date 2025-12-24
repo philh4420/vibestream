@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { User } from '../../types';
+import { User, Gathering } from '../../types';
 import { ICONS } from '../../constants';
 import { uploadToCloudinary } from '../../services/cloudinary';
 
@@ -8,20 +8,38 @@ interface CreateGatheringModalProps {
   currentUser: User;
   onClose: () => void;
   onConfirm: (data: any) => void;
+  initialData?: Gathering;
 }
 
-export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ currentUser, onClose, onConfirm }) => {
-  const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    date: '',
-    time: '',
-    location: '',
-    type: 'physical' as 'physical' | 'virtual',
-    category: 'Social' as 'Social' | 'Tech' | 'Gaming' | 'Nightlife' | 'Workshop',
-    coverUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=2000'
+export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ currentUser, onClose, onConfirm, initialData }) => {
+  const [formData, setFormData] = useState(() => {
+    if (initialData) {
+      const d = new Date(initialData.date);
+      // Format time as HH:MM safely
+      const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      return {
+        title: initialData.title,
+        description: initialData.description,
+        date: d.toISOString().split('T')[0],
+        time: timeStr,
+        location: initialData.location,
+        type: initialData.type,
+        category: initialData.category,
+        coverUrl: initialData.coverUrl
+      };
+    }
+    return {
+      title: '',
+      description: '',
+      date: '',
+      time: '',
+      location: '',
+      type: 'physical' as 'physical' | 'virtual',
+      category: 'Social' as 'Social' | 'Tech' | 'Gaming' | 'Nightlife' | 'Workshop',
+      coverUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=2000'
+    };
   });
+
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -49,6 +67,8 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
     });
   };
 
+  const isEditing = !!initialData;
+
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-6 animate-in fade-in duration-300">
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose}></div>
@@ -57,7 +77,7 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
         {/* Header */}
         <div className="flex justify-between items-start mb-8 shrink-0">
            <div>
-             <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">Initiate_Gathering</h2>
+             <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">{isEditing ? 'Update_Protocol' : 'Initiate_Gathering'}</h2>
              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono mt-2">Protocol Layer v4.0</p>
            </div>
            <button onClick={onClose} className="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all active:scale-90"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
@@ -167,7 +187,7 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
              className="w-full py-5 bg-slate-900 text-white rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.4em] shadow-xl hover:bg-indigo-600 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3"
            >
              {isUploading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <ICONS.Verified />}
-             BROADCAST_GATHERING
+             {isEditing ? 'UPDATE_GATHERING' : 'BROADCAST_GATHERING'}
            </button>
         </div>
       </div>
