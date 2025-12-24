@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { auth, db } from '../../services/firebase';
 import * as FirebaseAuth from 'firebase/auth';
 const { 
@@ -20,6 +20,10 @@ interface LandingPageProps {
 type AuthMode = 'login' | 'register' | 'reset';
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSettings }) => {
+  const [isVerified, setIsVerified] = useState(false);
+  const [verificationProgress, setVerificationProgress] = useState(0);
+  const holdTimerRef = useRef<number | null>(null);
+
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [isProcessing, setIsProcessing] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
@@ -30,6 +34,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
   const [fullName, setFullName] = useState('');
   const [errorDetails, setErrorDetails] = useState<{ code: string; message: string } | null>(null);
 
+  // --- HOLD TO SYNC LOGIC ---
+  const handleHoldStart = () => {
+    if (isVerified) return;
+    if (holdTimerRef.current) clearInterval(holdTimerRef.current);
+    
+    holdTimerRef.current = window.setInterval(() => {
+      setVerificationProgress(prev => {
+        if (prev >= 100) {
+          if (holdTimerRef.current) clearInterval(holdTimerRef.current);
+          setIsVerified(true);
+          return 100;
+        }
+        return prev + 2; // Speed of fill
+      });
+    }, 16);
+  };
+
+  const handleHoldEnd = () => {
+    if (isVerified) return;
+    if (holdTimerRef.current) clearInterval(holdTimerRef.current);
+    setVerificationProgress(0);
+  };
+
+  // --- AUTH HANDLERS ---
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth) return;
@@ -119,7 +147,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
   };
 
   return (
-    <div className="min-h-screen bg-[#f0f2f5] flex flex-col items-center justify-center py-10 px-4 md:px-0 font-sans">
+    <div className="min-h-screen bg-[#f0f2f5] flex flex-col items-center justify-center py-10 px-4 md:px-0 font-sans selection:bg-indigo-100 selection:text-indigo-900">
       
       <div className="w-full max-w-[980px] flex flex-col md:flex-row items-center md:items-start justify-between gap-10 md:gap-0">
         
@@ -133,106 +161,158 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
           </h2>
         </div>
 
-        {/* RIGHT COLUMN: LOGIN CARD */}
+        {/* RIGHT COLUMN: INTERACTION CARD */}
         <div className="w-full max-w-[396px]">
-          <div className="bg-white p-4 rounded-xl shadow-lg border border-slate-200/60">
-            {authMode === 'login' && (
-              <form onSubmit={handleLogin} className="flex flex-col gap-3.5">
-                <input 
-                  type="email" 
-                  placeholder="Email or Network ID" 
-                  value={email} 
-                  onChange={e => setEmail(e.target.value)} 
-                  required
-                  className="w-full px-4 py-3.5 text-[17px] border border-slate-300 rounded-md focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-500"
-                />
-                <input 
-                  type="password" 
-                  placeholder="Password" 
-                  value={password} 
-                  onChange={e => setPassword(e.target.value)} 
-                  required
-                  className="w-full px-4 py-3.5 text-[17px] border border-slate-300 rounded-md focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-500"
-                />
+          <div className="bg-white p-4 rounded-xl shadow-lg border border-slate-200/60 transition-all duration-500 overflow-hidden relative">
+            
+            {/* STATE 1: HOLD TO SYNC (BOT PROTECTION) */}
+            {!isVerified ? (
+              <div className="flex flex-col items-center justify-center py-12 px-6 animate-in fade-in duration-500">
+                <div className="relative mb-8 group cursor-pointer">
+                  {/* Progress Ring */}
+                  <svg className="w-32 h-32 -rotate-90 transform" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="46" fill="none" stroke="#e2e8f0" strokeWidth="4" />
+                    <circle 
+                      cx="50" cy="50" r="46" fill="none" 
+                      stroke="#4f46e5" 
+                      strokeWidth="4"
+                      strokeDasharray="289.02" 
+                      strokeDashoffset={289.02 - (289.02 * verificationProgress) / 100}
+                      strokeLinecap="round"
+                      className="transition-all duration-75 ease-linear"
+                    />
+                  </svg>
+                  
+                  {/* Touch Button */}
+                  <button 
+                    onMouseDown={handleHoldStart} 
+                    onMouseUp={handleHoldEnd} 
+                    onMouseLeave={handleHoldEnd}
+                    onTouchStart={handleHoldStart} 
+                    onTouchEnd={handleHoldEnd}
+                    className="absolute inset-2 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center shadow-inner transition-colors active:scale-95"
+                  >
+                    <div className={`transition-all duration-300 ${verificationProgress > 0 ? 'scale-110 text-indigo-600' : 'text-slate-400'}`}>
+                      <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7.864 4.243A7.5 7.5 0 0119.5 10.5c0 2.92-.556 5.709-1.568 8.268M5.742 6.364A7.465 7.465 0 004.5 10.5a7.464 7.464 0 01-1.15 3.993m1.989 3.559A11.209 11.209 0 008.25 10.5a3.75 3.75 0 117.5 0c0 .527-.021 1.049-.064 1.565M12 10.5a14.94 14.94 0 01-3.6 9.75m6.633-4.596a18.666 18.666 0 01-2.485 5.33" />
+                      </svg>
+                    </div>
+                  </button>
+                </div>
                 
-                {errorDetails && (
-                  <div className="text-rose-600 text-[13px] text-left font-medium px-1 flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/></svg>
-                    {errorDetails.message}
-                  </div>
+                <h3 className="text-xl font-bold text-slate-800 mb-2 text-center">Security Check</h3>
+                <p className="text-sm text-slate-500 text-center leading-relaxed">
+                  Please hold the button above to verify your human identity and synchronize with the grid.
+                </p>
+              </div>
+            ) : (
+              // STATE 2: AUTH FORMS (LOGIN/REGISTER)
+              <div className="animate-in slide-in-from-right-8 duration-500">
+                {authMode === 'login' && (
+                  <form onSubmit={handleLogin} className="flex flex-col gap-3.5">
+                    <div className="text-center mb-2">
+                      <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M5 13l4 4L19 7" /></svg>
+                        Identity Verified
+                      </div>
+                    </div>
+                    <input 
+                      type="email" 
+                      placeholder="Email or Network ID" 
+                      value={email} 
+                      onChange={e => setEmail(e.target.value)} 
+                      required
+                      className="w-full px-4 py-3.5 text-[17px] border border-slate-300 rounded-md focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-500"
+                    />
+                    <input 
+                      type="password" 
+                      placeholder="Password" 
+                      value={password} 
+                      onChange={e => setPassword(e.target.value)} 
+                      required
+                      className="w-full px-4 py-3.5 text-[17px] border border-slate-300 rounded-md focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-500"
+                    />
+                    
+                    {errorDetails && (
+                      <div className="text-rose-600 text-[13px] text-left font-medium px-1 flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/></svg>
+                        {errorDetails.message}
+                      </div>
+                    )}
+
+                    <button 
+                      type="submit" 
+                      disabled={isProcessing}
+                      className="w-full bg-[#1877f2] hover:bg-[#166fe5] text-white text-[20px] font-bold py-2.5 rounded-md transition-colors shadow-sm disabled:opacity-50 mt-1"
+                    >
+                      {isProcessing ? 'Logging in...' : 'Log In'}
+                    </button>
+
+                    <div className="text-center mt-1">
+                      <button 
+                        type="button" 
+                        onClick={() => { setAuthMode('reset'); setErrorDetails(null); }}
+                        className="text-[#1877f2] text-[14px] hover:underline font-medium"
+                      >
+                        Forgotten password?
+                      </button>
+                    </div>
+
+                    <div className="border-b border-slate-300 my-2"></div>
+
+                    <div className="text-center">
+                      <button 
+                        type="button"
+                        onClick={() => { setShowRegisterModal(true); setAuthMode('register'); setErrorDetails(null); setEmail(''); setPassword(''); }}
+                        className="bg-[#42b72a] hover:bg-[#36a420] text-white text-[17px] font-bold px-8 py-3 rounded-md transition-colors shadow-sm"
+                      >
+                        Create new account
+                      </button>
+                    </div>
+                  </form>
                 )}
 
-                <button 
-                  type="submit" 
-                  disabled={isProcessing}
-                  className="w-full bg-[#1877f2] hover:bg-[#166fe5] text-white text-[20px] font-bold py-2.5 rounded-md transition-colors shadow-sm disabled:opacity-50 mt-1"
-                >
-                  {isProcessing ? 'Logging in...' : 'Log In'}
-                </button>
+                {authMode === 'reset' && (
+                  <form onSubmit={handleReset} className="flex flex-col gap-4 py-2">
+                    <div className="text-center mb-2">
+                      <h3 className="text-xl font-bold text-slate-800">Find Your Account</h3>
+                      <p className="text-slate-600 text-sm mt-1">Please enter your email to search for your account.</p>
+                    </div>
+                    <input 
+                      type="email" 
+                      placeholder="Email address" 
+                      value={email} 
+                      onChange={e => setEmail(e.target.value)} 
+                      required
+                      className="w-full px-4 py-3 text-[17px] border border-slate-300 rounded-md focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                    />
+                    
+                    {errorDetails && <div className="text-rose-600 text-sm text-center">{errorDetails.message}</div>}
+                    {resetSuccess && <div className="text-emerald-600 text-sm text-center font-medium">Reset link sent to your email.</div>}
 
-                <div className="text-center mt-1">
-                  <button 
-                    type="button" 
-                    onClick={() => { setAuthMode('reset'); setErrorDetails(null); }}
-                    className="text-[#1877f2] text-[14px] hover:underline font-medium"
-                  >
-                    Forgotten password?
-                  </button>
-                </div>
-
-                <div className="border-b border-slate-300 my-2"></div>
-
-                <div className="text-center">
-                  <button 
-                    type="button"
-                    onClick={() => { setShowRegisterModal(true); setAuthMode('register'); setErrorDetails(null); setEmail(''); setPassword(''); }}
-                    className="bg-[#42b72a] hover:bg-[#36a420] text-white text-[17px] font-bold px-8 py-3 rounded-md transition-colors shadow-sm"
-                  >
-                    Create new account
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {authMode === 'reset' && (
-              <form onSubmit={handleReset} className="flex flex-col gap-4 py-2">
-                <div className="text-center mb-2">
-                  <h3 className="text-xl font-bold text-slate-800">Find Your Account</h3>
-                  <p className="text-slate-600 text-sm mt-1">Please enter your email to search for your account.</p>
-                </div>
-                <input 
-                  type="email" 
-                  placeholder="Email address" 
-                  value={email} 
-                  onChange={e => setEmail(e.target.value)} 
-                  required
-                  className="w-full px-4 py-3 text-[17px] border border-slate-300 rounded-md focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
-                />
-                
-                {errorDetails && <div className="text-rose-600 text-sm text-center">{errorDetails.message}</div>}
-                {resetSuccess && <div className="text-emerald-600 text-sm text-center font-medium">Reset link sent to your email.</div>}
-
-                <div className="flex gap-3 mt-2 border-t border-slate-200 pt-4 justify-end">
-                  <button 
-                    type="button" 
-                    onClick={() => { setAuthMode('login'); setErrorDetails(null); setResetSuccess(false); }}
-                    className="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-4 py-2 rounded-md transition-colors text-sm"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit" 
-                    disabled={isProcessing}
-                    className="bg-[#1877f2] hover:bg-[#166fe5] text-white font-bold px-6 py-2 rounded-md transition-colors text-sm disabled:opacity-50"
-                  >
-                    Search
-                  </button>
-                </div>
-              </form>
+                    <div className="flex gap-3 mt-2 border-t border-slate-200 pt-4 justify-end">
+                      <button 
+                        type="button" 
+                        onClick={() => { setAuthMode('login'); setErrorDetails(null); setResetSuccess(false); }}
+                        className="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-4 py-2 rounded-md transition-colors text-sm"
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        type="submit" 
+                        disabled={isProcessing}
+                        className="bg-[#1877f2] hover:bg-[#166fe5] text-white font-bold px-6 py-2 rounded-md transition-colors text-sm disabled:opacity-50"
+                      >
+                        Search
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
             )}
           </div>
           
-          {authMode === 'login' && (
+          {authMode === 'login' && isVerified && (
             <div className="mt-7 text-center">
               <p className="text-[14px] text-slate-800">
                 <span className="font-bold">Create a Page</span> for a celebrity, brand or business.
@@ -244,7 +324,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
 
       {/* REGISTRATION MODAL */}
       {showRegisterModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-white rounded-lg shadow-2xl border border-slate-200 w-full max-w-[432px] overflow-hidden relative">
             
             {/* Modal Header */}
@@ -317,23 +397,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
         </div>
       )}
 
-      {/* Footer */}
-      <footer className="mt-auto pt-8 pb-4 w-full max-w-[980px] text-[#737373] text-[12px]">
+      {/* FOOTER */}
+      <footer className="mt-auto pt-8 pb-4 w-full max-w-[980px] text-[#737373] text-[12px] px-4 md:px-0">
         <div className="flex flex-wrap gap-x-4 gap-y-1 mb-2">
           <span>English (UK)</span>
-          <span className="hover:underline cursor-pointer">日本語</span>
+          <span className="hover:underline cursor-pointer">Español</span>
           <span className="hover:underline cursor-pointer">Français (France)</span>
           <span className="hover:underline cursor-pointer">Deutsch</span>
         </div>
         <div className="border-t border-[#ddd] pt-2 flex flex-wrap gap-x-4 gap-y-1">
-          <span className="hover:underline cursor-pointer">Sign Up</span>
-          <span className="hover:underline cursor-pointer">Log In</span>
-          <span className="hover:underline cursor-pointer">Messenger</span>
-          <span className="hover:underline cursor-pointer">Facebook Lite</span>
-          <span className="hover:underline cursor-pointer">Video</span>
-          <span className="hover:underline cursor-pointer">Places</span>
-          <span className="hover:underline cursor-pointer">Games</span>
-          <span className="hover:underline cursor-pointer">Marketplace</span>
+          <span className="hover:underline cursor-pointer">Privacy Policy</span>
+          <span className="hover:underline cursor-pointer">Terms of Service</span>
+          <span className="hover:underline cursor-pointer">Cookies Policy</span>
         </div>
         <div className="mt-4">
           VibeStream © 2026
