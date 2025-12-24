@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { ICONS } from '../../constants';
-import { AppRoute, UserRole, User as VibeUser, AppNotification } from '../../types';
+import { AppRoute, UserRole, User as VibeUser, AppNotification, SystemSettings } from '../../types';
 import { auth } from '../../services/firebase';
 
 interface LeftSidebarProps {
@@ -11,6 +11,7 @@ interface LeftSidebarProps {
   userRole: UserRole;
   userData: VibeUser | null;
   notifications?: AppNotification[];
+  systemSettings?: SystemSettings;
 }
 
 export const LeftSidebar: React.FC<LeftSidebarProps> = ({ 
@@ -18,13 +19,22 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   onNavigate, 
   userRole,
   userData,
-  notifications = []
+  notifications = [],
+  systemSettings
 }) => {
   
   const unreadCount = notifications.filter(n => !n.isRead).length;
   
   // Determine verification status
   const isVerified = userData?.verifiedHuman || ['verified', 'creator', 'admin'].includes(userData?.role || '');
+
+  // Helper to check if a feature is enabled
+  const isEnabled = (route: AppRoute) => {
+    // Admin always has access to Admin Panel, others strictly follow flags
+    if (route === AppRoute.ADMIN) return userRole === 'admin';
+    // If flags are missing, default to true
+    return systemSettings?.featureFlags?.[route] !== false;
+  };
 
   const NavItem = ({ route, icon: Icon, label, customIcon, collapsed = false, badge, isSubItem = false }: { 
     route?: AppRoute, 
@@ -35,6 +45,9 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
     badge?: string | number,
     isSubItem?: boolean
   }) => {
+    // Don't render if feature is disabled
+    if (route && !isEnabled(route)) return null;
+
     const isActive = route && activeRoute === route;
     return (
       <button 

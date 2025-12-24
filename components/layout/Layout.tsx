@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ICONS } from '../../constants';
-import { AppRoute, UserRole, Region, User as VibeUser, AppNotification, WeatherInfo } from '../../types';
+import { AppRoute, UserRole, Region, User as VibeUser, AppNotification, WeatherInfo, SystemSettings } from '../../types';
 import { Header } from './Header';
 import { RightSidebar } from './RightSidebar';
 import { LeftSidebar } from './LeftSidebar';
@@ -22,6 +22,7 @@ interface LayoutProps {
   onRegionChange: (region: Region) => void;
   onSearch: (query: string) => void;
   weather?: WeatherInfo | null;
+  systemSettings?: SystemSettings;
 }
 
 export const Layout: React.FC<LayoutProps> = ({ 
@@ -38,7 +39,8 @@ export const Layout: React.FC<LayoutProps> = ({
   currentRegion,
   onRegionChange,
   onSearch,
-  weather = null
+  weather = null,
+  systemSettings
 }) => {
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>(
     typeof window !== 'undefined' ? (window.innerHeight > window.innerWidth ? 'portrait' : 'landscape') : 'portrait'
@@ -77,6 +79,7 @@ export const Layout: React.FC<LayoutProps> = ({
           onOpenCreate={onOpenCreate}
           userRole={userRole}
           userData={userData}
+          systemSettings={systemSettings}
         />
 
         {/* Main Content Viewport with Global Atmosphere */}

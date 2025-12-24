@@ -64,6 +64,34 @@ import { ResiliencePage } from './components/resilience/ResiliencePage';
 // Services
 import { fetchWeather } from './services/weather';
 
+const MaintenanceScreen = () => (
+  <div className="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center text-white z-[9999] p-6 text-center">
+    <div className="w-24 h-24 bg-rose-600 rounded-full flex items-center justify-center mb-8 animate-pulse shadow-[0_0_50px_#e11d48]">
+       <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+    </div>
+    <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter italic mb-4">System_Lockdown</h1>
+    <p className="text-sm font-mono text-slate-400 uppercase tracking-[0.3em] mb-12">Maintenance Protocols Active</p>
+    <div className="flex gap-3">
+       <div className="w-2 h-2 bg-rose-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
+       <div className="w-2 h-2 bg-rose-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+       <div className="w-2 h-2 bg-rose-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+    </div>
+    <p className="mt-12 text-[10px] font-black text-slate-600 uppercase tracking-widest">Authorized_Personnel_Only</p>
+  </div>
+);
+
+const FeatureDisabledScreen = ({ featureName }: { featureName: string }) => (
+  <div className="flex flex-col items-center justify-center h-full py-20 text-center opacity-50">
+    <div className="w-20 h-20 bg-slate-100 rounded-[2rem] flex items-center justify-center mb-6 text-slate-400">
+      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+    </div>
+    <h3 className="text-xl font-black uppercase tracking-widest italic text-slate-900">Protocol_Offline</h3>
+    <p className="text-[10px] font-mono mt-2 font-bold text-slate-500 uppercase tracking-widest">
+      The {featureName} module is currently disabled by system administration.
+    </p>
+  </div>
+);
+
 export default function App() {
   const [user, setUser] = useState<any>(null);
   const [userData, setUserData] = useState<User | null>(null);
@@ -207,12 +235,13 @@ export default function App() {
 
   // --- GLOBAL DATA SYNC ---
   useEffect(() => {
-    if (!user) return;
-
-    // Sync Settings
+    // Sync Settings Globally (even for logged out users to block registration if needed, though Landing handles that)
+    // Here we sync it for Maintenance Mode check
     const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (doc: any) => {
       if (doc.exists()) setSystemSettings(doc.data() as SystemSettings);
     });
+
+    if (!user) return unsubSettings;
 
     // Sync All Users (Lightweight)
     const unsubUsers = onSnapshot(query(collection(db, 'users'), limit(100)), (snap: any) => {
@@ -364,6 +393,13 @@ export default function App() {
     }
   };
 
+  // --- HELPERS ---
+  const isFeatureEnabled = (route: AppRoute) => {
+    // Admin always overrides
+    if (userData?.role === 'admin') return true;
+    return systemSettings.featureFlags?.[route] !== false;
+  };
+
   // --- RENDER ---
 
   if (loading) {
@@ -375,6 +411,11 @@ export default function App() {
         </div>
       </div>
     );
+  }
+
+  // MAINTENANCE MODE CHECK (Bypass for Admins)
+  if (systemSettings.maintenanceMode && userData?.role !== 'admin' && user) {
+    return <MaintenanceScreen />;
   }
 
   if (!user) {
@@ -403,98 +444,115 @@ export default function App() {
         onRegionChange={() => {}}
         onSearch={() => {}}
         weather={weather}
+        systemSettings={systemSettings}
       >
         {activeRoute === AppRoute.FEED && (
-          <FeedPage 
-            posts={globalPosts} 
-            userData={userData}
-            locale="en-GB"
-            onLike={() => {}}
-            onBookmark={() => {}}
-            onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
-            onOpenCreate={() => handleCreatePost()}
-            onTransmitStory={() => {}}
-            onGoLive={() => {
-               setActiveStreamId(`stream_${user.uid}`);
-            }}
-            onJoinStream={(stream) => setWatchingStream(stream)}
-          />
+          isFeatureEnabled(AppRoute.FEED) ? (
+            <FeedPage 
+              posts={globalPosts} 
+              userData={userData}
+              locale="en-GB"
+              onLike={() => {}}
+              onBookmark={() => {}}
+              onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
+              onOpenCreate={() => handleCreatePost()}
+              onTransmitStory={() => {}}
+              onGoLive={() => {
+                 setActiveStreamId(`stream_${user.uid}`);
+              }}
+              onJoinStream={(stream) => setWatchingStream(stream)}
+            />
+          ) : <FeatureDisabledScreen featureName="FEED" />
         )}
 
         {activeRoute === AppRoute.EXPLORE && (
-          <ExplorePage 
-            posts={globalPosts}
-            users={allUsers}
-            onLike={() => {}}
-            onBookmark={() => {}}
-            onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
-            locale="en-GB"
-          />
+          isFeatureEnabled(AppRoute.EXPLORE) ? (
+            <ExplorePage 
+              posts={globalPosts}
+              users={allUsers}
+              onLike={() => {}}
+              onBookmark={() => {}}
+              onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
+              locale="en-GB"
+            />
+          ) : <FeatureDisabledScreen featureName="EXPLORE" />
         )}
 
         {activeRoute === AppRoute.MESSAGES && userData && (
-          <MessagesPage 
-            currentUser={userData}
-            locale="en-GB"
-            addToast={addToast}
-            weather={weather}
-            allUsers={allUsers}
-          />
+          isFeatureEnabled(AppRoute.MESSAGES) ? (
+            <MessagesPage 
+              currentUser={userData}
+              locale="en-GB"
+              addToast={addToast}
+              weather={weather}
+              allUsers={allUsers}
+            />
+          ) : <FeatureDisabledScreen featureName="MESSAGES" />
         )}
 
         {activeRoute === AppRoute.NOTIFICATIONS && (
-          <NotificationsPage 
-            notifications={notifications}
-            onDelete={(id) => deleteDoc(doc(db, 'notifications', id))}
-            onMarkRead={() => {}}
-            addToast={addToast}
-            locale="en-GB"
-            userData={userData}
-          />
+          isFeatureEnabled(AppRoute.NOTIFICATIONS) ? (
+            <NotificationsPage 
+              notifications={notifications}
+              onDelete={(id) => deleteDoc(doc(db, 'notifications', id))}
+              onMarkRead={() => {}}
+              addToast={addToast}
+              locale="en-GB"
+              userData={userData}
+            />
+          ) : <FeatureDisabledScreen featureName="NOTIFICATIONS" />
         )}
 
         {activeRoute === AppRoute.PROFILE && userData && (
-          <ProfilePage 
-            userData={userData}
-            onUpdateProfile={() => {}}
-            addToast={addToast}
-            locale="en-GB"
-            sessionStartTime={Date.now()}
-            onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
-          />
+          isFeatureEnabled(AppRoute.PROFILE) ? (
+            <ProfilePage 
+              userData={userData}
+              onUpdateProfile={() => {}}
+              addToast={addToast}
+              locale="en-GB"
+              sessionStartTime={Date.now()}
+              onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
+            />
+          ) : <FeatureDisabledScreen featureName="PROFILE" />
         )}
 
         {activeRoute === AppRoute.CLUSTERS && userData && (
-          <ClustersPage 
-            currentUser={userData}
-            locale="en-GB"
-            addToast={addToast}
-            onOpenChat={() => {}}
-            allUsers={allUsers}
-            weather={weather}
-          />
+          isFeatureEnabled(AppRoute.CLUSTERS) ? (
+            <ClustersPage 
+              currentUser={userData}
+              locale="en-GB"
+              addToast={addToast}
+              onOpenChat={() => {}}
+              allUsers={allUsers}
+              weather={weather}
+            />
+          ) : <FeatureDisabledScreen featureName="CLUSTERS" />
         )}
 
         {activeRoute === AppRoute.STREAM_GRID && (
-          <StreamGridPage 
-            locale="en-GB"
-            onJoinStream={(stream) => setWatchingStream(stream)}
-            onGoLive={() => setActiveStreamId(`stream_${user.uid}`)}
-            userData={userData}
-            onTransmit={() => {}}
-          />
+          isFeatureEnabled(AppRoute.STREAM_GRID) ? (
+            <StreamGridPage 
+              locale="en-GB"
+              onJoinStream={(stream) => setWatchingStream(stream)}
+              onGoLive={() => setActiveStreamId(`stream_${user.uid}`)}
+              userData={userData}
+              onTransmit={() => {}}
+            />
+          ) : <FeatureDisabledScreen featureName="LIVE STREAMS" />
         )}
 
         {activeRoute === AppRoute.GATHERINGS && userData && (
-          <GatheringsPage 
-            currentUser={userData}
-            locale="en-GB"
-            addToast={addToast}
-            onViewGathering={(g) => { setSelectedGathering(g); setActiveRoute(AppRoute.SINGLE_GATHERING); }}
-            onRSVP={handleRSVP}
-            allUsers={allUsers}
-            onOpenLobby={() => {}}
-          />
+          isFeatureEnabled(AppRoute.GATHERINGS) ? (
+            <GatheringsPage 
+              currentUser={userData}
+              locale="en-GB"
+              addToast={addToast}
+              onViewGathering={(g) => { setSelectedGathering(g); setActiveRoute(AppRoute.SINGLE_GATHERING); }}
+              onRSVP={handleRSVP}
+              allUsers={allUsers}
+              onOpenLobby={() => {}}
+            />
+          ) : <FeatureDisabledScreen featureName="GATHERINGS" />
         )}
 
         {activeRoute === AppRoute.SINGLE_GATHERING && selectedGathering && userData && (
@@ -526,24 +584,50 @@ export default function App() {
         )}
 
         {/* Other Pages */}
-        {activeRoute === AppRoute.MESH && userData && <MeshPage currentUser={userData} locale="en-GB" addToast={addToast} onViewProfile={() => {}} />}
-        {activeRoute === AppRoute.TEMPORAL && <TemporalPage currentUser={userData} locale="en-GB" addToast={addToast} />}
-        {activeRoute === AppRoute.SAVED && userData && <DataVaultPage currentUser={userData} locale="en-GB" addToast={addToast} onViewPost={() => {}} />}
-        {activeRoute === AppRoute.VERIFIED_NODES && <VerifiedNodesPage users={allUsers} onViewProfile={() => {}} />}
+        {activeRoute === AppRoute.MESH && userData && (
+          isFeatureEnabled(AppRoute.MESH) ? (
+            <MeshPage currentUser={userData} locale="en-GB" addToast={addToast} onViewProfile={() => {}} />
+          ) : <FeatureDisabledScreen featureName="MESH NETWORK" />
+        )}
+        
+        {activeRoute === AppRoute.TEMPORAL && (
+          isFeatureEnabled(AppRoute.TEMPORAL) ? (
+            <TemporalPage currentUser={userData} locale="en-GB" addToast={addToast} />
+          ) : <FeatureDisabledScreen featureName="TEMPORAL" />
+        )}
+        
+        {activeRoute === AppRoute.SAVED && userData && (
+          isFeatureEnabled(AppRoute.SAVED) ? (
+            <DataVaultPage currentUser={userData} locale="en-GB" addToast={addToast} onViewPost={() => {}} />
+          ) : <FeatureDisabledScreen featureName="DATA VAULT" />
+        )}
+        
+        {activeRoute === AppRoute.VERIFIED_NODES && (
+          isFeatureEnabled(AppRoute.VERIFIED_NODES) ? (
+            <VerifiedNodesPage users={allUsers} onViewProfile={() => {}} />
+          ) : <FeatureDisabledScreen featureName="VERIFIED NODES" />
+        )}
+        
         {activeRoute === AppRoute.ADMIN && <AdminPanel addToast={addToast} locale="en-GB" systemSettings={systemSettings} />}
         {activeRoute === AppRoute.PRIVACY && <PrivacyPage />}
         {activeRoute === AppRoute.TERMS && <TermsPage />}
         {activeRoute === AppRoute.COOKIES && <CookiesPage />}
         
         {/* New Simulations Page */}
-        {activeRoute === AppRoute.SIMULATIONS && <SimulationsPage />}
+        {activeRoute === AppRoute.SIMULATIONS && (
+          isFeatureEnabled(AppRoute.SIMULATIONS) ? (
+            <SimulationsPage />
+          ) : <FeatureDisabledScreen featureName="SIMULATIONS" />
+        )}
 
         {/* Resilience Module */}
         {activeRoute === AppRoute.RESILIENCE && userData && (
-           <ResiliencePage 
-             userData={userData} 
-             addToast={addToast}
-           />
+           isFeatureEnabled(AppRoute.RESILIENCE) ? (
+             <ResiliencePage 
+               userData={userData} 
+               addToast={addToast}
+             />
+           ) : <FeatureDisabledScreen featureName="RESILIENCE" />
         )}
 
       </Layout>
