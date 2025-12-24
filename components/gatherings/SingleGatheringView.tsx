@@ -75,6 +75,44 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
     }
   };
 
+  const handleSyncToCalendar = (type: 'google' | 'ics') => {
+    const startDate = new Date(liveGathering.date);
+    const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000); // Default to 2 hours
+
+    const formatDate = (date: Date) => date.toISOString().replace(/-|:|\.\d\d\d/g, "");
+
+    const title = liveGathering.title;
+    const desc = `${liveGathering.description}\n\nProtocol ID: ${liveGathering.id}`;
+    const loc = liveGathering.location;
+
+    if (type === 'google') {
+        const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${formatDate(startDate)}/${formatDate(endDate)}&details=${encodeURIComponent(desc)}&location=${encodeURIComponent(loc)}`;
+        window.open(url, '_blank');
+    } else {
+        const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+URL:${window.location.href}
+DTSTART:${formatDate(startDate)}
+DTEND:${formatDate(endDate)}
+SUMMARY:${title}
+DESCRIPTION:${desc}
+LOCATION:${loc}
+END:VEVENT
+END:VCALENDAR`;
+
+        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.setAttribute('download', `${title.replace(/\s+/g, '_')}_signal.ics`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+    
+    window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Temporal Coordinates Exported", type: 'success' } }));
+  };
+
   return (
     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24">
       
@@ -198,6 +236,36 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
             )}
 
             <div className="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm">
+               
+               {/* TEMPORAL EXPORT MODULE */}
+               <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 mb-6 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                      <div className="p-2 bg-white border border-slate-200 rounded-xl text-indigo-500 shadow-sm">
+                          <ICONS.Temporal />
+                      </div>
+                      <div>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Temporal_Sync</p>
+                          <p className="text-xs font-black text-slate-900">Export Timeline</p>
+                      </div>
+                  </div>
+                  <div className="flex gap-2">
+                      <button 
+                        onClick={() => handleSyncToCalendar('google')}
+                        className="px-3 py-1.5 bg-white border border-slate-200 hover:border-indigo-200 hover:text-indigo-600 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95"
+                        title="Google Calendar"
+                      >
+                        GL
+                      </button>
+                      <button 
+                        onClick={() => handleSyncToCalendar('ics')}
+                        className="px-3 py-1.5 bg-white border border-slate-200 hover:border-indigo-200 hover:text-indigo-600 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95"
+                        title="Universal (.ics)"
+                      >
+                        ICS
+                      </button>
+                  </div>
+               </div>
+
                <div className="flex justify-between items-center mb-6">
                   <h3 className="text-sm font-black text-slate-900 uppercase italic tracking-tight">Confirmed_Nodes</h3>
                   <span className="text-[9px] font-black text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded-lg">{currentCount}</span>
