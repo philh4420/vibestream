@@ -11,6 +11,10 @@ const {
 import * as Firestore from 'firebase/firestore';
 const { doc, setDoc, serverTimestamp, collection, query, limit, getDocs } = Firestore as any;
 import { SystemSettings } from '../../types';
+import { PrivacyPage } from '../legal/PrivacyPage';
+import { TermsPage } from '../legal/TermsPage';
+import { CookiesPage } from '../legal/CookiesPage';
+import { ICONS } from '../../constants';
 
 interface LandingPageProps {
   onEnter: () => void;
@@ -18,8 +22,12 @@ interface LandingPageProps {
 }
 
 type AuthMode = 'login' | 'register' | 'reset';
+type ViewMode = 'auth' | 'privacy' | 'terms' | 'cookies';
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSettings }) => {
+  const [currentView, setCurrentView] = useState<ViewMode>('auth');
+  
+  // Auth States
   const [isVerified, setIsVerified] = useState(false);
   const [verificationProgress, setVerificationProgress] = useState(0);
   const holdTimerRef = useRef<number | null>(null);
@@ -81,7 +89,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
         } catch (err) {
           console.error("Location lookup failed", err);
         }
-      }, 500); // 500ms debounce
+      }, 500); 
     } else {
       setLocationSuggestions([]);
       setShowSuggestions(false);
@@ -89,11 +97,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
   };
 
   const selectLocation = (loc: any) => {
-    // Construct a cleaner address if possible, otherwise use display_name
     let preciseLoc = loc.display_name;
-    // Attempt to shorten if it's extremely long, but keep key parts
-    // e.g. "Park Street, St Albans, Hertfordshire, East of England, England, AL2 2PX, United Kingdom"
-    // We ideally want "Park Street, St Albans, UK"
     if (loc.address) {
        const parts = [
          loc.address.road || loc.address.suburb || loc.address.village,
@@ -138,24 +142,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
       return;
     }
 
-    // STRICT FIELD VALIDATION
-    if (!fullName.trim()) {
-      setErrorDetails({ code: 'NO_NAME', message: 'Please enter your full name.' });
-      return;
-    }
-
-    if (!email.trim()) {
-      setErrorDetails({ code: 'NO_EMAIL', message: 'Please enter a valid email address.' });
-      return;
-    }
-
-    if (!password.trim()) {
-      setErrorDetails({ code: 'NO_PASSWORD', message: 'Please create a password.' });
-      return;
-    }
-
-    if (!location.trim()) {
-      setErrorDetails({ code: 'NO_LOC', message: 'Please enter your location.' });
+    if (!fullName.trim() || !email.trim() || !password.trim() || !location.trim()) {
+      setErrorDetails({ code: 'MISSING_FIELDS', message: 'All fields are required.' });
       return;
     }
 
@@ -163,14 +151,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
     setErrorDetails(null);
 
     try {
-      // 1. Create Auth User
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      // Update Auth Profile immediately
       await updateProfile(user, { displayName: fullName });
 
-      // 2. Determine Role (First user gets Admin)
       let assignedRole = 'member';
       let trustTier = 'Gamma';
       let badges = ['New Arrival'];
@@ -182,7 +167,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
         const q = query(usersRef, limit(1));
         const snapshot = await getDocs(q);
         
-        // If snapshot is empty, this is the first user document being created -> ADMIN
         if (snapshot.empty) {
           assignedRole = 'admin';
           trustTier = 'Alpha';
@@ -194,7 +178,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
         console.warn('Role assignment check skipped, defaulting to member');
       }
 
-      // 3. Create Profile Document
       await setDoc(doc(db, 'users', user.uid), {
         id: user.uid,
         username: email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, ''),
@@ -206,7 +189,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
         followers: 0,
         following: 0,
         role: assignedRole,
-        location: location, // Use precise location
+        location: location,
         joinedAt: serverTimestamp(),
         verifiedHuman: verified,
         presenceStatus: 'Online',
@@ -248,36 +231,94 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
     }
   };
 
+  // RENDER CONTENT FOR LEGAL PAGES
+  const renderLegalContent = () => {
+    const commonClasses = "max-w-4xl mx-auto pt-24 pb-12 px-6 min-h-screen";
+    const BackButton = () => (
+      <button 
+        onClick={() => setCurrentView('auth')}
+        className="fixed top-6 right-6 px-6 py-3 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-indigo-600 transition-all z-50 active:scale-95 flex items-center gap-2"
+      >
+        <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+        Return_To_Grid
+      </button>
+    );
+
+    if (currentView === 'privacy') return <div className={commonClasses}><BackButton /><PrivacyPage /></div>;
+    if (currentView === 'terms') return <div className={commonClasses}><BackButton /><TermsPage /></div>;
+    if (currentView === 'cookies') return <div className={commonClasses}><BackButton /><CookiesPage /></div>;
+    return null;
+  };
+
+  if (currentView !== 'auth') {
+    return (
+      <div className="min-h-screen bg-[#f8fafc] overflow-y-auto">
+        {renderLegalContent()}
+      </div>
+    );
+  }
+
+  // --- MAIN RENDER ---
   return (
-    <div className="min-h-screen bg-[#f0f2f5] flex flex-col items-center justify-center py-10 px-4 md:px-0 font-sans selection:bg-indigo-100 selection:text-indigo-900">
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans relative overflow-hidden selection:bg-indigo-500 selection:text-white">
       
-      <div className="w-full max-w-[980px] flex flex-col md:flex-row items-center md:items-start justify-between gap-10 md:gap-0">
+      {/* Background Decor */}
+      <div className="absolute inset-0 pointer-events-none">
+         <div className="absolute top-[-10%] left-[-10%] w-[60vw] h-[60vw] bg-indigo-600/5 rounded-full blur-[120px]" />
+         <div className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] bg-rose-500/5 rounded-full blur-[120px]" />
+         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay" />
+      </div>
+
+      <main className="flex-1 flex flex-col lg:flex-row items-center justify-center p-6 lg:p-12 relative z-10 gap-12 lg:gap-24">
         
-        {/* LEFT COLUMN: BRANDING */}
-        <div className="flex-1 text-center md:text-left pt-8 md:pr-8">
-          <h1 className="text-indigo-600 text-5xl md:text-6xl font-black tracking-tighter mb-4">
-            VibeStream
+        {/* BRAND COLUMN */}
+        <div className="flex-1 max-w-xl text-center lg:text-left space-y-8 animate-in slide-in-from-left-8 duration-700">
+          <div className="inline-flex items-center gap-3 px-4 py-2 bg-white rounded-full shadow-sm border border-slate-100">
+             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]" />
+             <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] font-mono">System_Operational</span>
+          </div>
+          
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
+            Vibe<br/>Stream
           </h1>
-          <h2 className="text-2xl md:text-[28px] leading-8 text-[#1c1e21] font-medium max-w-lg mx-auto md:mx-0">
-            Connect with friends and the world around you on VibeStream.
-          </h2>
+          
+          <p className="text-lg md:text-xl text-slate-500 font-medium leading-relaxed max-w-lg mx-auto lg:mx-0">
+            The next-generation neural interface for global synchronization. Connect, broadcast, and amplify your signal.
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 pt-4">
+             <div className="flex items-center gap-2">
+                <div className="p-2 bg-indigo-50 rounded-xl text-indigo-600"><ICONS.Verified /></div>
+                <div className="text-left">
+                   <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 font-mono">Security</p>
+                   <p className="text-xs font-bold text-slate-900">End-to-End Encrypted</p>
+                </div>
+             </div>
+             <div className="flex items-center gap-2">
+                <div className="p-2 bg-rose-50 rounded-xl text-rose-600"><ICONS.Temporal /></div>
+                <div className="text-left">
+                   <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 font-mono">Latency</p>
+                   <p className="text-xs font-bold text-slate-900">Real-Time Sync</p>
+                </div>
+             </div>
+          </div>
         </div>
 
-        {/* RIGHT COLUMN: INTERACTION CARD */}
-        <div className="w-full max-w-[396px]">
-          <div className="bg-white p-4 rounded-xl shadow-lg border border-slate-200/60 transition-all duration-500 overflow-hidden relative">
+        {/* INTERACTION COLUMN */}
+        <div className="w-full max-w-[420px] animate-in slide-in-from-bottom-8 duration-700 delay-100">
+          <div className="bg-white/80 backdrop-blur-2xl p-8 rounded-[3rem] shadow-2xl border border-white/50 relative overflow-hidden ring-1 ring-slate-900/5">
             
-            {/* STATE 1: HOLD TO SYNC (BOT PROTECTION) */}
+            {/* STATE 1: RECAPTCHA HOLD */}
             {!isVerified ? (
-              <div className="flex flex-col items-center justify-center py-12 px-6 animate-in fade-in duration-500">
-                <div className="relative mb-8 group cursor-pointer">
+              <div className="py-10 flex flex-col items-center text-center">
+                <div className="relative mb-8 group cursor-pointer touch-none">
                   {/* Progress Ring */}
                   <svg className="w-32 h-32 -rotate-90 transform" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="46" fill="none" stroke="#e2e8f0" strokeWidth="4" />
+                    <circle cx="50" cy="50" r="46" fill="none" stroke="#f1f5f9" strokeWidth="6" strokeLinecap="round" />
                     <circle 
                       cx="50" cy="50" r="46" fill="none" 
                       stroke="#4f46e5" 
-                      strokeWidth="4"
+                      strokeWidth="6"
                       strokeDasharray="289.02" 
                       strokeDashoffset={289.02 - (289.02 * verificationProgress) / 100}
                       strokeLinecap="round"
@@ -285,62 +326,64 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
                     />
                   </svg>
                   
-                  {/* Touch Button */}
+                  {/* Interactive Button */}
                   <button 
                     onMouseDown={handleHoldStart} 
                     onMouseUp={handleHoldEnd} 
                     onMouseLeave={handleHoldEnd}
                     onTouchStart={handleHoldStart} 
                     onTouchEnd={handleHoldEnd}
-                    className="absolute inset-2 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center shadow-inner transition-colors active:scale-95"
+                    className="absolute inset-2 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center shadow-inner transition-all active:scale-95 group-active:shadow-none"
                   >
-                    <div className={`transition-all duration-300 ${verificationProgress > 0 ? 'scale-110 text-indigo-600' : 'text-slate-400'}`}>
-                      <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <div className={`transition-all duration-300 ${verificationProgress > 0 ? 'scale-110 text-indigo-600' : 'text-slate-300'}`}>
+                      <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M7.864 4.243A7.5 7.5 0 0119.5 10.5c0 2.92-.556 5.709-1.568 8.268M5.742 6.364A7.465 7.465 0 004.5 10.5a7.464 7.464 0 01-1.15 3.993m1.989 3.559A11.209 11.209 0 008.25 10.5a3.75 3.75 0 117.5 0c0 .527-.021 1.049-.064 1.565M12 10.5a14.94 14.94 0 01-3.6 9.75m6.633-4.596a18.666 18.666 0 01-2.485 5.33" />
                       </svg>
                     </div>
                   </button>
                 </div>
                 
-                <h3 className="text-xl font-bold text-slate-800 mb-2 text-center">Security Check</h3>
-                <p className="text-sm text-slate-500 text-center leading-relaxed">
-                  Please hold the button above to verify your human identity and synchronize with the grid.
+                <h3 className="text-xl font-black text-slate-900 mb-2 uppercase italic tracking-tight">Security_Check</h3>
+                <p className="text-xs font-medium text-slate-500 max-w-[200px] leading-relaxed">
+                  Hold the button to verify biometric signature and synchronize with the grid.
                 </p>
-                <p className="text-[9px] text-slate-400 text-center mt-4 uppercase tracking-widest font-mono">
+                <p className="text-[8px] text-slate-300 text-center mt-6 uppercase tracking-[0.3em] font-mono">
                   Protected by reCAPTCHA
                 </p>
               </div>
             ) : (
-              // STATE 2: AUTH FORMS (LOGIN/REGISTER)
+              // STATE 2: AUTH FORMS
               <div className="animate-in slide-in-from-right-8 duration-500">
                 {authMode === 'login' && (
-                  <form onSubmit={handleLogin} className="flex flex-col gap-3.5">
+                  <form onSubmit={handleLogin} className="flex flex-col gap-4">
                     <div className="text-center mb-2">
-                      <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-[9px] font-black uppercase tracking-widest font-mono mb-4 border border-emerald-100">
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M5 13l4 4L19 7" /></svg>
                         Identity Verified
                       </div>
                     </div>
-                    <input 
-                      type="email" 
-                      placeholder="Email or Network ID" 
-                      value={email} 
-                      onChange={e => setEmail(e.target.value)} 
-                      required
-                      className="w-full px-4 py-3.5 text-[17px] border border-slate-300 rounded-md focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-500"
-                    />
-                    <input 
-                      type="password" 
-                      placeholder="Password" 
-                      value={password} 
-                      onChange={e => setPassword(e.target.value)} 
-                      required
-                      className="w-full px-4 py-3.5 text-[17px] border border-slate-300 rounded-md focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-500"
-                    />
+                    
+                    <div className="space-y-3">
+                      <input 
+                        type="email" 
+                        placeholder="Neural ID (Email)" 
+                        value={email} 
+                        onChange={e => setEmail(e.target.value)} 
+                        required
+                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white outline-none transition-all placeholder:text-slate-400"
+                      />
+                      <input 
+                        type="password" 
+                        placeholder="Access Key" 
+                        value={password} 
+                        onChange={e => setPassword(e.target.value)} 
+                        required
+                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white outline-none transition-all placeholder:text-slate-400"
+                      />
+                    </div>
                     
                     {errorDetails && (
-                      <div className="text-rose-600 text-[13px] text-left font-medium px-1 flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/></svg>
+                      <div className="text-rose-500 text-[10px] font-black uppercase tracking-widest text-center bg-rose-50 py-2 rounded-xl border border-rose-100">
                         {errorDetails.message}
                       </div>
                     )}
@@ -348,75 +391,62 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
                     <button 
                       type="submit" 
                       disabled={isProcessing}
-                      className="w-full bg-[#1877f2] hover:bg-[#166fe5] text-white text-[20px] font-bold py-2.5 rounded-md transition-colors shadow-sm disabled:opacity-50 mt-1"
+                      className="w-full bg-slate-900 text-white h-14 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-600 transition-all active:scale-95 shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:active:scale-100"
                     >
-                      {isProcessing ? 'Logging in...' : 'Log In'}
+                      {isProcessing ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'INITIALIZE_LINK'}
                     </button>
 
-                    <div className="text-center mt-1">
+                    <div className="flex justify-between items-center mt-2 px-1">
                       <button 
                         type="button" 
                         onClick={() => { setAuthMode('reset'); setErrorDetails(null); }}
-                        className="text-[#1877f2] text-[14px] hover:underline font-medium"
+                        className="text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
                       >
-                        Forgotten password?
+                        Lost Key?
                       </button>
-                    </div>
-
-                    <div className="border-b border-slate-300 my-2"></div>
-
-                    <div className="text-center">
                       <button 
                         type="button"
                         onClick={() => { setShowRegisterModal(true); setAuthMode('register'); setErrorDetails(null); setEmail(''); setPassword(''); }}
-                        className="bg-[#42b72a] hover:bg-[#36a420] text-white text-[17px] font-bold px-8 py-3 rounded-md transition-colors shadow-sm"
+                        className="text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-700 transition-colors"
                       >
-                        Create new account
+                        Create_Node
                       </button>
-                    </div>
-
-                    <div className="mt-4 text-[10px] text-slate-400 text-center leading-tight">
-                      This site is protected by reCAPTCHA and the Google
-                      <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="text-indigo-500 hover:underline mx-1">Privacy Policy</a>
-                      and
-                      <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="text-indigo-500 hover:underline mx-1">Terms of Service</a>
-                      apply.
                     </div>
                   </form>
                 )}
 
                 {authMode === 'reset' && (
-                  <form onSubmit={handleReset} className="flex flex-col gap-4 py-2">
-                    <div className="text-center mb-2">
-                      <h3 className="text-xl font-bold text-slate-800">Find Your Account</h3>
-                      <p className="text-slate-600 text-sm mt-1">Please enter your email to search for your account.</p>
+                  <form onSubmit={handleReset} className="flex flex-col gap-6 py-2">
+                    <div className="text-center">
+                      <h3 className="text-xl font-black text-slate-900 uppercase italic">Recovery_Mode</h3>
+                      <p className="text-[10px] font-bold text-slate-400 mt-2">Enter your Neural ID to reset access protocols.</p>
                     </div>
                     <input 
                       type="email" 
-                      placeholder="Email address" 
+                      placeholder="Target Email Address" 
                       value={email} 
                       onChange={e => setEmail(e.target.value)} 
                       required
-                      className="w-full px-4 py-3 text-[17px] border border-slate-300 rounded-md focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none"
                     />
                     
-                    {errorDetails && <div className="text-rose-600 text-sm text-center">{errorDetails.message}</div>}
-                    {resetSuccess && <div className="text-emerald-600 text-sm text-center font-medium">Reset link sent to your email.</div>}
+                    {errorDetails && <div className="text-rose-500 text-[10px] font-bold text-center">{errorDetails.message}</div>}
+                    {resetSuccess && <div className="text-emerald-500 text-[10px] font-black uppercase tracking-widest text-center">Recovery signal sent.</div>}
 
-                    <div className="flex gap-3 mt-2 border-t border-slate-200 pt-4 justify-end">
+                    <div className="flex gap-3">
                       <button 
                         type="button" 
                         onClick={() => { setAuthMode('login'); setErrorDetails(null); setResetSuccess(false); }}
-                        className="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-4 py-2 rounded-md transition-colors text-sm"
+                        className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all"
                       >
-                        Cancel
+                        Abort
                       </button>
                       <button 
                         type="submit" 
                         disabled={isProcessing}
-                        className="bg-[#1877f2] hover:bg-[#166fe5] text-white font-bold px-6 py-2 rounded-md transition-colors text-sm disabled:opacity-50"
+                        className="flex-[2] py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg"
                       >
-                        Search
+                        Send_Signal
                       </button>
                     </div>
                   </form>
@@ -425,82 +455,88 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
             )}
           </div>
           
-          {authMode === 'login' && isVerified && (
-            <div className="mt-7 text-center">
-              <p className="text-[14px] text-slate-800">
-                <span className="font-bold">Create a Page</span> for a celebrity, brand or business.
-              </p>
-            </div>
-          )}
+          <div className="mt-8 text-center">
+             <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.4em] font-mono">
+               System_v2.6 • Secure_Gateway
+             </p>
+          </div>
         </div>
-      </div>
+      </main>
+
+      {/* FOOTER */}
+      <footer className="relative z-10 w-full max-w-[1400px] mx-auto px-6 py-8 border-t border-slate-100">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+           <div className="flex gap-6 text-[10px] font-bold text-slate-400">
+              <button onClick={() => setCurrentView('privacy')} className="hover:text-indigo-600 transition-colors uppercase tracking-wider">Privacy Protocol</button>
+              <button onClick={() => setCurrentView('terms')} className="hover:text-indigo-600 transition-colors uppercase tracking-wider">Terms of Uplink</button>
+              <button onClick={() => setCurrentView('cookies')} className="hover:text-indigo-600 transition-colors uppercase tracking-wider">Data Artifacts</button>
+           </div>
+           <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest font-mono">
+             © 2026 VibeStream Citadel. All Rights Reserved.
+           </p>
+        </div>
+      </footer>
 
       {/* REGISTRATION MODAL */}
       {showRegisterModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white rounded-lg shadow-2xl border border-slate-200 w-full max-w-[432px] overflow-hidden relative">
-            
-            {/* Modal Header */}
-            <div className="px-4 py-3 border-b border-slate-300 flex justify-between items-start bg-slate-50">
-              <div>
-                <h3 className="text-[32px] font-bold text-[#1c1e21] leading-none">Sign Up</h3>
-                <p className="text-[15px] text-[#606770] mt-1">It's quick and easy.</p>
-              </div>
-              <button onClick={() => { setShowRegisterModal(false); setAuthMode('login'); }} className="text-slate-500 hover:text-slate-800">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-md overflow-hidden relative border border-white/20">
+            <div className="p-8 pb-0 flex justify-between items-start">
+               <div>
+                 <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter">New_Node</h3>
+                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Join the mesh network</p>
+               </div>
+               <button onClick={() => { setShowRegisterModal(false); setAuthMode('login'); }} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all">
+                 <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth={2.5}/></svg>
+               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-4">
-              <form onSubmit={handleRegister} className="flex flex-col gap-3">
-                <div className="flex gap-3">
-                  <input 
-                    type="text" 
-                    placeholder="Full name" 
-                    value={fullName}
-                    onChange={e => setFullName(e.target.value)}
-                    required
-                    className="flex-1 bg-[#f5f6f7] border border-[#ccd0d5] rounded-[5px] p-[11px] text-[15px] placeholder-[#8d949e] focus:border-indigo-500 outline-none"
-                  />
-                </div>
+            <div className="p-8">
+              <form onSubmit={handleRegister} className="flex flex-col gap-4">
+                <input 
+                  type="text" 
+                  placeholder="Full Designation (Name)" 
+                  value={fullName}
+                  onChange={e => setFullName(e.target.value)}
+                  required
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all"
+                />
                 
                 <input 
                   type="email" 
-                  placeholder="Email address" 
+                  placeholder="Neural ID (Email)" 
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   required
-                  className="w-full bg-[#f5f6f7] border border-[#ccd0d5] rounded-[5px] p-[11px] text-[15px] placeholder-[#8d949e] focus:border-indigo-500 outline-none"
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all"
                 />
 
                 <input 
                   type="password" 
-                  placeholder="New password" 
+                  placeholder="Secret Key" 
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   required
-                  className="w-full bg-[#f5f6f7] border border-[#ccd0d5] rounded-[5px] p-[11px] text-[15px] placeholder-[#8d949e] focus:border-indigo-500 outline-none"
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all"
                 />
 
-                {/* Location Input with Autocomplete */}
                 <div className="relative group">
                   <input 
                     type="text" 
-                    placeholder="City / Location (e.g. Park Street)"
+                    placeholder="Geospatial Node (Location)"
                     value={location}
                     onChange={handleLocationSearch}
                     required
-                    className="w-full bg-[#f5f6f7] border border-[#ccd0d5] rounded-[5px] p-[11px] text-[15px] placeholder-[#8d949e] focus:border-indigo-500 outline-none"
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all"
                   />
                   {showSuggestions && locationSuggestions.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 z-50 bg-white border border-slate-200 rounded-b-md shadow-lg max-h-48 overflow-y-auto no-scrollbar">
+                    <div className="absolute top-full left-0 right-0 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl mt-2 overflow-hidden max-h-48 overflow-y-auto no-scrollbar p-2">
                       {locationSuggestions.map((loc, idx) => (
                         <button 
                           key={idx}
                           type="button"
                           onClick={() => selectLocation(loc)}
-                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 border-b border-slate-50 last:border-0 truncate"
+                          className="w-full text-left px-4 py-3 text-xs font-bold text-slate-600 hover:bg-slate-50 rounded-xl transition-colors truncate"
                         >
                           {loc.display_name}
                         </button>
@@ -509,25 +545,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
                   )}
                 </div>
 
-                <div className="text-[11px] text-[#777] mt-2 mb-2 leading-snug">
-                  By clicking Sign Up, you agree to our <a href="#" className="text-[#385898] hover:underline">Terms</a>, <a href="#" className="text-[#385898] hover:underline">Privacy Policy</a> and <a href="#" className="text-[#385898] hover:underline">Cookies Policy</a>.
-                  <br/><br/>
-                  This site is protected by reCAPTCHA and the Google <a href="https://policies.google.com/privacy" target="_blank" className="text-[#385898] hover:underline">Privacy Policy</a> and <a href="https://policies.google.com/terms" target="_blank" className="text-[#385898] hover:underline">Terms of Service</a> apply.
+                <div className="text-[9px] text-slate-400 mt-2 font-medium leading-relaxed px-2">
+                  By initializing, you accept the <span className="text-indigo-500 cursor-pointer hover:underline" onClick={() => {setShowRegisterModal(false); setCurrentView('terms');}}>Terms of Uplink</span> and <span className="text-indigo-500 cursor-pointer hover:underline" onClick={() => {setShowRegisterModal(false); setCurrentView('privacy');}}>Privacy Protocol</span>.
                 </div>
 
                 {errorDetails && (
-                  <div className="bg-rose-50 border border-rose-200 text-rose-600 text-sm p-2 rounded mb-2 text-center font-medium">
+                  <div className="bg-rose-50 text-rose-500 text-[10px] font-black uppercase tracking-widest p-3 rounded-xl text-center border border-rose-100">
                     {errorDetails.message}
                   </div>
                 )}
 
-                <div className="text-center">
+                <div className="pt-2">
                   <button 
                     type="submit" 
                     disabled={isProcessing}
-                    className="bg-[#00a400] hover:bg-[#008900] text-white text-[18px] font-bold px-10 py-2 rounded-md shadow-sm min-w-[194px] disabled:opacity-50"
+                    className="w-full bg-emerald-500 text-white h-14 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
                   >
-                    {isProcessing ? 'Signing Up...' : 'Sign Up'}
+                    {isProcessing ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'CONFIRM_ENTRY'}
                   </button>
                 </div>
               </form>
@@ -535,24 +569,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
           </div>
         </div>
       )}
-
-      {/* FOOTER */}
-      <footer className="mt-auto pt-8 pb-4 w-full max-w-[980px] text-[#737373] text-[12px] px-4 md:px-0">
-        <div className="flex flex-wrap gap-x-4 gap-y-1 mb-2">
-          <span>English (UK)</span>
-          <span className="hover:underline cursor-pointer">Español</span>
-          <span className="hover:underline cursor-pointer">Français (France)</span>
-          <span className="hover:underline cursor-pointer">Deutsch</span>
-        </div>
-        <div className="border-t border-[#ddd] pt-2 flex flex-wrap gap-x-4 gap-y-1">
-          <span className="hover:underline cursor-pointer">Privacy Policy</span>
-          <span className="hover:underline cursor-pointer">Terms of Service</span>
-          <span className="hover:underline cursor-pointer">Cookies Policy</span>
-        </div>
-        <div className="mt-4">
-          VibeStream © 2026
-        </div>
-      </footer>
 
     </div>
   );
