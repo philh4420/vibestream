@@ -7,7 +7,7 @@ import { GeospatialMap } from './GeospatialMap';
 import { ProximityRadar } from './ProximityRadar';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
-const { doc, updateDoc, onSnapshot } = Firestore as any;
+const { doc, updateDoc, onSnapshot, writeBatch, collection, serverTimestamp } = Firestore as any;
 import { CreateGatheringModal } from './CreateGatheringModal';
 import { GatheringMemoryBank } from './GatheringMemoryBank';
 
@@ -35,6 +35,10 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
   const [liveGathering, setLiveGathering] = useState<Gathering>(initialGathering);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  
+  // Status Broadcasting State
+  const [statusInput, setStatusInput] = useState('');
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
 
   // Sync with Firestore for real-time updates
   useEffect(() => {
@@ -73,6 +77,50 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
     } catch (e) {
         console.error(e);
         window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Update Failed", type: 'error' } }));
+    }
+  };
+
+  const handleBroadcastStatus = async () => {
+    if (!statusInput.trim() || !db) return;
+    setIsBroadcasting(true);
+    try {
+        const batch = writeBatch(db);
+        
+        // 1. Update Gathering Status
+        const gatheringRef = doc(db, 'gatherings', liveGathering.id);
+        batch.update(gatheringRef, {
+            latestStatus: {
+                message: statusInput.trim(),
+                timestamp: serverTimestamp()
+            }
+        });
+
+        // 2. Notify Attendees (Broadcast Alert)
+        const recipients = liveGathering.attendees.filter(id => id !== currentUser.id);
+        recipients.forEach(userId => {
+            const notifRef = doc(collection(db, 'notifications'));
+            batch.set(notifRef, {
+                type: 'broadcast',
+                fromUserId: currentUser.id,
+                fromUserName: liveGathering.title, // Use event title for context
+                fromUserAvatar: liveGathering.coverUrl, // Use event cover
+                toUserId: userId,
+                targetId: liveGathering.id,
+                text: `Status Update: "${statusInput.trim()}"`,
+                isRead: false,
+                timestamp: serverTimestamp(),
+                pulseFrequency: 'intensity'
+            });
+        });
+
+        await batch.commit();
+        setStatusInput('');
+        window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Status Broadcasted to Network", type: 'success' } }));
+    } catch (e) {
+        console.error(e);
+        window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Broadcast Failed", type: 'error' } }));
+    } finally {
+        setIsBroadcasting(false);
     }
   };
 
@@ -185,6 +233,28 @@ END:VCALENDAR`;
          
          {/* LEFT COL: Context & Map */}
          <div className="lg:col-span-2 space-y-6">
+            
+            {/* LIVE STATUS BANNER (Public) */}
+            {liveGathering.latestStatus && (
+                <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-[2rem] p-6 shadow-lg shadow-orange-200/50 text-white animate-in slide-in-from-top-4 duration-500 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+                    <div className="relative z-10">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-white rounded-full animate-ping" />
+                                <span className="text-[9px] font-black uppercase tracking-[0.3em] font-mono">Live_Status_Update</span>
+                            </div>
+                            <span className="text-[9px] font-mono font-bold opacity-80">
+                                {liveGathering.latestStatus.timestamp?.toDate ? new Date(liveGathering.latestStatus.timestamp.toDate()).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) : 'NOW'}
+                            </span>
+                        </div>
+                        <p className="text-lg md:text-xl font-black italic tracking-tight uppercase leading-snug">
+                            "{liveGathering.latestStatus.message}"
+                        </p>
+                    </div>
+                </div>
+            )}
+
             <div className="bg-white rounded-[2.5rem] p-8 md:p-10 border border-slate-100 shadow-sm">
                <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tight mb-4">Protocol_Manifest</h3>
                <p className="text-slate-600 leading-relaxed font-medium text-sm md:text-base whitespace-pre-wrap">
@@ -236,10 +306,37 @@ END:VCALENDAR`;
                 <ProximityRadar attendees={attendeesList} />
             )}
 
-            <div className="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm">
+            <div className="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm space-y-6">
                
+               {/* ORGANIZER COMMAND LINK (Broadcaster) */}
+               {isOrganizer && (
+                   <div className="bg-slate-900 rounded-2xl p-5 text-white border border-slate-800 shadow-lg">
+                       <div className="flex items-center gap-2 mb-3">
+                           <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                           <span className="text-[9px] font-black uppercase tracking-[0.3em] font-mono text-emerald-400">Live_Command_Link</span>
+                       </div>
+                       <div className="space-y-3">
+                           <input 
+                               type="text" 
+                               value={statusInput}
+                               onChange={(e) => setStatusInput(e.target.value)}
+                               placeholder="Broadcast status update..."
+                               maxLength={80}
+                               className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-xs font-bold text-white placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500/50 outline-none transition-all"
+                           />
+                           <button 
+                               onClick={handleBroadcastStatus}
+                               disabled={!statusInput.trim() || isBroadcasting}
+                               className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50"
+                           >
+                               {isBroadcasting ? 'TRANSMITTING...' : 'BROADCAST_UPDATE'}
+                           </button>
+                       </div>
+                   </div>
+               )}
+
                {/* TEMPORAL EXPORT MODULE */}
-               <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 mb-6 flex items-center justify-between">
+               <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                       <div className="p-2 bg-white border border-slate-200 rounded-xl text-indigo-500 shadow-sm">
                           <ICONS.Temporal />
@@ -267,77 +364,79 @@ END:VCALENDAR`;
                   </div>
                </div>
 
-               <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-sm font-black text-slate-900 uppercase italic tracking-tight">Confirmed_Nodes</h3>
-                  <span className="text-[9px] font-black text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded-lg">{currentCount}</span>
-               </div>
-
-               {/* Capacity Bar */}
-               {capacity > 0 && (
-                   <div className="mb-6">
-                       <div className="flex justify-between items-end mb-2">
-                           <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest font-mono">Signal_Capacity</span>
-                           <span className={`text-[9px] font-black font-mono ${isFull ? 'text-rose-500' : 'text-slate-600'}`}>
-                               {currentCount} / {capacity}
-                           </span>
-                       </div>
-                       <div className="h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-50">
-                           <div 
-                                className={`h-full rounded-full transition-all duration-1000 ${isFull ? 'bg-rose-500' : 'bg-purple-600'}`} 
-                                style={{ width: `${Math.min((currentCount / capacity) * 100, 100)}%` }} 
-                           />
-                       </div>
-                       {liveGathering.waitlist && liveGathering.waitlist.length > 0 && (
-                           <p className="text-[8px] font-black text-amber-500 uppercase tracking-widest font-mono mt-2 text-right">
-                               +{liveGathering.waitlist.length} IN WAITLIST
-                           </p>
-                       )}
+               <div>
+                   <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-sm font-black text-slate-900 uppercase italic tracking-tight">Confirmed_Nodes</h3>
+                      <span className="text-[9px] font-black text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded-lg">{currentCount}</span>
                    </div>
-               )}
-               
-               {attendeesList.length > 0 ? (
-                  <div className="grid grid-cols-4 gap-2 mb-6">
-                     {attendeesList.slice(0, 11).map((user, i) => (
-                        <div key={user.id || i} className="aspect-square rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 relative group cursor-pointer" title={user.displayName}>
-                           <img src={user.avatarUrl} className="w-full h-full object-cover" alt="" />
-                        </div>
-                     ))}
-                     {attendeesList.length > 11 && (
-                        <div className="aspect-square rounded-2xl bg-slate-100 flex items-center justify-center border border-slate-200 text-[10px] font-black text-slate-400">
-                           +{attendeesList.length - 11}
-                        </div>
-                     )}
-                  </div>
-               ) : (
-                  <p className="text-xs text-slate-400 italic text-center py-4 mb-4">No signals registered yet.</p>
-               )}
 
-                <div className="flex flex-col gap-2">
-                    {!isOrganizer && (
-                    <button 
-                        onClick={() => onRSVP(liveGathering.id, isAttending || isWaitlisted || false)}
-                        className={`w-full py-4 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 shadow-lg ${
-                            isAttending 
-                            ? 'bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-500' 
-                            : isWaitlisted 
-                            ? 'bg-amber-100 text-amber-600 hover:bg-rose-50 hover:text-rose-500'
-                            : isFull 
-                            ? 'bg-amber-500 text-white hover:bg-amber-600'
-                            : 'bg-indigo-600 text-white hover:bg-indigo-500'
-                        }`}
-                    >
-                        {isAttending ? 'WITHDRAW_SIGNAL' : isWaitlisted ? 'LEAVE_WAITLIST' : isFull ? 'JOIN_WAITLIST' : 'RSVP_CONFIRM'}
-                    </button>
-                    )}
-                    {isAttending && liveGathering.linkedChatId && (
-                    <button 
-                        onClick={() => onOpenLobby(liveGathering.linkedChatId!)}
-                        className="w-full py-4 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 bg-purple-600 text-white hover:bg-purple-500 shadow-lg border border-purple-400/30"
-                    >
-                        ENTER_NEURAL_LOBBY
-                    </button>
-                    )}
-                </div>
+                   {/* Capacity Bar */}
+                   {capacity > 0 && (
+                       <div className="mb-6">
+                           <div className="flex justify-between items-end mb-2">
+                               <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest font-mono">Signal_Capacity</span>
+                               <span className={`text-[9px] font-black font-mono ${isFull ? 'text-rose-500' : 'text-slate-600'}`}>
+                                   {currentCount} / {capacity}
+                               </span>
+                           </div>
+                           <div className="h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-50">
+                               <div 
+                                    className={`h-full rounded-full transition-all duration-1000 ${isFull ? 'bg-rose-500' : 'bg-purple-600'}`} 
+                                    style={{ width: `${Math.min((currentCount / capacity) * 100, 100)}%` }} 
+                               />
+                           </div>
+                           {liveGathering.waitlist && liveGathering.waitlist.length > 0 && (
+                               <p className="text-[8px] font-black text-amber-500 uppercase tracking-widest font-mono mt-2 text-right">
+                                   +{liveGathering.waitlist.length} IN WAITLIST
+                               </p>
+                           )}
+                       </div>
+                   )}
+                   
+                   {attendeesList.length > 0 ? (
+                      <div className="grid grid-cols-4 gap-2 mb-6">
+                         {attendeesList.slice(0, 11).map((user, i) => (
+                            <div key={user.id || i} className="aspect-square rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 relative group cursor-pointer" title={user.displayName}>
+                               <img src={user.avatarUrl} className="w-full h-full object-cover" alt="" />
+                            </div>
+                         ))}
+                         {attendeesList.length > 11 && (
+                            <div className="aspect-square rounded-2xl bg-slate-100 flex items-center justify-center border border-slate-200 text-[10px] font-black text-slate-400">
+                               +{attendeesList.length - 11}
+                            </div>
+                         )}
+                      </div>
+                   ) : (
+                      <p className="text-xs text-slate-400 italic text-center py-4 mb-4">No signals registered yet.</p>
+                   )}
+
+                    <div className="flex flex-col gap-2">
+                        {!isOrganizer && (
+                        <button 
+                            onClick={() => onRSVP(liveGathering.id, isAttending || isWaitlisted || false)}
+                            className={`w-full py-4 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 shadow-lg ${
+                                isAttending 
+                                ? 'bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-500' 
+                                : isWaitlisted 
+                                ? 'bg-amber-100 text-amber-600 hover:bg-rose-50 hover:text-rose-500'
+                                : isFull 
+                                ? 'bg-amber-500 text-white hover:bg-amber-600'
+                                : 'bg-indigo-600 text-white hover:bg-indigo-500'
+                            }`}
+                        >
+                            {isAttending ? 'WITHDRAW_SIGNAL' : isWaitlisted ? 'LEAVE_WAITLIST' : isFull ? 'JOIN_WAITLIST' : 'RSVP_CONFIRM'}
+                        </button>
+                        )}
+                        {isAttending && liveGathering.linkedChatId && (
+                        <button 
+                            onClick={() => onOpenLobby(liveGathering.linkedChatId!)}
+                            className="w-full py-4 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 bg-purple-600 text-white hover:bg-purple-500 shadow-lg border border-purple-400/30"
+                        >
+                            ENTER_NEURAL_LOBBY
+                        </button>
+                        )}
+                    </div>
+               </div>
             </div>
          </div>
       </div>

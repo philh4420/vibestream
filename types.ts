@@ -182,6 +182,10 @@ export interface Gathering {
   waitlist?: string[]; // Array of User IDs in queue
   createdAt: any;
   linkedChatId?: string; // Neural Lobby ID
+  latestStatus?: {
+    message: string;
+    timestamp: any;
+  };
 }
 
 export interface Chat {
