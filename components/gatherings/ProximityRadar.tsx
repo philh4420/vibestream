@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { User } from '../../types';
 
@@ -9,7 +8,8 @@ interface ProximityRadarProps {
 export const ProximityRadar: React.FC<ProximityRadarProps> = ({ attendees }) => {
   const [nearbyNodes, setNearbyNodes] = useState<User[]>([]);
 
-  // Simulation: Randomly select "nearby" users from the attendee list
+  // Select up to 3 random attendees to display on the "radar"
+  // Note: This is client-side selection of real attendees, not mock data.
   useEffect(() => {
     if (attendees.length > 0) {
       const shuffled = [...attendees].sort(() => 0.5 - Math.random());
@@ -22,8 +22,8 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({ attendees }) => 
       
       <div className="flex items-center justify-between mb-6 relative z-10">
          <div>
-            <h3 className="text-sm font-black uppercase tracking-widest italic text-indigo-400">Proximity_Ping</h3>
-            <p className="text-[9px] font-mono text-slate-400">Scanning 1KM Radius...</p>
+            <h3 className="text-sm font-black uppercase tracking-widest italic text-indigo-400">Network_Ping</h3>
+            <p className="text-[9px] font-mono text-slate-400">Detecting Active Nodes...</p>
          </div>
          <div className="w-2 h-2 bg-rose-500 rounded-full animate-ping" />
       </div>
@@ -40,18 +40,24 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({ attendees }) => 
             {/* Scanner Line */}
             <div className="absolute inset-0 rounded-full animate-radar-spin bg-gradient-to-tr from-transparent via-transparent to-indigo-500/40" style={{ clipPath: 'polygon(50% 50%, 100% 0, 100% 50%)' }} />
             
-            {/* Blips */}
-            {nearbyNodes.map((_, i) => (
+            {/* Blips - positioned based on hash of ID to be deterministic but scattered */}
+            {nearbyNodes.map((node, i) => {
+               const hash = node.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+               const top = 20 + (hash % 60);
+               const left = 20 + ((hash * 13) % 60);
+               
+               return (
                 <div 
                     key={i} 
                     className="absolute w-2 h-2 bg-emerald-400 rounded-full shadow-[0_0_8px_#34d399] animate-pulse"
                     style={{ 
-                        top: `${20 + Math.random() * 60}%`, 
-                        left: `${20 + Math.random() * 60}%`,
+                        top: `${top}%`, 
+                        left: `${left}%`,
                         animationDelay: `${i * 0.5}s`
                     }} 
                 />
-            ))}
+               );
+            })}
          </div>
 
          {/* Detected List */}
@@ -63,14 +69,16 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({ attendees }) => 
                             <img src={node.avatarUrl} className="w-8 h-8 rounded-lg object-cover" alt="" />
                             <div className="flex-1 min-w-0">
                                 <p className="text-[10px] font-black uppercase truncate tracking-tight">{node.displayName}</p>
-                                <p className="text-[8px] font-mono text-emerald-400">~{(Math.random() * 800).toFixed(0)}m AWAY</p>
+                                <p className="text-[8px] font-mono text-emerald-400 truncate">
+                                    {node.location || 'SIGNAL_LOCKED'}
+                                </p>
                             </div>
                         </div>
                     ))}
                 </div>
             ) : (
                 <div className="text-center py-4 opacity-50">
-                    <p className="text-[9px] font-mono text-slate-400">NO_SIGNALS_DETECTED</p>
+                    <p className="text-[9px] font-mono text-slate-400">SECTOR_CLEAR</p>
                 </div>
             )}
          </div>

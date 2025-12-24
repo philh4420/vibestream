@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { User, PresenceStatus } from '../../types';
 import { db } from '../../services/firebase';
@@ -72,7 +71,7 @@ export const ResiliencePage: React.FC<ResiliencePageProps> = ({ userData, addToa
       <ResilienceNav activeTab={activeTab} setActiveTab={setActiveTab} />
 
       {/* 3. Module Content Swapper */}
-      {activeTab === 'monitor' && <ResilienceMonitor />}
+      {activeTab === 'monitor' && <ResilienceMonitor userData={userData} />}
       
       {activeTab === 'shield' && (
         <ResilienceShield 

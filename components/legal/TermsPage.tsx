@@ -24,46 +24,77 @@ export const TermsPage: React.FC = () => {
          </div>
       </div>
 
-      {/* Terms Stack */}
+      {/* Terms Stack (Static) */}
       <div className="space-y-4">
-        {[
-          {
-            title: "Identity_Verification",
-            status: "MANDATORY",
-            content: "Users must maintain a valid biometric hash (verified email). Impersonation of Citadel Admins, System AI, or other nodes is a Class A violation."
-          },
-          {
-            title: "Signal_Decency",
-            status: "ENFORCED",
-            content: "Broadcasts containing hate speech, illicit contraband, or neural hazards (malware) will be intercepted by the automated moderation grid. Repeat offenders face grid exile."
-          },
-          {
-            title: "Intellectual_Property",
-            status: "SHARED",
-            content: "You retain full ownership of your transmitted artifacts. However, by broadcasting, you grant VibeStream a non-exclusive license to relay your signal across the global mesh."
-          },
-          {
-            title: "System_Availability",
-            status: "VARIABLE",
-            content: "The grid may undergo maintenance cycles during low-traffic temporal windows. We do not guarantee 100% uptime during solar flare events or infrastructure upgrades."
-          }
-        ].map((term, idx) => (
-          <div key={idx} className="group bg-white border border-slate-100 rounded-[2.5rem] p-8 hover:border-indigo-200 transition-all duration-300 flex flex-col md:flex-row gap-6 md:items-start">
+        
+        {/* Term 1 */}
+        <div className="group bg-white border border-slate-100 rounded-[2.5rem] p-8 hover:border-indigo-200 transition-all duration-300 flex flex-col md:flex-row gap-6 md:items-start">
              <div className="shrink-0 md:w-48 pt-1">
-                <span className={`inline-block px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest font-mono ${term.status === 'MANDATORY' ? 'bg-rose-50 text-rose-600' : 'bg-indigo-50 text-indigo-600'}`}>
-                  {term.status}
+                <span className="inline-block px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest font-mono bg-rose-50 text-rose-600">
+                  MANDATORY
                 </span>
              </div>
              <div>
                 <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tight mb-2 group-hover:text-indigo-600 transition-colors">
-                  {term.title}
+                  Identity_Verification
                 </h3>
                 <p className="text-sm font-medium text-slate-600 leading-relaxed">
-                  {term.content}
+                  Users must maintain a valid biometric hash (verified email). Impersonation of Citadel Admins, System AI, or other nodes is a Class A violation.
                 </p>
              </div>
-          </div>
-        ))}
+        </div>
+
+        {/* Term 2 */}
+        <div className="group bg-white border border-slate-100 rounded-[2.5rem] p-8 hover:border-indigo-200 transition-all duration-300 flex flex-col md:flex-row gap-6 md:items-start">
+             <div className="shrink-0 md:w-48 pt-1">
+                <span className="inline-block px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest font-mono bg-indigo-50 text-indigo-600">
+                  ENFORCED
+                </span>
+             </div>
+             <div>
+                <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tight mb-2 group-hover:text-indigo-600 transition-colors">
+                  Signal_Decency
+                </h3>
+                <p className="text-sm font-medium text-slate-600 leading-relaxed">
+                  Broadcasts containing hate speech, illicit contraband, or neural hazards (malware) will be intercepted by the automated moderation grid. Repeat offenders face grid exile.
+                </p>
+             </div>
+        </div>
+
+        {/* Term 3 */}
+        <div className="group bg-white border border-slate-100 rounded-[2.5rem] p-8 hover:border-indigo-200 transition-all duration-300 flex flex-col md:flex-row gap-6 md:items-start">
+             <div className="shrink-0 md:w-48 pt-1">
+                <span className="inline-block px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest font-mono bg-indigo-50 text-indigo-600">
+                  SHARED
+                </span>
+             </div>
+             <div>
+                <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tight mb-2 group-hover:text-indigo-600 transition-colors">
+                  Intellectual_Property
+                </h3>
+                <p className="text-sm font-medium text-slate-600 leading-relaxed">
+                  You retain full ownership of your transmitted artifacts. However, by broadcasting, you grant VibeStream a non-exclusive license to relay your signal across the global mesh.
+                </p>
+             </div>
+        </div>
+
+        {/* Term 4 */}
+        <div className="group bg-white border border-slate-100 rounded-[2.5rem] p-8 hover:border-indigo-200 transition-all duration-300 flex flex-col md:flex-row gap-6 md:items-start">
+             <div className="shrink-0 md:w-48 pt-1">
+                <span className="inline-block px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest font-mono bg-indigo-50 text-indigo-600">
+                  VARIABLE
+                </span>
+             </div>
+             <div>
+                <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tight mb-2 group-hover:text-indigo-600 transition-colors">
+                  System_Availability
+                </h3>
+                <p className="text-sm font-medium text-slate-600 leading-relaxed">
+                  The grid may undergo maintenance cycles during low-traffic temporal windows. We do not guarantee 100% uptime during solar flare events or infrastructure upgrades.
+                </p>
+             </div>
+        </div>
+
       </div>
 
       {/* Acceptance Footer */}

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { auth, db } from '../../services/firebase';
 import * as FirebaseAuth from 'firebase/auth';
@@ -41,6 +40,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   
   // Location States
   const [location, setLocation] = useState('');
@@ -161,12 +161,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
       return;
     }
 
+    if (!acceptedTerms) {
+      setErrorDetails({ code: 'TERMS_NOT_ACCEPTED', message: 'You must accept the Terms of Uplink.' });
+      return;
+    }
+
     setIsProcessing(true);
     setErrorDetails(null);
 
     try {
-      // SECURITY PROTOCOL: Fresh Server Check for Registration Lock using getDocFromServer
-      // This bypasses the cache completely to get the real-time status.
+      // SECURITY PROTOCOL: Fresh Server Check for Registration Lock
       const settingsSnap = await getDocFromServer(doc(db, 'settings', 'global'));
       
       if (settingsSnap.exists() && settingsSnap.data().registrationDisabled) {
@@ -263,7 +267,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
         onClick={() => setCurrentView('auth')}
         className="fixed top-6 right-6 px-6 py-3 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-indigo-600 transition-all z-50 active:scale-95 flex items-center gap-2"
       >
-        <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+        <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M14 5l7 7-7 7m7-7H3" /></svg>
         Return_To_Grid
       </button>
     );
@@ -440,6 +444,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
                           setErrorDetails(null);
                           setEmail('');
                           setPassword('');
+                          setAcceptedTerms(false);
                         }}
                         className={`text-[10px] font-black uppercase tracking-widest transition-colors ${systemSettings.registrationDisabled ? 'text-slate-400 cursor-not-allowed hover:text-slate-500' : 'text-indigo-600 hover:text-indigo-700'}`}
                       >
@@ -579,8 +584,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
                   )}
                 </div>
 
-                <div className="text-[9px] text-slate-400 mt-2 font-medium leading-relaxed px-2">
-                  By initializing, you accept the <span className="text-indigo-500 cursor-pointer hover:underline" onClick={() => {setShowRegisterModal(false); setCurrentView('terms');}}>Terms of Uplink</span> and <span className="text-indigo-500 cursor-pointer hover:underline" onClick={() => {setShowRegisterModal(false); setCurrentView('privacy');}}>Privacy Protocol</span>.
+                {/* TERMS ACCEPTANCE UI */}
+                <div className="flex items-start gap-3 p-4 bg-slate-50 border border-slate-100 rounded-2xl mb-1">
+                    <div className="relative flex items-center h-5">
+                        <input
+                            id="terms"
+                            type="checkbox"
+                            checked={acceptedTerms}
+                            onChange={(e) => setAcceptedTerms(e.target.checked)}
+                            className="w-5 h-5 border-2 border-slate-300 rounded-lg text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 cursor-pointer"
+                        />
+                    </div>
+                    <div className="text-[10px] font-medium text-slate-500 leading-tight">
+                        <label htmlFor="terms" className="cursor-pointer select-none">
+                            I verify that I have read and agree to the <span className="text-indigo-600 font-bold hover:underline" onClick={(e) => { e.preventDefault(); setShowRegisterModal(false); setCurrentView('terms'); }}>Terms of Uplink</span> and <span className="text-indigo-600 font-bold hover:underline" onClick={(e) => { e.preventDefault(); setShowRegisterModal(false); setCurrentView('privacy'); }}>Privacy Protocol</span>.
+                        </label>
+                    </div>
                 </div>
 
                 {errorDetails && (
@@ -592,8 +611,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
                 <div className="pt-2">
                   <button 
                     type="submit" 
-                    disabled={isProcessing}
-                    className="w-full bg-emerald-500 text-white h-14 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+                    disabled={isProcessing || !acceptedTerms}
+                    className="w-full bg-emerald-500 text-white h-14 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isProcessing ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'CONFIRM_ENTRY'}
                   </button>

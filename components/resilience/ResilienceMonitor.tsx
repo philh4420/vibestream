@@ -1,16 +1,62 @@
-
 import React, { useState, useEffect } from 'react';
+import { User } from '../../types';
+import { db } from '../../services/firebase';
+import * as Firestore from 'firebase/firestore';
+const { collection, query, where, getDocs, orderBy } = Firestore as any;
 
-export const ResilienceMonitor: React.FC = () => {
-  const [velocity, setVelocity] = useState(12); // Internal simulation for visual effect
+interface ResilienceMonitorProps {
+  userData: User;
+}
 
-  // Simulate Velocity Fluctuation locally
+export const ResilienceMonitor: React.FC<ResilienceMonitorProps> = ({ userData }) => {
+  const [velocity, setVelocity] = useState(0); 
+  const [creationCount, setCreationCount] = useState(0);
+  const [consumptionPotential, setConsumptionPotential] = useState(userData.following || 1);
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      setVelocity(prev => Math.max(5, Math.min(100, prev + (Math.random() * 10 - 5))));
-    }, 2000);
+    if (!db) return;
+
+    const fetchMetrics = async () => {
+        const now = new Date();
+        const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+        // 1. Calculate Global Velocity (Posts in last hour)
+        try {
+            const velocityQuery = query(
+                collection(db, 'posts'),
+                where('timestamp', '>=', oneHourAgo),
+                orderBy('timestamp', 'desc')
+            );
+            const vSnap = await getDocs(velocityQuery);
+            // Cap visual velocity at 100 for gauge
+            setVelocity(Math.min(vSnap.size, 100));
+        } catch (e) {
+            console.error("Velocity sync error", e);
+        }
+
+        // 2. Calculate User Creation (User's total posts)
+        try {
+            const userPostsQuery = query(
+                collection(db, 'posts'),
+                where('authorId', '==', userData.id)
+            );
+            const uSnap = await getDocs(userPostsQuery);
+            setCreationCount(uSnap.size);
+        } catch (e) {
+            console.error("Hygiene sync error", e);
+        }
+    };
+
+    fetchMetrics();
+    // Refresh every minute
+    const interval = setInterval(fetchMetrics, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [userData.id]);
+
+  // Derived Metrics
+  const totalActivity = creationCount + consumptionPotential;
+  const creationPct = totalActivity > 0 ? Math.round((creationCount / totalActivity) * 100) : 0;
+  const consumptionPct = 100 - creationPct;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-2 md:px-0 animate-in slide-in-from-bottom-4 duration-500">
@@ -19,30 +65,32 @@ export const ResilienceMonitor: React.FC = () => {
        <div className="bg-white rounded-[3rem] p-8 shadow-sm border border-slate-100 col-span-1 lg:col-span-2">
           <div className="flex items-center justify-between mb-8">
              <h3 className="text-xl font-black text-slate-900 uppercase italic tracking-tighter">Neural_Hygiene</h3>
-             <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] font-mono">Today's Ratio</span>
+             <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] font-mono">Live Ratio</span>
           </div>
           <div className="space-y-6">
              <div>
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-2">
-                   <span className="text-indigo-600">Creation (Active)</span>
-                   <span className="text-slate-400">35%</span>
+                   <span className="text-indigo-600">Creation (Active Signals)</span>
+                   <span className="text-slate-400">{creationCount} Posts ({creationPct}%)</span>
                 </div>
                 <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
-                   <div className="h-full bg-indigo-600 rounded-full w-[35%]" />
+                   <div className="h-full bg-indigo-600 rounded-full transition-all duration-1000" style={{ width: `${Math.max(5, creationPct)}%` }} />
                 </div>
              </div>
              <div>
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-2">
-                   <span className="text-rose-500">Consumption (Passive)</span>
-                   <span className="text-slate-400">65%</span>
+                   <span className="text-rose-500">Consumption (Network Load)</span>
+                   <span className="text-slate-400">{consumptionPotential} Nodes ({consumptionPct}%)</span>
                 </div>
                 <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
-                   <div className="h-full bg-rose-500 rounded-full w-[65%]" />
+                   <div className="h-full bg-rose-500 rounded-full transition-all duration-1000" style={{ width: `${Math.max(5, consumptionPct)}%` }} />
                 </div>
              </div>
           </div>
           <p className="mt-8 text-xs text-slate-500 font-medium leading-relaxed">
-             You are spending more time consuming than creating. Consider initiating a new signal or engaging in a cluster discussion to balance your neural load.
+             {creationPct < 10 
+                ? "Your active signal output is low relative to your network intake. Consider broadcasting to balance your neural load."
+                : "Your creation-to-consumption ratio is healthy. Neural systems operating at optimal efficiency."}
           </p>
        </div>
 
@@ -51,7 +99,7 @@ export const ResilienceMonitor: React.FC = () => {
           <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/20 blur-[60px] rounded-full" />
           <div>
              <h3 className="text-xl font-black uppercase italic tracking-tighter text-white">Signal_Velocity</h3>
-             <p className="text-[9px] font-mono text-slate-400 uppercase tracking-widest mt-1">Information Intake Rate</p>
+             <p className="text-[9px] font-mono text-slate-400 uppercase tracking-widest mt-1">Global Broadcast Rate (1h)</p>
           </div>
           
           <div className="py-8 flex justify-center relative">
@@ -64,13 +112,13 @@ export const ResilienceMonitor: React.FC = () => {
              </div>
              <div className="absolute bottom-8 text-center">
                 <span className="text-3xl font-black tracking-tighter">{Math.round(velocity)}</span>
-                <span className="text-[8px] block font-mono text-slate-400">BPM</span>
+                <span className="text-[8px] block font-mono text-slate-400">P/Hr</span>
              </div>
           </div>
 
           <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-slate-500 font-mono">
              <span>Calm</span>
-             <span>Overload</span>
+             <span>Surge</span>
           </div>
        </div>
     </div>

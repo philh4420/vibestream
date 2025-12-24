@@ -33,45 +33,69 @@ export const PrivacyPage: React.FC = () => {
          </div>
       </div>
 
-      {/* Content Grid */}
+      {/* Content Grid (Static) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {[
-          {
-            id: '01',
-            title: "Data_Ingestion",
-            desc: "We only intercept signals you explicitly broadcast. Passive biometric data (scroll velocity, dwell time) is processed locally on your node and never transmitted to the Core without consent."
-          },
-          {
-            id: '02',
-            title: "Neural_Encryption",
-            desc: "All direct messages and private cluster comms use AES-256-GCM encryption. Even Citadel Admins cannot decrypt your private handshake protocols."
-          },
-          {
-            id: '03',
-            title: "Third_Party_Resonance",
-            desc: "We maintain a strict isolation policy. Your identity hash is never leaked to advertising grids. External media (Cloudinary) is fetched via proxied, anonymized requests."
-          },
-          {
-            id: '04',
-            title: "Right_To_Vanish",
-            desc: "Initiate a 'Purge Protocol' from your settings to instantly wipe all trace of your existence from our servers. This action is irreversible and cryptographically verified."
-          }
-        ].map((item, idx) => (
-          <div key={idx} className="bg-white border border-slate-100 rounded-[3rem] p-8 md:p-10 hover:shadow-xl hover:border-emerald-200 transition-all duration-500 group relative overflow-hidden">
+        
+        {/* Card 1 */}
+        <div className="bg-white border border-slate-100 rounded-[3rem] p-8 md:p-10 hover:shadow-xl hover:border-emerald-200 transition-all duration-500 group relative overflow-hidden">
              <div className="absolute top-0 right-0 p-8 opacity-10 text-6xl font-black text-slate-200 group-hover:text-emerald-100 transition-colors select-none">
-               {item.id}
+               01
              </div>
-             
              <div className="relative z-10">
                <h3 className="text-xl font-black text-slate-900 uppercase italic tracking-tighter mb-4 group-hover:text-emerald-600 transition-colors">
-                 {item.title}
+                 Data_Ingestion
                </h3>
                <p className="text-sm font-medium text-slate-500 leading-relaxed max-w-md">
-                 {item.desc}
+                 We only intercept signals you explicitly broadcast. Passive biometric data (scroll velocity, dwell time) is processed locally on your node and never transmitted to the Core without consent.
                </p>
              </div>
-          </div>
-        ))}
+        </div>
+
+        {/* Card 2 */}
+        <div className="bg-white border border-slate-100 rounded-[3rem] p-8 md:p-10 hover:shadow-xl hover:border-emerald-200 transition-all duration-500 group relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-8 opacity-10 text-6xl font-black text-slate-200 group-hover:text-emerald-100 transition-colors select-none">
+               02
+             </div>
+             <div className="relative z-10">
+               <h3 className="text-xl font-black text-slate-900 uppercase italic tracking-tighter mb-4 group-hover:text-emerald-600 transition-colors">
+                 Neural_Encryption
+               </h3>
+               <p className="text-sm font-medium text-slate-500 leading-relaxed max-w-md">
+                 All direct messages and private cluster comms use AES-256-GCM encryption. Even Citadel Admins cannot decrypt your private handshake protocols.
+               </p>
+             </div>
+        </div>
+
+        {/* Card 3 */}
+        <div className="bg-white border border-slate-100 rounded-[3rem] p-8 md:p-10 hover:shadow-xl hover:border-emerald-200 transition-all duration-500 group relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-8 opacity-10 text-6xl font-black text-slate-200 group-hover:text-emerald-100 transition-colors select-none">
+               03
+             </div>
+             <div className="relative z-10">
+               <h3 className="text-xl font-black text-slate-900 uppercase italic tracking-tighter mb-4 group-hover:text-emerald-600 transition-colors">
+                 Third_Party_Resonance
+               </h3>
+               <p className="text-sm font-medium text-slate-500 leading-relaxed max-w-md">
+                 We maintain a strict isolation policy. Your identity hash is never leaked to advertising grids. External media (Cloudinary) is fetched via proxied, anonymized requests.
+               </p>
+             </div>
+        </div>
+
+        {/* Card 4 */}
+        <div className="bg-white border border-slate-100 rounded-[3rem] p-8 md:p-10 hover:shadow-xl hover:border-emerald-200 transition-all duration-500 group relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-8 opacity-10 text-6xl font-black text-slate-200 group-hover:text-emerald-100 transition-colors select-none">
+               04
+             </div>
+             <div className="relative z-10">
+               <h3 className="text-xl font-black text-slate-900 uppercase italic tracking-tighter mb-4 group-hover:text-emerald-600 transition-colors">
+                 Right_To_Vanish
+               </h3>
+               <p className="text-sm font-medium text-slate-500 leading-relaxed max-w-md">
+                 Initiate a "Purge Protocol" from your settings to instantly wipe all trace of your existence from our servers. This action is irreversible and cryptographically verified.
+               </p>
+             </div>
+        </div>
+
       </div>
 
       {/* Footer Badge */}
