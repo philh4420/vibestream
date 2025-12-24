@@ -59,6 +59,7 @@ import { LiveBroadcastOverlay } from './components/streams/LiveBroadcastOverlay'
 import { LiveWatcherOverlay } from './components/streams/LiveWatcherOverlay';
 import { NeuralLinkOverlay } from './components/messages/NeuralLinkOverlay';
 import { SimulationsPage } from './components/simulations/SimulationsPage';
+import { ResiliencePage } from './components/resilience/ResiliencePage';
 
 // Services
 import { fetchWeather } from './services/weather';
@@ -537,11 +538,12 @@ export default function App() {
         {/* New Simulations Page */}
         {activeRoute === AppRoute.SIMULATIONS && <SimulationsPage />}
 
-        {/* Resilience Placeholder */}
-        {activeRoute === AppRoute.RESILIENCE && (
-           <div className="flex items-center justify-center h-full text-slate-400 font-mono text-sm uppercase tracking-widest">
-             Resilience Module Under Construction
-           </div>
+        {/* Resilience Module */}
+        {activeRoute === AppRoute.RESILIENCE && userData && (
+           <ResiliencePage 
+             userData={userData} 
+             addToast={addToast}
+           />
         )}
 
       </Layout>
