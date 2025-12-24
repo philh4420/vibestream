@@ -7,7 +7,17 @@ import { GeospatialMap } from './GeospatialMap';
 import { ProximityRadar } from './ProximityRadar';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
-const { doc, updateDoc, onSnapshot, writeBatch, collection, serverTimestamp } = Firestore as any;
+const { 
+  doc, 
+  updateDoc, 
+  onSnapshot, 
+  writeBatch, 
+  collection, 
+  serverTimestamp,
+  getDocs,
+  query,
+  where
+} = Firestore as any;
 import { CreateGatheringModal } from './CreateGatheringModal';
 import { GatheringMemoryBank } from './GatheringMemoryBank';
 
@@ -68,12 +78,49 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
   const dateStr = dateObj.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const timeStr = dateObj.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 
-  const handleUpdate = async (data: any) => {
+  const handleUpdate = async (data: any, updateSeries = false) => {
     if (!db) return;
     try {
-        await updateDoc(doc(db, 'gatherings', liveGathering.id), data);
+        const batch = writeBatch(db);
+
+        if (updateSeries && liveGathering.recurrenceId) {
+            // Recurrence Update Logic: Fetch all related gatherings
+            const q = query(collection(db, 'gatherings'), where('recurrenceId', '==', liveGathering.recurrenceId));
+            const snap = await getDocs(q);
+            
+            // Calculate time shift delta
+            const originalDate = new Date(liveGathering.date).getTime();
+            const newDate = new Date(data.date).getTime();
+            const timeDelta = newDate - originalDate;
+
+            snap.docs.forEach((d: any) => {
+                const g = d.data() as Gathering;
+                // Calculate new date for this specific instance based on the delta
+                const currentInstanceDate = new Date(g.date).getTime();
+                const shiftedDate = new Date(currentInstanceDate + timeDelta).toISOString();
+
+                batch.update(doc(db, 'gatherings', d.id), {
+                    title: data.title, // Note: This overwrites session numbers in titles if present
+                    description: data.description,
+                    location: data.location,
+                    coverUrl: data.coverUrl,
+                    category: data.category,
+                    type: data.type,
+                    maxAttendees: data.maxAttendees,
+                    date: shiftedDate // Apply time shift
+                });
+            });
+            
+            await batch.commit();
+            window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: `Series Updated (${snap.size} Events)`, type: 'success' } }));
+
+        } else {
+            // Single Update
+            await updateDoc(doc(db, 'gatherings', liveGathering.id), data);
+            window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Gathering Protocol Updated", type: 'success' } }));
+        }
+        
         setIsEditOpen(false);
-        window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Gathering Protocol Updated", type: 'success' } }));
     } catch (e) {
         console.error(e);
         window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Update Failed", type: 'error' } }));

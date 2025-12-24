@@ -7,7 +7,7 @@ import { uploadToCloudinary } from '../../services/cloudinary';
 interface CreateGatheringModalProps {
   currentUser: User;
   onClose: () => void;
-  onConfirm: (data: any) => void;
+  onConfirm: (data: any, updateSeries?: boolean) => void;
   initialData?: Gathering;
 }
 
@@ -45,6 +45,7 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
   });
 
   const [isUploading, setIsUploading] = useState(false);
+  const [updateSeries, setUpdateSeries] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,10 +70,11 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
       ...formData,
       maxAttendees: formData.maxAttendees > 0 ? parseInt(formData.maxAttendees as any) : null,
       date: combinedDate.toISOString()
-    });
+    }, updateSeries);
   };
 
   const isEditing = !!initialData;
+  const isRecurring = initialData?.recurrence && initialData.recurrence !== 'none';
 
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-6 animate-in fade-in duration-300">
@@ -216,14 +218,34 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
            </div>
         </div>
 
-        <div className="pt-8 border-t border-slate-50 mt-4 shrink-0">
+        <div className="pt-8 border-t border-slate-50 mt-4 shrink-0 space-y-4">
+           {isEditing && isRecurring && (
+             <div className="flex items-center justify-between p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
+               <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-indigo-500 shadow-sm">
+                    <ICONS.Temporal />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest font-mono">Recurrence_Detected</span>
+                    <span className="text-[9px] font-bold text-slate-500">Apply changes to entire series?</span>
+                  </div>
+               </div>
+               <button 
+                 onClick={() => setUpdateSeries(!updateSeries)}
+                 className={`w-12 h-7 rounded-full p-1 transition-colors ${updateSeries ? 'bg-indigo-600' : 'bg-slate-200'}`}
+               >
+                 <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${updateSeries ? 'translate-x-5' : 'translate-x-0'}`} />
+               </button>
+             </div>
+           )}
+
            <button 
              onClick={handleSubmit}
              disabled={!formData.title || !formData.date || isUploading}
              className="w-full py-5 bg-slate-900 text-white rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.4em] shadow-xl hover:bg-indigo-600 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3"
            >
              {isUploading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <ICONS.Verified />}
-             {isEditing ? 'UPDATE_GATHERING' : 'BROADCAST_GATHERING'}
+             {isEditing ? (updateSeries ? 'UPDATE_SERIES' : 'UPDATE_INSTANCE') : 'BROADCAST_GATHERING'}
            </button>
         </div>
       </div>
