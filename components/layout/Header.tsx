@@ -18,6 +18,7 @@ interface HeaderProps {
   activeRoute: AppRoute;
   onNavigate: (route: AppRoute) => void;
   onSearch: (query: string) => void;
+  onOpenSettings?: () => void;
 }
 
 const PRESENCE_DOTS: Record<string, string> = {
@@ -115,7 +116,8 @@ export const Header: React.FC<HeaderProps> = ({
   onLogout,
   activeRoute,
   onNavigate,
-  onSearch
+  onSearch,
+  onOpenSettings
 }) => {
   const [isSystemMenuOpen, setIsSystemMenuOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -371,7 +373,16 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                   </div>
                   
-                  <div className="p-2 border-t border-slate-100 bg-slate-50/50">
+                  <div className="p-2 border-t border-slate-100 bg-slate-50/50 flex flex-col gap-2">
+                    {onOpenSettings && (
+                      <button 
+                        onClick={() => { onOpenSettings(); setIsSystemMenuOpen(false); }}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-4 text-slate-500 hover:text-indigo-600 hover:bg-white rounded-[1.8rem] transition-all font-black text-[10px] uppercase tracking-widest active:scale-95"
+                      >
+                        <ICONS.Settings />
+                        Settings
+                      </button>
+                    )}
                     <button 
                       onClick={() => { onLogout(); setIsSystemMenuOpen(false); }}
                       className="w-full flex items-center justify-center gap-2 px-4 py-4 text-rose-500 hover:bg-rose-50 rounded-[1.8rem] transition-all font-black text-[10px] uppercase tracking-widest active:scale-95 hover:shadow-sm"

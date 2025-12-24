@@ -23,6 +23,7 @@ interface LayoutProps {
   onSearch: (query: string) => void;
   weather?: WeatherInfo | null;
   systemSettings?: SystemSettings;
+  onOpenSettings?: () => void;
 }
 
 export const Layout: React.FC<LayoutProps> = ({ 
@@ -40,7 +41,8 @@ export const Layout: React.FC<LayoutProps> = ({
   onRegionChange,
   onSearch,
   weather = null,
-  systemSettings
+  systemSettings,
+  onOpenSettings
 }) => {
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>(
     typeof window !== 'undefined' ? (window.innerHeight > window.innerWidth ? 'portrait' : 'landscape') : 'portrait'
@@ -68,6 +70,7 @@ export const Layout: React.FC<LayoutProps> = ({
         activeRoute={activeRoute}
         onNavigate={onNavigate}
         onSearch={onSearch}
+        onOpenSettings={onOpenSettings}
       />
 
       <div className="flex-1 flex overflow-hidden relative mt-[var(--header-h)] h-[calc(100dvh-var(--header-h))]">

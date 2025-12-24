@@ -36,9 +36,10 @@ interface ProfilePageProps {
   locale: Region;
   sessionStartTime: number;
   onViewPost: (post: Post) => void;
+  onOpenSettings?: () => void;
 }
 
-export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProfile, addToast, locale, sessionStartTime, onViewPost }) => {
+export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProfile, addToast, locale, sessionStartTime, onViewPost, onOpenSettings }) => {
   const [activeTab, setActiveTab] = useState<string>('broadcasting');
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -225,6 +226,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
         isOwnProfile={isOwnProfile}
         isFollowing={isFollowing}
         onFollowToggle={handleFollowToggle}
+        onOpenSettings={onOpenSettings}
       />
       
       {/* 2. Sticky Tab Navigation */}

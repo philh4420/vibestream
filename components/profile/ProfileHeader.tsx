@@ -10,6 +10,7 @@ interface ProfileHeaderProps {
   isOwnProfile?: boolean;
   isFollowing?: boolean;
   onFollowToggle?: () => void;
+  onOpenSettings?: () => void;
 }
 
 const PRESENCE_DOTS: Record<PresenceStatus, string> = {
@@ -28,7 +29,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   onEdit, 
   isOwnProfile,
   isFollowing,
-  onFollowToggle
+  onFollowToggle,
+  onOpenSettings
 }) => {
   return (
     <div className="w-full bg-white shadow-sm relative z-20">
@@ -104,12 +106,22 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           {/* Header Action Buttons */}
           <div className="flex items-center gap-3 md:pb-4 w-full md:w-auto">
             {isOwnProfile ? (
-              <button 
-                onClick={onEdit}
-                className="flex-1 md:flex-none h-16 px-10 bg-slate-900 text-white rounded-[2rem] font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-indigo-600 transition-all active:scale-95 shadow-xl shadow-slate-200"
-              >
-                <ICONS.Create /> Edit_Profile
-              </button>
+              <>
+                <button 
+                  onClick={onEdit}
+                  className="flex-1 md:flex-none h-16 px-10 bg-slate-900 text-white rounded-[2rem] font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-indigo-600 transition-all active:scale-95 shadow-xl shadow-slate-200"
+                >
+                  <ICONS.Create /> Edit_Profile
+                </button>
+                {onOpenSettings && (
+                  <button 
+                    onClick={onOpenSettings}
+                    className="h-16 w-16 bg-white border border-slate-200 text-slate-400 rounded-[2rem] flex items-center justify-center hover:text-indigo-600 hover:border-indigo-200 transition-all active:scale-90 shadow-lg"
+                  >
+                    <ICONS.Settings />
+                  </button>
+                )}
+              </>
             ) : (
               <>
                 <button 

@@ -60,6 +60,7 @@ import { LiveWatcherOverlay } from './components/streams/LiveWatcherOverlay';
 import { NeuralLinkOverlay } from './components/messages/NeuralLinkOverlay';
 import { SimulationsPage } from './components/simulations/SimulationsPage';
 import { ResiliencePage } from './components/resilience/ResiliencePage';
+import { SettingsOverlay } from './components/settings/SettingsOverlay';
 
 // Services
 import { fetchWeather } from './services/weather';
@@ -218,6 +219,9 @@ export default function App() {
   // RSVP Processing Lock
   const [rsvpProcessing, setRsvpProcessing] = useState<Set<string>>(new Set());
 
+  // Settings State
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
   // Save Route Changes
   useEffect(() => {
     if (activeRoute !== AppRoute.SINGLE_POST && activeRoute !== AppRoute.SINGLE_GATHERING) {
@@ -364,6 +368,7 @@ export default function App() {
       setUser(null);
       setUserData(null);
       setActiveRoute(AppRoute.FEED);
+      setIsSettingsOpen(false);
       localStorage.removeItem('vibestream_active_route');
     } catch (error) {
       console.error(error);
@@ -529,6 +534,7 @@ export default function App() {
         onSearch={() => {}}
         weather={weather}
         systemSettings={systemSettings}
+        onOpenSettings={() => setIsSettingsOpen(true)}
       >
         {activeRoute === AppRoute.FEED && (
           isFeatureEnabled(AppRoute.FEED) ? (
@@ -596,6 +602,7 @@ export default function App() {
               locale="en-GB"
               sessionStartTime={Date.now()}
               onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
+              onOpenSettings={() => setIsSettingsOpen(true)}
             />
           ) : <FeatureDisabledScreen featureName="PROFILE" />
         )}
@@ -744,6 +751,16 @@ export default function App() {
           session={activeCall} 
           userData={userData} 
           onEnd={() => setActiveCall(null)} 
+        />
+      )}
+
+      {/* Settings Overlay */}
+      {isSettingsOpen && userData && (
+        <SettingsOverlay 
+          userData={userData} 
+          onClose={() => setIsSettingsOpen(false)} 
+          onLogout={handleLogout}
+          addToast={addToast}
         />
       )}
     </>

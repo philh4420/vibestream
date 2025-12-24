@@ -24,6 +24,25 @@ export interface SystemSettings {
   featureFlags: Record<string, boolean>;
 }
 
+export interface UserSettings {
+  privacy: {
+    profileVisibility: 'public' | 'private';
+    activityStatus: boolean;
+    readReceipts: boolean;
+  };
+  notifications: {
+    email: boolean;
+    push: boolean;
+    likes: boolean;
+    comments: boolean;
+    mentions: boolean;
+  };
+  appearance: {
+    theme: 'system' | 'light' | 'dark';
+    reducedMotion: boolean;
+  };
+}
+
 export interface User {
   id: string;
   username: string;
@@ -62,6 +81,7 @@ export interface User {
     date: string;
     icon: string;
   }[];
+  settings?: UserSettings;
 }
 
 export type NotificationType = 'like' | 'comment' | 'follow' | 'mention' | 'broadcast' | 'system' | 'relay' | 'call' | 'cluster_invite' | 'packet_summary' | 'message' | 'gathering_rsvp' | 'gathering_create' | 'gathering_promote';
