@@ -307,7 +307,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
                   Please hold the button above to verify your human identity and synchronize with the grid.
                 </p>
                 <p className="text-[9px] text-slate-400 text-center mt-4 uppercase tracking-widest font-mono">
-                  Protected by reCAPTCHA Enterprise
+                  Protected by reCAPTCHA
                 </p>
               </div>
             ) : (
@@ -376,7 +376,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
                     </div>
 
                     <div className="mt-4 text-[10px] text-slate-400 text-center leading-tight">
-                      This site is protected by reCAPTCHA Enterprise and the Google
+                      This site is protected by reCAPTCHA and the Google
                       <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="text-indigo-500 hover:underline mx-1">Privacy Policy</a>
                       and
                       <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="text-indigo-500 hover:underline mx-1">Terms of Service</a>
@@ -512,7 +512,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
                 <div className="text-[11px] text-[#777] mt-2 mb-2 leading-snug">
                   By clicking Sign Up, you agree to our <a href="#" className="text-[#385898] hover:underline">Terms</a>, <a href="#" className="text-[#385898] hover:underline">Privacy Policy</a> and <a href="#" className="text-[#385898] hover:underline">Cookies Policy</a>.
                   <br/><br/>
-                  This site is protected by reCAPTCHA Enterprise and the Google <a href="https://policies.google.com/privacy" target="_blank" className="text-[#385898] hover:underline">Privacy Policy</a> and <a href="https://policies.google.com/terms" target="_blank" className="text-[#385898] hover:underline">Terms of Service</a> apply.
+                  This site is protected by reCAPTCHA and the Google <a href="https://policies.google.com/privacy" target="_blank" className="text-[#385898] hover:underline">Privacy Policy</a> and <a href="https://policies.google.com/terms" target="_blank" className="text-[#385898] hover:underline">Terms of Service</a> apply.
                 </div>
 
                 {errorDetails && (

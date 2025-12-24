@@ -6,7 +6,7 @@ const { getFirestore } = Firestore as any;
 import * as FirebaseAuth from 'firebase/auth';
 const { getAuth } = FirebaseAuth as any;
 import * as FirebaseAppCheck from 'firebase/app-check';
-const { initializeAppCheck, ReCaptchaEnterpriseProvider } = FirebaseAppCheck as any;
+const { initializeAppCheck, ReCaptchaV3Provider } = FirebaseAppCheck as any;
 
 import { CONFIG } from './config';
 
@@ -42,18 +42,20 @@ try {
   app = initializeApp(CONFIG.FIREBASE, 'FALLBACK');
 }
 
-// Initialize App Check (ReCAPTCHA Enterprise)
+// Initialize App Check (ReCAPTCHA v3)
 if (typeof window !== 'undefined' && app) {
   try {
     const siteKey = '6LcKoTUsAAAAANZFWpqjBcaKUCMCMJv8YF7YhyS6';
     
-    // Initialize with the provided key
+    // Initialize with the provided key using ReCaptchaV3Provider
+    // Note: ReCAPTCHA v3 keys created in the standard admin console must use ReCaptchaV3Provider.
+    // Enterprise keys use ReCaptchaEnterpriseProvider.
     initializeAppCheck(app, {
-      provider: new ReCaptchaEnterpriseProvider(siteKey),
+      provider: new ReCaptchaV3Provider(siteKey),
       isTokenAutoRefreshEnabled: true
     });
     
-    console.debug('VibeStream Security: App Check Shield Active');
+    console.debug('VibeStream Security: App Check Shield Active (v3)');
   } catch (e) {
     // This usually happens in local dev environments if debug tokens aren't set, 
     // or if the window object isn't fully available yet.
