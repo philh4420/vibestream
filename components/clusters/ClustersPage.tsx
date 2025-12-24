@@ -25,13 +25,20 @@ interface ClustersPageProps {
   onOpenChat: (chatId: string) => void;
   allUsers: User[];
   weather?: WeatherInfo | null;
+  initialClusterId?: string | null;
 }
 
-export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale, addToast, onOpenChat, allUsers, weather }) => {
+export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale, addToast, onOpenChat, allUsers, weather, initialClusterId }) => {
   const [clusters, setClusters] = useState<Chat[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeClusterId, setActiveClusterId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialClusterId) {
+        setActiveClusterId(initialClusterId);
+    }
+  }, [initialClusterId]);
 
   useEffect(() => {
     if (!db || !currentUser.id) return;
@@ -176,7 +183,7 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
                    </div>
                    <div className="flex flex-col items-end">
                       <span className="text-[9px] font-black text-slate-900 font-mono">{cluster.participants.length} NODES</span>
-                      <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">SYNCED</span>
+                      <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">{cluster.isEventLobby ? 'LOBBY' : 'SYNCED'}</span>
                    </div>
                 </div>
 
@@ -237,4 +244,3 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
     </div>
   );
 };
-    
