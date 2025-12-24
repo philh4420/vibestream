@@ -194,7 +194,12 @@ service cloud.firestore {
     // -------------------------------------------------------------------------
 
     match /chats/{chatId} {
-      allow read, update, list: if isAuthenticated() && request.auth.uid in resource.data.participants;
+      allow read, list: if isAuthenticated() && request.auth.uid in resource.data.participants;
+      // ALLOW JOINING: Check if user is in existing participants OR in the incoming participants list
+      allow update: if isAuthenticated() && (
+        request.auth.uid in resource.data.participants ||
+        request.auth.uid in incomingData().participants
+      );
       allow create: if isAuthenticated() && request.auth.uid in incomingData().participants;
       
       // GRANULAR DELETION PROTOCOL
@@ -259,9 +264,15 @@ service cloud.firestore {
       allow update: if isAuthenticated() && (
         resource.data.organizerId == request.auth.uid || 
         isAdmin() || 
-        incomingData().diff(existingData()).affectedKeys().hasOnly(['attendees'])
+        incomingData().diff(existingData()).affectedKeys().hasOnly(['attendees', 'waitlist'])
       );
       allow delete: if isAuthenticated() && (resource.data.organizerId == request.auth.uid || isAdmin());
+
+      match /memories/{memoryId} {
+        allow read, list: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isAdmin());
+      }
     }
 
     // -------------------------------------------------------------------------

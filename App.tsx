@@ -65,7 +65,21 @@ import { fetchWeather } from './services/weather';
 export default function App() {
   const [user, setUser] = useState<any>(null);
   const [userData, setUserData] = useState<User | null>(null);
-  const [activeRoute, setActiveRoute] = useState<AppRoute>(AppRoute.FEED);
+  
+  // Route Persistence Logic
+  const [activeRoute, setActiveRoute] = useState<AppRoute>(() => {
+    try {
+      const saved = localStorage.getItem('vibestream_active_route') as AppRoute;
+      // Fallback to FEED if saved route is a detail view (which lacks state on refresh) or invalid
+      if (saved === AppRoute.SINGLE_POST || saved === AppRoute.SINGLE_GATHERING) {
+        return AppRoute.FEED;
+      }
+      return saved || AppRoute.FEED;
+    } catch {
+      return AppRoute.FEED;
+    }
+  });
+
   const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -94,6 +108,13 @@ export default function App() {
 
   // RSVP Processing Lock
   const [rsvpProcessing, setRsvpProcessing] = useState<Set<string>>(new Set());
+
+  // Save Route Changes
+  useEffect(() => {
+    if (activeRoute !== AppRoute.SINGLE_POST && activeRoute !== AppRoute.SINGLE_GATHERING) {
+      localStorage.setItem('vibestream_active_route', activeRoute);
+    }
+  }, [activeRoute]);
 
   // --- AUTH & USER SYNC ---
   useEffect(() => {
@@ -228,6 +249,7 @@ export default function App() {
       setUser(null);
       setUserData(null);
       setActiveRoute(AppRoute.FEED);
+      localStorage.removeItem('vibestream_active_route');
     } catch (error) {
       console.error(error);
     }
