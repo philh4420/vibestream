@@ -5,7 +5,7 @@ import * as Firestore from 'firebase/firestore';
 const { 
   collection, 
   query, 
-  updateDoc, 
+  setDoc,
   doc, 
   orderBy, 
   limit, 
@@ -58,14 +58,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale, system
   const handleToggleFeature = async (route: AppRoute, val: boolean) => {
     const updatedFlags = { ...(systemSettings.featureFlags || {}), [route]: val };
     try {
-      await updateDoc(doc(db, 'settings', 'global'), { featureFlags: updatedFlags });
+      // Use setDoc with merge: true to handle case where document doesn't exist yet
+      await setDoc(doc(db, 'settings', 'global'), { featureFlags: updatedFlags }, { merge: true });
       addToast(`${route.toUpperCase()} Protocol modified`, 'success');
-    } catch (e) { addToast('Uplink failed: Buffer locked', 'error'); }
+    } catch (e) { 
+      console.error(e);
+      addToast('Uplink failed: Buffer locked', 'error'); 
+    }
   };
 
   const handleManageUser = async (userId: string, updates: Partial<User>) => {
     try {
-      await updateDoc(doc(db, 'users', userId), updates);
+      await setDoc(doc(db, 'users', userId), updates, { merge: true });
       addToast(`Node ${userId.slice(0, 5)} updated`, 'success');
     } catch (e) {
       addToast('Update failed: Node authority clash', 'error');

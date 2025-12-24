@@ -2,7 +2,7 @@
 import React from 'react';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
-const { updateDoc, doc } = Firestore as any;
+const { setDoc, doc } = Firestore as any;
 import { SystemSettings } from '../../types';
 import { ICONS } from '../../constants';
 
@@ -14,9 +14,11 @@ interface AdminKernelProps {
 export const AdminKernel: React.FC<AdminKernelProps> = ({ systemSettings, addToast }) => {
   const handleUpdate = async (updates: Partial<SystemSettings>) => {
     try {
-      await updateDoc(doc(db, 'settings', 'global'), updates);
+      // Use setDoc with merge: true to handle case where document doesn't exist yet
+      await setDoc(doc(db, 'settings', 'global'), updates, { merge: true });
       addToast('Kernel Synchronization Complete', 'success');
     } catch (e) {
+      console.error(e);
       addToast('Kernel Update Refused', 'error');
     }
   };
