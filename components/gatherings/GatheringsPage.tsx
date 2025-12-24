@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { db } from '../../services/firebase';
 import { 
@@ -18,7 +19,7 @@ interface GatheringsPageProps {
   locale: Region;
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
   onViewGathering: (gathering: Gathering) => void;
-  onRSVP: (id: string, isAttendingOrWaitlisted: boolean) => void;
+  onRSVP: (id: string, isAttendingOrWaitlisted: boolean) => Promise<void>; // Updated to Promise for async handling
 }
 
 export const GatheringsPage: React.FC<GatheringsPageProps> = ({ 
@@ -32,6 +33,7 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [filter, setFilter] = useState<'all' | 'attending' | 'hosting'>('all');
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!db) return;
@@ -145,6 +147,7 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
                const isWaitlisted = g.waitlist?.includes(currentUser.id);
                const isHosting = g.organizerId === currentUser.id;
                const dateObj = new Date(g.date);
+               const isProcessing = processingId === g.id;
 
                return (
                  <div 
@@ -180,10 +183,25 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
 
                           {!isHosting && (
                             <button 
-                              onClick={(e) => { e.stopPropagation(); onRSVP(g.id, isAttending || !!isWaitlisted); }}
-                              className={`px-5 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-[0.2em] transition-all shadow-sm ${isAttending ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : isWaitlisted ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-slate-900 text-white hover:bg-purple-600'}`}
+                              onClick={async (e) => { 
+                                e.stopPropagation(); 
+                                if (isProcessing) return;
+                                setProcessingId(g.id);
+                                await onRSVP(g.id, isAttending || !!isWaitlisted);
+                                setProcessingId(null);
+                              }}
+                              disabled={isProcessing}
+                              className={`px-5 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-[0.2em] transition-all shadow-sm ${
+                                isProcessing 
+                                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                                  : isAttending 
+                                    ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+                                    : isWaitlisted 
+                                      ? 'bg-amber-50 text-amber-600 border border-amber-100' 
+                                      : 'bg-slate-900 text-white hover:bg-purple-600'
+                              }`}
                             >
-                              {isAttending ? 'GOING' : isWaitlisted ? 'WAITLIST' : 'RSVP'}
+                              {isProcessing ? 'SYNC...' : isAttending ? 'GOING' : isWaitlisted ? 'WAITLIST' : 'RSVP'}
                             </button>
                           )}
                        </div>

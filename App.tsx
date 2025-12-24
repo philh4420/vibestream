@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { 
+// Fixed: Using namespaced import for firebase/auth to resolve "no exported member" errors
+import * as FirebaseAuth from 'firebase/auth';
+const { onAuthStateChanged, signOut } = FirebaseAuth as any;
+// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
+import * as Firestore from 'firebase/firestore';
+const { 
   doc, 
   onSnapshot, 
   collection, 
@@ -13,8 +17,9 @@ import {
   arrayRemove, 
   arrayUnion, 
   getDoc,
-  updateDoc
-} from 'firebase/firestore';
+  updateDoc,
+  deleteDoc
+} = Firestore as any;
 import { auth, db } from './services/firebase';
 import { 
   User, 
@@ -88,14 +93,17 @@ export default function App() {
   const [watchingStream, setWatchingStream] = useState<LiveStream | null>(null);
   const [activeCall, setActiveCall] = useState<CallSession | null>(null);
 
+  // RSVP Processing Lock
+  const [rsvpProcessing, setRsvpProcessing] = useState<Set<string>>(new Set());
+
   // --- AUTH & USER SYNC ---
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (authUser: any) => {
       setUser(authUser);
       if (authUser) {
         // Sync User Data
         const userRef = doc(db, 'users', authUser.uid);
-        const unsubUser = onSnapshot(userRef, (doc) => {
+        const unsubUser = onSnapshot(userRef, (doc: any) => {
           if (doc.exists()) {
             const data = doc.data() as User;
             setUserData({ ...data, id: doc.id });
@@ -114,8 +122,8 @@ export default function App() {
           orderBy('timestamp', 'desc'), 
           limit(50)
         );
-        const unsubNotif = onSnapshot(notifQuery, (snap) => {
-          setNotifications(snap.docs.map(d => ({ id: d.id, ...d.data() } as AppNotification)));
+        const unsubNotif = onSnapshot(notifQuery, (snap: any) => {
+          setNotifications(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as AppNotification)));
         });
 
         // Sync Calls
@@ -125,7 +133,7 @@ export default function App() {
           where('status', '==', 'ringing'),
           limit(1)
         );
-        const unsubCalls = onSnapshot(callQuery, (snap) => {
+        const unsubCalls = onSnapshot(callQuery, (snap: any) => {
           if (!snap.empty) {
             setActiveCall({ id: snap.docs[0].id, ...snap.docs[0].data() } as CallSession);
           } else {
@@ -153,18 +161,18 @@ export default function App() {
     if (!user) return;
 
     // Sync Settings
-    const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (doc) => {
+    const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (doc: any) => {
       if (doc.exists()) setSystemSettings(doc.data() as SystemSettings);
     });
 
     // Sync All Users (Lightweight)
-    const unsubUsers = onSnapshot(query(collection(db, 'users'), limit(100)), (snap) => {
-      setAllUsers(snap.docs.map(d => ({ id: d.id, ...d.data() } as User)));
+    const unsubUsers = onSnapshot(query(collection(db, 'users'), limit(100)), (snap: any) => {
+      setAllUsers(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as User)));
     });
 
     // Sync Feed Posts
-    const unsubPosts = onSnapshot(query(collection(db, 'posts'), orderBy('timestamp', 'desc'), limit(50)), (snap) => {
-      setGlobalPosts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Post)));
+    const unsubPosts = onSnapshot(query(collection(db, 'posts'), orderBy('timestamp', 'desc'), limit(50)), (snap: any) => {
+      setGlobalPosts(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Post)));
     });
 
     return () => {
@@ -209,8 +217,11 @@ export default function App() {
 
   // --- RSVP LOGIC ---
   const handleRSVP = async (gatheringId: string, isAttendingOrWaitlisted: boolean) => {
-    if (!db || !userData) return;
+    if (!db || !userData || rsvpProcessing.has(gatheringId)) return;
     
+    // Lock this gathering
+    setRsvpProcessing(prev => new Set(prev).add(gatheringId));
+
     try {
       const gatheringRef = doc(db, 'gatherings', gatheringId);
       const freshSnap = await getDoc(gatheringRef);
@@ -301,6 +312,9 @@ export default function App() {
     } catch (e) {
       console.error(e);
       addToast("RSVP Protocol Failed", "error");
+    } finally {
+      // Release lock
+      setRsvpProcessing(prev => { const n = new Set(prev); n.delete(gatheringId); return n; });
     }
   };
 
