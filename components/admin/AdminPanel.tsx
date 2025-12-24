@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { db } from '../../services/firebase';
-// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
 import * as Firestore from 'firebase/firestore';
 const { 
   collection, 
@@ -14,7 +13,7 @@ const {
 } = Firestore as any;
 import { Post, User, SystemSettings, AppRoute, Region } from '../../types';
 
-// Refactored Sub-Components
+// Components
 import { AdminOverview } from './AdminOverview';
 import { AdminUsers } from './AdminUsers';
 import { AdminContent } from './AdminContent';
@@ -91,17 +90,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale, system
   };
 
   return (
-    <div className="min-h-full bg-[#f8fafc] flex flex-col pb-12 overflow-hidden selection:bg-indigo-500 selection:text-white">
-      <AdminHeader 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
-        locale={locale} 
-      />
+    <div className="flex flex-col w-full max-w-[2400px] mx-auto min-h-full pb-24">
+      {/* Sticky Navigation Dock */}
+      <div className="sticky top-0 z-40 pt-2 pb-6 bg-gradient-to-b from-[#fcfcfd] via-[#fcfcfd]/95 to-transparent backdrop-blur-sm -mx-4 px-4 md:mx-0 md:px-0">
+        <AdminHeader 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab} 
+          locale={locale} 
+        />
+      </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar scroll-container px-4 md:px-6 lg:px-8">
-        <div className="max-w-[1920px] mx-auto w-full pt-4">
-          {renderContent()}
-        </div>
+      {/* Main Content Area */}
+      <div className="flex-1 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        {renderContent()}
       </div>
     </div>
   );

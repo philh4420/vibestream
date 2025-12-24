@@ -8,8 +8,6 @@ interface ProfileHeaderProps {
   onEdit: () => void;
   addToast?: (msg: string, type?: 'success' | 'error' | 'info') => void;
   isOwnProfile?: boolean;
-  activeTab: string;
-  onTabChange: (tab: any) => void;
   isFollowing?: boolean;
   onFollowToggle?: () => void;
 }
@@ -28,125 +26,103 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   userData, 
   onEdit, 
   isOwnProfile,
-  activeTab,
-  onTabChange,
   isFollowing,
   onFollowToggle
 }) => {
-  const navTabs = [
-    { id: 'broadcasting', label: 'Timeline' },
-    { id: 'connections', label: 'Friends' }, // New Tab
-    { id: 'identity', label: 'About' },
-    { id: 'visuals', label: 'Photos' },
-    { id: 'resonance', label: 'Resonance' },
-    { id: 'chronology', label: 'Archive' },
-  ];
-
   return (
-    <div className="w-full bg-white shadow-sm border-b border-slate-200">
+    <div className="w-full bg-white shadow-sm relative z-20">
       {/* 1. COVER PHOTO */}
-      <div className="max-w-[2560px] mx-auto relative h-[25vh] md:h-[420px] bg-slate-100 md:rounded-b-[2.5rem] overflow-hidden group">
+      <div className="max-w-[2560px] mx-auto relative h-[30vh] md:h-[480px] bg-slate-100 md:rounded-b-[3.5rem] overflow-hidden group">
         <img 
           src={userData.coverUrl || 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80'} 
-          className="w-full h-full object-cover transition-transform duration-[5s] group-hover:scale-105" 
+          className="w-full h-full object-cover transition-transform duration-[8s] group-hover:scale-105" 
           alt="Cover" 
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
         
         {isOwnProfile && (
           <button 
             onClick={onEdit}
-            className="absolute bottom-6 right-6 bg-white/10 backdrop-blur-md hover:bg-white text-white hover:text-slate-900 px-6 py-3 rounded-2xl flex items-center gap-2 transition-all font-black text-[9px] uppercase tracking-widest shadow-xl active:scale-95 border border-white/20"
+            className="absolute bottom-8 right-8 bg-black/30 backdrop-blur-xl hover:bg-white text-white hover:text-slate-900 px-6 py-3 rounded-2xl flex items-center gap-3 transition-all font-black text-[9px] uppercase tracking-widest shadow-xl active:scale-95 border border-white/20 hover:border-white"
           >
-            <ICONS.Create /> Edit Cover
+            <ICONS.Create /> Edit_Signal_Visual
           </button>
         )}
       </div>
 
       {/* 2. IDENTITY OVERLAP & ACTIONS */}
       <div className="max-w-[2560px] mx-auto px-6 sm:px-10 lg:px-14">
-        <div className="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-10 -mt-20 md:-mt-24 pb-8">
+        <div className="flex flex-col md:flex-row items-center md:items-end gap-8 md:gap-12 -mt-24 md:-mt-32 pb-10">
+          
           {/* Avatar Area */}
-          <div className="relative group">
-            <div className="p-2 bg-white rounded-full shadow-2xl">
+          <div className="relative group shrink-0">
+            <div className="p-2.5 bg-white rounded-[2.5rem] shadow-2xl">
               <img 
                 src={userData.avatarUrl} 
-                className="w-32 h-32 md:w-48 md:h-48 rounded-full object-cover border-[6px] border-slate-50 transition-transform duration-500 group-hover:scale-[1.02]" 
+                className="w-36 h-36 md:w-56 md:h-56 rounded-[2rem] object-cover bg-slate-50 transition-transform duration-500 group-hover:scale-[1.02]" 
                 alt={userData.displayName} 
               />
             </div>
-            <div className="absolute bottom-4 right-4 w-8 h-8 md:w-12 md:h-12 bg-white rounded-full p-1.5 shadow-xl flex items-center justify-center border-[4px] border-slate-50">
-              <div className={`w-full h-full rounded-full ${PRESENCE_DOTS[userData.presenceStatus || 'Online']} animate-pulse`} />
+            <div className="absolute bottom-5 right-5 w-10 h-10 md:w-14 md:h-14 bg-white rounded-2xl p-1.5 shadow-xl flex items-center justify-center">
+              <div className={`w-full h-full rounded-xl ${PRESENCE_DOTS[userData.presenceStatus || 'Online']} animate-pulse`} />
             </div>
           </div>
 
           {/* Text Identity */}
-          <div className="flex-1 text-center md:text-left md:pb-6">
-            <div className="flex flex-col md:flex-row items-center gap-3 mb-2">
-              <h1 className="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tighter leading-none">
+          <div className="flex-1 text-center md:text-left md:pb-4 min-w-0">
+            <div className="flex flex-col md:flex-row items-center md:items-baseline gap-3 mb-3">
+              <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-none uppercase italic truncate max-w-full">
                 {userData.displayName}
               </h1>
-              {userData.verifiedHuman && <div className="text-indigo-500 scale-125"><ICONS.Verified /></div>}
-              {userData.statusEmoji && <span className="text-3xl ml-1">{userData.statusEmoji}</span>}
+              {userData.verifiedHuman && <div className="text-indigo-500 scale-125 drop-shadow-sm"><ICONS.Verified /></div>}
             </div>
             
-            <div className="flex items-center justify-center md:justify-start gap-6">
-              <p className="text-slate-400 font-bold font-mono text-sm tracking-wide">@{userData.username}</p>
-              <div className="h-4 w-px bg-slate-300" />
-              <div className="flex gap-6 text-sm">
-                 <div className="flex items-center gap-1.5">
-                    <span className="font-black text-slate-900">{userData.following || 0}</span> 
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Following</span>
-                 </div>
-                 <div className="flex items-center gap-1.5">
-                    <span className="font-black text-slate-900">{userData.followers || 0}</span> 
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Followers</span>
-                 </div>
+            <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8 mb-6">
+               <div className="px-4 py-1.5 bg-slate-100 rounded-lg border border-slate-200">
+                 <p className="text-slate-500 font-bold font-mono text-xs tracking-wide">@{userData.username}</p>
+               </div>
+               
+               {userData.statusMessage && (
+                 <p className="text-sm font-medium text-slate-600 italic">"{userData.statusMessage}"</p>
+               )}
+            </div>
+
+            <div className="flex items-center justify-center md:justify-start gap-8">
+              <div className="flex flex-col items-center md:items-start">
+                 <span className="text-2xl font-black text-slate-900 leading-none">{userData.following || 0}</span> 
+                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono mt-1">Following</span>
+              </div>
+              <div className="w-px h-8 bg-slate-200" />
+              <div className="flex flex-col items-center md:items-start">
+                 <span className="text-2xl font-black text-slate-900 leading-none">{userData.followers || 0}</span> 
+                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono mt-1">Followers</span>
               </div>
             </div>
           </div>
 
           {/* Header Action Buttons */}
-          <div className="flex items-center gap-3 md:pb-6 w-full md:w-auto">
+          <div className="flex items-center gap-3 md:pb-4 w-full md:w-auto">
             {isOwnProfile ? (
               <button 
                 onClick={onEdit}
-                className="flex-1 md:flex-none h-14 px-8 bg-slate-950 text-white rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-indigo-600 transition-all active:scale-95 shadow-lg border border-transparent"
+                className="flex-1 md:flex-none h-16 px-10 bg-slate-900 text-white rounded-[2rem] font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-indigo-600 transition-all active:scale-95 shadow-xl shadow-slate-200"
               >
-                <ICONS.Create /> Edit Profile
+                <ICONS.Create /> Edit_Profile
               </button>
             ) : (
               <>
                 <button 
                   onClick={onFollowToggle}
-                  className={`flex-1 md:flex-none h-14 px-10 rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg ${isFollowing ? 'bg-white border border-slate-200 text-slate-900 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-100' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100'}`}
+                  className={`flex-1 md:flex-none h-16 px-10 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl ${isFollowing ? 'bg-white border border-slate-200 text-slate-900 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-100' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200'}`}
                 >
-                  {isFollowing ? 'Linked' : 'Connect'}
+                  {isFollowing ? 'LINKED' : 'CONNECT'}
                 </button>
-                <button className="h-14 w-14 bg-white border border-slate-200 text-slate-400 rounded-[1.8rem] flex items-center justify-center hover:text-indigo-600 hover:border-indigo-200 transition-all active:scale-90 shadow-sm">
+                <button className="h-16 w-16 bg-white border border-slate-200 text-slate-400 rounded-[2rem] flex items-center justify-center hover:text-indigo-600 hover:border-indigo-200 transition-all active:scale-90 shadow-lg">
                   <ICONS.Messages />
                 </button>
               </>
             )}
           </div>
-        </div>
-
-        {/* 3. STICKY NAV BAR */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar border-t border-slate-100 pt-1">
-          {navTabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => onTabChange(tab.id)}
-              className={`px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] font-mono transition-all relative whitespace-nowrap ${
-                activeTab === tab.id ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-700'
-              }`}
-            >
-              {tab.label}
-              {activeTab === tab.id && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-600 rounded-t-full" />
-              )}
-            </button>
-          ))}
         </div>
       </div>
     </div>

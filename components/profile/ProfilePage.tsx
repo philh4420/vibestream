@@ -18,6 +18,7 @@ const {
   getDoc
 } = Firestore as any;
 import { ProfileHeader } from './ProfileHeader';
+import { ProfileTabs } from './ProfileTabs';
 import { CalibrationOverlay } from './CalibrationOverlay';
 
 // Modular Sections
@@ -165,11 +166,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
       case 'chronology':
         return <div className="max-w-[2560px] mx-auto"><ProfileChronologySection userData={profileData} locale={locale} /></div>;
       case 'connections':
-        return <div className="max-w-[2560px] mx-auto"><ProfileConnectionsSection userData={profileData} currentUser={userData} onViewProfile={(u) => console.log('View', u)} /></div>; // Note: onViewProfile logic needs to navigate, assuming simple log for now or passed prop if needed to change route
+        return <div className="max-w-[2560px] mx-auto"><ProfileConnectionsSection userData={profileData} currentUser={userData} onViewProfile={(u) => console.log('View', u)} /></div>; 
       default:
         return (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-[2560px] mx-auto items-start">
-            <div className="lg:col-span-5 space-y-4 lg:sticky lg:top-[var(--header-h)]">
+            <div className="lg:col-span-5 space-y-4 lg:sticky lg:top-[calc(var(--header-h)+6rem)]">
               <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
                  <h3 className="text-xl font-black text-slate-900 tracking-tight mb-4 italic">Intro</h3>
                  <div className="space-y-4">
@@ -215,21 +216,26 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
 
   return (
     <div className="animate-in fade-in duration-1000 bg-[#f0f2f5] min-h-screen pb-20 -mx-4 sm:-mx-6 md:-mx-10 lg:-mx-14 -mt-6">
+      
+      {/* 1. Header Profile Identity */}
       <ProfileHeader 
         userData={profileData} 
         onEdit={() => setIsEditModalOpen(true)} 
         addToast={addToast}
         isOwnProfile={isOwnProfile}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
         isFollowing={isFollowing}
         onFollowToggle={handleFollowToggle}
       />
       
-      <div className="mt-4 md:mt-8 px-4 sm:px-6 md:px-10 lg:px-14">
+      {/* 2. Sticky Tab Navigation */}
+      <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
+
+      {/* 3. Content Area */}
+      <div className="mt-8 px-4 sm:px-6 md:px-10 lg:px-14">
         {renderTabContent()}
       </div>
 
+      {/* Edit Modal */}
       {isEditModalOpen && (
         <CalibrationOverlay 
           userData={profileData} 
