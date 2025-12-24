@@ -9,7 +9,8 @@ export const PRESENCE_CONFIG: Record<PresenceStatus, { color: string, pulse: str
   'In-Transit': { color: 'bg-[#6366f1]', pulse: 'pulse-active-indigo', label: 'IN-TRANSIT' },
   'Away': { color: 'bg-[#94a3b8]', pulse: '', label: 'AWAY' },
   'Invisible': { color: 'bg-[#334155]', pulse: '', label: 'INVISIBLE' },
-  'Syncing': { color: 'bg-[#60a5fa]', pulse: 'pulse-active-emerald', label: 'SYNCING' }
+  'Syncing': { color: 'bg-[#60a5fa]', pulse: 'pulse-active-emerald', label: 'SYNCING' },
+  'Offline': { color: 'bg-slate-400', pulse: '', label: 'OFFLINE' }
 };
 
 export interface PulseFrequency {

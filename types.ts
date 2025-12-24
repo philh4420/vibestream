@@ -3,7 +3,7 @@ export type UserRole = 'member' | 'verified' | 'creator' | 'admin';
 
 export type Region = 'en-GB' | 'en-US' | 'de-DE' | 'fr-FR' | 'ja-JP';
 
-export type PresenceStatus = 'Online' | 'Focus' | 'Invisible' | 'Away' | 'In-Transit' | 'Deep Work' | 'Syncing';
+export type PresenceStatus = 'Online' | 'Focus' | 'Invisible' | 'Away' | 'In-Transit' | 'Deep Work' | 'Syncing' | 'Offline';
 
 export type SignalAudience = 'global' | 'mesh' | 'private';
 

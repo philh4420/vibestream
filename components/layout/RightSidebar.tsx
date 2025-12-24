@@ -210,7 +210,8 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
     'In-Transit': 'bg-[#6366f1]',
     'Away': 'bg-[#94a3b8]',
     'Invisible': 'bg-[#334155]',
-    'Syncing': 'bg-[#60a5fa]'
+    'Syncing': 'bg-[#60a5fa]',
+    'Offline': 'bg-slate-300'
   };
 
   const filteredContacts = contactFilter === 'online' 

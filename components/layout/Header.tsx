@@ -20,24 +20,30 @@ interface HeaderProps {
   onSearch: (query: string) => void;
 }
 
-const PRESENCE_DOTS: Record<PresenceStatus, string> = {
+const PRESENCE_DOTS: Record<string, string> = {
   'Online': 'bg-[#10b981] shadow-[0_0_8px_#10b981]',
   'Focus': 'bg-[#f59e0b] shadow-[0_0_8px_#f59e0b]',
   'Deep Work': 'bg-[#e11d48] shadow-[0_0_8px_#e11d48]',
   'In-Transit': 'bg-[#6366f1] shadow-[0_0_8px_#6366f1]',
   'Away': 'bg-[#94a3b8]',
   'Invisible': 'bg-[#334155]',
-  'Syncing': 'bg-[#60a5fa] animate-pulse shadow-[0_0_8px_#60a5fa]'
+  'Syncing': 'bg-[#60a5fa] animate-pulse shadow-[0_0_8px_#60a5fa]',
+  'Offline': 'bg-slate-300'
 };
 
-const STATUS_EMOJI_MAP: Record<PresenceStatus, string> = {
+const getStatusStyle = (status?: string) => {
+  return PRESENCE_DOTS[status || 'Online'] || PRESENCE_DOTS['Invisible'];
+};
+
+const STATUS_EMOJI_MAP: Record<string, string> = {
   'Online': '⚡',
   'Focus': '🎯',
   'Deep Work': '🧱',
   'In-Transit': '✈️',
   'Away': '☕',
   'Invisible': '👻',
-  'Syncing': '🛰️'
+  'Syncing': '🛰️',
+  'Offline': '💤'
 };
 
 const NotificationItem = ({ notif, onDelete }: { notif: AppNotification; onDelete: (id: string) => void }) => {
@@ -49,8 +55,8 @@ const NotificationItem = ({ notif, onDelete }: { notif: AppNotification; onDelet
         <span className="relative z-10 text-lg leading-none">{pulseConfig?.emoji || '❤️'}</span>
       </div>
     ),
-    follow: <div className="p-2 bg-indigo-50 text-indigo-500 rounded-xl scale-90"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M19 7.5v9m-4.5-4.5h9M3 13.5h9m-9-4.5h9m-9-4.5h9" /></svg></div>,
-    broadcast: <div className="p-2 bg-rose-600 text-white rounded-xl scale-90 shadow-lg shadow-rose-200 animate-pulse"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></div>,
+    follow: <div className="p-2 bg-indigo-50 text-indigo-500 rounded-xl scale-90"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M19 7.5v9m-4.5-4.5h9M3 13.5h9m-9-4.5h9m-9-4.5h9" /></svg></div>,
+    broadcast: <div className="p-2 bg-rose-600 text-white rounded-xl scale-90 shadow-lg shadow-rose-200 animate-pulse"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></div>,
     system: <div className="p-2 bg-slate-900 text-white rounded-xl scale-90"><ICONS.Admin /></div>,
     relay: <div className="p-2 bg-indigo-600 text-white rounded-xl scale-90"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg></div>,
     call: <div className="p-2 bg-emerald-600 text-white rounded-xl scale-90"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg></div>,
@@ -283,7 +289,7 @@ export const Header: React.FC<HeaderProps> = ({
                   className="w-8 h-8 md:w-9 md:h-9 rounded-[1rem] object-cover shadow-sm bg-slate-100" 
                   alt="User" 
                 />
-                <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-[2px] border-white shadow-sm ${PRESENCE_DOTS[userData?.presenceStatus || 'Online']}`} />
+                <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-[2px] border-white shadow-sm ${getStatusStyle(userData?.presenceStatus)}`} />
               </div>
               
               <div className="hidden md:flex flex-col text-left overflow-hidden min-w-[80px]">
@@ -318,7 +324,7 @@ export const Header: React.FC<HeaderProps> = ({
                            "{userData?.statusMessage || 'Transmitting...'}"
                          </p>
                          <div className="flex items-center gap-2 mt-2">
-                            <span className={`w-1.5 h-1.5 rounded-full ${PRESENCE_DOTS[userData?.presenceStatus || 'Online'].split(' ')[0]} animate-pulse`} />
+                            <span className={`w-1.5 h-1.5 rounded-full ${getStatusStyle(userData?.presenceStatus).split(' ')[0]} animate-pulse`} />
                             <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest font-mono">
                               {userData?.presenceStatus || 'OFFLINE'}
                             </p>
@@ -425,7 +431,7 @@ export const Header: React.FC<HeaderProps> = ({
                               }))}
                               className={`p-3 rounded-xl border transition-all flex items-center gap-2 active:scale-95 ${localStatus.presenceStatus === status ? 'bg-slate-950 border-slate-950 text-white shadow-md' : 'bg-white border-slate-100 text-slate-500 hover:bg-slate-50'}`}
                             >
-                              <div className={`w-2 h-2 rounded-full ${PRESENCE_DOTS[status].split(' ')[0]}`} />
+                              <div className={`w-2 h-2 rounded-full ${getStatusStyle(status).split(' ')[0]}`} />
                               <span className="text-[9px] font-black uppercase tracking-widest font-mono truncate">
                                 {status}
                               </span>

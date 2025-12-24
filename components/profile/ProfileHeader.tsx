@@ -19,7 +19,8 @@ const PRESENCE_DOTS: Record<PresenceStatus, string> = {
   'In-Transit': 'bg-indigo-600',
   'Away': 'bg-slate-400',
   'Invisible': 'bg-slate-700',
-  'Syncing': 'bg-blue-400'
+  'Syncing': 'bg-blue-400',
+  'Offline': 'bg-slate-300'
 };
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ 
