@@ -194,7 +194,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header 
-      className="fixed top-0 left-0 right-0 z-[1000] glass-panel border-b border-white/40 shadow-[0_4px_30px_rgba(0,0,0,0.03)] flex items-center transition-all duration-500 backdrop-blur-xl bg-white/70 supports-[backdrop-filter]:bg-white/60" 
+      className="fixed top-0 left-0 right-0 z-[1000] glass-panel border-b border-white/40 dark:border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.03)] flex items-center transition-all duration-500 backdrop-blur-xl bg-white/70 dark:bg-slate-950/70 supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-slate-950/60" 
       style={{ 
         height: 'var(--header-h)',
         paddingLeft: 'max(1rem, var(--sal))',
@@ -205,19 +205,19 @@ export const Header: React.FC<HeaderProps> = ({
         
         <div className="flex items-center gap-4 md:gap-6 flex-1 min-w-0">
           <button 
-            className="w-10 h-10 md:w-11 md:h-11 bg-slate-950 rounded-[1.2rem] flex items-center justify-center shadow-lg active:scale-95 transition-all shrink-0 hover:bg-indigo-600 group relative overflow-hidden"
+            className="w-10 h-10 md:w-11 md:h-11 bg-slate-950 dark:bg-white rounded-[1.2rem] flex items-center justify-center shadow-lg active:scale-95 transition-all shrink-0 hover:bg-indigo-600 dark:hover:bg-indigo-400 group relative overflow-hidden"
             onClick={() => onNavigate(AppRoute.FEED)}
           >
             <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <span className="text-white font-black italic text-xl group-hover:scale-110 transition-transform relative z-10">V</span>
+            <span className="text-white dark:text-slate-950 font-black italic text-xl group-hover:scale-110 transition-transform relative z-10">V</span>
           </button>
 
           <form 
             onSubmit={handleSearchSubmit}
             className={`relative flex items-center transition-all duration-500 ${isSearchFocused ? 'w-full max-w-md z-50' : 'w-10 md:w-64'}`}
           >
-            <div className={`flex items-center gap-3 px-3.5 py-2.5 rounded-[1.2rem] transition-all duration-300 ${isSearchFocused ? 'bg-white border-indigo-200 shadow-xl ring-4 ring-indigo-50 w-full' : 'bg-slate-100/50 hover:bg-slate-100 border border-transparent w-full cursor-pointer md:cursor-text'}`}>
-              <button type="submit" className={`shrink-0 transition-colors ${isSearchFocused ? 'text-indigo-600' : 'text-slate-400'}`}>
+            <div className={`flex items-center gap-3 px-3.5 py-2.5 rounded-[1.2rem] transition-all duration-300 ${isSearchFocused ? 'bg-white dark:bg-slate-900 border-indigo-200 dark:border-indigo-800 shadow-xl ring-4 ring-indigo-50 dark:ring-indigo-900/20 w-full' : 'bg-slate-100/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent w-full cursor-pointer md:cursor-text'}`}>
+              <button type="submit" className={`shrink-0 transition-colors ${isSearchFocused ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`}>
                 <ICONS.Search />
               </button>
               <input 
@@ -227,7 +227,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onChange={(e) => setLocalSearch(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => !localSearch && setIsSearchFocused(false)}
-                className={`bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-900 placeholder:text-slate-400/80 transition-all w-full ${isSearchFocused ? 'opacity-100' : 'hidden md:block opacity-100'}`}
+                className={`bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400/80 dark:placeholder:text-slate-600 transition-all w-full ${isSearchFocused ? 'opacity-100' : 'hidden md:block opacity-100'}`}
               />
             </div>
           </form>
@@ -239,11 +239,11 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="relative" ref={notifRef}>
             <button 
               onClick={() => setIsNotifOpen(!isNotifOpen)}
-              className={`w-10 h-10 md:w-11 md:h-11 rounded-[1.2rem] flex items-center justify-center transition-all relative touch-active border ${isNotifOpen ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-white text-slate-400 border-slate-200/60 hover:bg-slate-50 hover:text-slate-600'}`}
+              className={`w-10 h-10 md:w-11 md:h-11 rounded-[1.2rem] flex items-center justify-center transition-all relative touch-active border ${isNotifOpen ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900' : 'bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300'}`}
             >
               <ICONS.Bell />
               {unreadCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 text-white text-[9px] font-black flex items-center justify-center rounded-full border-[3px] border-[#fcfcfd] animate-in zoom-in duration-300 shadow-sm">
+                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 text-white text-[9px] font-black flex items-center justify-center rounded-full border-[3px] border-[#fcfcfd] dark:border-slate-950 animate-in zoom-in duration-300 shadow-sm">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
@@ -283,46 +283,46 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="relative" ref={menuRef}>
             <button 
               onClick={() => { setIsSystemMenuOpen(!isSystemMenuOpen); setIsHubOpen(false); }}
-              className="flex items-center gap-3 p-1.5 pr-1.5 md:pr-5 rounded-[1.4rem] bg-white border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-300 active:scale-95 group"
+              className="flex items-center gap-3 p-1.5 pr-1.5 md:pr-5 rounded-[1.4rem] bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-300 active:scale-95 group"
             >
               <div className="relative shrink-0">
                 <img 
                   src={userData?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${auth.currentUser?.uid}`} 
-                  className="w-8 h-8 md:w-9 md:h-9 rounded-[1rem] object-cover shadow-sm bg-slate-100" 
+                  className="w-8 h-8 md:w-9 md:h-9 rounded-[1rem] object-cover shadow-sm bg-slate-100 dark:bg-slate-800" 
                   alt="User" 
                 />
-                <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-[2px] border-white shadow-sm ${getStatusStyle(userData?.presenceStatus)}`} />
+                <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-[2px] border-white dark:border-slate-900 shadow-sm ${getStatusStyle(userData?.presenceStatus)}`} />
               </div>
               
               <div className="hidden md:flex flex-col text-left overflow-hidden min-w-[80px]">
-                <span className="text-[13px] font-black text-slate-900 tracking-tight leading-none truncate">
+                <span className="text-[13px] font-black text-slate-900 dark:text-white tracking-tight leading-none truncate">
                   {(userData?.displayName || 'Node').split(' ')[0]}
                 </span>
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono mt-0.5 leading-none">
+                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider font-mono mt-0.5 leading-none">
                   {userData?.statusEmoji || '⚡'} {userData?.presenceStatus || 'Ready'}
                 </span>
               </div>
               
-              <div className="hidden md:block text-slate-300 group-hover:text-slate-600 transition-colors">
+              <div className="hidden md:block text-slate-300 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400 transition-colors">
                  <svg className={`w-3 h-3 transition-transform duration-300 ${isSystemMenuOpen || isHubOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M19 9l-7 7-7-7" /></svg>
               </div>
             </button>
 
             {isSystemMenuOpen && !isHubOpen && (
-              <div className="absolute right-0 top-full mt-4 w-[min(90vw,360px)] bg-white/95 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.25)] border border-white/20 ring-1 ring-slate-950/5 overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-4 duration-400 flex flex-col">
+              <div className="absolute right-0 top-full mt-4 w-[min(90vw,360px)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.25)] border border-white/20 dark:border-white/10 ring-1 ring-slate-950/5 overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-4 duration-400 flex flex-col">
                   
                   {/* Status Hub Trigger */}
                   <div className="p-2">
                     <button 
                       onClick={() => { setIsHubOpen(true); setIsSystemMenuOpen(false); }}
-                      className="w-full p-4 bg-slate-50/80 rounded-[2rem] hover:bg-white border border-slate-100 hover:border-indigo-100 hover:shadow-lg transition-all text-left group flex items-start gap-4"
+                      className="w-full p-4 bg-slate-50/80 dark:bg-slate-800/80 rounded-[2rem] hover:bg-white dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:border-indigo-100 dark:hover:border-indigo-900 hover:shadow-lg transition-all text-left group flex items-start gap-4"
                     >
-                      <div className="w-14 h-14 bg-white rounded-[1.4rem] flex items-center justify-center text-3xl shadow-sm border border-slate-100 shrink-0 group-hover:scale-110 transition-transform">
+                      <div className="w-14 h-14 bg-white dark:bg-slate-700 rounded-[1.4rem] flex items-center justify-center text-3xl shadow-sm border border-slate-100 dark:border-slate-600 shrink-0 group-hover:scale-110 transition-transform">
                          {userData?.statusEmoji || '⚡'}
                       </div>
                       <div className="flex-1 min-w-0 py-1">
                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono mb-1">Status_Beacon</p>
-                         <p className="text-sm font-bold text-slate-900 truncate tracking-tight italic">
+                         <p className="text-sm font-bold text-slate-900 dark:text-white truncate tracking-tight italic">
                            "{userData?.statusMessage || 'Transmitting...'}"
                          </p>
                          <div className="flex items-center gap-2 mt-2">
@@ -338,7 +338,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <div className="p-6 space-y-6">
                     {/* Mobile Nav Grid */}
                     <div className="lg:hidden space-y-3">
-                      <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] font-mono ml-1">Navigation_Matrix</p>
+                      <p className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.3em] font-mono ml-1">Navigation_Matrix</p>
                       <div className="grid grid-cols-2 gap-2">
                         {[
                           { l: 'Hub', i: ICONS.Home, r: AppRoute.FEED },
@@ -346,7 +346,7 @@ export const Header: React.FC<HeaderProps> = ({
                           { l: 'Clusters', i: ICONS.Clusters, r: AppRoute.CLUSTERS },
                           { l: 'Live', i: ICONS.Streams, r: AppRoute.STREAM_GRID, b: 'LIVE' },
                         ].map(item => (
-                          <button key={item.l} onClick={() => { onNavigate(item.r); setIsSystemMenuOpen(false); }} className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl hover:bg-indigo-50 hover:text-indigo-600 transition-all text-slate-600">
+                          <button key={item.l} onClick={() => { onNavigate(item.r); setIsSystemMenuOpen(false); }} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all text-slate-600 dark:text-slate-400">
                              <div className="scale-75"><item.i /></div>
                              <span className="text-[10px] font-black uppercase tracking-wide">{item.l}</span>
                              {item.b && <span className="ml-auto text-[7px] font-black bg-rose-500 text-white px-1.5 py-0.5 rounded animate-pulse">{item.b}</span>}
@@ -357,13 +357,13 @@ export const Header: React.FC<HeaderProps> = ({
                     
                     {/* Region Selector */}
                     <div className="space-y-3">
-                      <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] font-mono ml-1">Grid_Region</p>
+                      <p className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.3em] font-mono ml-1">Grid_Region</p>
                       <div className="grid grid-cols-1 gap-1">
                         {regions.map(r => (
                           <button 
                             key={r.code}
                             onClick={() => { onRegionChange(r.code); setIsSystemMenuOpen(false); }}
-                            className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-[10px] font-bold transition-all ${currentRegion === r.code ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'hover:bg-slate-50 text-slate-500'}`}
+                            className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-[10px] font-bold transition-all ${currentRegion === r.code ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-none' : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400'}`}
                           >
                             <span className="flex items-center gap-3"><span className="text-sm">{r.flag}</span> {r.name}</span>
                             {currentRegion === r.code && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
@@ -373,11 +373,11 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                   </div>
                   
-                  <div className="p-2 border-t border-slate-100 bg-slate-50/50 flex flex-col gap-2">
+                  <div className="p-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex flex-col gap-2">
                     {onOpenSettings && (
                       <button 
                         onClick={() => { onOpenSettings(); setIsSystemMenuOpen(false); }}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-4 text-slate-500 hover:text-indigo-600 hover:bg-white rounded-[1.8rem] transition-all font-black text-[10px] uppercase tracking-widest active:scale-95"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-4 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 rounded-[1.8rem] transition-all font-black text-[10px] uppercase tracking-widest active:scale-95"
                       >
                         <ICONS.Settings />
                         Settings
@@ -385,7 +385,7 @@ export const Header: React.FC<HeaderProps> = ({
                     )}
                     <button 
                       onClick={() => { onLogout(); setIsSystemMenuOpen(false); }}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-4 text-rose-500 hover:bg-rose-50 rounded-[1.8rem] transition-all font-black text-[10px] uppercase tracking-widest active:scale-95 hover:shadow-sm"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-4 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-[1.8rem] transition-all font-black text-[10px] uppercase tracking-widest active:scale-95 hover:shadow-sm"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                       Terminate_Session
@@ -396,23 +396,23 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Hub Dropdown (Replacing Modal) */}
             {isHubOpen && (
-              <div className="absolute right-0 top-full mt-4 w-[min(92vw,400px)] bg-white/95 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.25)] border border-white/20 ring-1 ring-slate-950/5 overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-4 duration-400 flex flex-col">
+              <div className="absolute right-0 top-full mt-4 w-[min(92vw,400px)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.25)] border border-white/20 dark:border-white/10 ring-1 ring-slate-950/5 overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-4 duration-400 flex flex-col">
                   
                   <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-rose-500" />
                   
                   <div className="flex justify-between items-start p-6 pb-2">
                      <div>
-                       <h2 className="text-xl font-black text-slate-950 tracking-tighter uppercase italic leading-none">Neural_State</h2>
+                       <h2 className="text-xl font-black text-slate-950 dark:text-white tracking-tighter uppercase italic leading-none">Neural_State</h2>
                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono mt-1">Broadcast Config</p>
                      </div>
-                     <button onClick={() => { setIsHubOpen(false); setIsSystemMenuOpen(true); }} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all">
-                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
+                     <button onClick={() => { setIsHubOpen(false); setIsSystemMenuOpen(true); }} className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-all">
+                       <svg className="w-5 h-5 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
                      </button>
                   </div>
 
                   <div className="space-y-6 p-6 pt-2 flex-1 overflow-y-auto no-scrollbar scroll-container max-h-[70vh]">
-                     <div className="flex items-center gap-4 bg-slate-50 p-3 rounded-[1.8rem] border border-slate-100">
-                        <div className="w-16 h-16 bg-white rounded-[1.4rem] flex items-center justify-center text-4xl shadow-sm border border-slate-100 shrink-0">
+                     <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800 p-3 rounded-[1.8rem] border border-slate-100 dark:border-slate-700">
+                        <div className="w-16 h-16 bg-white dark:bg-slate-700 rounded-[1.4rem] flex items-center justify-center text-4xl shadow-sm border border-slate-100 dark:border-slate-600 shrink-0">
                           {localStatus.statusEmoji}
                         </div>
                         <div className="flex-1">
@@ -423,7 +423,7 @@ export const Header: React.FC<HeaderProps> = ({
                             value={localStatus.statusMessage}
                             onChange={(e) => setLocalStatus(prev => ({ ...prev, statusMessage: e.target.value }))}
                             onKeyDown={(e) => e.key === 'Enter' && updateNeuralStatus({})}
-                            className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-900 focus:ring-0 outline-none placeholder:text-slate-300 italic"
+                            className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-900 dark:text-white focus:ring-0 outline-none placeholder:text-slate-300 dark:placeholder:text-slate-600 italic"
                             placeholder="Status..."
                           />
                         </div>
@@ -440,7 +440,7 @@ export const Header: React.FC<HeaderProps> = ({
                                 presenceStatus: status,
                                 statusEmoji: STATUS_EMOJI_MAP[status] || prev.statusEmoji
                               }))}
-                              className={`p-3 rounded-xl border transition-all flex items-center gap-2 active:scale-95 ${localStatus.presenceStatus === status ? 'bg-slate-950 border-slate-950 text-white shadow-md' : 'bg-white border-slate-100 text-slate-500 hover:bg-slate-50'}`}
+                              className={`p-3 rounded-xl border transition-all flex items-center gap-2 active:scale-95 ${localStatus.presenceStatus === status ? 'bg-slate-950 dark:bg-white border-slate-950 dark:border-white text-white dark:text-slate-950 shadow-md' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                             >
                               <div className={`w-2 h-2 rounded-full ${getStatusStyle(status).split(' ')[0]}`} />
                               <span className="text-[9px] font-black uppercase tracking-widest font-mono truncate">
@@ -458,7 +458,7 @@ export const Header: React.FC<HeaderProps> = ({
                             <button 
                               key={signal}
                               onClick={() => setLocalStatus(prev => ({ ...prev, statusEmoji: signal }))}
-                              className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all active:scale-90 ${localStatus.statusEmoji === signal ? 'bg-indigo-50 border-2 border-indigo-200 text-indigo-600 shadow-md' : 'bg-white border border-slate-100 text-slate-400 hover:bg-slate-50'}`}
+                              className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all active:scale-90 ${localStatus.statusEmoji === signal ? 'bg-indigo-50 dark:bg-indigo-900/30 border-2 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 shadow-md' : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                             >
                               {signal}
                             </button>
@@ -467,10 +467,10 @@ export const Header: React.FC<HeaderProps> = ({
                      </div>
                   </div>
 
-                  <div className="p-4 border-t border-slate-100 bg-slate-50/50 shrink-0">
+                  <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 shrink-0">
                      <button 
                       onClick={() => { updateNeuralStatus({}); setIsHubOpen(false); }}
-                      className="w-full py-4 bg-indigo-600 text-white rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.3em] shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95 flex items-center justify-center gap-2"
+                      className="w-full py-4 bg-indigo-600 text-white rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.3em] shadow-xl shadow-indigo-200/50 dark:shadow-none hover:bg-indigo-700 transition-all active:scale-95 flex items-center justify-center gap-2"
                      >
                        {isUpdatingStatus ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <ICONS.Verified />}
                        UPDATE_STATE

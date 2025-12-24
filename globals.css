@@ -137,13 +137,15 @@ html.dark {
    ========================================================================= */
 
 /* Backgrounds - Map Light Hex to Dark Slate */
-html.dark .bg-white { background-color: #0f172a !important; border-color: #1e293b !important; }
-html.dark .bg-\[\#fcfcfd\] { background-color: #020617 !important; }
-html.dark .bg-\[\#f8fafc\] { background-color: #0f172a !important; }
-html.dark .bg-\[\#f0f2f5\] { background-color: #020617 !important; }
+html.dark .bg-white { background-color: #0f172a !important; border-color: #1e293b !important; color: #f8fafc !important; }
 html.dark .bg-slate-50 { background-color: #1e293b !important; border-color: #334155 !important; }
 html.dark .bg-slate-100 { background-color: #334155 !important; }
 html.dark .bg-slate-200 { background-color: #475569 !important; }
+
+/* Invert Specific Hexes Used in App */
+html.dark .bg-\[\#fcfcfd\] { background-color: #020617 !important; }
+html.dark .bg-\[\#f8fafc\] { background-color: #0f172a !important; }
+html.dark .bg-\[\#f0f2f5\] { background-color: #020617 !important; }
 
 /* Text Colors - Invert to Light */
 html.dark .text-slate-900 { color: #f8fafc !important; }
@@ -182,6 +184,15 @@ html.dark .bg-purple-50 { background-color: rgba(147, 51, 234, 0.15) !important;
 html.dark .glass-panel {
   background-color: rgba(15, 23, 42, 0.7) !important;
   border-color: rgba(255,255,255,0.05) !important;
+}
+
+/* BORDER PRECISION UTILITY */
+.border-precision {
+  border-width: 1px;
+  border-color: #e2e8f0;
+}
+html.dark .border-precision {
+  border-color: #1e293b;
 }
 
 /* 2b. HIGH CONTRAST OVERRIDES */

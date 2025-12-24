@@ -230,7 +230,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
   });
 
   return (
-    <aside className="hidden lg:flex flex-col w-[320px] xl:w-[380px] shrink-0 bg-[#f8fafc] border-l border-precision h-full overflow-hidden">
+    <aside className="hidden lg:flex flex-col w-[320px] xl:w-[380px] shrink-0 bg-slate-50 dark:bg-slate-900 border-l border-precision h-full overflow-hidden">
       
       <div className="flex-1 overflow-y-auto custom-scrollbar px-6 space-y-8 py-8">
         
@@ -290,9 +290,9 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
             <div className="flex items-center justify-between px-2">
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono">Top_Signals</h4>
+                <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] font-mono">Top_Signals</h4>
               </div>
-              <span className="text-[8px] font-black text-slate-300 font-mono bg-slate-50 px-2 py-0.5 rounded-md">LIVE</span>
+              <span className="text-[8px] font-black text-slate-300 dark:text-slate-600 font-mono bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded-md">LIVE</span>
             </div>
             
             <div className="space-y-3">
@@ -302,31 +302,31 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
                   onClick={() => handleViewPost(post)}
                   className={`group relative flex items-center gap-3 p-3 rounded-[1.5rem] border transition-all cursor-pointer ${
                     idx === 0 
-                      ? 'bg-gradient-to-br from-white to-indigo-50/30 border-indigo-100 shadow-md' 
-                      : 'bg-white border-slate-100 hover:border-indigo-100 hover:shadow-lg'
+                      ? 'bg-gradient-to-br from-white to-indigo-50/30 dark:from-slate-800 dark:to-indigo-900/30 border-indigo-100 dark:border-slate-700 shadow-md' 
+                      : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-100 dark:hover:border-indigo-900 hover:shadow-lg'
                   }`}
                 >
-                  <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-slate-100 shadow-inner">
+                  <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-700 shadow-inner">
                     {post.media?.[0]?.url ? (
                       <img src={post.media[0].url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-300 scale-75"><ICONS.Explore /></div>
+                      <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-500 scale-75"><ICONS.Explore /></div>
                     )}
                   </div>
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-center mb-0.5">
-                       <p className="text-[9px] font-black text-slate-950 uppercase tracking-tight truncate">{post.authorName}</p>
-                       {idx === 0 && <span className="text-[7px] font-black text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded uppercase tracking-widest">#1</span>}
+                       <p className="text-[9px] font-black text-slate-950 dark:text-white uppercase tracking-tight truncate">{post.authorName}</p>
+                       {idx === 0 && <span className="text-[7px] font-black text-amber-500 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded uppercase tracking-widest">#1</span>}
                     </div>
-                    <p className="text-[10px] font-medium text-slate-500 truncate leading-none italic group-hover:text-indigo-600 transition-colors">
+                    <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate leading-none italic group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                       "{post.content || 'Media Signal'}"
                     </p>
                     <div className="flex items-center gap-2 mt-1.5">
-                       <div className="h-0.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                       <div className="h-0.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                           <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${Math.min((post.likes / 50) * 100, 100)}%` }} />
                        </div>
-                       <span className="text-[7px] font-black text-slate-300 font-mono">{post.likes}</span>
+                       <span className="text-[7px] font-black text-slate-300 dark:text-slate-600 font-mono">{post.likes}</span>
                     </div>
                   </div>
                 </div>
@@ -338,17 +338,17 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
         {/* 3. ACTIVE NODES (CONTACTS) */}
         <div className="space-y-5">
            <div className="flex items-center justify-between px-2">
-              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono">Active_Nodes</h4>
-              <div className="flex bg-slate-100 p-0.5 rounded-lg">
+              <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] font-mono">Active_Nodes</h4>
+              <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg">
                  <button 
                    onClick={() => setContactFilter('all')}
-                   className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${contactFilter === 'all' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+                   className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${contactFilter === 'all' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
                  >
                    All
                  </button>
                  <button 
                    onClick={() => setContactFilter('online')}
-                   className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${contactFilter === 'online' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}
+                   className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${contactFilter === 'online' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
                  >
                    Live
                  </button>
@@ -358,17 +358,17 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
            <div className="space-y-2">
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-50">
-                    <div className="w-10 h-10 bg-slate-100 rounded-xl animate-pulse" />
+                  <div key={i} className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-2xl border border-slate-50 dark:border-slate-700">
+                    <div className="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-xl animate-pulse" />
                     <div className="space-y-1.5 flex-1">
-                      <div className="h-2 bg-slate-100 rounded w-1/2 animate-pulse" />
-                      <div className="h-1.5 bg-slate-50 rounded w-1/3 animate-pulse" />
+                      <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded w-1/2 animate-pulse" />
+                      <div className="h-1.5 bg-slate-50 dark:bg-slate-700 rounded w-1/3 animate-pulse" />
                     </div>
                   </div>
                 ))
               ) : filteredContacts.length === 0 ? (
-                <div className="py-8 text-center border-2 border-dashed border-slate-100 rounded-[1.5rem]">
-                  <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] font-mono italic">No Nodes Detected</p>
+                <div className="py-8 text-center border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-[1.5rem]">
+                  <p className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.2em] font-mono italic">No Nodes Detected</p>
                 </div>
               ) : (
                 filteredContacts.slice(0, 15).map(node => {
@@ -379,23 +379,23 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
                   return (
                     <div 
                       key={node.id}
-                      className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-white hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all duration-300 group hover:shadow-md"
+                      className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 border border-transparent hover:border-slate-100 dark:hover:border-slate-700 transition-all duration-300 group hover:shadow-md"
                     >
                       <div className="flex items-center gap-3 overflow-hidden flex-1 min-w-0">
                         <div className="relative shrink-0">
-                          <img src={node.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${node.id}`} className="w-10 h-10 rounded-xl object-cover border border-slate-100 bg-slate-50" alt="" />
+                          <img src={node.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${node.id}`} className="w-10 h-10 rounded-xl object-cover border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900" alt="" />
                           {showActivity && (
-                            <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${PRESENCE_DOTS[node.presenceStatus || 'Invisible']}`} />
+                            <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white dark:border-slate-800 ${PRESENCE_DOTS[node.presenceStatus || 'Invisible']}`} />
                           )}
                         </div>
                         <div className="text-left overflow-hidden flex-1">
                            <div className="flex items-center gap-1.5">
-                             <p className="text-[11px] font-black text-slate-900 truncate tracking-tight group-hover:text-indigo-600 transition-colors">
+                             <p className="text-[11px] font-black text-slate-900 dark:text-white truncate tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                                {node.displayName}
                              </p>
                              {node.verifiedHuman && <div className="text-indigo-500 scale-[0.6]"><ICONS.Verified /></div>}
                            </div>
-                           <p className="text-[9px] text-slate-400 font-medium truncate tracking-tight opacity-80">
+                           <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium truncate tracking-tight opacity-80">
                              {showActivity ? (node.statusEmoji + ' ' + (node.statusMessage || node.presenceStatus)) : 'Status Hidden'}
                            </p>
                         </div>
@@ -405,7 +405,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
                         <button 
                           onClick={() => handleFollowToggle(node)}
                           disabled={isProcessing}
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all shadow-sm ${isFollowing ? 'bg-white border border-slate-200 text-slate-400 hover:text-rose-500 hover:border-rose-200' : 'bg-slate-900 text-white hover:bg-indigo-600'}`}
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all shadow-sm ${isFollowing ? 'bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-400 dark:text-slate-300 hover:text-rose-500 dark:hover:text-rose-400 hover:border-rose-200 dark:hover:border-rose-800' : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-indigo-600 dark:hover:bg-indigo-400'}`}
                           title={isFollowing ? 'Unlink' : 'Link'}
                         >
                           {isProcessing ? (
@@ -421,7 +421,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
                         </button>
                         <button 
                           onClick={() => handleMessage(node)}
-                          className="w-7 h-7 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg flex items-center justify-center transition-all shadow-sm"
+                          className="w-7 h-7 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-500 dark:hover:text-white rounded-lg flex items-center justify-center transition-all shadow-sm"
                           title="Message"
                         >
                           <ICONS.Messages />
@@ -435,8 +435,8 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
         </div>
 
         {/* 4. FOOTER MINI INFO */}
-        <div className="px-2 pt-6 border-t border-slate-100">
-           <div className="flex items-center justify-center gap-4 text-[8px] font-black text-slate-300 uppercase tracking-widest font-mono">
+        <div className="px-2 pt-6 border-t border-slate-100 dark:border-slate-800">
+           <div className="flex items-center justify-center gap-4 text-[8px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-widest font-mono">
              <span>VIBE_OS 2.6</span>
              <span>•</span>
              <span>UK_LON</span>

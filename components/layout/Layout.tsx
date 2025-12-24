@@ -57,7 +57,7 @@ export const Layout: React.FC<LayoutProps> = ({
   }, []);
 
   return (
-    <div className="flex flex-col h-full w-full bg-[#fcfcfd] overflow-hidden fixed inset-0">
+    <div className="flex flex-col h-full w-full bg-slate-50 dark:bg-slate-950 overflow-hidden fixed inset-0">
       <Header 
         userRole={userRole} 
         userData={userData}
@@ -102,21 +102,21 @@ export const Layout: React.FC<LayoutProps> = ({
       </div>
 
       {/* Portrait Mobile Tab Bar - Facebook Style Core Protocols */}
-      <nav className={`${orientation === 'landscape' ? 'hidden' : 'md:hidden'} fixed bottom-0 left-0 right-0 glass-panel border-t border-precision z-[150] shadow-[0_-10px_40px_rgba(0,0,0,0.05)]`} style={{ height: 'var(--bottom-nav-h)', paddingBottom: 'var(--sab)' }}>
+      <nav className={`${orientation === 'landscape' ? 'hidden' : 'md:hidden'} fixed bottom-0 left-0 right-0 glass-panel border-t border-precision z-[150] shadow-[0_-10px_40px_rgba(0,0,0,0.05)] bg-white/90 dark:bg-slate-900/90`} style={{ height: 'var(--bottom-nav-h)', paddingBottom: 'var(--sab)' }}>
         <div className="flex items-center justify-around h-full px-2">
-          <button onClick={() => onNavigate(AppRoute.FEED)} className={`p-3 rounded-xl transition-all tap-feedback relative ${activeRoute === AppRoute.FEED ? 'text-indigo-600 bg-indigo-50 shadow-inner' : 'text-slate-400'}`}>
+          <button onClick={() => onNavigate(AppRoute.FEED)} className={`p-3 rounded-xl transition-all tap-feedback relative ${activeRoute === AppRoute.FEED ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400 shadow-inner' : 'text-slate-400'}`}>
             <ICONS.Home />
           </button>
 
-          <button onClick={() => onNavigate(AppRoute.STREAM_GRID)} className={`p-3 rounded-xl transition-all tap-feedback relative ${activeRoute === AppRoute.STREAM_GRID ? 'text-indigo-600 bg-indigo-50 shadow-inner' : 'text-slate-400'}`}>
+          <button onClick={() => onNavigate(AppRoute.STREAM_GRID)} className={`p-3 rounded-xl transition-all tap-feedback relative ${activeRoute === AppRoute.STREAM_GRID ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400 shadow-inner' : 'text-slate-400'}`}>
             <ICONS.Streams />
-            <div className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white animate-pulse" />
+            <div className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />
           </button>
           
           <div className="relative w-14 h-14">
             <button 
               onClick={onOpenCreate}
-              className="absolute bottom-4 left-0 w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-2xl active:scale-90 transition-transform ring-[6px] ring-[#fcfcfd] group z-20"
+              className="absolute bottom-4 left-0 w-14 h-14 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl flex items-center justify-center shadow-2xl active:scale-90 transition-transform ring-[6px] ring-[#fcfcfd] dark:ring-slate-950 group z-20"
             >
               <div className="group-active:rotate-90 transition-transform duration-300">
                 <ICONS.Create />
@@ -124,11 +124,11 @@ export const Layout: React.FC<LayoutProps> = ({
             </button>
           </div>
 
-          <button onClick={() => onNavigate(AppRoute.CLUSTERS)} className={`p-3 rounded-xl transition-all tap-feedback relative ${activeRoute === AppRoute.CLUSTERS ? 'text-indigo-600 bg-indigo-50 shadow-inner' : 'text-slate-400'}`}>
+          <button onClick={() => onNavigate(AppRoute.CLUSTERS)} className={`p-3 rounded-xl transition-all tap-feedback relative ${activeRoute === AppRoute.CLUSTERS ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400 shadow-inner' : 'text-slate-400'}`}>
             <ICONS.Clusters />
           </button>
 
-          <button onClick={() => onNavigate(AppRoute.PROFILE)} className={`p-3 rounded-xl transition-all tap-feedback ${activeRoute === AppRoute.PROFILE ? 'text-indigo-600 bg-indigo-50 shadow-inner' : 'text-slate-400'}`}>
+          <button onClick={() => onNavigate(AppRoute.PROFILE)} className={`p-3 rounded-xl transition-all tap-feedback ${activeRoute === AppRoute.PROFILE ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400 shadow-inner' : 'text-slate-400'}`}>
             <div className="w-6 h-6 rounded-lg overflow-hidden border border-current p-0.5">
               <img src={userData?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=user`} className="w-full h-full object-cover rounded-sm" alt="" />
             </div>
@@ -139,23 +139,23 @@ export const Layout: React.FC<LayoutProps> = ({
       {/* Mobile Landscape Floating Navigation */}
       {orientation === 'landscape' && (
         <div className="md:hidden fixed top-1/2 -translate-y-1/2 flex flex-col gap-4 z-[300]" style={{ left: 'max(1.25rem, var(--sal))' }}>
-           <div className="glass-panel p-2.5 rounded-2xl flex flex-col gap-2 border-precision shadow-2xl">
-              <button onClick={() => onNavigate(AppRoute.FEED)} className={`p-3 rounded-xl transition-all tap-feedback ${activeRoute === AppRoute.FEED ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
+           <div className="glass-panel p-2.5 rounded-2xl flex flex-col gap-2 border-precision shadow-2xl bg-white/90 dark:bg-slate-900/90">
+              <button onClick={() => onNavigate(AppRoute.FEED)} className={`p-3 rounded-xl transition-all tap-feedback ${activeRoute === AppRoute.FEED ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-400'}`}>
                 <ICONS.Home />
               </button>
-              <button onClick={() => onNavigate(AppRoute.STREAM_GRID)} className={`p-3 rounded-xl transition-all tap-feedback ${activeRoute === AppRoute.STREAM_GRID ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
+              <button onClick={() => onNavigate(AppRoute.STREAM_GRID)} className={`p-3 rounded-xl transition-all tap-feedback ${activeRoute === AppRoute.STREAM_GRID ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-400'}`}>
                 <ICONS.Streams />
               </button>
-              <button onClick={() => onNavigate(AppRoute.CLUSTERS)} className={`p-3 rounded-xl transition-all tap-feedback ${activeRoute === AppRoute.CLUSTERS ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
+              <button onClick={() => onNavigate(AppRoute.CLUSTERS)} className={`p-3 rounded-xl transition-all tap-feedback ${activeRoute === AppRoute.CLUSTERS ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-400'}`}>
                 <ICONS.Clusters />
               </button>
-              <button onClick={() => onNavigate(AppRoute.PROFILE)} className={`p-3 rounded-xl transition-all tap-feedback ${activeRoute === AppRoute.PROFILE ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`}>
+              <button onClick={() => onNavigate(AppRoute.PROFILE)} className={`p-3 rounded-xl transition-all tap-feedback ${activeRoute === AppRoute.PROFILE ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-400'}`}>
                 <ICONS.Profile />
               </button>
            </div>
            <button 
             onClick={onOpenCreate}
-            className="w-13 h-13 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-100 active:scale-90 transition-transform"
+            className="w-13 h-13 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-100 dark:shadow-none active:scale-90 transition-transform"
           >
             <ICONS.Create />
           </button>

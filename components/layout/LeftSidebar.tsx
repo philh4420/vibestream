@@ -61,8 +61,8 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
             : `px-4 py-3 gap-4 rounded-2xl ${isSubItem ? 'ml-2 w-[calc(100%-0.5rem)]' : ''}`
         } ${
           isActive 
-            ? 'bg-slate-900 text-white shadow-xl shadow-indigo-900/10' 
-            : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+            ? 'bg-slate-900 text-white shadow-xl shadow-indigo-900/10 dark:bg-white dark:text-slate-950 dark:shadow-none' 
+            : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
         } ${disabled ? 'opacity-60 grayscale' : ''}`}
       >
         {/* Active Indicator Glow */}
@@ -76,7 +76,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
         
         {!collapsed && (
           <div className="flex-1 flex items-center justify-between min-w-0">
-            <span className={`text-[13px] font-bold tracking-tight truncate ${isActive ? 'text-white' : 'text-slate-600 group-hover:text-slate-900'}`}>
+            <span className={`text-[13px] font-bold tracking-tight truncate ${isActive ? 'text-white dark:text-slate-950' : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
               {label}
             </span>
             <div className="flex items-center gap-2">
@@ -84,7 +84,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
                 <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
               )}
               {badge !== undefined && (typeof badge === 'number' ? badge > 0 : badge !== '') && !disabled && (
-                <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg shadow-sm ${isActive ? 'bg-white text-slate-900' : 'bg-indigo-100 text-indigo-700'}`}>
+                <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg shadow-sm ${isActive ? 'bg-white text-slate-900 dark:bg-slate-900 dark:text-white' : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'}`}>
                   {badge}
                 </span>
               )}
@@ -99,8 +99,8 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
     <div className="space-y-1 w-full mt-6 first:mt-0">
       {!collapsed && (
         <div className="px-5 mb-3 flex items-center gap-2 opacity-50">
-          <div className="w-1 h-1 rounded-full bg-slate-400" />
-          <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] font-mono leading-none">
+          <div className="w-1 h-1 rounded-full bg-slate-400 dark:bg-slate-600" />
+          <p className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] font-mono leading-none">
             {title}
           </p>
         </div>
@@ -118,10 +118,10 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
       <div className="w-full mb-8 pt-2">
         <button 
           onClick={() => onNavigate(AppRoute.PROFILE)}
-          className={`relative w-full overflow-hidden transition-all duration-500 group border ${
+          className={`relative w-full overflow-hidden transition-all duration-500 group border border-precision ${
             collapsed 
               ? 'aspect-square rounded-[1.5rem] border-transparent hover:border-slate-200 hover:shadow-lg p-1' 
-              : 'p-3 rounded-[1.8rem] bg-white border-slate-100 hover:border-indigo-100 hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.06)] flex items-center gap-4 text-left'
+              : 'p-3 rounded-[1.8rem] bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-indigo-100 dark:hover:border-indigo-900 hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.06)] flex items-center gap-4 text-left'
           } ${activeRoute === AppRoute.PROFILE ? 'ring-2 ring-indigo-500/20 border-indigo-500/30' : ''}`}
         >
           <div className={`relative shrink-0 transition-transform duration-500 ${collapsed ? 'w-full h-full' : 'w-12 h-12'} ${activeRoute === AppRoute.PROFILE ? 'scale-105' : 'group-hover:scale-105'}`}>
@@ -130,18 +130,18 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
               className={`w-full h-full object-cover shadow-sm ${collapsed ? 'rounded-2xl' : 'rounded-2xl'}`}
               alt="User" 
             />
-            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-[2.5px] border-white rounded-full z-10" />
+            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-[2.5px] border-white dark:border-slate-900 rounded-full z-10" />
           </div>
           
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-0.5">
-                <p className="text-sm font-black text-slate-900 tracking-tight truncate leading-none">
+                <p className="text-sm font-black text-slate-900 dark:text-white tracking-tight truncate leading-none">
                   {(userData?.displayName || 'Unknown Node').split(' ')[0]}
                 </p>
                 {isVerified && <div className="text-indigo-500 scale-[0.65]"><ICONS.Verified /></div>}
               </div>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-mono truncate opacity-80 group-hover:opacity-100 transition-opacity group-hover:text-indigo-500">
+              <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono truncate opacity-80 group-hover:opacity-100 transition-opacity group-hover:text-indigo-500 dark:group-hover:text-indigo-400">
                 {userData?.role === 'admin' ? 'System Admin' : 'Grid Node'}
               </p>
             </div>
@@ -195,13 +195,13 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
 
       {/* FOOTER META */}
       {!collapsed && (
-        <div className="mt-auto pt-6 pb-2 px-2 border-t border-slate-100/50 w-full">
-          <div className="flex flex-wrap gap-x-4 gap-y-2 justify-center text-[9px] font-black text-slate-300 uppercase tracking-[0.15em] font-mono">
-            <button onClick={() => onNavigate(AppRoute.PRIVACY)} className="hover:text-slate-600 transition-colors">Privacy</button>
-            <button onClick={() => onNavigate(AppRoute.TERMS)} className="hover:text-slate-600 transition-colors">Terms</button>
-            <button onClick={() => onNavigate(AppRoute.COOKIES)} className="hover:text-slate-600 transition-colors">Cookies</button>
+        <div className="mt-auto pt-6 pb-2 px-2 border-t border-slate-100/50 dark:border-slate-800/50 w-full">
+          <div className="flex flex-wrap gap-x-4 gap-y-2 justify-center text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.15em] font-mono">
+            <button onClick={() => onNavigate(AppRoute.PRIVACY)} className="hover:text-slate-600 dark:hover:text-slate-400 transition-colors">Privacy</button>
+            <button onClick={() => onNavigate(AppRoute.TERMS)} className="hover:text-slate-600 dark:hover:text-slate-400 transition-colors">Terms</button>
+            <button onClick={() => onNavigate(AppRoute.COOKIES)} className="hover:text-slate-600 dark:hover:text-slate-400 transition-colors">Cookies</button>
           </div>
-          <p className="text-[8px] text-slate-200 font-black text-center mt-3 uppercase tracking-widest font-mono select-none">
+          <p className="text-[8px] text-slate-200 dark:text-slate-700 font-black text-center mt-3 uppercase tracking-widest font-mono select-none">
             VIBE_OS v2.6.4 [STABLE]
           </p>
         </div>
@@ -213,7 +213,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
     <>
       {/* Desktop Sidebar (Expanded) */}
       <aside 
-        className="hidden lg:flex flex-col w-[280px] xl:w-[300px] shrink-0 border-r border-precision bg-[#fcfcfd]/50 backdrop-blur-xl pt-6 h-full relative z-30"
+        className="hidden lg:flex flex-col w-[280px] xl:w-[300px] shrink-0 border-r border-precision bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-xl pt-6 h-full relative z-30"
         style={{ paddingLeft: 'max(0.5rem, var(--sal))' }}
       >
         {sidebarContent(false)}
@@ -221,7 +221,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
 
       {/* Tablet Sidebar (Collapsed) */}
       <aside 
-        className="hidden md:flex lg:hidden flex-col shrink-0 w-[90px] border-r border-precision bg-[#fcfcfd]/50 backdrop-blur-xl pt-6 h-full items-center relative z-30" 
+        className="hidden md:flex lg:hidden flex-col shrink-0 w-[90px] border-r border-precision bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-xl pt-6 h-full items-center relative z-30" 
         style={{ paddingLeft: 'var(--sal)' }}
       >
         {sidebarContent(true)}
