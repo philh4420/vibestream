@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Gathering } from '../../types';
@@ -19,6 +19,15 @@ const MapStabilizer = () => {
   return null;
 };
 
+// Handles dynamic map movement when coordinates change
+const MapController = ({ center }: { center: [number, number] }) => {
+  const map = useMap();
+  useEffect(() => {
+    map.flyTo(center, 14, { duration: 1.5 });
+  }, [center, map]);
+  return null;
+};
+
 // --- TYPES & PROPS ---
 
 interface GeospatialMapProps {
@@ -27,9 +36,34 @@ interface GeospatialMapProps {
 }
 
 export const GeospatialMap: React.FC<GeospatialMapProps> = ({ gathering, organizerAvatar }) => {
-  // Default Target: Central London (Simulated for this demo)
-  // In production, this would use gathering.coordinates
-  const targetPosition: [number, number] = [51.505, -0.09];
+  // Default Target: Central London (Fallback)
+  const [position, setPosition] = useState<[number, number]>([51.505, -0.09]);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+
+  useEffect(() => {
+    const fetchCoordinates = async () => {
+      if (!gathering.location) return;
+      
+      setIsGeocoding(true);
+      try {
+        // Using OpenStreetMap Nominatim API for geocoding
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(gathering.location)}&limit=1`);
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+          const lat = parseFloat(data[0].lat);
+          const lon = parseFloat(data[0].lon);
+          setPosition([lat, lon]);
+        }
+      } catch (error) {
+        console.error("Geocoding Error:", error);
+      } finally {
+        setIsGeocoding(false);
+      }
+    };
+
+    fetchCoordinates();
+  }, [gathering.location]);
   
   // High-Fidelity Custom Marker
   const techMarkerIcon = L.divIcon({
@@ -65,7 +99,7 @@ export const GeospatialMap: React.FC<GeospatialMapProps> = ({ gathering, organiz
       
       {/* 1. MAP LAYER */}
       <MapContainer 
-        center={targetPosition} 
+        center={position} 
         zoom={14} 
         scrollWheelZoom={false} 
         className="w-full h-full z-0 outline-none bg-slate-950"
@@ -73,6 +107,7 @@ export const GeospatialMap: React.FC<GeospatialMapProps> = ({ gathering, organiz
         dragging={true} // Allow interaction
       >
         <MapStabilizer />
+        <MapController center={position} />
         
         {/* Professional Dark Matter Tiles */}
         <TileLayer
@@ -82,7 +117,7 @@ export const GeospatialMap: React.FC<GeospatialMapProps> = ({ gathering, organiz
           maxZoom={20}
         />
         
-        <Marker position={targetPosition} icon={techMarkerIcon}>
+        <Marker position={position} icon={techMarkerIcon}>
           <Popup className="tech-popup" closeButton={false}>
             <div className="p-1 min-w-[180px]">
                 <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/10">
@@ -112,18 +147,20 @@ export const GeospatialMap: React.FC<GeospatialMapProps> = ({ gathering, organiz
       <div className="absolute top-6 left-6 z-[20] flex items-center gap-3">
         <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl px-4 py-2 flex items-center gap-3 shadow-lg">
            <div className="relative w-2 h-2">
-              <div className="absolute inset-0 bg-emerald-500 rounded-full animate-ping opacity-75"></div>
-              <div className="relative w-2 h-2 bg-emerald-500 rounded-full"></div>
+              <div className={`absolute inset-0 rounded-full animate-ping opacity-75 ${isGeocoding ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+              <div className={`relative w-2 h-2 rounded-full ${isGeocoding ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
            </div>
-           <span className="text-[9px] font-black text-white uppercase tracking-[0.25em] font-mono">LIVE_SAT_FEED</span>
+           <span className="text-[9px] font-black text-white uppercase tracking-[0.25em] font-mono">
+             {isGeocoding ? 'SCANNING_COORDS...' : 'LIVE_SAT_FEED'}
+           </span>
         </div>
       </div>
 
       {/* Bottom Left: Coordinates */}
       <div className="absolute bottom-6 left-6 z-[20] hidden md:block">
          <div className="flex flex-col gap-1">
-            <p className="text-[8px] font-mono text-slate-500 font-bold uppercase tracking-widest">LAT: 51.5052° N</p>
-            <p className="text-[8px] font-mono text-slate-500 font-bold uppercase tracking-widest">LNG: 0.0900° W</p>
+            <p className="text-[8px] font-mono text-slate-500 font-bold uppercase tracking-widest">LAT: {position[0].toFixed(4)}° N</p>
+            <p className="text-[8px] font-mono text-slate-500 font-bold uppercase tracking-widest">LNG: {position[1].toFixed(4)}° W</p>
          </div>
       </div>
 
