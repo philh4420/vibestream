@@ -123,25 +123,46 @@
 
 /* 2a. DARK MODE OVERRIDES */
 html.dark {
-  --bg-main: oklch(0.15 0.02 240);
-  --text-main: oklch(0.95 0.01 240);
-  --text-muted: oklch(0.70 0.02 240);
-  --glass-surface: oklch(0.15 0.02 240 / 0.85);
-  --glass-border: oklch(1 1 1 / 0.1);
+  --bg-main: #020617; /* Slate 950 */
+  --text-main: #f8fafc; /* Slate 50 */
+  --text-muted: #94a3b8; /* Slate 400 */
+  --glass-surface: rgba(15, 23, 42, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.1);
   color-scheme: dark;
 }
 
-/* Force dark styles on utility classes when .dark is present */
-html.dark .bg-white { background-color: #1e293b !important; color: #f8fafc; }
-html.dark .bg-slate-50 { background-color: #0f172a !important; border-color: #334155; }
-html.dark .text-slate-900 { color: #f1f5f9 !important; }
+/* 
+   FORCE DARK STYLES ON EXISTING UTILITY CLASSES 
+   This ensures components using standard Tailwind classes adapt without refactoring.
+*/
+html.dark .bg-white { background-color: #0f172a !important; border-color: #1e293b !important; }
+html.dark .bg-slate-50 { background-color: #1e293b !important; border-color: #334155 !important; }
+html.dark .bg-slate-100 { background-color: #334155 !important; }
+html.dark .bg-slate-200 { background-color: #475569 !important; }
+html.dark .text-slate-900 { color: #f8fafc !important; }
+html.dark .text-slate-800 { color: #f1f5f9 !important; }
+html.dark .text-slate-600 { color: #cbd5e1 !important; }
 html.dark .text-slate-500 { color: #94a3b8 !important; }
 html.dark .text-slate-400 { color: #64748b !important; }
 html.dark .border-slate-100,
-html.dark .border-slate-200 { border-color: #334155 !important; }
-html.dark .bg-slate-100 { background-color: #334155 !important; }
-html.dark .bg-slate-900 { background-color: #020617 !important; border-color: #1e293b; }
-html.dark .shadow-sm, html.dark .shadow-md, html.dark .shadow-lg, html.dark .shadow-xl { box-shadow: none !important; }
+html.dark .border-slate-200 { border-color: #1e293b !important; }
+html.dark .bg-slate-900 { 
+  background-color: #f8fafc !important; 
+  color: #020617 !important; 
+  border-color: #f1f5f9 !important; 
+}
+/* Handle text-white inside inverted bg-slate-900 buttons */
+html.dark .bg-slate-900 .text-white { color: #020617 !important; }
+
+html.dark .shadow-sm, 
+html.dark .shadow-md, 
+html.dark .shadow-lg, 
+html.dark .shadow-xl { box-shadow: none !important; }
+
+html.dark .bg-indigo-50 { background-color: rgba(79, 70, 229, 0.15) !important; color: #a5b4fc !important; }
+html.dark .bg-rose-50 { background-color: rgba(225, 29, 72, 0.15) !important; color: #fda4af !important; }
+html.dark .bg-emerald-50 { background-color: rgba(16, 185, 129, 0.15) !important; color: #6ee7b7 !important; }
+html.dark .bg-amber-50 { background-color: rgba(245, 158, 11, 0.15) !important; color: #fcd34d !important; }
 
 /* 2b. HIGH CONTRAST OVERRIDES */
 html.high-contrast {

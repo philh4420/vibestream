@@ -125,7 +125,7 @@ const MaintenanceScreen = () => (
  * SCREEN 2: FEATURE DISABLED (Light, Clinical, Specific)
  */
 const FeatureDisabledScreen = ({ featureName }: { featureName: string }) => (
-  <div className="flex flex-col items-center justify-center w-full min-h-[70vh] p-6 animate-in zoom-in-95 duration-700 relative overflow-hidden rounded-[3.5rem] bg-[#FFFCF5]">
+  <div className="flex flex-col items-center justify-center w-full min-h-[70vh] p-6 animate-in zoom-in-95 duration-700 relative overflow-hidden rounded-[3.5rem] bg-[#FFFCF5] dark:bg-slate-900 border dark:border-slate-800">
     
     {/* Soft Light Leak */}
     <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-orange-500/5 rounded-full blur-[100px]" />
@@ -138,13 +138,13 @@ const FeatureDisabledScreen = ({ featureName }: { featureName: string }) => (
         <div className="absolute inset-0 bg-rose-500/10 rounded-[2.5rem] blur-2xl group-hover:blur-3xl transition-all duration-700 scale-110" />
         
         {/* Main Card */}
-        <div className="relative w-32 h-32 bg-white rounded-[2.5rem] flex items-center justify-center shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] border border-slate-100">
-           <svg className="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+        <div className="relative w-32 h-32 bg-white dark:bg-slate-800 rounded-[2.5rem] flex items-center justify-center shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] border border-slate-100 dark:border-slate-700">
+           <svg className="w-12 h-12 text-slate-300 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
            </svg>
            
            {/* Floating Badge */}
-           <div className="absolute -bottom-4 bg-rose-500 text-white px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border-[3px] border-[#FFFCF5] shadow-lg flex items-center gap-1.5 animate-in slide-in-from-top-2">
+           <div className="absolute -bottom-4 bg-rose-500 text-white px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border-[3px] border-[#FFFCF5] dark:border-slate-900 shadow-lg flex items-center gap-1.5 animate-in slide-in-from-top-2">
              <div className="w-1.5 h-1.5 bg-white rounded-full" />
              LOCKED
            </div>
@@ -152,19 +152,19 @@ const FeatureDisabledScreen = ({ featureName }: { featureName: string }) => (
       </div>
 
       {/* Typography */}
-      <h2 className="text-5xl md:text-7xl font-black text-slate-900 uppercase italic tracking-tighter mb-6 leading-none">
-        ACCESS<span className="text-slate-300">_</span>DENIED
+      <h2 className="text-5xl md:text-7xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-6 leading-none">
+        ACCESS<span className="text-slate-300 dark:text-slate-700">_</span>DENIED
       </h2>
       
-      <div className="bg-white/60 backdrop-blur-sm border border-slate-200/60 px-8 py-6 rounded-[2rem] shadow-sm mb-10 max-w-lg">
-        <p className="text-xs md:text-sm font-medium text-slate-500 leading-relaxed">
-          The <span className="text-slate-900 font-black bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 uppercase mx-1 tracking-wider">{featureName}</span> protocol has been strategically disabled by grid administration. Access to this sector is currently restricted.
+      <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 px-8 py-6 rounded-[2rem] shadow-sm mb-10 max-w-lg">
+        <p className="text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
+          The <span className="text-slate-900 dark:text-white font-black bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-600 uppercase mx-1 tracking-wider">{featureName}</span> protocol has been strategically disabled by grid administration. Access to this sector is currently restricted.
         </p>
       </div>
 
       {/* System Code Pill */}
-      <div className="flex items-center gap-3 px-6 py-3 bg-white rounded-full border border-slate-100 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)]">
-         <span className="text-[8px] font-black text-slate-300 uppercase tracking-[0.25em] font-mono">SYSTEM_CODE:</span>
+      <div className="flex items-center gap-3 px-6 py-3 bg-white dark:bg-slate-800 rounded-full border border-slate-100 dark:border-slate-700 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)]">
+         <span className="text-[8px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-[0.25em] font-mono">SYSTEM_CODE:</span>
          <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest font-mono">503_SERVICE_UNAVAILABLE</span>
       </div>
 
@@ -235,26 +235,37 @@ export default function App() {
       const { theme, reducedMotion, highContrast } = userData.settings.appearance;
       const root = document.documentElement;
 
-      // Theme Application
-      if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
+      // Theme Application Logic
+      const applyTheme = () => {
+        const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (isDark) {
+          root.classList.add('dark');
+        } else {
+          root.classList.remove('dark');
+        }
+      };
+
+      // Initial Apply
+      applyTheme();
+
+      // Setup Listener for System Theme Changes
+      let cleanupListener = () => {};
+      if (theme === 'system') {
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const handler = () => applyTheme();
+        mediaQuery.addEventListener('change', handler);
+        cleanupListener = () => mediaQuery.removeEventListener('change', handler);
       }
 
       // Reduced Motion Application
-      if (reducedMotion) {
-        root.classList.add('reduced-motion');
-      } else {
-        root.classList.remove('reduced-motion');
-      }
+      if (reducedMotion) root.classList.add('reduced-motion');
+      else root.classList.remove('reduced-motion');
 
       // High Contrast Application
-      if (highContrast) {
-        root.classList.add('high-contrast');
-      } else {
-        root.classList.remove('high-contrast');
-      }
+      if (highContrast) root.classList.add('high-contrast');
+      else root.classList.remove('high-contrast');
+
+      return () => cleanupListener();
     }
   }, [userData?.settings?.appearance]);
 
