@@ -29,6 +29,8 @@ export interface UserSettings {
     profileVisibility: 'public' | 'private';
     activityStatus: boolean;
     readReceipts: boolean;
+    allowTagging: boolean;
+    showLocation: boolean;
   };
   notifications: {
     email: boolean;
@@ -36,10 +38,23 @@ export interface UserSettings {
     likes: boolean;
     comments: boolean;
     mentions: boolean;
+    follows: boolean;
+    broadcasts: boolean;
   };
   appearance: {
     theme: 'system' | 'light' | 'dark';
     reducedMotion: boolean;
+    autoPlayVideo: boolean;
+    hapticFeedback: boolean;
+    highContrast: boolean;
+  };
+  dataUsage: {
+    mediaQuality: 'standard' | 'high' | 'data-saver';
+    preloadContent: boolean;
+  };
+  safety: {
+    filterLevel: 'standard' | 'strict' | 'relaxed';
+    hiddenWords: string[];
   };
 }
 
