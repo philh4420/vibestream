@@ -9,7 +9,7 @@ const {
   sendPasswordResetEmail
 } = FirebaseAuth as any;
 import * as Firestore from 'firebase/firestore';
-const { doc, setDoc, serverTimestamp, collection, query, limit, getDocs } = Firestore as any;
+const { doc, setDoc, serverTimestamp, collection, query, limit, getDocs, getDoc } = Firestore as any;
 import { SystemSettings } from '../../types';
 import { PrivacyPage } from '../legal/PrivacyPage';
 import { TermsPage } from '../legal/TermsPage';
@@ -137,6 +137,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Quick local check
     if (systemSettings.registrationDisabled) {
       setErrorDetails({ code: 'REG_DISABLED', message: 'Registration is currently disabled.' });
       return;
@@ -151,6 +152,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
     setErrorDetails(null);
 
     try {
+      // SECURITY PROTOCOL: Fresh Server Check for Registration Lock
+      // This prevents race conditions where the local settings might be stale.
+      const settingsSnap = await getDoc(doc(db, 'settings', 'global'));
+      if (settingsSnap.exists() && settingsSnap.data().registrationDisabled) {
+         setErrorDetails({ code: 'REG_DISABLED_SERVER', message: 'Registration is locked by Citadel Command.' });
+         setIsProcessing(false);
+         return;
+      }
+
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       

@@ -235,10 +235,17 @@ export default function App() {
 
   // --- GLOBAL DATA SYNC ---
   useEffect(() => {
-    // Sync Settings Globally (even for logged out users to block registration if needed, though Landing handles that)
-    // Here we sync it for Maintenance Mode check
-    const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (doc: any) => {
-      if (doc.exists()) setSystemSettings(doc.data() as SystemSettings);
+    // Sync Settings Globally
+    // We use functional update setSystemSettings(prev => ({...prev, ...data})) to ensure
+    // we merge partial data from Firestore with our robust defaults, preventing
+    // undefined values from breaking features like registration disable.
+    const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (docSnap: any) => {
+      if (docSnap.exists()) {
+        setSystemSettings(prev => ({
+          ...prev,
+          ...docSnap.data()
+        }));
+      }
     });
 
     if (!user) return unsubSettings;
