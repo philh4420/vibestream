@@ -105,7 +105,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
         followers: 0,
         following: 0,
         role: 'member',
-        location: 'Earth',
+        location: 'London, UK',
         joinedAt: serverTimestamp(),
         verifiedHuman: false,
         presenceStatus: 'Online',

@@ -16,17 +16,45 @@ export const fetchWeather = async (params: { query?: string; coords?: { lat: num
       url = `https://api.openweathermap.org/data/2.5/weather?lat=${params.coords.lat}&lon=${params.coords.lon}&units=metric&appid=${apiKey}`;
     } else {
       let query = (params.query || 'London').trim();
-      // Handle generic UK queries to focus on London for more accurate weather responses
-      if (!query || query.toLowerCase() === 'united kingdom' || query.toLowerCase() === 'uk') {
+      
+      // Sanitization: Filter out system/fictional locations to prevent API 404s
+      // This ensures users with creative locations like "Grid Node" still see a default weather (London)
+      const invalidLocations = ['grid node', 'earth', 'nowhere', 'unknown', 'system', 'cybertron', 'mars', 'node'];
+      const normalizedQuery = query.toLowerCase();
+      
+      if (
+        !query || 
+        invalidLocations.some(loc => normalizedQuery.includes(loc)) || 
+        normalizedQuery === 'united kingdom' || 
+        normalizedQuery === 'uk'
+      ) {
         query = 'London';
       }
+      
       url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(query)}&units=metric&appid=${apiKey}`;
     }
 
     const response = await fetch(url);
     
     if (response.status === 404) {
-      console.debug('Weather station not found for location');
+      console.debug('Weather station not found for location, retrying with default node.');
+      // Silent fallback if specific location fails
+      if (!url.includes('London')) {
+         const fallbackUrl = `https://api.openweathermap.org/data/2.5/weather?q=London&units=metric&appid=${apiKey}`;
+         const fallbackResponse = await fetch(fallbackUrl);
+         if (fallbackResponse.ok) {
+            const data = await fallbackResponse.json();
+            if (data.weather && data.weather[0]) {
+               return {
+                  temp: Math.round(data.main.temp),
+                  feelsLike: Math.round(data.main.feels_like),
+                  humidity: data.main.humidity,
+                  condition: data.weather[0].main,
+                  icon: data.weather[0].icon
+               };
+            }
+         }
+      }
       return null;
     }
 
