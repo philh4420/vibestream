@@ -61,6 +61,8 @@ export const ProfileAboutSection: React.FC<ProfileAboutSectionProps> = ({ userDa
     return { name, level: parseInt(level) || 50 };
   });
 
+  const showLocation = userData.settings?.privacy?.showLocation !== false;
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in slide-in-from-bottom-10 duration-1000 max-w-[2560px] mx-auto">
       
@@ -79,10 +81,12 @@ export const ProfileAboutSection: React.FC<ProfileAboutSectionProps> = ({ userDa
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono mb-2">Temporal_Origin</p>
                 <p className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">{formattedDob}</p>
               </div>
-              <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono mb-2">Geospatial_Node</p>
-                <p className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">{userData.location || 'Encrypted'}</p>
-              </div>
+              {showLocation && (
+                <div>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono mb-2">Geospatial_Node</p>
+                    <p className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">{userData.location || 'Encrypted'}</p>
+                </div>
+              )}
               <div>
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono mb-2">Identity_Labels</p>
                 <p className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">{userData.pronouns || 'Not Specified'}</p>

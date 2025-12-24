@@ -12,7 +12,10 @@ const {
   limit, 
   updateDoc, 
   doc, 
-  deleteDoc 
+  deleteDoc,
+  where,
+  writeBatch,
+  getDocs
 } = Firestore as any;
 import { User, Message, Chat } from '../../types';
 import { ICONS } from '../../constants';
@@ -48,6 +51,29 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId, currentUse
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Read Receipts Logic
+  useEffect(() => {
+    if (!db || !chatId || !currentUser.id) return;
+    if (currentUser.settings?.privacy?.readReceipts === false) return;
+
+    const markRead = async () => {
+        try {
+            const q = query(
+                collection(db, 'chats', chatId, 'messages'),
+                where('isRead', '==', false),
+                where('senderId', '!=', currentUser.id)
+            );
+            const snap = await getDocs(q);
+            if (!snap.empty) {
+                const batch = writeBatch(db);
+                snap.docs.forEach((d: any) => batch.update(d.ref, { isRead: true }));
+                await batch.commit();
+            }
+        } catch (e) { console.error("Read sync failed", e); }
+    };
+    markRead();
+  }, [chatId, messages.length, currentUser.id, currentUser.settings?.privacy?.readReceipts]);
 
   useEffect(() => {
     if (!db || !chatId) return;
@@ -189,6 +215,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId, currentUse
   
   const headerTitle = isCluster ? chatData?.clusterName : otherParticipant?.displayName;
   const headerAvatar = isCluster ? chatData?.clusterAvatar : otherParticipant?.avatarUrl;
+  const showActivity = targetUserFull?.settings?.privacy?.activityStatus !== false;
 
   const PRESENCE_AURA: Record<string, string> = {
     'Online': 'shadow-[0_0_15px_rgba(16,185,129,0.4)] bg-[#10b981]',
@@ -206,15 +233,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId, currentUse
           <button onClick={onBack} className="p-2 md:p-3 text-slate-400 active:scale-90 transition-transform hover:bg-slate-100 rounded-xl"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3.5}><path d="M15 19l-7-7 7-7" /></svg></button>
           <div className="relative group">
             <img src={headerAvatar} className={`w-12 h-12 md:w-14 md:h-14 border shadow-sm transition-transform group-hover:scale-105 ${isCluster ? 'rounded-[1.4rem]' : 'rounded-2xl'}`} alt="" />
-            {!isCluster && targetUserFull?.presenceStatus === 'Online' && <div className="absolute inset-0 rounded-2xl border-2 border-emerald-500 animate-ping opacity-20" />}
+            {!isCluster && showActivity && targetUserFull?.presenceStatus === 'Online' && <div className="absolute inset-0 rounded-2xl border-2 border-emerald-500 animate-ping opacity-20" />}
           </div>
           <div>
             <h3 className="font-black text-xl md:text-2xl uppercase tracking-tighter italic leading-none text-slate-950">{headerTitle}</h3>
             <div className="flex items-center gap-2 mt-1 md:mt-2">
                 {!isCluster ? (
                     <>
-                        <div className={`w-1.5 h-1.5 rounded-full ${targetUserFull?.presenceStatus ? PRESENCE_AURA[targetUserFull.presenceStatus] : 'bg-slate-300'}`} />
-                        <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest font-mono text-slate-400">{targetUserFull?.presenceStatus || 'Offline'}</p>
+                        {showActivity && (
+                            <div className={`w-1.5 h-1.5 rounded-full ${targetUserFull?.presenceStatus ? PRESENCE_AURA[targetUserFull.presenceStatus] : 'bg-slate-300'}`} />
+                        )}
+                        <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest font-mono text-slate-400">
+                            {showActivity ? (targetUserFull?.presenceStatus || 'Offline') : 'Offline'}
+                        </p>
                     </>
                 ) : (
                     <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest font-mono text-indigo-500">{chatData?.participants.length} Active Nodes</p>
@@ -274,6 +305,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId, currentUse
                   {msg.text}
                   <div className={`text-[7px] font-black uppercase mt-3 opacity-30 font-mono tracking-widest ${isMe ? 'text-right' : 'text-left'}`}>
                     {msg.timestamp?.toDate ? msg.timestamp.toDate().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'SYNCING...'}
+                    {isMe && msg.isRead && <span className="text-emerald-400 ml-1">READ</span>}
                   </div>
                 </div>
               </div>
@@ -379,7 +411,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId, currentUse
       <DeleteConfirmationModal 
         isOpen={!!terminationTarget} 
         title="TERMINATION_PROTOCOL" 
-        description={`Destroy active link with ${terminationTarget?.label}? This action cannot be reversed within the current grid cycle.`} 
+        description={`Destroy active link with ${terminationTarget?.label}? This action cannot be reversed.`} 
         onConfirm={handleExecuteTermination} 
         onCancel={() => setTerminationTarget(null)} 
         confirmText="TERMINATE_LINK"

@@ -32,6 +32,9 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   onFollowToggle,
   onOpenSettings
 }) => {
+  const showActivity = userData.settings?.privacy?.activityStatus !== false;
+  const showLocation = userData.settings?.privacy?.showLocation !== false;
+
   return (
     <div className="w-full bg-white shadow-sm relative z-20">
       {/* 1. COVER PHOTO */}
@@ -66,9 +69,11 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 alt={userData.displayName} 
               />
             </div>
-            <div className="absolute bottom-5 right-5 w-10 h-10 md:w-14 md:h-14 bg-white rounded-2xl p-1.5 shadow-xl flex items-center justify-center">
-              <div className={`w-full h-full rounded-xl ${PRESENCE_DOTS[userData.presenceStatus || 'Online']} animate-pulse`} />
-            </div>
+            {showActivity && (
+              <div className="absolute bottom-5 right-5 w-10 h-10 md:w-14 md:h-14 bg-white rounded-2xl p-1.5 shadow-xl flex items-center justify-center">
+                <div className={`w-full h-full rounded-xl ${PRESENCE_DOTS[userData.presenceStatus || 'Online']} animate-pulse`} />
+              </div>
+            )}
           </div>
 
           {/* Text Identity */}
@@ -85,7 +90,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                  <p className="text-slate-500 font-bold font-mono text-xs tracking-wide">@{userData.username}</p>
                </div>
                
-               {userData.statusMessage && (
+               {userData.statusMessage && showActivity && (
                  <p className="text-sm font-medium text-slate-600 italic">"{userData.statusMessage}"</p>
                )}
             </div>

@@ -20,6 +20,7 @@ const {
 import { ProfileHeader } from './ProfileHeader';
 import { ProfileTabs } from './ProfileTabs';
 import { CalibrationOverlay } from './CalibrationOverlay';
+import { ICONS } from '../../constants';
 
 // Modular Sections
 import { ProfileBroadcastingSection } from './sections/ProfileBroadcastingSection';
@@ -156,6 +157,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
     }
   };
 
+  // Privacy Check Logic
+  const isPrivate = profileData.settings?.privacy?.profileVisibility === 'private';
+  const canView = isOwnProfile || !isPrivate || (isPrivate && isFollowing);
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'identity':
@@ -175,7 +180,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
               <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
                  <h3 className="text-xl font-black text-slate-900 tracking-tight mb-4 italic">Intro</h3>
                  <div className="space-y-4">
-                    {profileData.statusMessage && (
+                    {profileData.statusMessage && profileData.settings?.privacy?.activityStatus !== false && (
                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-center">
                         <p className="text-sm font-bold text-slate-700 italic">"{profileData.statusMessage}"</p>
                       </div>
@@ -191,7 +196,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
                             <span className="text-xs font-bold text-slate-900 uppercase">{profileData.occupation}</span>
                           </div>
                        )}
-                       {profileData.location && (
+                       {profileData.location && profileData.settings?.privacy?.showLocation !== false && (
                           <div className="flex items-center gap-3 text-slate-600">
                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">NODE:</span>
                             <span className="text-xs font-bold text-slate-900 uppercase">{profileData.location}</span>
@@ -229,13 +234,36 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
         onOpenSettings={onOpenSettings}
       />
       
-      {/* 2. Sticky Tab Navigation */}
-      <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
+      {/* 2. Privacy Check */}
+      {!canView ? (
+        <div className="mt-8 px-4 sm:px-6 md:px-10 lg:px-14 flex flex-col items-center justify-center py-20 text-center">
+           <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6 text-slate-400 shadow-inner">
+              <div className="scale-150"><ICONS.Verified /></div>
+           </div>
+           <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter mb-2">Private_Node</h3>
+           <p className="text-xs font-medium text-slate-500 max-w-sm leading-relaxed mb-8">
+             This profile is shielded. Establish a verified link to access neural data and signal history.
+           </p>
+           {!isOwnProfile && (
+             <button 
+                onClick={handleFollowToggle}
+                className="px-10 py-4 bg-slate-900 text-white rounded-[2rem] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-indigo-600 transition-all shadow-xl active:scale-95"
+             >
+                {isFollowing ? 'REQUEST_SENT' : 'REQUEST_ACCESS'}
+             </button>
+           )}
+        </div>
+      ) : (
+        <>
+          {/* 3. Sticky Tab Navigation */}
+          <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-      {/* 3. Content Area */}
-      <div className="mt-8 px-4 sm:px-6 md:px-10 lg:px-14">
-        {renderTabContent()}
-      </div>
+          {/* 4. Content Area */}
+          <div className="mt-8 px-4 sm:px-6 md:px-10 lg:px-14">
+            {renderTabContent()}
+          </div>
+        </>
+      )}
 
       {/* Edit Modal */}
       {isEditModalOpen && (

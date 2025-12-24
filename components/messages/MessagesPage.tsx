@@ -87,6 +87,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
   const filteredUsers = searchQuery.trim() 
     ? allUsers.filter(u => 
         u.id !== currentUser.id && 
+        u.settings?.privacy?.allowTagging !== false && // Respect privacy setting
         (u.displayName.toLowerCase().includes(searchQuery.toLowerCase()) || 
          u.username.toLowerCase().includes(searchQuery.toLowerCase()))
       )
@@ -149,7 +150,9 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                   >
                     <div className="relative shrink-0">
                       <img src={user.avatarUrl} className="w-12 h-12 object-cover rounded-[1.2rem] border border-slate-100 bg-slate-100" alt="" />
-                      <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${PRESENCE_AURA[user.presenceStatus || 'Online']}`} />
+                      {user.settings?.privacy?.activityStatus !== false && (
+                        <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${PRESENCE_AURA[user.presenceStatus || 'Online']}`} />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-black text-sm text-slate-900 truncate tracking-tight">{user.displayName}</p>
@@ -174,6 +177,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                 const pData = chat.participantData[pId || ''];
                 const isActive = selectedChatId === chat.id;
                 const peerUser = allUsers.find(u => u.id === pId);
+                const showActivity = peerUser?.settings?.privacy?.activityStatus !== false;
 
                 return (
                   <button 
@@ -183,7 +187,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                   >
                     <div className="relative shrink-0">
                       <img src={pData?.avatarUrl} className={`w-12 h-12 object-cover border-2 shadow-sm rounded-[1.2rem] ${isActive ? 'border-slate-700' : 'border-white'}`} alt="" />
-                      {peerUser?.presenceStatus && (
+                      {showActivity && peerUser?.presenceStatus && (
                         <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-[2.5px] ${isActive ? 'border-slate-900' : 'border-white'} ${PRESENCE_AURA[peerUser.presenceStatus] || 'bg-slate-300'}`} />
                       )}
                     </div>

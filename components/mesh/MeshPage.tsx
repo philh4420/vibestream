@@ -253,6 +253,7 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
                const isFollowing = myFollowingIds.has(user.id);
                const isMe = user.id === currentUser.id;
                const isProcessing = processingIds.includes(user.id);
+               const showActivity = user.settings?.privacy?.activityStatus !== false;
 
                return (
                  <div 
@@ -260,7 +261,7 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
                    className="group bg-white border border-slate-100 rounded-[2.5rem] p-5 hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] hover:border-indigo-100 transition-all duration-300 relative flex flex-col overflow-hidden"
                  >
                     {/* Decorative Top Line */}
-                    <div className={`absolute top-0 left-0 right-0 h-1 ${user.presenceStatus === 'Online' ? 'bg-emerald-500' : 'bg-slate-200'} opacity-0 group-hover:opacity-100 transition-opacity`} />
+                    <div className={`absolute top-0 left-0 right-0 h-1 ${user.presenceStatus === 'Online' && showActivity ? 'bg-emerald-500' : 'bg-slate-200'} opacity-0 group-hover:opacity-100 transition-opacity`} />
 
                     <div className="flex items-start justify-between mb-4 relative z-10">
                        <div className="flex items-center gap-4 cursor-pointer" onClick={() => onViewProfile(user)}>
@@ -276,8 +277,10 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
                              <h3 className="font-black text-slate-900 text-sm uppercase italic tracking-tight truncate max-w-[140px]">{user.displayName}</h3>
                              <p className="text-[9px] font-bold text-slate-400 font-mono tracking-wider truncate mb-1">@{user.username}</p>
                              <div className="flex items-center gap-1.5">
-                                <div className={`w-1.5 h-1.5 rounded-full ${user.presenceStatus === 'Online' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
-                                <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">{user.presenceStatus || 'OFFLINE'}</span>
+                                {showActivity && user.presenceStatus === 'Online' && (
+                                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                )}
+                                <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">{showActivity ? (user.presenceStatus || 'OFFLINE') : 'OFFLINE'}</span>
                              </div>
                           </div>
                        </div>

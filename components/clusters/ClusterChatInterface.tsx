@@ -15,7 +15,9 @@ const {
   deleteDoc,
   arrayUnion,
   arrayRemove,
-  writeBatch
+  writeBatch,
+  where,
+  getDocs
 } = Firestore as any;
 import { User, Message, Chat } from '../../types';
 import { ICONS } from '../../constants';
@@ -62,6 +64,29 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
 
   const isAdmin = chatData.clusterAdmin === currentUser.id;
 
+  // Read Receipts Logic
+  useEffect(() => {
+    if (!db || !chatId || !currentUser.id) return;
+    if (currentUser.settings?.privacy?.readReceipts === false) return;
+
+    const markRead = async () => {
+        try {
+            const q = query(
+                collection(db, 'chats', chatId, 'messages'),
+                where('isRead', '==', false),
+                where('senderId', '!=', currentUser.id)
+            );
+            const snap = await getDocs(q);
+            if (!snap.empty) {
+                const batch = writeBatch(db);
+                snap.docs.forEach((d: any) => batch.update(d.ref, { isRead: true }));
+                await batch.commit();
+            }
+        } catch (e) { console.error("Cluster Read sync failed", e); }
+    };
+    markRead();
+  }, [chatId, messages.length, currentUser.id, currentUser.settings?.privacy?.readReceipts]);
+
   // Sync Messages
   useEffect(() => {
     if (!db || !chatId) return;
@@ -86,11 +111,12 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
     });
   }, [chatData.participants, allUsers, chatData.participantData]);
 
-  // Derived Data: Invite Candidates (People NOT in the cluster)
+  // Derived Data: Invite Candidates (People NOT in the cluster and ALLOW tagging/invites)
   const candidatesForInvite = useMemo(() => {
     const queryStr = inviteSearch.toLowerCase();
     return allUsers.filter(u => 
       !chatData.participants.includes(u.id) &&
+      u.settings?.privacy?.allowTagging !== false && // Check privacy setting
       (u.displayName.toLowerCase().includes(queryStr) || u.username.toLowerCase().includes(queryStr))
     );
   }, [allUsers, chatData.participants, inviteSearch]);
@@ -539,7 +565,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
                      <div key={user.id} className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/50 border border-transparent hover:border-white/60 transition-all group cursor-default">
                         <div className="relative">
                            <img src={user.avatarUrl} className="w-10 h-10 rounded-xl object-cover border border-slate-100" alt="" />
-                           <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${user.presenceStatus === 'Online' ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                           <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${user.presenceStatus === 'Online' && user.settings?.privacy?.activityStatus !== false ? 'bg-emerald-500' : 'bg-slate-300'}`} />
                         </div>
                         <div className="min-w-0 flex-1">
                            <p className="text-xs font-black text-slate-900 truncate">{user.displayName}</p>

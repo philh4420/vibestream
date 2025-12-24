@@ -86,8 +86,12 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
       
       // Client-side sort to prioritize Online users, then verified, then new
       fetched.sort((a: VibeUser, b: VibeUser) => {
-        if (a.presenceStatus === 'Online' && b.presenceStatus !== 'Online') return -1;
-        if (b.presenceStatus === 'Online' && a.presenceStatus !== 'Online') return 1;
+        // Privacy Check for Sorting: If activity status is hidden, treat as Offline
+        const aStatus = a.settings?.privacy?.activityStatus === false ? 'Offline' : (a.presenceStatus || 'Offline');
+        const bStatus = b.settings?.privacy?.activityStatus === false ? 'Offline' : (b.presenceStatus || 'Offline');
+
+        if (aStatus === 'Online' && bStatus !== 'Online') return -1;
+        if (bStatus === 'Online' && aStatus !== 'Online') return 1;
         if (a.verifiedHuman && !b.verifiedHuman) return -1;
         if (!a.verifiedHuman && b.verifiedHuman) return 1;
         return 0;
@@ -214,9 +218,16 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
     'Offline': 'bg-slate-300'
   };
 
-  const filteredContacts = contactFilter === 'online' 
-    ? activeContacts.filter(u => ['Online', 'Focus', 'Deep Work', 'Syncing'].includes(u.presenceStatus || ''))
-    : activeContacts;
+  // Filter based on privacy settings
+  const filteredContacts = activeContacts.filter(u => {
+    const isVisible = u.settings?.privacy?.activityStatus !== false;
+    const status = isVisible ? (u.presenceStatus || 'Offline') : 'Offline';
+    
+    if (contactFilter === 'online') {
+      return ['Online', 'Focus', 'Deep Work', 'Syncing'].includes(status);
+    }
+    return true;
+  });
 
   return (
     <aside className="hidden lg:flex flex-col w-[320px] xl:w-[380px] shrink-0 bg-[#f8fafc] border-l border-precision h-full overflow-hidden">
@@ -363,6 +374,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
                 filteredContacts.slice(0, 15).map(node => {
                   const isFollowing = followingIds.has(node.id);
                   const isProcessing = processingIds.has(node.id);
+                  const showActivity = node.settings?.privacy?.activityStatus !== false;
                   
                   return (
                     <div 
@@ -372,7 +384,9 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
                       <div className="flex items-center gap-3 overflow-hidden flex-1 min-w-0">
                         <div className="relative shrink-0">
                           <img src={node.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${node.id}`} className="w-10 h-10 rounded-xl object-cover border border-slate-100 bg-slate-50" alt="" />
-                          <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${PRESENCE_DOTS[node.presenceStatus || 'Invisible']}`} />
+                          {showActivity && (
+                            <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${PRESENCE_DOTS[node.presenceStatus || 'Invisible']}`} />
+                          )}
                         </div>
                         <div className="text-left overflow-hidden flex-1">
                            <div className="flex items-center gap-1.5">
@@ -382,7 +396,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
                              {node.verifiedHuman && <div className="text-indigo-500 scale-[0.6]"><ICONS.Verified /></div>}
                            </div>
                            <p className="text-[9px] text-slate-400 font-medium truncate tracking-tight opacity-80">
-                             {node.statusEmoji} {node.statusMessage || node.presenceStatus}
+                             {showActivity ? (node.statusEmoji + ' ' + (node.statusMessage || node.presenceStatus)) : 'Status Hidden'}
                            </p>
                         </div>
                       </div>

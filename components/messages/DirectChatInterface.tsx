@@ -12,7 +12,10 @@ const {
   limit, 
   updateDoc, 
   doc, 
-  deleteDoc 
+  deleteDoc,
+  writeBatch,
+  where,
+  getDocs
 } = Firestore as any;
 import { User, Message, Chat } from '../../types';
 import { ICONS } from '../../constants';
@@ -48,6 +51,36 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Read Receipts Logic: Mark unread messages as read IF currentUser settings allow
+  useEffect(() => {
+    if (!db || !chatId || !currentUser.id) return;
+    
+    // Only perform read receipt update if user enabled it
+    if (currentUser.settings?.privacy?.readReceipts === false) return;
+
+    const markRead = async () => {
+        try {
+            const q = query(
+                collection(db, 'chats', chatId, 'messages'),
+                where('isRead', '==', false),
+                where('senderId', '!=', currentUser.id) // Only mark others' messages
+            );
+            const snap = await getDocs(q);
+            if (!snap.empty) {
+                const batch = writeBatch(db);
+                snap.docs.forEach((d: any) => {
+                    batch.update(d.ref, { isRead: true });
+                });
+                await batch.commit();
+            }
+        } catch (e) {
+            console.error("Read receipt error", e);
+        }
+    };
+    
+    markRead();
+  }, [chatId, messages.length, currentUser.id, currentUser.settings?.privacy?.readReceipts]);
 
   useEffect(() => {
     if (!db || !chatId) return;
@@ -186,6 +219,7 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
   const otherParticipantId = chatData.participants.find(id => id !== currentUser.id);
   const otherParticipant = chatData.participantData?.[otherParticipantId || ''];
   const targetUserFull = allUsers.find(u => u.id === otherParticipantId);
+  const showActivity = targetUserFull?.settings?.privacy?.activityStatus !== false;
   
   const PRESENCE_AURA: Record<string, string> = {
     'Online': 'bg-emerald-500 shadow-[0_0_10px_#10b981]',
@@ -208,11 +242,15 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
             <div className="flex items-center gap-4">
               <div className="relative group cursor-pointer">
                 <img src={otherParticipant?.avatarUrl} className="w-10 h-10 md:w-11 md:h-11 rounded-[1.2rem] object-cover border-2 border-white shadow-sm" alt="" />
-                <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-[2.5px] border-white ${targetUserFull?.presenceStatus ? PRESENCE_AURA[targetUserFull.presenceStatus] : 'bg-slate-300'}`} />
+                {showActivity && targetUserFull?.presenceStatus && (
+                    <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-[2.5px] border-white ${PRESENCE_AURA[targetUserFull.presenceStatus] || 'bg-slate-300'}`} />
+                )}
               </div>
               <div>
                 <h3 className="font-black text-lg text-slate-900 uppercase tracking-tight italic leading-none">{otherParticipant?.displayName}</h3>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono mt-0.5">{targetUserFull?.presenceStatus || 'Offline'}</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono mt-0.5">
+                    {showActivity ? (targetUserFull?.presenceStatus || 'Offline') : 'Offline'}
+                </p>
               </div>
             </div>
           </div>
@@ -264,7 +302,7 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
                     }
                   `}
                 >
-                  {/* Media */}
+                  {/* Media Rendering */}
                   {msg.media && msg.media.map((item, mIdx) => (
                     <div key={mIdx} className="mb-3 rounded-xl overflow-hidden shadow-md border border-white/10">
                       {item.type === 'video' ? (
