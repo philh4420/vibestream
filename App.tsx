@@ -86,9 +86,6 @@ const App: React.FC = () => {
     return AppRoute.FEED;
   });
 
-  // Navigation State for Deep Linking to Clusters (e.g. from Gatherings)
-  const [targetClusterId, setTargetClusterId] = useState<string | null>(null);
-
   const [posts, setPosts] = useState<Post[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -262,11 +259,6 @@ const App: React.FC = () => {
     if (route !== AppRoute.PROFILE) setViewingProfile(null);
     setActiveRoute(route);
     localStorage.setItem(ROUTE_KEY, route);
-  };
-
-  const handleOpenCluster = (clusterId: string) => {
-    setTargetClusterId(clusterId);
-    handleNavigate(AppRoute.CLUSTERS);
   };
 
   const handleViewUserProfile = (user: VibeUser) => {
@@ -575,6 +567,7 @@ const App: React.FC = () => {
     const post = posts.find(p => p.id === postId);
     if (!post) return;
     
+    // Explicitly check boolean flag we set in snapshot, or the array itself
     const isBookmarked = post.bookmarkedBy?.includes(userId);
 
     try {
@@ -668,10 +661,9 @@ const App: React.FC = () => {
           currentUser={userData}
           locale={userRegion}
           addToast={addToast}
-          onOpenChat={handleOpenCluster}
+          onOpenChat={(id) => { handleNavigate(AppRoute.MESSAGES); }}
           allUsers={allUsers}
           weather={weather}
-          initialClusterId={targetClusterId}
         />
       )}
 
@@ -698,7 +690,6 @@ const App: React.FC = () => {
           locale={userRegion}
           addToast={addToast}
           allUsers={allUsers}
-          onOpenLobby={handleOpenCluster}
         />
       )}
 

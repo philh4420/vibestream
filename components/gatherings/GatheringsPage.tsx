@@ -15,8 +15,7 @@ const {
   arrayRemove,
   where,
   writeBatch,
-  getDocs,
-  setDoc
+  getDocs
 } = Firestore as any;
 import { User, Gathering, Region } from '../../types';
 import { ICONS } from '../../constants';
@@ -27,10 +26,9 @@ interface GatheringsPageProps {
   locale: Region;
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
   allUsers: User[];
-  onOpenLobby: (clusterId: string) => void;
 }
 
-export const GatheringsPage: React.FC<GatheringsPageProps> = ({ currentUser, locale, addToast, allUsers, onOpenLobby }) => {
+export const GatheringsPage: React.FC<GatheringsPageProps> = ({ currentUser, locale, addToast, allUsers }) => {
   const [gatherings, setGatherings] = useState<Gathering[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<'All' | 'Social' | 'Tech' | 'Gaming' | 'Nightlife' | 'Workshop'>('All');
@@ -59,7 +57,7 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({ currentUser, loc
     if (!db || !currentUser) return;
     try {
       // 1. Create Gathering Document
-      const gatheringRef = await addDoc(collection(db, 'gatherings'), {
+      const docRef = await addDoc(collection(db, 'gatherings'), {
         ...data,
         organizerId: currentUser.id,
         organizerName: currentUser.displayName,
@@ -68,25 +66,7 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({ currentUser, loc
         createdAt: serverTimestamp()
       });
 
-      // 2. Create Linked Neural Lobby (Chat)
-      const chatRef = await addDoc(collection(db, 'chats'), {
-        participants: [currentUser.id],
-        participantData: {
-            [currentUser.id]: { displayName: currentUser.displayName, avatarUrl: currentUser.avatarUrl }
-        },
-        lastMessage: 'Neural Lobby initialized.',
-        lastMessageTimestamp: serverTimestamp(),
-        isCluster: true,
-        isEventLobby: true,
-        clusterName: `LOBBY: ${data.title}`,
-        clusterAvatar: data.coverUrl,
-        clusterAdmin: currentUser.id
-      });
-
-      // 3. Link Chat to Gathering
-      await updateDoc(gatheringRef, { linkedChatId: chatRef.id });
-
-      // 4. Broadcast Notification to Followers
+      // 2. Broadcast Notification to Followers
       const batch = writeBatch(db);
       const followersRef = collection(db, 'users', currentUser.id, 'followers');
       const followersSnap = await getDocs(followersRef);
@@ -101,7 +81,7 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({ currentUser, loc
             fromUserName: currentUser.displayName,
             fromUserAvatar: currentUser.avatarUrl,
             toUserId: followerId,
-            targetId: gatheringRef.id,
+            targetId: docRef.id,
             text: `initialized a new gathering: "${data.title}"`,
             isRead: false,
             timestamp: serverTimestamp(),
@@ -111,7 +91,7 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({ currentUser, loc
         await batch.commit();
       }
 
-      addToast("Gathering & Lobby Initialized", "success");
+      addToast("Gathering Initialized Successfully", "success");
       setIsCreateOpen(false);
     } catch (e) {
       console.error(e);
@@ -125,34 +105,12 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({ currentUser, loc
     if (!gathering) return;
 
     try {
-      const gatheringRef = doc(db, 'gatherings', gatheringId);
-      
-      // Update Gathering
-      await updateDoc(gatheringRef, {
+      const ref = doc(db, 'gatherings', gatheringId);
+      await updateDoc(ref, {
         attendees: isAttending ? arrayRemove(currentUser.id) : arrayUnion(currentUser.id)
       });
 
-      // Update Linked Chat (Lobby)
-      if (gathering.linkedChatId) {
-          const chatRef = doc(db, 'chats', gathering.linkedChatId);
-          if (isAttending) {
-              // Remove
-              await updateDoc(chatRef, { participants: arrayRemove(currentUser.id) });
-          } else {
-              // Add
-              const participantUpdate: any = {};
-              participantUpdate[`participantData.${currentUser.id}`] = { 
-                  displayName: currentUser.displayName, 
-                  avatarUrl: currentUser.avatarUrl 
-              };
-              await updateDoc(chatRef, { 
-                  participants: arrayUnion(currentUser.id),
-                  ...participantUpdate
-              });
-          }
-      }
-
-      // Notification Logic
+      // NOTIFICATION LOGIC: Notify Organizer if joining and not self
       if (!isAttending && gathering.organizerId !== currentUser.id) {
         await addDoc(collection(db, 'notifications'), {
           type: 'gathering_rsvp',
@@ -310,27 +268,17 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({ currentUser, loc
                              )}
                           </div>
 
-                          <div className="flex items-center gap-2">
-                              {isAttending && gathering.linkedChatId && (
-                                  <button 
-                                    onClick={() => onOpenLobby(gathering.linkedChatId!)}
-                                    className="px-4 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all border border-indigo-200"
-                                  >
-                                    ENTER LOBBY
-                                  </button>
-                              )}
-                              {!isOrganizer && (
-                                <button 
-                                  onClick={() => handleRSVP(gathering.id, isAttending)}
-                                  className={`px-5 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all active:scale-95 ${isAttending ? 'bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-500' : 'bg-slate-900 text-white hover:bg-purple-600 shadow-lg'}`}
-                                >
-                                  {isAttending ? 'WITHDRAW' : 'RSVP_CONFIRM'}
-                                </button>
-                              )}
-                              {isOrganizer && (
-                                <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg">ORGANIZER</span>
-                              )}
-                          </div>
+                          {!isOrganizer && (
+                            <button 
+                              onClick={() => handleRSVP(gathering.id, isAttending)}
+                              className={`px-5 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all active:scale-95 ${isAttending ? 'bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-500' : 'bg-slate-900 text-white hover:bg-purple-600 shadow-lg'}`}
+                            >
+                              {isAttending ? 'WITHDRAW' : 'RSVP_CONFIRM'}
+                            </button>
+                          )}
+                          {isOrganizer && (
+                             <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg">ORGANIZER</span>
+                          )}
                        </div>
                     </div>
                  </div>

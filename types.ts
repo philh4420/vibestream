@@ -179,7 +179,6 @@ export interface Gathering {
   coverUrl: string;
   attendees: string[]; // Array of User IDs
   createdAt: any;
-  linkedChatId?: string; // Neural Lobby ID
 }
 
 export interface Chat {
@@ -189,7 +188,6 @@ export interface Chat {
   lastMessage?: string;
   lastMessageTimestamp?: any;
   isCluster?: boolean;
-  isEventLobby?: boolean;
   clusterName?: string;
   clusterAvatar?: string;
   clusterAdmin?: string;
