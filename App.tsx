@@ -67,46 +67,45 @@ import { fetchWeather } from './services/weather';
 const MaintenanceScreen = () => (
   <div className="fixed inset-0 z-[9999] bg-[#020617] flex flex-col items-center justify-center overflow-hidden selection:bg-rose-500 selection:text-white">
     
-    {/* Ambient Effects */}
-    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-rose-600/20 rounded-full blur-[120px] animate-pulse" />
-    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
+    {/* Ambient Effects - Subtle Rose Glow */}
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-rose-600/10 blur-[120px] rounded-full pointer-events-none" />
+    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay pointer-events-none" />
     
-    <div className="relative z-10 flex flex-col items-center text-center p-8">
+    <div className="relative z-10 flex flex-col items-center text-center p-8 w-full max-w-5xl">
       
-      {/* Icon Container */}
-      <div className="relative mb-12 group">
-        <div className="absolute inset-0 bg-rose-500 rounded-full blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-1000 animate-pulse" />
-        <div className="relative w-32 h-32 bg-[#0f172a] rounded-full border border-rose-500/30 flex items-center justify-center shadow-2xl shadow-rose-900/20">
-           <svg className="w-12 h-12 text-rose-500 drop-shadow-[0_0_15px_rgba(225,29,72,0.6)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+      {/* Icon Container - Warning Triangle inside Glow */}
+      <div className="relative mb-10 group">
+        <div className="absolute inset-0 bg-rose-500/20 rounded-full blur-xl group-hover:blur-2xl transition-all duration-1000 opacity-50" />
+        <div className="relative w-24 h-24 bg-[#0f172a] rounded-full border border-rose-500/20 flex items-center justify-center shadow-[0_0_30px_-5px_rgba(225,29,72,0.3)]">
+           <svg className="w-10 h-10 text-rose-500 drop-shadow-[0_0_10px_rgba(225,29,72,0.5)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.34c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
            </svg>
         </div>
       </div>
 
-      {/* Typography */}
-      <h1 className="text-5xl md:text-8xl font-black text-white uppercase italic tracking-tighter leading-none mb-6 drop-shadow-2xl">
-        System<br/><span className="text-rose-600">Lockdown</span>
+      {/* Typography: SYSTEM_LOCKDOWN */}
+      <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white italic tracking-tighter leading-none mb-6 drop-shadow-2xl select-none">
+        SYSTEM<span className="text-rose-600">_</span>LOCKDOWN
       </h1>
       
-      <div className="flex items-center justify-center gap-4 mb-16">
-         <div className="h-px w-12 bg-gradient-to-r from-transparent to-rose-500/50" />
-         <p className="text-[10px] md:text-xs font-black text-rose-400 uppercase tracking-[0.4em] font-mono">
+      {/* Subtext */}
+      <div className="flex items-center justify-center gap-4 mb-16 opacity-75">
+         <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-[0.4em] font-mono">
            Maintenance Protocols Active
          </p>
-         <div className="h-px w-12 bg-gradient-to-l from-transparent to-rose-500/50" />
       </div>
 
-      {/* Loader */}
-      <div className="flex gap-4 mb-20">
-         <div className="w-2 h-2 bg-rose-600 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
-         <div className="w-2 h-2 bg-rose-600 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
-         <div className="w-2 h-2 bg-rose-600 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
+      {/* Red Dot Loader */}
+      <div className="flex gap-3 mb-20">
+         <div className="w-1.5 h-1.5 bg-rose-600 rounded-full animate-bounce" style={{ animationDuration: '1s', animationDelay: '0s' }} />
+         <div className="w-1.5 h-1.5 bg-rose-600 rounded-full animate-bounce" style={{ animationDuration: '1s', animationDelay: '0.15s' }} />
+         <div className="w-1.5 h-1.5 bg-rose-600 rounded-full animate-bounce" style={{ animationDuration: '1s', animationDelay: '0.3s' }} />
       </div>
 
-      {/* Footer */}
-      <div className="absolute bottom-12 left-0 right-0 text-center">
-         <p className="text-[9px] font-black text-slate-700 uppercase tracking-[0.5em] font-mono">
-           Authorized_Personnel_Only
+      {/* Footer - Authorized Personnel Only */}
+      <div className="absolute bottom-10 left-0 right-0 text-center">
+         <p className="text-[8px] font-black text-slate-800 uppercase tracking-[0.6em] font-mono">
+           AUTHORIZED_PERSONNEL_ONLY
          </p>
       </div>
     </div>
