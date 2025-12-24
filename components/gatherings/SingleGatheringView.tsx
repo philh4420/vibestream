@@ -16,7 +16,8 @@ const {
   serverTimestamp,
   getDocs,
   query,
-  where
+  where,
+  deleteDoc
 } = Firestore as any;
 import { CreateGatheringModal } from './CreateGatheringModal';
 import { GatheringMemoryBank } from './GatheringMemoryBank';
@@ -45,6 +46,7 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
   const [liveGathering, setLiveGathering] = useState<Gathering>(initialGathering);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [showRecurringDeleteOptions, setShowRecurringDeleteOptions] = useState(false);
   
   // Status Broadcasting State
   const [statusInput, setStatusInput] = useState('');
@@ -56,6 +58,9 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
     const unsub = onSnapshot(doc(db, 'gatherings', initialGathering.id), (snap: any) => {
         if (snap.exists()) {
             setLiveGathering({ id: snap.id, ...snap.data() } as Gathering);
+        } else {
+            // Handle external deletion
+            onBack();
         }
     });
     return () => unsub();
@@ -95,29 +100,38 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
 
             snap.docs.forEach((d: any) => {
                 const g = d.data() as Gathering;
+                
                 // Calculate new date for this specific instance based on the delta
                 const currentInstanceDate = new Date(g.date).getTime();
                 const shiftedDate = new Date(currentInstanceDate + timeDelta).toISOString();
 
+                // Smart Title Update: Preserve session numbering if present
+                let newTitle = data.title;
+                if (g.seriesIndex) {
+                    // Strip any existing (Session X) from the input title to avoid doubling up
+                    const baseTitle = data.title.replace(/\s*\(Session\s+\d+\)$/i, '').trim();
+                    newTitle = `${baseTitle} (Session ${g.seriesIndex})`;
+                }
+
                 batch.update(doc(db, 'gatherings', d.id), {
-                    title: data.title, // Note: This overwrites session numbers in titles if present
+                    title: newTitle,
                     description: data.description,
                     location: data.location,
                     coverUrl: data.coverUrl,
                     category: data.category,
                     type: data.type,
-                    maxAttendees: data.maxAttendees,
+                    maxAttendees: data.maxAttendees, // Sync capacity
                     date: shiftedDate // Apply time shift
                 });
             });
             
             await batch.commit();
-            window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: `Series Updated (${snap.size} Events)`, type: 'success' } }));
+            window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: `Series Updated (${snap.size} Nodes)`, type: 'success' } }));
 
         } else {
             // Single Update
             await updateDoc(doc(db, 'gatherings', liveGathering.id), data);
-            window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Gathering Protocol Updated", type: 'success' } }));
+            window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Protocol Updated", type: 'success' } }));
         }
         
         setIsEditOpen(false);
@@ -127,13 +141,32 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
     }
   };
 
+  const handleDelete = async (deleteSeries = false) => {
+    if (!db) return;
+    try {
+        if (deleteSeries && liveGathering.recurrenceId) {
+            const batch = writeBatch(db);
+            const q = query(collection(db, 'gatherings'), where('recurrenceId', '==', liveGathering.recurrenceId));
+            const snap = await getDocs(q);
+            snap.docs.forEach((d: any) => batch.delete(d.ref));
+            await batch.commit();
+            window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: `Series Purged (${snap.size} Events)`, type: 'success' } }));
+        } else {
+            await deleteDoc(doc(db, 'gatherings', liveGathering.id));
+            window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Event Cancelled", type: 'success' } }));
+        }
+        onBack();
+    } catch (e) {
+        console.error(e);
+        window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Delete Failed", type: 'error' } }));
+    }
+  };
+
   const handleBroadcastStatus = async () => {
     if (!statusInput.trim() || !db) return;
     setIsBroadcasting(true);
     try {
         const batch = writeBatch(db);
-        
-        // 1. Update Gathering Status
         const gatheringRef = doc(db, 'gatherings', liveGathering.id);
         batch.update(gatheringRef, {
             latestStatus: {
@@ -142,15 +175,14 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
             }
         });
 
-        // 2. Notify Attendees (Broadcast Alert)
         const recipients = liveGathering.attendees.filter(id => id !== currentUser.id);
         recipients.forEach(userId => {
             const notifRef = doc(collection(db, 'notifications'));
             batch.set(notifRef, {
                 type: 'broadcast',
                 fromUserId: currentUser.id,
-                fromUserName: liveGathering.title, // Use event title for context
-                fromUserAvatar: liveGathering.coverUrl, // Use event cover
+                fromUserName: liveGathering.title, 
+                fromUserAvatar: liveGathering.coverUrl, 
                 toUserId: userId,
                 targetId: liveGathering.id,
                 text: `Status Update: "${statusInput.trim()}"`,
@@ -162,10 +194,9 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
 
         await batch.commit();
         setStatusInput('');
-        window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Status Broadcasted to Network", type: 'success' } }));
+        window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Status Broadcasted", type: 'success' } }));
     } catch (e) {
         console.error(e);
-        window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Broadcast Failed", type: 'error' } }));
     } finally {
         setIsBroadcasting(false);
     }
@@ -173,10 +204,8 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
 
   const handleSyncToCalendar = (type: 'google' | 'ics') => {
     const startDate = new Date(liveGathering.date);
-    const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000); // Default to 2 hours
-
+    const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000); 
     const formatDate = (date: Date) => date.toISOString().replace(/-|:|\.\d\d\d/g, "");
-
     const title = liveGathering.title;
     const desc = `${liveGathering.description}\n\nProtocol ID: ${liveGathering.id}`;
     const loc = liveGathering.location;
@@ -196,7 +225,6 @@ DESCRIPTION:${desc}
 LOCATION:${loc}
 END:VEVENT
 END:VCALENDAR`;
-
         const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
         const link = document.createElement('a');
         link.href = window.URL.createObjectURL(blob);
@@ -205,7 +233,6 @@ END:VCALENDAR`;
         link.click();
         document.body.removeChild(link);
     }
-    
     window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Temporal Coordinates Exported", type: 'success' } }));
   };
 
@@ -232,11 +259,17 @@ END:VCALENDAR`;
                 <span className="text-[9px] font-black uppercase tracking-widest font-mono">Edit_Protocol</span>
             </button>
             <button 
-                onClick={() => setShowDeleteModal(true)}
+                onClick={() => {
+                    if (liveGathering.recurrenceId) {
+                        setShowRecurringDeleteOptions(true);
+                    } else {
+                        setShowDeleteModal(true);
+                    }
+                }}
                 className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-500 hover:bg-rose-100 hover:text-rose-600 rounded-xl border border-rose-100 transition-all active:scale-95"
             >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                <span className="text-[9px] font-black uppercase tracking-widest font-mono">Cancel_Event</span>
+                <span className="text-[9px] font-black uppercase tracking-widest font-mono">Cancel</span>
             </button>
           </div>
         )}
@@ -265,6 +298,11 @@ END:VCALENDAR`;
                <span className="px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] text-white bg-white/10 backdrop-blur-md border border-white/20">
                   {liveGathering.category}
                </span>
+               {liveGathering.recurrenceId && (
+                   <span className="px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] text-indigo-200 bg-indigo-900/50 backdrop-blur-md border border-indigo-500/30">
+                       SERIES: {liveGathering.recurrence?.toUpperCase()}
+                   </span>
+               )}
             </div>
             <h1 className="text-3xl md:text-5xl font-black text-white uppercase italic tracking-tighter leading-tight drop-shadow-lg mb-2">
                {liveGathering.title}
@@ -499,14 +537,41 @@ END:VCALENDAR`;
         />
       </div>
 
+      {/* Delete Confirmation Modal (Standard) */}
       <DeleteConfirmationModal 
          isOpen={showDeleteModal}
          title="ABORT_PROTOCOL"
          description="Permanently cancel this gathering? All linked data and invitations will be purged."
-         onConfirm={() => onDelete(liveGathering.id)}
+         onConfirm={() => handleDelete(false)}
          onCancel={() => setShowDeleteModal(false)}
          confirmText="CONFIRM_CANCEL"
       />
+
+      {/* Custom Series Delete Modal */}
+      {showRecurringDeleteOptions && (
+        <div className="fixed inset-0 z-[3000] flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowRecurringDeleteOptions(false)}></div>
+          <div className="relative bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden animate-in zoom-in-95 duration-500">
+             <div className="absolute top-0 left-0 w-full h-1.5 bg-rose-600" />
+             <div className="text-center space-y-6 mb-10">
+               <div className="w-20 h-20 bg-rose-50 text-rose-600 rounded-[2rem] flex items-center justify-center mx-auto shadow-sm relative">
+                 <ICONS.Temporal />
+               </div>
+               <div>
+                 <h3 className="text-2xl font-black text-slate-950 tracking-tighter uppercase italic leading-none mb-3">SERIES_DETECTED</h3>
+                 <p className="text-xs text-slate-500 font-bold leading-relaxed px-4 uppercase tracking-tight">
+                   This event is part of a recurring series. How would you like to proceed?
+                 </p>
+               </div>
+             </div>
+             <div className="flex flex-col gap-3">
+               <button onClick={() => handleDelete(false)} className="w-full py-5 bg-slate-100 text-slate-600 hover:bg-rose-100 hover:text-rose-600 rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.3em] transition-all active:scale-95">DELETE_INSTANCE</button>
+               <button onClick={() => handleDelete(true)} className="w-full py-6 bg-rose-600 text-white rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.4em] shadow-xl hover:bg-rose-700 transition-all active:scale-95">DELETE_ENTIRE_SERIES</button>
+               <button onClick={() => setShowRecurringDeleteOptions(false)} className="mt-2 text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600">Cancel</button>
+             </div>
+          </div>
+        </div>
+      )}
 
       {isEditOpen && (
         <CreateGatheringModal 
