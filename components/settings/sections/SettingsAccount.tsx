@@ -5,6 +5,7 @@ import { db } from '../../../services/firebase';
 import * as Firestore from 'firebase/firestore';
 const { doc, updateDoc } = Firestore as any;
 import { ICONS } from '../../../constants';
+import { DeleteConfirmationModal } from '../../ui/DeleteConfirmationModal';
 
 interface SettingsAccountProps {
   userData: User;
@@ -14,6 +15,7 @@ interface SettingsAccountProps {
 
 export const SettingsAccount: React.FC<SettingsAccountProps> = ({ userData, onLogout, addToast }) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
 
   const handleTwoFactorToggle = () => {
     // Simulation of 2FA handshake
@@ -35,17 +37,18 @@ export const SettingsAccount: React.FC<SettingsAccountProps> = ({ userData, onLo
     }
   };
 
-  const handleDeactivateAccount = async () => {
-    const confirmed = window.confirm("CRITICAL WARNING: This will suspend your node and hide all signals from the grid. You will be logged out. Continue?");
-    if (!confirmed) return;
-
+  const executeDeactivation = async () => {
     setIsProcessing(true);
+    setShowDeactivateModal(false); // Close modal immediately to show processing state in button if needed, or keep open. Better to close and show toast.
+    
     try {
       await updateDoc(doc(db, 'users', userData.id), {
         isSuspended: true,
         presenceStatus: 'Offline'
       });
       addToast("Node Deactivation Confirmed. Terminating...", "info");
+      
+      // Delay logout slightly to allow toast to be seen
       setTimeout(() => {
         onLogout();
       }, 1500);
@@ -115,7 +118,7 @@ export const SettingsAccount: React.FC<SettingsAccountProps> = ({ userData, onLo
             <p className="text-[10px] text-rose-700/60 mt-1 max-w-sm">This will temporarily hide your profile and signals. You can reactivate anytime by logging in.</p>
           </div>
           <button 
-            onClick={handleDeactivateAccount}
+            onClick={() => setShowDeactivateModal(true)}
             disabled={isProcessing}
             className="px-6 py-3 bg-white border border-rose-200 text-rose-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-rose-600 hover:text-white transition-all shadow-sm active:scale-95 disabled:opacity-50"
           >
@@ -123,6 +126,15 @@ export const SettingsAccount: React.FC<SettingsAccountProps> = ({ userData, onLo
           </button>
         </div>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={showDeactivateModal}
+        title="NODE_DEACTIVATION"
+        description="CRITICAL WARNING: This will suspend your digital presence and hide all signals from the grid. You will be logged out immediately. This action can be reversed by re-authenticating."
+        onConfirm={executeDeactivation}
+        onCancel={() => setShowDeactivateModal(false)}
+        confirmText="CONFIRM_DEACTIVATION"
+      />
     </div>
   );
 };
