@@ -9,7 +9,7 @@ const {
   sendPasswordResetEmail
 } = FirebaseAuth as any;
 import * as Firestore from 'firebase/firestore';
-const { doc, setDoc, serverTimestamp, collection, query, limit, getDocs, getDoc } = Firestore as any;
+const { doc, setDoc, serverTimestamp, collection, query, limit, getDocs, getDoc, getDocFromServer } = Firestore as any;
 import { SystemSettings } from '../../types';
 import { PrivacyPage } from '../legal/PrivacyPage';
 import { TermsPage } from '../legal/TermsPage';
@@ -152,9 +152,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
     setErrorDetails(null);
 
     try {
-      // SECURITY PROTOCOL: Fresh Server Check for Registration Lock
-      // This prevents race conditions where the local settings might be stale.
-      const settingsSnap = await getDoc(doc(db, 'settings', 'global'));
+      // SECURITY PROTOCOL: Fresh Server Check for Registration Lock using getDocFromServer
+      // This bypasses the cache completely to get the real-time status.
+      const settingsSnap = await getDocFromServer(doc(db, 'settings', 'global'));
+      
       if (settingsSnap.exists() && settingsSnap.data().registrationDisabled) {
          setErrorDetails({ code: 'REG_DISABLED_SERVER', message: 'Registration is locked by Citadel Command.' });
          setIsProcessing(false);
@@ -416,8 +417,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
                       </button>
                       <button 
                         type="button"
-                        onClick={() => { setShowRegisterModal(true); setAuthMode('register'); setErrorDetails(null); setEmail(''); setPassword(''); }}
-                        className="text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-700 transition-colors"
+                        onClick={() => {
+                          if (systemSettings.registrationDisabled) {
+                            setErrorDetails({ code: 'REG_DISABLED_UI', message: 'Registration currently closed.' });
+                          } else {
+                            setShowRegisterModal(true);
+                            setAuthMode('register');
+                            setErrorDetails(null);
+                            setEmail('');
+                            setPassword('');
+                          }
+                        }}
+                        className={`text-[10px] font-black uppercase tracking-widest transition-colors ${systemSettings.registrationDisabled ? 'text-slate-300 cursor-not-allowed' : 'text-indigo-600 hover:text-indigo-700'}`}
                       >
                         Create_Node
                       </button>

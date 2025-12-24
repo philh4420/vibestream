@@ -81,14 +81,43 @@ const MaintenanceScreen = () => (
 );
 
 const FeatureDisabledScreen = ({ featureName }: { featureName: string }) => (
-  <div className="flex flex-col items-center justify-center h-full py-20 text-center opacity-50">
-    <div className="w-20 h-20 bg-slate-100 rounded-[2rem] flex items-center justify-center mb-6 text-slate-400">
-      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+  <div className="flex flex-col items-center justify-center h-full w-full min-h-[60vh] p-6 animate-in fade-in duration-700 relative overflow-hidden rounded-[3rem] border border-slate-100 bg-slate-50/50">
+    
+    {/* Background Patterns */}
+    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-5 mix-blend-overlay" />
+    <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 rounded-full blur-[80px]" />
+    <div className="absolute bottom-0 left-0 w-64 h-64 bg-slate-300/10 rounded-full blur-[80px]" />
+
+    <div className="relative z-10 flex flex-col items-center text-center max-w-lg mx-auto">
+      
+      {/* Icon Container */}
+      <div className="relative mb-8 group">
+        <div className="absolute inset-0 bg-rose-500/20 rounded-[2rem] blur-xl group-hover:blur-2xl transition-all duration-700" />
+        <div className="relative w-28 h-28 bg-white rounded-[2rem] flex items-center justify-center shadow-xl border border-white/50">
+           <svg className="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+           </svg>
+           <div className="absolute -bottom-3 -right-3 bg-rose-500 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border-2 border-white shadow-lg flex items-center gap-1.5">
+             <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+             LOCKED
+           </div>
+        </div>
+      </div>
+
+      <h2 className="text-4xl md:text-5xl font-black text-slate-900 uppercase italic tracking-tighter mb-4 leading-none">
+        Access_Denied
+      </h2>
+      
+      <p className="text-sm font-medium text-slate-500 leading-relaxed mb-8">
+        The <span className="text-slate-900 font-bold bg-white px-2 py-0.5 rounded-md border border-slate-200 mx-1">{featureName}</span> protocol has been strategically disabled by grid administration. Access to this sector is currently restricted.
+      </p>
+
+      <div className="flex items-center gap-2 px-5 py-2.5 bg-white rounded-xl border border-slate-200 shadow-sm">
+         <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] font-mono">SYSTEM_CODE:</span>
+         <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest font-mono">503_SERVICE_UNAVAILABLE</span>
+      </div>
+
     </div>
-    <h3 className="text-xl font-black uppercase tracking-widest italic text-slate-900">Protocol_Offline</h3>
-    <p className="text-[10px] font-mono mt-2 font-bold text-slate-500 uppercase tracking-widest">
-      The {featureName} module is currently disabled by system administration.
-    </p>
   </div>
 );
 
@@ -248,8 +277,6 @@ export default function App() {
       }
     });
 
-    if (!user) return unsubSettings;
-
     // Sync All Users (Lightweight)
     const unsubUsers = onSnapshot(query(collection(db, 'users'), limit(100)), (snap: any) => {
       setAllUsers(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as User)));
@@ -265,7 +292,7 @@ export default function App() {
       unsubUsers();
       unsubPosts();
     };
-  }, [user]);
+  }, []); // Run once on mount to ensure settings are always available for LandingPage
 
   // --- ACTIONS ---
 
