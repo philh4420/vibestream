@@ -10,6 +10,23 @@ const { initializeAppCheck, ReCaptchaEnterpriseProvider } = FirebaseAppCheck as 
 
 import { CONFIG } from './config';
 
+// Enable local debug token for App Check to prevent 400 errors during development
+// Check if window exists to support SSR/build environments
+if (typeof window !== 'undefined') {
+  // Use a more robust check for localhost including IPv6
+  const isLocalhost = Boolean(
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '[::1]' ||
+    window.location.hostname.match(/^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/)
+  );
+
+  if (isLocalhost) {
+    // @ts-ignore
+    self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+    console.debug('VibeStream Security: App Check Debug Token Enabled for Localhost');
+  }
+}
+
 let app;
 
 try {

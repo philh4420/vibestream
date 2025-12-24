@@ -18,7 +18,6 @@ export const fetchWeather = async (params: { query?: string; coords?: { lat: num
       let query = (params.query || 'London').trim();
       
       // Sanitization: Filter out system/fictional locations to prevent API 404s
-      // This ensures users with creative locations like "Grid Node" still see a default weather (London)
       const invalidLocations = ['grid node', 'earth', 'nowhere', 'unknown', 'system', 'cybertron', 'mars', 'node'];
       const normalizedQuery = query.toLowerCase();
       
@@ -29,6 +28,17 @@ export const fetchWeather = async (params: { query?: string; coords?: { lat: num
         normalizedQuery === 'uk'
       ) {
         query = 'London';
+      }
+
+      // Address Cleaning: If query contains commas (e.g. "Street, City, Country"), 
+      // strip the street part to avoid 404s from OpenWeatherMap which prefers "City, Country".
+      if (query.includes(',')) {
+        const parts = query.split(',').map(p => p.trim()).filter(Boolean);
+        // If we have 3 or more parts (e.g. Street, City, UK), take the last 2 (City, UK)
+        // If we have 2 parts (City, UK), keep as is.
+        if (parts.length > 2) {
+           query = parts.slice(-2).join(',');
+        }
       }
       
       url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(query)}&units=metric&appid=${apiKey}`;
