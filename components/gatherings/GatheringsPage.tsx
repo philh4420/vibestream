@@ -253,6 +253,7 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
                const capacity = gathering.maxAttendees || 0;
                const currentCount = gathering.attendees.length;
                const isFull = capacity > 0 && currentCount >= capacity;
+               const isVideoCover = gathering.coverUrl?.match(/\.(mp4|webm|mov)$/i) || gathering.coverUrl?.includes('/video/upload/');
 
                return (
                  <div 
@@ -263,7 +264,15 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
                  >
                     {/* Image Layer */}
                     <div className="relative aspect-video rounded-[2.5rem] overflow-hidden bg-slate-100 mb-6">
-                       <img src={gathering.coverUrl} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="" />
+                       {isVideoCover ? (
+                          <video 
+                            src={gathering.coverUrl} 
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                            muted loop autoPlay playsInline 
+                          />
+                       ) : (
+                          <img src={gathering.coverUrl} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="" />
+                       )}
                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
                        
                        <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md rounded-2xl px-3 py-2 text-center min-w-[60px] shadow-lg">

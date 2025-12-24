@@ -47,6 +47,7 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [showRecurringDeleteOptions, setShowRecurringDeleteOptions] = useState(false);
+  const [myFollowing, setMyFollowing] = useState<Set<string>>(new Set());
   
   // Status Broadcasting State
   const [statusInput, setStatusInput] = useState('');
@@ -66,6 +67,22 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
     return () => unsub();
   }, [initialGathering.id]);
 
+  // Fetch Social Graph (Following)
+  useEffect(() => {
+    const fetchSocialGraph = async () => {
+        if (!db || !currentUser.id) return;
+        try {
+            const q = collection(db, 'users', currentUser.id, 'following');
+            const snap = await getDocs(q);
+            const ids = new Set<string>(snap.docs.map((d: any) => d.id));
+            setMyFollowing(ids);
+        } catch (e) {
+            console.error("Social Graph Sync Error", e);
+        }
+    };
+    fetchSocialGraph();
+  }, [currentUser.id]);
+
   const dateObj = new Date(liveGathering.date);
   const isOrganizer = liveGathering.organizerId === currentUser.id;
   const isAttending = liveGathering.attendees.includes(currentUser.id);
@@ -75,9 +92,18 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
   const currentCount = liveGathering.attendees.length;
   const isFull = capacity > 0 && currentCount >= capacity;
 
+  // Split Attendees into Mutuals (Network) and Globals
   const attendeesList = liveGathering.attendees
     .map(id => allUsers.find(u => u.id === id))
     .filter(Boolean) as User[];
+
+  const mutualNodes = attendeesList.filter(u => myFollowing.has(u.id) && u.id !== currentUser.id);
+  const globalNodes = attendeesList.filter(u => !myFollowing.has(u.id) && u.id !== currentUser.id);
+  // Add self to global nodes if attending, to ensure count matches
+  if (isAttending) {
+      const me = allUsers.find(u => u.id === currentUser.id);
+      if (me) globalNodes.unshift(me);
+  }
 
   // Format Date and Time
   const dateStr = dateObj.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -236,6 +262,8 @@ END:VCALENDAR`;
     window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Temporal Coordinates Exported", type: 'success' } }));
   };
 
+  const isVideoCover = liveGathering.coverUrl?.match(/\.(mp4|webm|mov)$/i) || liveGathering.coverUrl?.includes('/video/upload/');
+
   return (
     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24">
       
@@ -277,7 +305,15 @@ END:VCALENDAR`;
 
       {/* 2. HERO SECTION */}
       <div className="relative h-[300px] md:h-[400px] rounded-[3rem] overflow-hidden group shadow-2xl border border-white/20">
-         <img src={liveGathering.coverUrl} className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-105" alt={liveGathering.title} />
+         {isVideoCover ? (
+            <video 
+              src={liveGathering.coverUrl} 
+              className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-105" 
+              muted loop autoPlay playsInline 
+            />
+         ) : (
+            <img src={liveGathering.coverUrl} className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-105" alt={liveGathering.title} />
+         )}
          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/40 to-transparent" />
          
          <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12">
@@ -478,20 +514,52 @@ END:VCALENDAR`;
                        </div>
                    )}
                    
-                   {attendeesList.length > 0 ? (
+                   {/* SOCIAL GRAPH / MUTUAL CONNECTIONS */}
+                   {mutualNodes.length > 0 && (
+                       <div className="mb-6 p-4 rounded-3xl bg-indigo-50/50 border border-indigo-100/50 relative overflow-hidden group/mutual">
+                           <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 blur-2xl rounded-full translate-x-1/3 -translate-y-1/3" />
+                           
+                           <div className="relative z-10">
+                               <div className="flex items-center gap-2 mb-3">
+                                   <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse shadow-[0_0_8px_#6366f1]" />
+                                   <p className="text-[8px] font-black text-indigo-600 uppercase tracking-[0.3em] font-mono">Neural_Links</p>
+                               </div>
+                               
+                               <div className="flex -space-x-3 mb-3">
+                                   {mutualNodes.slice(0, 5).map((user) => (
+                                       <div key={user.id} className="w-10 h-10 rounded-full border-[3px] border-white bg-indigo-100 shadow-sm relative hover:z-10 hover:scale-110 transition-transform cursor-pointer" title={user.displayName}>
+                                           <img src={user.avatarUrl} className="w-full h-full object-cover rounded-full" alt="" />
+                                       </div>
+                                   ))}
+                                   {mutualNodes.length > 5 && (
+                                       <div className="w-10 h-10 rounded-full border-[3px] border-white bg-indigo-600 text-white flex items-center justify-center text-[9px] font-black shadow-sm z-10">
+                                           +{mutualNodes.length - 5}
+                                       </div>
+                                   )}
+                               </div>
+                               
+                               <p className="text-[10px] font-bold text-slate-600 leading-tight">
+                                   <span className="text-indigo-600">{mutualNodes.length} connections</span> are part of this protocol.
+                               </p>
+                           </div>
+                       </div>
+                   )}
+
+                   {/* GLOBAL ATTENDEE GRID */}
+                   {globalNodes.length > 0 ? (
                       <div className="grid grid-cols-4 gap-2 mb-6">
-                         {attendeesList.slice(0, 11).map((user, i) => (
+                         {globalNodes.slice(0, 11).map((user, i) => (
                             <div key={user.id || i} className="aspect-square rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 relative group cursor-pointer" title={user.displayName}>
                                <img src={user.avatarUrl} className="w-full h-full object-cover" alt="" />
                             </div>
                          ))}
-                         {attendeesList.length > 11 && (
+                         {globalNodes.length > 11 && (
                             <div className="aspect-square rounded-2xl bg-slate-100 flex items-center justify-center border border-slate-200 text-[10px] font-black text-slate-400">
-                               +{attendeesList.length - 11}
+                               +{globalNodes.length - 11}
                             </div>
                          )}
                       </div>
-                   ) : (
+                   ) : mutualNodes.length === 0 && (
                       <p className="text-xs text-slate-400 italic text-center py-4 mb-4">No signals registered yet.</p>
                    )}
 

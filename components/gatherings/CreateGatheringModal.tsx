@@ -75,6 +75,7 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
 
   const isEditing = !!initialData;
   const isRecurring = initialData?.recurrence && initialData.recurrence !== 'none';
+  const isVideoCover = formData.coverUrl?.match(/\.(mp4|webm|mov)$/i) || formData.coverUrl?.includes('/video/upload/');
 
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-6 animate-in fade-in duration-300">
@@ -97,14 +98,23 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
                 onClick={() => fileInputRef.current?.click()}
                 className="relative h-48 w-full rounded-[2.5rem] overflow-hidden bg-slate-100 cursor-pointer group border-2 border-dashed border-slate-200 hover:border-indigo-400 transition-colors"
               >
-                 <img src={formData.coverUrl} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100" alt="" />
+                 {isVideoCover ? (
+                    <video 
+                      src={formData.coverUrl} 
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100" 
+                      muted loop autoPlay playsInline 
+                    />
+                 ) : (
+                    <img src={formData.coverUrl} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100" alt="" />
+                 )}
+                 
                  <div className="absolute inset-0 flex items-center justify-center">
                     <div className="bg-white/80 backdrop-blur-md px-6 py-3 rounded-2xl shadow-lg flex items-center gap-3">
                        <ICONS.Create />
-                       <span className="text-[9px] font-black uppercase tracking-widest text-slate-900">{isUploading ? 'UPLOADING...' : 'CHANGE_COVER'}</span>
+                       <span className="text-[9px] font-black uppercase tracking-widest text-slate-900">{isUploading ? 'UPLOADING...' : 'CHANGE_MEDIA'}</span>
                     </div>
                  </div>
-                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
+                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*,video/*" onChange={handleFileUpload} />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

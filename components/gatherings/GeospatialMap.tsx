@@ -46,14 +46,28 @@ export const GeospatialMap: React.FC<GeospatialMapProps> = ({ gathering, organiz
       
       setIsGeocoding(true);
       try {
-        // Using OpenStreetMap Nominatim API for geocoding
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(gathering.location)}&limit=1`);
+        // CLEANUP: Extract likely city name if address is complex (simple heuristic)
+        // This helps Open-Meteo which prefers City names over full street addresses
+        let query = gathering.location;
+        if (query.includes(',')) {
+            // If "Street, City, Country", try to grab "City" or "City, Country"
+            const parts = query.split(',').map(s => s.trim());
+            if (parts.length >= 2) {
+                // Heuristic: Last 2 parts often contain City/Country
+                query = parts.slice(-2).join(' ');
+            }
+        }
+
+        // Use Open-Meteo Geocoding API (CORS Friendly, Free)
+        const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=en&format=json`);
         const data = await response.json();
         
-        if (data && data.length > 0) {
-          const lat = parseFloat(data[0].lat);
-          const lon = parseFloat(data[0].lon);
+        if (data && data.results && data.results.length > 0) {
+          const lat = data.results[0].latitude;
+          const lon = data.results[0].longitude;
           setPosition([lat, lon]);
+        } else {
+            console.warn("Geocoding: No results found for", query);
         }
       } catch (error) {
         console.error("Geocoding Error:", error);
