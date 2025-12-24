@@ -10,11 +10,12 @@ const {
 } = FirebaseAuth as any;
 import * as Firestore from 'firebase/firestore';
 const { doc, setDoc, serverTimestamp, collection, query, limit, getDocs, getDoc, getDocFromServer } = Firestore as any;
-import { SystemSettings } from '../../types';
+import { SystemSettings, ToastMessage } from '../../types';
 import { PrivacyPage } from '../legal/PrivacyPage';
 import { TermsPage } from '../legal/TermsPage';
 import { CookiesPage } from '../legal/CookiesPage';
 import { ICONS } from '../../constants';
+import { Toast } from '../ui/Toast';
 
 interface LandingPageProps {
   onEnter: () => void;
@@ -48,6 +49,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
   const searchTimeoutRef = useRef<any>(null);
 
   const [errorDetails, setErrorDetails] = useState<{ code: string; message: string } | null>(null);
+  
+  // Local Toast System
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    const id = Math.random().toString(36).substr(2, 9);
+    setToasts(prev => [...prev, { id, message, type }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
 
   // --- HOLD TO SYNC LOGIC ---
   const handleHoldStart = () => {
@@ -139,7 +152,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
     
     // Quick local check
     if (systemSettings.registrationDisabled) {
-      setErrorDetails({ code: 'REG_DISABLED', message: 'Registration is currently disabled.' });
+      addToast('Registration Protocols Disabled: New node creation restricted.', 'error');
       return;
     }
 
@@ -419,16 +432,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
                         type="button"
                         onClick={() => {
                           if (systemSettings.registrationDisabled) {
-                            setErrorDetails({ code: 'REG_DISABLED_UI', message: 'Registration currently closed.' });
-                          } else {
-                            setShowRegisterModal(true);
-                            setAuthMode('register');
-                            setErrorDetails(null);
-                            setEmail('');
-                            setPassword('');
+                            addToast("Registration Protocols Disabled: New node creation is currently restricted by Grid Command.", "error");
+                            return;
                           }
+                          setShowRegisterModal(true);
+                          setAuthMode('register');
+                          setErrorDetails(null);
+                          setEmail('');
+                          setPassword('');
                         }}
-                        className={`text-[10px] font-black uppercase tracking-widest transition-colors ${systemSettings.registrationDisabled ? 'text-slate-300 cursor-not-allowed' : 'text-indigo-600 hover:text-indigo-700'}`}
+                        className={`text-[10px] font-black uppercase tracking-widest transition-colors ${systemSettings.registrationDisabled ? 'text-slate-400 cursor-not-allowed hover:text-slate-500' : 'text-indigo-600 hover:text-indigo-700'}`}
                       >
                         Create_Node
                       </button>
@@ -590,6 +603,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
           </div>
         </div>
       )}
+
+      {/* LOCAL TOAST SYSTEM */}
+      {toasts.map(t => (
+        <div key={t.id} className="fixed top-6 right-6 z-[9999]">
+          <Toast toast={t} onClose={removeToast} />
+        </div>
+      ))}
 
     </div>
   );
