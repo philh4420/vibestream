@@ -64,7 +64,7 @@ export interface User {
   }[];
 }
 
-export type NotificationType = 'like' | 'comment' | 'follow' | 'mention' | 'broadcast' | 'system' | 'relay' | 'call' | 'cluster_invite' | 'packet_summary' | 'message' | 'gathering_rsvp' | 'gathering_create';
+export type NotificationType = 'like' | 'comment' | 'follow' | 'mention' | 'broadcast' | 'system' | 'relay' | 'call' | 'cluster_invite' | 'packet_summary' | 'message' | 'gathering_rsvp' | 'gathering_create' | 'gathering_promote';
 
 export interface AppNotification {
   id: string;
@@ -178,6 +178,8 @@ export interface Gathering {
   category: 'Social' | 'Tech' | 'Gaming' | 'Nightlife' | 'Workshop';
   coverUrl: string;
   attendees: string[]; // Array of User IDs
+  maxAttendees?: number; // Optional capacity
+  waitlist?: string[]; // Array of User IDs in queue
   createdAt: any;
   linkedChatId?: string; // Neural Lobby ID
 }

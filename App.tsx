@@ -296,7 +296,6 @@ const App: React.FC = () => {
     handleNavigate(AppRoute.CLUSTERS);
   };
 
-  // ... (Other handlers like handleViewUserProfile, handleSearch, handleOpenCreate, handleLogout, insertEmoji, handleGifSelect, handleCreatePost, handleLike, handleBookmark remain unchanged) ...
   const handleViewUserProfile = (user: VibeUser) => {
     setViewingProfile(user);
     handleNavigate(AppRoute.PROFILE);
@@ -622,48 +621,103 @@ const App: React.FC = () => {
     }
   };
 
-  const handleRSVP = async (gatheringId: string, isAttending: boolean) => {
+  // --- UPDATED RSVP LOGIC ---
+  const handleRSVP = async (gatheringId: string, isAttendingOrWaitlisted: boolean) => {
     if (!db || !currentUser || !selectedGathering) return;
     
     try {
       const gatheringRef = doc(db, 'gatherings', gatheringId);
       
-      // Update Gathering
-      await updateDoc(gatheringRef, {
-        attendees: isAttending ? arrayRemove(currentUser.uid) : arrayUnion(currentUser.uid)
-      });
+      // Get fresh data to ensure capacity check is accurate
+      const freshSnap = await getDoc(gatheringRef);
+      if (!freshSnap.exists()) return;
+      const currentData = freshSnap.data() as Gathering;
+      
+      const userId = currentUser.uid;
+      const isCurrentlyAttending = currentData.attendees.includes(userId);
+      const isCurrentlyWaitlisted = currentData.waitlist?.includes(userId);
+      const max = currentData.maxAttendees || 0;
+      const currentCount = currentData.attendees.length;
 
-      // Update Local State for immediate feedback
-      setSelectedGathering(prev => {
-          if(!prev) return null;
-          return {
-              ...prev,
-              attendees: isAttending 
-                  ? prev.attendees.filter(id => id !== currentUser.uid) 
-                  : [...prev.attendees, currentUser.uid]
-          };
-      });
+      const batch = writeBatch(db);
 
-      // Update Linked Chat (Lobby)
-      if (selectedGathering.linkedChatId) {
-          const chatRef = doc(db, 'chats', selectedGathering.linkedChatId);
-          if (isAttending) {
-              await updateDoc(chatRef, { participants: arrayRemove(currentUser.uid) });
-          } else {
-              const participantUpdate: any = {};
-              participantUpdate[`participantData.${currentUser.uid}`] = { 
-                  displayName: userData?.displayName, 
-                  avatarUrl: userData?.avatarUrl 
-              };
-              await updateDoc(chatRef, { 
-                  participants: arrayUnion(currentUser.uid),
-                  ...participantUpdate
-              });
-          }
+      if (isAttendingOrWaitlisted) {
+        // --- WITHDRAWING ---
+        if (isCurrentlyAttending) {
+            // Remove from attendees
+            batch.update(gatheringRef, { attendees: arrayRemove(userId) });
+            
+            // Auto-promote from waitlist logic
+            if (currentData.waitlist && currentData.waitlist.length > 0) {
+                const nextUserId = currentData.waitlist[0]; // First in line
+                batch.update(gatheringRef, { 
+                    waitlist: arrayRemove(nextUserId),
+                    attendees: arrayUnion(nextUserId) 
+                });
+
+                // Notify promoted user
+                const notifRef = doc(collection(db, 'notifications'));
+                batch.set(notifRef, {
+                    type: 'gathering_promote',
+                    fromUserId: 'SYSTEM',
+                    fromUserName: 'VibeStream Protocol',
+                    fromUserAvatar: '',
+                    toUserId: nextUserId,
+                    targetId: gatheringId,
+                    text: `You have been promoted from the waitlist for "${currentData.title}"`,
+                    isRead: false,
+                    timestamp: serverTimestamp(),
+                    pulseFrequency: 'velocity'
+                });
+            }
+
+            // Update Lobby
+            if (currentData.linkedChatId) {
+                batch.update(doc(db, 'chats', currentData.linkedChatId), {
+                    participants: arrayRemove(userId)
+                });
+            }
+            addToast("Withdrawn from Gathering", "info");
+
+        } else if (isCurrentlyWaitlisted) {
+            // Remove from waitlist
+            batch.update(gatheringRef, { waitlist: arrayRemove(userId) });
+            addToast("Removed from Waitlist", "info");
+        }
+
+      } else {
+        // --- JOINING ---
+        if (max > 0 && currentCount >= max) {
+            // Join Waitlist
+            batch.update(gatheringRef, { waitlist: arrayUnion(userId) });
+            addToast("Joined Waitlist", "info");
+        } else {
+            // Join Attendees
+            batch.update(gatheringRef, { attendees: arrayUnion(userId) });
+            
+            // Add to Lobby
+            if (currentData.linkedChatId) {
+                const chatRef = doc(db, 'chats', currentData.linkedChatId);
+                const participantUpdate: any = {};
+                participantUpdate[`participantData.${userId}`] = { 
+                    displayName: userData?.displayName, 
+                    avatarUrl: userData?.avatarUrl 
+                };
+                batch.update(chatRef, { 
+                    participants: arrayUnion(userId),
+                    ...participantUpdate
+                });
+            }
+            addToast("RSVP Confirmed", "success");
+        }
       }
 
-      addToast(isAttending ? "Withdrawn from Gathering" : "RSVP Confirmed", "success");
+      await batch.commit();
+
+      // Optimistic UI Update for immediate feedback (simplified)
+      // Actual state will sync via Firestore snapshot in SingleGatheringView
     } catch (e) {
+      console.error(e);
       addToast("RSVP Protocol Failed", "error");
     }
   };

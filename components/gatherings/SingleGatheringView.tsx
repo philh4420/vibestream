@@ -49,6 +49,12 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
   const dateObj = new Date(liveGathering.date);
   const isOrganizer = liveGathering.organizerId === currentUser.id;
   const isAttending = liveGathering.attendees.includes(currentUser.id);
+  const isWaitlisted = liveGathering.waitlist?.includes(currentUser.id);
+  
+  const capacity = liveGathering.maxAttendees || 0;
+  const currentCount = liveGathering.attendees.length;
+  const isFull = capacity > 0 && currentCount >= capacity;
+
   const attendeesList = liveGathering.attendees
     .map(id => allUsers.find(u => u.id === id))
     .filter(Boolean) as User[];
@@ -109,6 +115,16 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
          
          <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12">
             <div className="flex flex-wrap items-center gap-3 mb-4">
+               {isWaitlisted && (
+                   <span className="px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] text-white backdrop-blur-md border border-white/20 bg-amber-500/80">
+                       WAITLISTED
+                   </span>
+               )}
+               {isFull && !isAttending && !isWaitlisted && (
+                   <span className="px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] text-white backdrop-blur-md border border-white/20 bg-rose-500/80">
+                       CAPACITY_FULL
+                   </span>
+               )}
                <span className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] text-white backdrop-blur-md border border-white/20 ${liveGathering.type === 'virtual' ? 'bg-purple-600/80' : 'bg-emerald-600/80'}`}>
                   {liveGathering.type === 'virtual' ? 'NEURAL_LINK' : 'GEOSPATIAL'}
                </span>
@@ -184,8 +200,31 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
             <div className="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm">
                <div className="flex justify-between items-center mb-6">
                   <h3 className="text-sm font-black text-slate-900 uppercase italic tracking-tight">Confirmed_Nodes</h3>
-                  <span className="text-[9px] font-black text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded-lg">{liveGathering.attendees.length}</span>
+                  <span className="text-[9px] font-black text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded-lg">{currentCount}</span>
                </div>
+
+               {/* Capacity Bar */}
+               {capacity > 0 && (
+                   <div className="mb-6">
+                       <div className="flex justify-between items-end mb-2">
+                           <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest font-mono">Signal_Capacity</span>
+                           <span className={`text-[9px] font-black font-mono ${isFull ? 'text-rose-500' : 'text-slate-600'}`}>
+                               {currentCount} / {capacity}
+                           </span>
+                       </div>
+                       <div className="h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-50">
+                           <div 
+                                className={`h-full rounded-full transition-all duration-1000 ${isFull ? 'bg-rose-500' : 'bg-purple-600'}`} 
+                                style={{ width: `${Math.min((currentCount / capacity) * 100, 100)}%` }} 
+                           />
+                       </div>
+                       {liveGathering.waitlist && liveGathering.waitlist.length > 0 && (
+                           <p className="text-[8px] font-black text-amber-500 uppercase tracking-widest font-mono mt-2 text-right">
+                               +{liveGathering.waitlist.length} IN WAITLIST
+                           </p>
+                       )}
+                   </div>
+               )}
                
                {attendeesList.length > 0 ? (
                   <div className="grid grid-cols-4 gap-2 mb-6">
@@ -207,10 +246,18 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
                 <div className="flex flex-col gap-2">
                     {!isOrganizer && (
                     <button 
-                        onClick={() => onRSVP(liveGathering.id, isAttending)}
-                        className={`w-full py-4 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 shadow-lg ${isAttending ? 'bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-500' : 'bg-indigo-600 text-white hover:bg-indigo-500'}`}
+                        onClick={() => onRSVP(liveGathering.id, isAttending || isWaitlisted || false)}
+                        className={`w-full py-4 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 shadow-lg ${
+                            isAttending 
+                            ? 'bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-500' 
+                            : isWaitlisted 
+                            ? 'bg-amber-100 text-amber-600 hover:bg-rose-50 hover:text-rose-500'
+                            : isFull 
+                            ? 'bg-amber-500 text-white hover:bg-amber-600'
+                            : 'bg-indigo-600 text-white hover:bg-indigo-500'
+                        }`}
                     >
-                        {isAttending ? 'WITHDRAW_SIGNAL' : 'RSVP_CONFIRM'}
+                        {isAttending ? 'WITHDRAW_SIGNAL' : isWaitlisted ? 'LEAVE_WAITLIST' : isFull ? 'JOIN_WAITLIST' : 'RSVP_CONFIRM'}
                     </button>
                     )}
                     {isAttending && liveGathering.linkedChatId && (

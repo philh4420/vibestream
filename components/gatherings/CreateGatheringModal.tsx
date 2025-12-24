@@ -25,7 +25,8 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
         location: initialData.location,
         type: initialData.type,
         category: initialData.category,
-        coverUrl: initialData.coverUrl
+        coverUrl: initialData.coverUrl,
+        maxAttendees: initialData.maxAttendees || 0
       };
     }
     return {
@@ -36,7 +37,8 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
       location: '',
       type: 'physical' as 'physical' | 'virtual',
       category: 'Social' as 'Social' | 'Tech' | 'Gaming' | 'Nightlife' | 'Workshop',
-      coverUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=2000'
+      coverUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=2000',
+      maxAttendees: 0
     };
   });
 
@@ -63,6 +65,7 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
     const combinedDate = new Date(`${formData.date}T${formData.time}`);
     onConfirm({
       ...formData,
+      maxAttendees: formData.maxAttendees > 0 ? parseInt(formData.maxAttendees as any) : null,
       date: combinedDate.toISOString()
     });
   };
@@ -126,21 +129,37 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
               </div>
            </div>
 
-           {/* Step 2: Coordinates */}
+           {/* Step 2: Coordinates & Capacity */}
            <div className="space-y-4 pt-4 border-t border-slate-50">
-              <div className="flex gap-4">
-                 <button 
-                   onClick={() => setFormData({...formData, type: 'physical'})}
-                   className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${formData.type === 'physical' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400'}`}
-                 >
-                   Geospatial
-                 </button>
-                 <button 
-                   onClick={() => setFormData({...formData, type: 'virtual'})}
-                   className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${formData.type === 'virtual' ? 'bg-purple-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400'}`}
-                 >
-                   Neural Link
-                 </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="space-y-2">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono ml-2">Mode</label>
+                    <div className="flex gap-2">
+                        <button 
+                        onClick={() => setFormData({...formData, type: 'physical'})}
+                        className={`flex-1 py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all ${formData.type === 'physical' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400'}`}
+                        >
+                        Geospatial
+                        </button>
+                        <button 
+                        onClick={() => setFormData({...formData, type: 'virtual'})}
+                        className={`flex-1 py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all ${formData.type === 'virtual' ? 'bg-purple-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400'}`}
+                        >
+                        Neural Link
+                        </button>
+                    </div>
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono ml-2">Max Nodes (Capacity)</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      value={formData.maxAttendees} 
+                      onChange={e => setFormData({...formData, maxAttendees: parseInt(e.target.value)})}
+                      placeholder="0 for unlimited"
+                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all"
+                    />
+                 </div>
               </div>
 
               <div className="space-y-2">

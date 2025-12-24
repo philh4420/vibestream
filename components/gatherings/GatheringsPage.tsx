@@ -16,6 +16,7 @@ const {
   where,
   writeBatch,
   getDocs,
+  getDoc,
   setDoc
 } = Firestore as any;
 import { User, Gathering, Region } from '../../types';
@@ -73,6 +74,7 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
         organizerName: currentUser.displayName,
         organizerAvatar: currentUser.avatarUrl,
         attendees: [currentUser.id],
+        waitlist: [],
         createdAt: serverTimestamp()
       });
 
@@ -127,56 +129,107 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
     }
   };
 
-  const handleRSVP = async (gatheringId: string, isAttending: boolean) => {
+  const handleRSVP = async (gatheringId: string, isAttendingOrWaitlisted: boolean) => {
     if (!db || !currentUser) return;
     const gathering = gatherings.find(g => g.id === gatheringId);
     if (!gathering) return;
 
     try {
       const gatheringRef = doc(db, 'gatherings', gatheringId);
-      
-      // Update Gathering
-      await updateDoc(gatheringRef, {
-        attendees: isAttending ? arrayRemove(currentUser.id) : arrayUnion(currentUser.id)
-      });
+      // Fetch fresh data for capacity check
+      const freshSnap = await getDoc(gatheringRef);
+      if (!freshSnap.exists()) return;
+      const freshData = freshSnap.data() as Gathering;
 
-      // Update Linked Chat (Lobby)
-      if (gathering.linkedChatId) {
-          const chatRef = doc(db, 'chats', gathering.linkedChatId);
-          if (isAttending) {
-              // Remove
-              await updateDoc(chatRef, { participants: arrayRemove(currentUser.id) });
-          } else {
-              // Add
-              const participantUpdate: any = {};
-              participantUpdate[`participantData.${currentUser.id}`] = { 
-                  displayName: currentUser.displayName, 
-                  avatarUrl: currentUser.avatarUrl 
-              };
-              await updateDoc(chatRef, { 
-                  participants: arrayUnion(currentUser.id),
-                  ...participantUpdate
-              });
-          }
+      const userId = currentUser.id;
+      const isCurrentlyAttending = freshData.attendees.includes(userId);
+      const isCurrentlyWaitlisted = freshData.waitlist?.includes(userId);
+      const max = freshData.maxAttendees || 0;
+      const currentCount = freshData.attendees.length;
+
+      const batch = writeBatch(db);
+
+      if (isAttendingOrWaitlisted) {
+        // --- WITHDRAWING ---
+        if (isCurrentlyAttending) {
+            batch.update(gatheringRef, { attendees: arrayRemove(userId) });
+            
+            // Auto-promote
+            if (freshData.waitlist && freshData.waitlist.length > 0) {
+                const nextUserId = freshData.waitlist[0];
+                batch.update(gatheringRef, {
+                    waitlist: arrayRemove(nextUserId),
+                    attendees: arrayUnion(nextUserId)
+                });
+                
+                // Notify promoted user
+                const notifRef = doc(collection(db, 'notifications'));
+                batch.set(notifRef, {
+                    type: 'gathering_promote',
+                    fromUserId: 'SYSTEM',
+                    fromUserName: 'VibeStream Protocol',
+                    fromUserAvatar: '',
+                    toUserId: nextUserId,
+                    targetId: gatheringId,
+                    text: `You have been promoted from the waitlist for "${gathering.title}"`,
+                    isRead: false,
+                    timestamp: serverTimestamp(),
+                    pulseFrequency: 'velocity'
+                });
+            }
+
+            if (gathering.linkedChatId) {
+                batch.update(doc(db, 'chats', gathering.linkedChatId), { participants: arrayRemove(userId) });
+            }
+            addToast("Withdrawn from Gathering", "info");
+
+        } else if (isCurrentlyWaitlisted) {
+            batch.update(gatheringRef, { waitlist: arrayRemove(userId) });
+            addToast("Removed from Waitlist", "info");
+        }
+
+      } else {
+        // --- JOINING ---
+        if (max > 0 && currentCount >= max) {
+            batch.update(gatheringRef, { waitlist: arrayUnion(userId) });
+            addToast("Joined Waitlist", "info");
+        } else {
+            batch.update(gatheringRef, { attendees: arrayUnion(userId) });
+            
+            if (gathering.linkedChatId) {
+                const chatRef = doc(db, 'chats', gathering.linkedChatId);
+                const participantUpdate: any = {};
+                participantUpdate[`participantData.${userId}`] = { 
+                    displayName: currentUser.displayName, 
+                    avatarUrl: currentUser.avatarUrl 
+                };
+                batch.update(chatRef, { 
+                    participants: arrayUnion(userId),
+                    ...participantUpdate
+                });
+            }
+
+            // Notify Organizer
+            if (gathering.organizerId !== currentUser.id) {
+                const notifRef = doc(collection(db, 'notifications'));
+                batch.set(notifRef, {
+                  type: 'gathering_rsvp',
+                  fromUserId: currentUser.id,
+                  fromUserName: currentUser.displayName,
+                  fromUserAvatar: currentUser.avatarUrl,
+                  toUserId: gathering.organizerId,
+                  targetId: gatheringId,
+                  text: `is attending your gathering: "${gathering.title}"`,
+                  isRead: false,
+                  timestamp: serverTimestamp(),
+                  pulseFrequency: 'intensity'
+                });
+            }
+            addToast("RSVP Confirmed", "success");
+        }
       }
 
-      // Notification Logic
-      if (!isAttending && gathering.organizerId !== currentUser.id) {
-        await addDoc(collection(db, 'notifications'), {
-          type: 'gathering_rsvp',
-          fromUserId: currentUser.id,
-          fromUserName: currentUser.displayName,
-          fromUserAvatar: currentUser.avatarUrl,
-          toUserId: gathering.organizerId,
-          targetId: gatheringId,
-          text: `is attending your gathering: "${gathering.title}"`,
-          isRead: false,
-          timestamp: serverTimestamp(),
-          pulseFrequency: 'intensity'
-        });
-      }
-
-      addToast(isAttending ? "Withdrawn from Gathering" : "RSVP Confirmed", "success");
+      await batch.commit();
     } catch (e) {
       addToast("RSVP Protocol Failed", "error");
     }
@@ -199,7 +252,7 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
             <div className="space-y-4 max-w-xl">
                <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/10">
                   <ICONS.Gatherings />
-                  <span className="text-[9px] font-black text-white uppercase tracking-[0.3em] font-mono">Gather_Protocol_v4</span>
+                  <span className="text-[9px] font-black text-white uppercase tracking-[0.3em] font-mono">Gather_Protocol_v4.2</span>
                </div>
                <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter uppercase leading-none text-white">
                  Gatherings
@@ -255,7 +308,12 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
              {filteredGatherings.map((gathering, idx) => {
                const dateObj = new Date(gathering.date);
                const isAttending = gathering.attendees.includes(currentUser.id);
+               const isWaitlisted = gathering.waitlist?.includes(currentUser.id);
                const isOrganizer = gathering.organizerId === currentUser.id;
+               
+               const capacity = gathering.maxAttendees || 0;
+               const currentCount = gathering.attendees.length;
+               const isFull = capacity > 0 && currentCount >= capacity;
 
                return (
                  <div 
@@ -274,9 +332,19 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
                           <p className="text-xl font-black text-slate-900 leading-none">{dateObj.getDate()}</p>
                        </div>
 
-                       <div className="absolute top-4 right-4">
+                       <div className="absolute top-4 right-4 flex gap-1">
+                          {isWaitlisted && (
+                              <span className="px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest text-white shadow-sm border border-white/20 backdrop-blur-md bg-amber-500/90">
+                                  WAITLISTED
+                              </span>
+                          )}
+                          {isFull && !isAttending && !isWaitlisted && (
+                              <span className="px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest text-white shadow-sm border border-white/20 backdrop-blur-md bg-rose-500/90">
+                                  FULL
+                              </span>
+                          )}
                           <span className={`px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest text-white shadow-sm border border-white/20 backdrop-blur-md ${gathering.type === 'virtual' ? 'bg-purple-600/80' : 'bg-emerald-600/80'}`}>
-                             {gathering.type === 'virtual' ? 'NEURAL_LINK' : 'GEOSPATIAL'}
+                             {gathering.type === 'virtual' ? 'NEURAL' : 'GEO'}
                           </span>
                        </div>
                     </div>
@@ -293,6 +361,18 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
                           <ICONS.Globe />
                           <p className="text-[10px] font-bold font-mono uppercase tracking-wide truncate">{gathering.location}</p>
                        </div>
+
+                       {capacity > 0 && (
+                           <div className="mb-4">
+                               <div className="flex justify-between items-end mb-1">
+                                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Capacity</span>
+                                   <span className={`text-[8px] font-black font-mono ${isFull ? 'text-rose-500' : 'text-slate-600'}`}>{currentCount}/{capacity}</span>
+                               </div>
+                               <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                   <div className={`h-full rounded-full ${isFull ? 'bg-rose-500' : 'bg-purple-600'}`} style={{ width: `${Math.min((currentCount / capacity) * 100, 100)}%` }} />
+                               </div>
+                           </div>
+                       )}
 
                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed line-clamp-2 mb-6">
                          {gathering.description}
@@ -325,15 +405,23 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
                                     onClick={(e) => { e.stopPropagation(); onOpenLobby(gathering.linkedChatId!); }}
                                     className="px-4 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all border border-indigo-200"
                                   >
-                                    ENTER LOBBY
+                                    LOBBY
                                   </button>
                               )}
                               {!isOrganizer && (
                                 <button 
-                                  onClick={(e) => { e.stopPropagation(); handleRSVP(gathering.id, isAttending); }}
-                                  className={`px-5 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all active:scale-95 ${isAttending ? 'bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-500' : 'bg-slate-900 text-white hover:bg-purple-600 shadow-lg'}`}
+                                  onClick={(e) => { e.stopPropagation(); handleRSVP(gathering.id, isAttending || isWaitlisted || false); }}
+                                  className={`px-5 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg ${
+                                      isAttending 
+                                      ? 'bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-500' 
+                                      : isWaitlisted 
+                                      ? 'bg-amber-100 text-amber-600 hover:bg-rose-50 hover:text-rose-500'
+                                      : isFull
+                                      ? 'bg-amber-500 text-white hover:bg-amber-600'
+                                      : 'bg-slate-900 text-white hover:bg-purple-600'
+                                  }`}
                                 >
-                                  {isAttending ? 'WITHDRAW' : 'RSVP_CONFIRM'}
+                                  {isAttending ? 'WITHDRAW' : isWaitlisted ? 'LEAVE_QUEUE' : isFull ? 'JOIN_WAITLIST' : 'RSVP_CONFIRM'}
                                 </button>
                               )}
                               {isOrganizer && (
