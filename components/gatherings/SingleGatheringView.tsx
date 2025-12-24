@@ -9,6 +9,7 @@ import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
 const { doc, updateDoc, onSnapshot } = Firestore as any;
 import { CreateGatheringModal } from './CreateGatheringModal';
+import { GatheringMemoryBank } from './GatheringMemoryBank';
 
 interface SingleGatheringViewProps {
   gathering: Gathering;
@@ -339,6 +340,17 @@ END:VCALENDAR`;
                 </div>
             </div>
          </div>
+      </div>
+
+      {/* 4. MEMORY BANK MODULE (Integrated) */}
+      <div className="mt-8">
+        <GatheringMemoryBank 
+            gathering={liveGathering}
+            currentUser={currentUser}
+            isAttendee={isAttending || isOrganizer}
+            isOrganizer={isOrganizer}
+            addToast={(msg, type) => window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg, type } }))}
+        />
       </div>
 
       <DeleteConfirmationModal 
