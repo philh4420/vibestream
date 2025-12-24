@@ -1,7 +1,6 @@
 
 import React, { useState, useRef } from 'react';
 import { auth, db } from '../../services/firebase';
-// Fixed: Using namespaced import for firebase/auth to resolve "no exported member" errors
 import * as FirebaseAuth from 'firebase/auth';
 const { 
   signInWithEmailAndPassword, 
@@ -111,11 +110,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
         onEnter();
       }
     } catch (error: any) {
+      console.error(error);
       let msg = 'Credential authentication failed. Access denied.';
       if (error.message === 'REGISTRATION_DISABLED') msg = 'Registration is currently locked by central command.';
       if (error.message === 'EMAIL_REQUIRED') msg = 'Please provide a valid network ID to reset.';
       if (error.code === 'auth/user-not-found') msg = 'Identity node not found on grid.';
       if (error.code === 'auth/wrong-password') msg = 'Incorrect passkey. Access rejected.';
+      if (error.code === 'auth/email-already-in-use') msg = 'Identity already registered on the grid.';
       
       setErrorDetails({ code: error.code || 'ERR', message: msg });
     } finally {

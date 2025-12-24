@@ -1,9 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-// Fixed: Using namespaced import for firebase/auth to resolve "no exported member" errors
 import * as FirebaseAuth from 'firebase/auth';
 const { onAuthStateChanged, signOut } = FirebaseAuth as any;
-// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
 import * as Firestore from 'firebase/firestore';
 const { 
   doc, 
@@ -132,21 +130,12 @@ export default function App() {
             }
             setLoading(false); // Stop spinner
           } else {
-            // GHOST SESSION DETECTED: Auth exists, but DB Doc is gone.
-            console.warn("VibeStream: Neural Phantom Detected. Purging stale session.");
-            signOut(auth).then(() => {
-              setUser(null);
-              setUserData(null);
-              setLoading(false); // Stop spinner, show Landing Page
-            }).catch(() => {
-              // Force state reset even if network logout fails
-              setUser(null);
-              setLoading(false);
-            });
+            console.warn("Profile not found in Grid. Awaiting initialization...");
+            // Keep loading true if just created, handled by LandingPage usually
           }
         }, (error: any) => {
-           console.error("Grid Sync Interrupted:", error);
-           // If we can't read the doc (permission denied?), assume we need to re-auth
+           console.error("Grid Sync Interrupted:", error.message);
+           // Handle permission errors by not blocking the UI completely, but user data might be stale
            setLoading(false);
         });
 
@@ -245,7 +234,6 @@ export default function App() {
   };
 
   const handleCreatePost = (initialFiles?: File[]) => {
-    // Logic handled in FeedPage mostly, but triggered via layout
     addToast("Signal Composer Active", "info");
   };
 
@@ -403,7 +391,6 @@ export default function App() {
             onOpenCreate={() => handleCreatePost()}
             onTransmitStory={() => {}}
             onGoLive={() => {
-               // Logic to start live stream (simplified)
                setActiveStreamId(`stream_${user.uid}`);
             }}
             onJoinStream={(stream) => setWatchingStream(stream)}

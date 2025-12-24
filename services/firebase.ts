@@ -1,36 +1,27 @@
 
-// Fixed: Using namespaced import and destructuring with any-cast to resolve "no exported member" errors for initializeApp, getApps, and getApp in Firebase v9+
 import * as FirebaseApp from 'firebase/app';
 const { initializeApp, getApps, getApp } = FirebaseApp as any;
-// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
 import * as Firestore from 'firebase/firestore';
 const { getFirestore } = Firestore as any;
-// Fixed: Using namespaced import for firebase/auth and any-casting to resolve "no exported member" errors for getAuth and Auth type
 import * as FirebaseAuth from 'firebase/auth';
 const { getAuth } = FirebaseAuth as any;
 import { CONFIG } from './config';
 
-// Fixed: Using 'any' as a fallback for the app type to bypass missing type definitions in the current environment
-let app: any;
+let app;
 
 try {
-  // Fixed: Utilizing functions extracted from namespaced import to avoid type-level missing member errors
   const apps = getApps();
   if (apps.length > 0) {
     app = getApp();
   } else {
-    // Standard initialization pattern for Firebase v9+
     app = initializeApp(CONFIG.FIREBASE);
   }
 } catch (error) {
   console.error("Firebase Initialization Critical Error:", error);
-  // Fallback for development environments without keys
-  // @ts-ignore - Providing a minimal fallback object for type safety
-  app = { name: '[DEFAULT]-fallback' } as any;
+  // Fallback for development/testing
+  app = initializeApp(CONFIG.FIREBASE, 'FALLBACK');
 }
 
-// Exporting with explicit types to ensure IDE stability
-export const db: any = getFirestore(app);
-// Fixed: auth type set to any to bypass Auth interface missing member error
-export const auth: any = getAuth(app);
+export const db = getFirestore(app);
+export const auth = getAuth(app);
 export default app;
