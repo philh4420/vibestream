@@ -65,18 +65,51 @@ import { ResiliencePage } from './components/resilience/ResiliencePage';
 import { fetchWeather } from './services/weather';
 
 const MaintenanceScreen = () => (
-  <div className="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center text-white z-[9999] p-6 text-center">
-    <div className="w-24 h-24 bg-rose-600 rounded-full flex items-center justify-center mb-8 animate-pulse shadow-[0_0_50px_#e11d48]">
-       <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+  <div className="fixed inset-0 z-[9999] bg-[#020617] flex flex-col items-center justify-center overflow-hidden selection:bg-rose-500 selection:text-white">
+    
+    {/* Ambient Effects */}
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-rose-600/20 rounded-full blur-[120px] animate-pulse" />
+    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
+    
+    <div className="relative z-10 flex flex-col items-center text-center p-8">
+      
+      {/* Icon Container */}
+      <div className="relative mb-12 group">
+        <div className="absolute inset-0 bg-rose-500 rounded-full blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-1000 animate-pulse" />
+        <div className="relative w-32 h-32 bg-[#0f172a] rounded-full border border-rose-500/30 flex items-center justify-center shadow-2xl shadow-rose-900/20">
+           <svg className="w-12 h-12 text-rose-500 drop-shadow-[0_0_15px_rgba(225,29,72,0.6)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.34c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+           </svg>
+        </div>
+      </div>
+
+      {/* Typography */}
+      <h1 className="text-5xl md:text-8xl font-black text-white uppercase italic tracking-tighter leading-none mb-6 drop-shadow-2xl">
+        System<br/><span className="text-rose-600">Lockdown</span>
+      </h1>
+      
+      <div className="flex items-center justify-center gap-4 mb-16">
+         <div className="h-px w-12 bg-gradient-to-r from-transparent to-rose-500/50" />
+         <p className="text-[10px] md:text-xs font-black text-rose-400 uppercase tracking-[0.4em] font-mono">
+           Maintenance Protocols Active
+         </p>
+         <div className="h-px w-12 bg-gradient-to-l from-transparent to-rose-500/50" />
+      </div>
+
+      {/* Loader */}
+      <div className="flex gap-4 mb-20">
+         <div className="w-2 h-2 bg-rose-600 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
+         <div className="w-2 h-2 bg-rose-600 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
+         <div className="w-2 h-2 bg-rose-600 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
+      </div>
+
+      {/* Footer */}
+      <div className="absolute bottom-12 left-0 right-0 text-center">
+         <p className="text-[9px] font-black text-slate-700 uppercase tracking-[0.5em] font-mono">
+           Authorized_Personnel_Only
+         </p>
+      </div>
     </div>
-    <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter italic mb-4">System_Lockdown</h1>
-    <p className="text-sm font-mono text-slate-400 uppercase tracking-[0.3em] mb-12">Maintenance Protocols Active</p>
-    <div className="flex gap-3">
-       <div className="w-2 h-2 bg-rose-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
-       <div className="w-2 h-2 bg-rose-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-       <div className="w-2 h-2 bg-rose-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-    </div>
-    <p className="mt-12 text-[10px] font-black text-slate-600 uppercase tracking-widest">Authorized_Personnel_Only</p>
   </div>
 );
 
