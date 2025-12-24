@@ -22,9 +22,10 @@ import { ClustersPage } from './components/clusters/ClustersPage';
 import { VerifiedNodesPage } from './components/explore/VerifiedNodesPage';
 import { DataVaultPage } from './components/vault/DataVaultPage';
 import { TemporalPage } from './components/temporal/TemporalPage';
-import { GatheringsPage } from './components/gatherings/GatheringsPage'; // Imported
+import { GatheringsPage } from './components/gatherings/GatheringsPage'; 
+import { SingleGatheringView } from './components/gatherings/SingleGatheringView'; // Imported
 
-import { AppRoute, Post, ToastMessage, Region, User as VibeUser, SystemSettings, LiveStream, AppNotification, SignalAudience, PresenceStatus, WeatherInfo, CallSession } from './types';
+import { AppRoute, Post, ToastMessage, Region, User as VibeUser, SystemSettings, LiveStream, AppNotification, SignalAudience, PresenceStatus, WeatherInfo, CallSession, Gathering } from './types';
 import { db, auth } from './services/firebase';
 import * as FirebaseAuth from 'firebase/auth';
 const { onAuthStateChanged, signOut } = FirebaseAuth as any;
@@ -88,6 +89,9 @@ const App: React.FC = () => {
 
   // Navigation State for Deep Linking to Clusters (e.g. from Gatherings)
   const [targetClusterId, setTargetClusterId] = useState<string | null>(null);
+  
+  // State for Single Gathering View
+  const [selectedGathering, setSelectedGathering] = useState<Gathering | null>(null);
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -162,6 +166,27 @@ const App: React.FC = () => {
     setActiveRoute(AppRoute.SINGLE_POST);
   };
 
+  const handleViewGathering = (gathering: Gathering) => {
+    setSelectedGathering(gathering);
+    if (activeRoute !== AppRoute.SINGLE_GATHERING) {
+      setPreviousRoute(activeRoute);
+    }
+    setActiveRoute(AppRoute.SINGLE_GATHERING);
+  };
+
+  const handleDeleteGathering = async (gatheringId: string) => {
+    if (!db) return;
+    try {
+      await deleteDoc(doc(db, 'gatherings', gatheringId));
+      addToast("Gathering Protocol Terminated", "success");
+      // Navigate back to gatherings list
+      setActiveRoute(AppRoute.GATHERINGS);
+      setSelectedGathering(null);
+    } catch (e) {
+      addToast("Failed to Terminate Gathering", "error");
+    }
+  };
+
   const handleTransmitStory = async (file: File) => {
     if (!db || !userData) return;
     addToast("Initiating Temporal Injection...", "info");
@@ -182,6 +207,7 @@ const App: React.FC = () => {
     }
   };
 
+  // ... (Other useEffects remain unchanged) ...
   useEffect(() => {
     const handleGlobalToast = (e: any) => {
       if (e.detail?.msg) addToast(e.detail.msg, e.detail.type);
@@ -255,9 +281,10 @@ const App: React.FC = () => {
   }, [isAuthenticated, userData?.id]);
 
   const handleNavigate = (route: AppRoute) => {
-    if (route !== AppRoute.SINGLE_POST) {
+    if (route !== AppRoute.SINGLE_POST && route !== AppRoute.SINGLE_GATHERING) {
       setPreviousRoute(activeRoute);
       setSelectedPost(null);
+      setSelectedGathering(null);
     }
     if (route !== AppRoute.PROFILE) setViewingProfile(null);
     setActiveRoute(route);
@@ -269,6 +296,7 @@ const App: React.FC = () => {
     handleNavigate(AppRoute.CLUSTERS);
   };
 
+  // ... (Other handlers like handleViewUserProfile, handleSearch, handleOpenCreate, handleLogout, insertEmoji, handleGifSelect, handleCreatePost, handleLike, handleBookmark remain unchanged) ...
   const handleViewUserProfile = (user: VibeUser) => {
     setViewingProfile(user);
     handleNavigate(AppRoute.PROFILE);
@@ -594,6 +622,52 @@ const App: React.FC = () => {
     }
   };
 
+  const handleRSVP = async (gatheringId: string, isAttending: boolean) => {
+    if (!db || !currentUser || !selectedGathering) return;
+    
+    try {
+      const gatheringRef = doc(db, 'gatherings', gatheringId);
+      
+      // Update Gathering
+      await updateDoc(gatheringRef, {
+        attendees: isAttending ? arrayRemove(currentUser.uid) : arrayUnion(currentUser.uid)
+      });
+
+      // Update Local State for immediate feedback
+      setSelectedGathering(prev => {
+          if(!prev) return null;
+          return {
+              ...prev,
+              attendees: isAttending 
+                  ? prev.attendees.filter(id => id !== currentUser.uid) 
+                  : [...prev.attendees, currentUser.uid]
+          };
+      });
+
+      // Update Linked Chat (Lobby)
+      if (selectedGathering.linkedChatId) {
+          const chatRef = doc(db, 'chats', selectedGathering.linkedChatId);
+          if (isAttending) {
+              await updateDoc(chatRef, { participants: arrayRemove(currentUser.uid) });
+          } else {
+              const participantUpdate: any = {};
+              participantUpdate[`participantData.${currentUser.uid}`] = { 
+                  displayName: userData?.displayName, 
+                  avatarUrl: userData?.avatarUrl 
+              };
+              await updateDoc(chatRef, { 
+                  participants: arrayUnion(currentUser.uid),
+                  ...participantUpdate
+              });
+          }
+      }
+
+      addToast(isAttending ? "Withdrawn from Gathering" : "RSVP Confirmed", "success");
+    } catch (e) {
+      addToast("RSVP Protocol Failed", "error");
+    }
+  };
+
   if (isLoading) return <div className="h-full w-full flex items-center justify-center font-black animate-pulse text-indigo-600 uppercase italic">Syncing_Neural_Buffer...</div>;
   if (!isAuthenticated) return <LandingPage onEnter={() => setIsAuthenticated(true)} systemSettings={systemSettings} />;
 
@@ -641,6 +715,19 @@ const App: React.FC = () => {
           onLike={handleLike}
           onBookmark={handleBookmark}
           addToast={addToast}
+        />
+      )}
+
+      {activeRoute === AppRoute.SINGLE_GATHERING && selectedGathering && userData && (
+        <SingleGatheringView
+          gathering={selectedGathering}
+          currentUser={userData}
+          allUsers={allUsers}
+          locale={userRegion}
+          onBack={() => handleNavigate(AppRoute.GATHERINGS)}
+          onDelete={handleDeleteGathering}
+          onRSVP={handleRSVP}
+          onOpenLobby={handleOpenCluster}
         />
       )}
 
@@ -699,6 +786,7 @@ const App: React.FC = () => {
           addToast={addToast}
           allUsers={allUsers}
           onOpenLobby={handleOpenCluster}
+          onViewGathering={handleViewGathering}
         />
       )}
 

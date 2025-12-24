@@ -28,9 +28,17 @@ interface GatheringsPageProps {
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
   allUsers: User[];
   onOpenLobby: (clusterId: string) => void;
+  onViewGathering: (gathering: Gathering) => void;
 }
 
-export const GatheringsPage: React.FC<GatheringsPageProps> = ({ currentUser, locale, addToast, allUsers, onOpenLobby }) => {
+export const GatheringsPage: React.FC<GatheringsPageProps> = ({ 
+  currentUser, 
+  locale, 
+  addToast, 
+  allUsers, 
+  onOpenLobby,
+  onViewGathering
+}) => {
   const [gatherings, setGatherings] = useState<Gathering[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<'All' | 'Social' | 'Tech' | 'Gaming' | 'Nightlife' | 'Workshop'>('All');
@@ -252,7 +260,8 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({ currentUser, loc
                return (
                  <div 
                    key={gathering.id} 
-                   className="group bg-white border border-slate-100 rounded-[3rem] p-4 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] hover:border-purple-200 transition-all duration-500 relative flex flex-col h-full hover:-translate-y-1"
+                   onClick={() => onViewGathering(gathering)}
+                   className="group bg-white border border-slate-100 rounded-[3rem] p-4 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] hover:border-purple-200 transition-all duration-500 relative flex flex-col h-full hover:-translate-y-1 cursor-pointer"
                    style={{ animationDelay: `${idx * 50}ms` }}
                  >
                     {/* Image Layer */}
@@ -313,7 +322,7 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({ currentUser, loc
                           <div className="flex items-center gap-2">
                               {isAttending && gathering.linkedChatId && (
                                   <button 
-                                    onClick={() => onOpenLobby(gathering.linkedChatId!)}
+                                    onClick={(e) => { e.stopPropagation(); onOpenLobby(gathering.linkedChatId!); }}
                                     className="px-4 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all border border-indigo-200"
                                   >
                                     ENTER LOBBY
@@ -321,7 +330,7 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({ currentUser, loc
                               )}
                               {!isOrganizer && (
                                 <button 
-                                  onClick={() => handleRSVP(gathering.id, isAttending)}
+                                  onClick={(e) => { e.stopPropagation(); handleRSVP(gathering.id, isAttending); }}
                                   className={`px-5 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all active:scale-95 ${isAttending ? 'bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-500' : 'bg-slate-900 text-white hover:bg-purple-600 shadow-lg'}`}
                                 >
                                   {isAttending ? 'WITHDRAW' : 'RSVP_CONFIRM'}

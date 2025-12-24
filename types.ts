@@ -240,6 +240,7 @@ export enum AppRoute {
   SAVED = 'saved',
   VERIFIED_NODES = 'nodes',
   GATHERINGS = 'gatherings',
+  SINGLE_GATHERING = 'single_gathering',
   SIMULATIONS = 'sims',
   RESILIENCE = 'resilience',
   SINGLE_POST = 'single_post'
