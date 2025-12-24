@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { auth, db } from '../../services/firebase';
 import * as FirebaseAuth from 'firebase/auth';
 const { 
@@ -9,7 +9,7 @@ const {
   sendPasswordResetEmail
 } = FirebaseAuth as any;
 import * as Firestore from 'firebase/firestore';
-const { doc, setDoc, serverTimestamp } = Firestore as any;
+const { doc, setDoc, serverTimestamp, collection, query, limit, getDocs } = Firestore as any;
 import { SystemSettings } from '../../types';
 
 interface LandingPageProps {
@@ -32,6 +32,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  
+  // Location States
+  const [location, setLocation] = useState('');
+  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchTimeoutRef = useRef<any>(null);
+
   const [errorDetails, setErrorDetails] = useState<{ code: string; message: string } | null>(null);
 
   // --- HOLD TO SYNC LOGIC ---
@@ -55,6 +62,50 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
     if (isVerified) return;
     if (holdTimerRef.current) clearInterval(holdTimerRef.current);
     setVerificationProgress(0);
+  };
+
+  // --- LOCATION LOGIC ---
+  const handleLocationSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setLocation(val);
+    
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+    if (val.length > 2) {
+      searchTimeoutRef.current = setTimeout(async () => {
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&limit=5&addressdetails=1`);
+          const data = await res.json();
+          setLocationSuggestions(data);
+          setShowSuggestions(true);
+        } catch (err) {
+          console.error("Location lookup failed", err);
+        }
+      }, 500); // 500ms debounce
+    } else {
+      setLocationSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const selectLocation = (loc: any) => {
+    // Construct a cleaner address if possible, otherwise use display_name
+    let preciseLoc = loc.display_name;
+    // Attempt to shorten if it's extremely long, but keep key parts
+    // e.g. "Park Street, St Albans, Hertfordshire, East of England, England, AL2 2PX, United Kingdom"
+    // We ideally want "Park Street, St Albans, UK"
+    if (loc.address) {
+       const parts = [
+         loc.address.road || loc.address.suburb || loc.address.village,
+         loc.address.city || loc.address.town || loc.address.county,
+         loc.address.country_code?.toUpperCase()
+       ].filter(Boolean);
+       if (parts.length >= 2) preciseLoc = parts.join(', ');
+    }
+
+    setLocation(preciseLoc);
+    setLocationSuggestions([]);
+    setShowSuggestions(false);
   };
 
   // --- AUTH HANDLERS ---
@@ -81,38 +132,88 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (systemSettings.registrationDisabled) {
       setErrorDetails({ code: 'REG_DISABLED', message: 'Registration is currently disabled.' });
       return;
     }
+
+    // STRICT FIELD VALIDATION
+    if (!fullName.trim()) {
+      setErrorDetails({ code: 'NO_NAME', message: 'Please enter your full name.' });
+      return;
+    }
+
+    if (!email.trim()) {
+      setErrorDetails({ code: 'NO_EMAIL', message: 'Please enter a valid email address.' });
+      return;
+    }
+
+    if (!password.trim()) {
+      setErrorDetails({ code: 'NO_PASSWORD', message: 'Please create a password.' });
+      return;
+    }
+
+    if (!location.trim()) {
+      setErrorDetails({ code: 'NO_LOC', message: 'Please enter your location.' });
+      return;
+    }
+
     setIsProcessing(true);
     setErrorDetails(null);
 
     try {
+      // 1. Create Auth User
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      if (fullName) await updateProfile(user, { displayName: fullName });
+      // Update Auth Profile immediately
+      await updateProfile(user, { displayName: fullName });
 
+      // 2. Determine Role (First user gets Admin)
+      let assignedRole = 'member';
+      let trustTier = 'Gamma';
+      let badges = ['New Arrival'];
+      let bio = 'Just joined the grid.';
+      let verified = false;
+
+      try {
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, limit(1));
+        const snapshot = await getDocs(q);
+        
+        // If snapshot is empty, this is the first user document being created -> ADMIN
+        if (snapshot.empty) {
+          assignedRole = 'admin';
+          trustTier = 'Alpha';
+          badges = ['System Root', 'Founder'];
+          bio = 'System Administrator and Grid Architect.';
+          verified = true;
+        }
+      } catch (err) {
+        console.warn('Role assignment check skipped, defaulting to member');
+      }
+
+      // 3. Create Profile Document
       await setDoc(doc(db, 'users', user.uid), {
         id: user.uid,
         username: email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, ''),
-        displayName: fullName || 'New User',
+        displayName: fullName, 
         email: email,
-        bio: 'Just joined the grid.',
+        bio: bio,
         avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`,
         coverUrl: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80',
         followers: 0,
         following: 0,
-        role: 'member',
-        location: 'London, UK',
+        role: assignedRole,
+        location: location, // Use precise location
         joinedAt: serverTimestamp(),
-        verifiedHuman: false,
+        verifiedHuman: verified,
         presenceStatus: 'Online',
         statusEmoji: '👋',
         statusMessage: 'Hello world!',
-        trustTier: 'Gamma',
-        badges: ['New Arrival'],
+        trustTier: trustTier,
+        badges: badges,
         tags: [],
         socialLinks: []
       });
@@ -122,6 +223,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
       let msg = 'Registration failed.';
       if (error.code === 'auth/email-already-in-use') msg = 'Email already in use.';
       if (error.code === 'auth/weak-password') msg = 'Password should be at least 6 characters.';
+      if (error.code === 'auth/invalid-email') msg = 'Invalid email format.';
       setErrorDetails({ code: error.code, message: msg });
     } finally {
       setIsProcessing(false);
@@ -369,6 +471,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
                   required
                   className="w-full bg-[#f5f6f7] border border-[#ccd0d5] rounded-[5px] p-[11px] text-[15px] placeholder-[#8d949e] focus:border-indigo-500 outline-none"
                 />
+
+                {/* Location Input with Autocomplete */}
+                <div className="relative group">
+                  <input 
+                    type="text" 
+                    placeholder="City / Location (e.g. Park Street)"
+                    value={location}
+                    onChange={handleLocationSearch}
+                    required
+                    className="w-full bg-[#f5f6f7] border border-[#ccd0d5] rounded-[5px] p-[11px] text-[15px] placeholder-[#8d949e] focus:border-indigo-500 outline-none"
+                  />
+                  {showSuggestions && locationSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 z-50 bg-white border border-slate-200 rounded-b-md shadow-lg max-h-48 overflow-y-auto no-scrollbar">
+                      {locationSuggestions.map((loc, idx) => (
+                        <button 
+                          key={idx}
+                          type="button"
+                          onClick={() => selectLocation(loc)}
+                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 border-b border-slate-50 last:border-0 truncate"
+                        >
+                          {loc.display_name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <div className="text-[11px] text-[#777] mt-2 mb-2 leading-snug">
                   People who use our service may have uploaded your contact information to VibeStream. <a href="#" className="text-[#385898] hover:underline">Learn more</a>.
