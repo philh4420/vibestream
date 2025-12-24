@@ -64,88 +64,106 @@ import { ResiliencePage } from './components/resilience/ResiliencePage';
 // Services
 import { fetchWeather } from './services/weather';
 
+/**
+ * SCREEN 1: SYSTEM LOCKDOWN (Dark, Urgent, Professional)
+ */
 const MaintenanceScreen = () => (
-  <div className="fixed inset-0 z-[9999] bg-[#020617] flex flex-col items-center justify-center overflow-hidden selection:bg-rose-500 selection:text-white">
+  <div className="fixed inset-0 z-[9999] bg-[#030712] flex flex-col items-center justify-center overflow-hidden font-sans selection:bg-rose-500 selection:text-white">
     
-    {/* Ambient Effects - Subtle Rose Glow */}
-    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-rose-600/10 blur-[120px] rounded-full pointer-events-none" />
-    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay pointer-events-none" />
+    {/* Atmospheric Glow */}
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-rose-600/10 blur-[150px] rounded-full pointer-events-none animate-pulse" />
     
-    <div className="relative z-10 flex flex-col items-center text-center p-8 w-full max-w-5xl">
+    {/* Scanline Texture */}
+    <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-[1] bg-[length:100%_2px,3px_100%] pointer-events-none" />
+
+    <div className="relative z-10 flex flex-col items-center text-center p-8 w-full max-w-6xl">
       
-      {/* Icon Container - Warning Triangle inside Glow */}
-      <div className="relative mb-10 group">
-        <div className="absolute inset-0 bg-rose-500/20 rounded-full blur-xl group-hover:blur-2xl transition-all duration-1000 opacity-50" />
-        <div className="relative w-24 h-24 bg-[#0f172a] rounded-full border border-rose-500/20 flex items-center justify-center shadow-[0_0_30px_-5px_rgba(225,29,72,0.3)]">
-           <svg className="w-10 h-10 text-rose-500 drop-shadow-[0_0_10px_rgba(225,29,72,0.5)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+      {/* Icon Container */}
+      <div className="relative mb-12 group">
+        <div className="absolute inset-0 bg-rose-500/30 rounded-full blur-2xl group-hover:blur-3xl transition-all duration-1000 opacity-60 animate-ping" />
+        <div className="relative w-28 h-28 bg-[#0f172a] rounded-full border border-rose-500/40 flex items-center justify-center shadow-[0_0_50px_-10px_rgba(225,29,72,0.5)]">
+           <svg className="w-12 h-12 text-rose-500 drop-shadow-[0_0_15px_rgba(225,29,72,0.8)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.34c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
            </svg>
         </div>
       </div>
 
-      {/* Typography: SYSTEM_LOCKDOWN */}
-      <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white italic tracking-tighter leading-none mb-6 drop-shadow-2xl select-none">
-        SYSTEM<span className="text-rose-600">_</span>LOCKDOWN
+      {/* Heavy Industrial Typography */}
+      <h1 className="text-6xl md:text-8xl lg:text-9xl font-black text-white italic tracking-tighter leading-none mb-8 drop-shadow-2xl select-none mix-blend-screen">
+        SYSTEM<span className="text-rose-600 inline-block px-2">_</span>LOCKDOWN
       </h1>
       
-      {/* Subtext */}
-      <div className="flex items-center justify-center gap-4 mb-16 opacity-75">
-         <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-[0.4em] font-mono">
-           Maintenance Protocols Active
-         </p>
+      {/* Status Indicators */}
+      <div className="flex flex-col items-center gap-6 mb-20">
+         <div className="flex items-center gap-4 px-6 py-2 bg-rose-950/30 border border-rose-500/20 rounded-full backdrop-blur-md">
+            <div className="flex gap-2">
+              <div className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
+              <div className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
+              <div className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
+            </div>
+            <p className="text-[10px] md:text-xs font-black text-rose-400 uppercase tracking-[0.3em] font-mono">
+              MAINTENANCE PROTOCOLS ACTIVE
+            </p>
+         </div>
       </div>
 
-      {/* Red Dot Loader */}
-      <div className="flex gap-3 mb-20">
-         <div className="w-1.5 h-1.5 bg-rose-600 rounded-full animate-bounce" style={{ animationDuration: '1s', animationDelay: '0s' }} />
-         <div className="w-1.5 h-1.5 bg-rose-600 rounded-full animate-bounce" style={{ animationDuration: '1s', animationDelay: '0.15s' }} />
-         <div className="w-1.5 h-1.5 bg-rose-600 rounded-full animate-bounce" style={{ animationDuration: '1s', animationDelay: '0.3s' }} />
-      </div>
-
-      {/* Footer - Authorized Personnel Only */}
-      <div className="absolute bottom-10 left-0 right-0 text-center">
-         <p className="text-[8px] font-black text-slate-800 uppercase tracking-[0.6em] font-mono">
+      {/* Footer - Tech Info */}
+      <div className="absolute bottom-12 left-0 right-0 text-center space-y-2 opacity-60">
+         <p className="text-[8px] font-black text-slate-500 uppercase tracking-[0.6em] font-mono">
            AUTHORIZED_PERSONNEL_ONLY
+         </p>
+         <p className="text-[8px] font-mono text-slate-700 uppercase tracking-widest">
+           ERR_CODE: 0x99_GRID_HALT
          </p>
       </div>
     </div>
   </div>
 );
 
+/**
+ * SCREEN 2: FEATURE DISABLED (Light, Clinical, Specific)
+ */
 const FeatureDisabledScreen = ({ featureName }: { featureName: string }) => (
-  <div className="flex flex-col items-center justify-center h-full w-full min-h-[60vh] p-6 animate-in fade-in duration-700 relative overflow-hidden rounded-[3rem] border border-slate-100 bg-slate-50/50">
+  <div className="flex flex-col items-center justify-center w-full min-h-[70vh] p-6 animate-in zoom-in-95 duration-700 relative overflow-hidden rounded-[3.5rem] bg-[#FFFCF5]">
     
-    {/* Background Patterns */}
-    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-5 mix-blend-overlay" />
-    <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 rounded-full blur-[80px]" />
-    <div className="absolute bottom-0 left-0 w-64 h-64 bg-slate-300/10 rounded-full blur-[80px]" />
+    {/* Soft Light Leak */}
+    <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-orange-500/5 rounded-full blur-[100px]" />
+    <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-rose-500/5 rounded-full blur-[100px]" />
 
-    <div className="relative z-10 flex flex-col items-center text-center max-w-lg mx-auto">
+    <div className="relative z-10 flex flex-col items-center text-center max-w-2xl mx-auto">
       
-      {/* Icon Container */}
-      <div className="relative mb-8 group">
-        <div className="absolute inset-0 bg-rose-500/20 rounded-[2rem] blur-xl group-hover:blur-2xl transition-all duration-700" />
-        <div className="relative w-28 h-28 bg-white rounded-[2rem] flex items-center justify-center shadow-xl border border-white/50">
+      {/* Central Icon Cluster */}
+      <div className="relative mb-10 group">
+        <div className="absolute inset-0 bg-rose-500/10 rounded-[2.5rem] blur-2xl group-hover:blur-3xl transition-all duration-700 scale-110" />
+        
+        {/* Main Card */}
+        <div className="relative w-32 h-32 bg-white rounded-[2.5rem] flex items-center justify-center shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] border border-slate-100">
            <svg className="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
            </svg>
-           <div className="absolute -bottom-3 -right-3 bg-rose-500 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border-2 border-white shadow-lg flex items-center gap-1.5">
-             <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+           
+           {/* Floating Badge */}
+           <div className="absolute -bottom-4 bg-rose-500 text-white px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border-[3px] border-[#FFFCF5] shadow-lg flex items-center gap-1.5 animate-in slide-in-from-top-2">
+             <div className="w-1.5 h-1.5 bg-white rounded-full" />
              LOCKED
            </div>
         </div>
       </div>
 
-      <h2 className="text-4xl md:text-5xl font-black text-slate-900 uppercase italic tracking-tighter mb-4 leading-none">
-        Access_Denied
+      {/* Typography */}
+      <h2 className="text-5xl md:text-7xl font-black text-slate-900 uppercase italic tracking-tighter mb-6 leading-none">
+        ACCESS<span className="text-slate-300">_</span>DENIED
       </h2>
       
-      <p className="text-sm font-medium text-slate-500 leading-relaxed mb-8">
-        The <span className="text-slate-900 font-bold bg-white px-2 py-0.5 rounded-md border border-slate-200 mx-1">{featureName}</span> protocol has been strategically disabled by grid administration. Access to this sector is currently restricted.
-      </p>
+      <div className="bg-white/60 backdrop-blur-sm border border-slate-200/60 px-8 py-6 rounded-[2rem] shadow-sm mb-10 max-w-lg">
+        <p className="text-xs md:text-sm font-medium text-slate-500 leading-relaxed">
+          The <span className="text-slate-900 font-black bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 uppercase mx-1 tracking-wider">{featureName}</span> protocol has been strategically disabled by grid administration. Access to this sector is currently restricted.
+        </p>
+      </div>
 
-      <div className="flex items-center gap-2 px-5 py-2.5 bg-white rounded-xl border border-slate-200 shadow-sm">
-         <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] font-mono">SYSTEM_CODE:</span>
+      {/* System Code Pill */}
+      <div className="flex items-center gap-3 px-6 py-3 bg-white rounded-full border border-slate-100 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)]">
+         <span className="text-[8px] font-black text-slate-300 uppercase tracking-[0.25em] font-mono">SYSTEM_CODE:</span>
          <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest font-mono">503_SERVICE_UNAVAILABLE</span>
       </div>
 
