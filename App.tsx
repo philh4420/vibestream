@@ -121,9 +121,11 @@ export default function App() {
             const data = doc.data() as User;
             setUserData({ ...data, id: doc.id });
             
-            // Fetch Weather based on location
+            // Fetch Weather based on location - with Error Catching to prevent app hang
             if (data.location) {
-              fetchWeather({ query: data.location }).then(setWeather);
+              fetchWeather({ query: data.location })
+                .then(setWeather)
+                .catch(err => console.warn("Atmospheric sync deferred:", err));
             }
           }
         });

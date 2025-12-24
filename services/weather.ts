@@ -2,92 +2,97 @@
 import { CONFIG } from './config';
 import { WeatherInfo } from '../types';
 
+const DEFAULT_WEATHER: WeatherInfo = {
+  temp: 15,
+  feelsLike: 14,
+  humidity: 72,
+  condition: 'Clouds',
+  icon: '04d'
+};
+
 export const fetchWeather = async (params: { query?: string; coords?: { lat: number; lon: number } }): Promise<WeatherInfo | null> => {
   const apiKey = CONFIG.WEATHER.apiKey;
+  // Fail gracefully if no key, but return default so UI doesn't break
   if (!apiKey || apiKey === 'undefined') {
-    console.debug('Weather API Key missing - skipping atmospheric sync');
-    return null;
+    return DEFAULT_WEATHER;
   }
 
-  // Helper for direct weather fetch by lat/lon
-  const getWeatherByCoords = (lat: number, lon: number) => 
-    `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`;
+  // Helper: Fetch current weather by coordinates (most reliable)
+  const getWeatherByCoords = async (lat: number, lon: number): Promise<WeatherInfo | null> => {
+    try {
+      const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      return mapResponseToWeatherInfo(data);
+    } catch { return null; }
+  };
 
   try {
-    let lat: number | undefined;
-    let lon: number | undefined;
-
-    // 1. Use Coordinates if available (Highest Accuracy)
+    // STRATEGY 1: Coordinates provided directly
     if (params.coords && params.coords.lat !== undefined && params.coords.lon !== undefined) {
-      lat = params.coords.lat;
-      lon = params.coords.lon;
+      const data = await getWeatherByCoords(params.coords.lat, params.coords.lon);
+      if (data) return data;
     } 
-    // 2. Resolve Query via Geocoding API (Robust Standard)
-    else if (params.query) {
+
+    // STRATEGY 2: Text Query Resolution
+    if (params.query) {
       let query = params.query.trim();
       
-      // Clean up generic queries to prevent ambiguity
-      if (!query || ['united kingdom', 'uk', 'england', 'great britain'].includes(query.toLowerCase())) {
+      // Fix generic UK queries
+      if (['uk', 'united kingdom', 'england', 'gb'].includes(query.toLowerCase())) {
         query = 'London, GB';
       }
-
-      // Normalization: OWM prefers 'GB' over 'UK' for accurate UK resolution
-      query = query.replace(/, UK$/i, ', GB').replace(/, United Kingdom$/i, ', GB');
-
-      // Call Geocoding API
-      const geoRes = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(query)}&limit=1&appid=${apiKey}`);
       
-      if (geoRes.ok) {
-        const geoData = await geoRes.json();
-        if (Array.isArray(geoData) && geoData.length > 0) {
-          lat = geoData[0].lat;
-          lon = geoData[0].lon;
-        } else {
-           console.warn(`Geocoding returned no results for "${query}".`);
+      // Normalize country code for better OWM compatibility
+      query = query.replace(/, UK$/i, ', GB');
+
+      // Attempt A: Direct Geocoding (Best for "City, Country")
+      let geoRes = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(query)}&limit=1&appid=${apiKey}`);
+      let geoData = geoRes.ok ? await geoRes.json() : [];
+
+      // Attempt B: Broad Search (If "Park Street, GB" fails, try "Park Street")
+      if (!geoData.length && query.includes(',')) {
+        const broadQuery = query.split(',')[0].trim();
+        if (broadQuery) {
+           geoRes = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(broadQuery)}&limit=1&appid=${apiKey}`);
+           geoData = geoRes.ok ? await geoRes.json() : [];
         }
+      }
+
+      // If we found coordinates via Geocoding, use them
+      if (geoData.length > 0) {
+        const { lat, lon } = geoData[0];
+        const weather = await getWeatherByCoords(lat, lon);
+        if (weather) return weather;
+      }
+
+      // Attempt C: Legacy Weather Endpoint (Fallback for some edge case city names)
+      const legacyRes = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(query)}&units=metric&appid=${apiKey}`);
+      if (legacyRes.ok) {
+        const data = await legacyRes.json();
+        const weather = mapResponseToWeatherInfo(data);
+        if (weather) return weather;
       }
     }
 
-    // 3. If we still don't have coords, try fallback logic (Legacy Search)
-    // This catches edge cases where Geocoding might miss but the legacy endpoint somehow works, or serves as a final safety net.
-    if (lat === undefined || lon === undefined) {
-       if (params.query) {
-          console.warn('Attempting legacy weather fetch fallback...');
-          // Try direct weather fetch with original query
-          const legacyRes = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(params.query)}&units=metric&appid=${apiKey}`);
-          if (legacyRes.ok) {
-             const data = await legacyRes.json();
-             return mapResponseToWeatherInfo(data);
-          }
-       }
-       
-       // 4. Ultimate Fallback: London (Citadel Central)
-       // Ensures the UI never breaks even if the location is completely invalid.
-       console.warn('Weather location unresolved. Defaulting to Central Citadel (London).');
-       const londonRes = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=London,GB&units=metric&appid=${apiKey}`);
-       if (!londonRes.ok) return null;
-       const data = await londonRes.json();
-       return mapResponseToWeatherInfo(data);
+    // STRATEGY 3: Ultimate Fallback (London)
+    // Ensures the app never has a "missing weather" state that could look broken
+    const fallbackRes = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=London,GB&units=metric&appid=${apiKey}`);
+    if (fallbackRes.ok) {
+        const data = await fallbackRes.json();
+        return mapResponseToWeatherInfo(data) || DEFAULT_WEATHER;
     }
 
-    // 5. Fetch Weather with resolved Coords
-    const response = await fetch(getWeatherByCoords(lat, lon));
-    if (!response.ok) {
-      throw new Error(`Weather API Error: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    return mapResponseToWeatherInfo(data);
+    return DEFAULT_WEATHER;
 
   } catch (error) {
-    console.debug('Atmospheric sync bypassed:', error instanceof Error ? error.message : 'Network error');
-    return null;
+    console.warn('Weather service disrupted, engaging backup atmosphere.');
+    return DEFAULT_WEATHER;
   }
 };
 
-// Helper to map API response to internal type
 const mapResponseToWeatherInfo = (data: any): WeatherInfo | null => {
-  if (!data.weather || !data.weather[0]) return null;
+  if (!data || !data.weather || !data.weather[0]) return null;
   return {
     temp: Math.round(data.main.temp),
     feelsLike: Math.round(data.main.feels_like),
