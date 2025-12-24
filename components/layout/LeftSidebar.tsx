@@ -45,8 +45,10 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
     badge?: string | number,
     isSubItem?: boolean
   }) => {
-    // Don't render if feature is disabled
-    if (route && !isEnabled(route)) return null;
+    // Check disabled state
+    const disabled = route && !isEnabled(route);
+    // Only Admin Panel is hidden if not admin
+    if (route === AppRoute.ADMIN && userRole !== 'admin') return null;
 
     const isActive = route && activeRoute === route;
     return (
@@ -61,7 +63,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           isActive 
             ? 'bg-slate-900 text-white shadow-xl shadow-indigo-900/10' 
             : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
-        }`}
+        } ${disabled ? 'opacity-60 grayscale' : ''}`}
       >
         {/* Active Indicator Glow */}
         {isActive && !collapsed && (
@@ -77,11 +79,16 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
             <span className={`text-[13px] font-bold tracking-tight truncate ${isActive ? 'text-white' : 'text-slate-600 group-hover:text-slate-900'}`}>
               {label}
             </span>
-            {badge !== undefined && (typeof badge === 'number' ? badge > 0 : badge !== '') && (
-              <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg ml-2 shadow-sm ${isActive ? 'bg-white text-slate-900' : 'bg-indigo-100 text-indigo-700'}`}>
-                {badge}
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              {disabled && (
+                <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+              )}
+              {badge !== undefined && (typeof badge === 'number' ? badge > 0 : badge !== '') && !disabled && (
+                <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg shadow-sm ${isActive ? 'bg-white text-slate-900' : 'bg-indigo-100 text-indigo-700'}`}>
+                  {badge}
+                </span>
+              )}
+            </div>
           </div>
         )}
       </button>
