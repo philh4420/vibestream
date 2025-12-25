@@ -12,6 +12,7 @@ const {
   deleteDoc 
 } = Firestore as any;
 import { ICONS } from '../../constants';
+import { DeleteConfirmationModal } from '../ui/DeleteConfirmationModal';
 
 interface AdminSupportProps {
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
@@ -35,6 +36,7 @@ export const AdminSupport: React.FC<AdminSupportProps> = ({ addToast }) => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [filter, setFilter] = useState<'active' | 'resolved'>('active');
   const [loading, setLoading] = useState(true);
+  const [ticketToDelete, setTicketToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     if (!db) return;
@@ -59,13 +61,15 @@ export const AdminSupport: React.FC<AdminSupportProps> = ({ addToast }) => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Permanently purge this ticket log?")) return;
+  const confirmDelete = async () => {
+    if (!ticketToDelete) return;
     try {
-      await deleteDoc(doc(db, 'support_tickets', id));
+      await deleteDoc(doc(db, 'support_tickets', ticketToDelete));
       addToast("Ticket purged", "info");
     } catch (e) {
       addToast("Purge failed", "error");
+    } finally {
+      setTicketToDelete(null);
     }
   };
 
@@ -213,7 +217,7 @@ export const AdminSupport: React.FC<AdminSupportProps> = ({ addToast }) => {
                      )}
                      
                      <button 
-                        onClick={() => handleDelete(ticket.id)}
+                        onClick={() => setTicketToDelete(ticket.id)}
                         className="p-3 text-slate-300 hover:text-rose-500 transition-colors"
                      >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -232,6 +236,15 @@ export const AdminSupport: React.FC<AdminSupportProps> = ({ addToast }) => {
             </div>
          )}
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={!!ticketToDelete}
+        title="PURGE_TICKET_LOG"
+        description="Permanently delete this support ticket from the archive? This action is irreversible."
+        onConfirm={confirmDelete}
+        onCancel={() => setTicketToDelete(null)}
+        confirmText="PURGE_TICKET"
+      />
     </div>
   );
 };
