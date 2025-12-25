@@ -273,6 +273,7 @@ export enum AppRoute {
   MESSAGES = 'messages',
   NOTIFICATIONS = 'notifications',
   PROFILE = 'profile',
+  PUBLIC_PROFILE = 'public_profile',
   COMMUNITIES = 'communities',
   ADMIN = 'admin',
   PRIVACY = 'privacy',

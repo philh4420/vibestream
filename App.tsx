@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import * as FirebaseAuth from 'firebase/auth';
 const { onAuthStateChanged, signOut } = FirebaseAuth as any;
@@ -324,8 +325,7 @@ export default function App() {
   const [activeRoute, setActiveRoute] = useState<AppRoute>(() => {
     try {
       const saved = localStorage.getItem('vibestream_active_route') as AppRoute;
-      // Fallback to FEED if saved route is a detail view (which lacks state on refresh) or invalid
-      if (saved === AppRoute.SINGLE_POST || saved === AppRoute.SINGLE_GATHERING) {
+      if (saved === AppRoute.SINGLE_POST || saved === AppRoute.SINGLE_GATHERING || saved === AppRoute.PUBLIC_PROFILE) {
         return AppRoute.FEED;
       }
       return saved || AppRoute.FEED;
@@ -355,6 +355,7 @@ export default function App() {
   // Selection States
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [selectedGathering, setSelectedGathering] = useState<Gathering | null>(null);
+  const [selectedUserProfile, setSelectedUserProfile] = useState<User | null>(null);
   
   // Streaming & Calling
   const [activeStreamId, setActiveStreamId] = useState<string | null>(null);
@@ -369,17 +370,15 @@ export default function App() {
 
   // Save Route Changes
   useEffect(() => {
-    if (activeRoute !== AppRoute.SINGLE_POST && activeRoute !== AppRoute.SINGLE_GATHERING) {
+    if (activeRoute !== AppRoute.SINGLE_POST && activeRoute !== AppRoute.SINGLE_GATHERING && activeRoute !== AppRoute.PUBLIC_PROFILE) {
       localStorage.setItem('vibestream_active_route', activeRoute);
     }
   }, [activeRoute]);
 
   // --- APPEARANCE & SETTINGS EFFECT ---
-  // If no user is logged in, default to System theme.
   useEffect(() => {
     const root = document.documentElement;
     const applyTheme = (theme: 'system' | 'light' | 'dark', reducedMotion = false, highContrast = false) => {
-      // Clean slate
       root.classList.remove('dark');
       
       let isDark = false;
@@ -391,17 +390,14 @@ export default function App() {
 
       if (isDark) root.classList.add('dark');
 
-      // Reduced Motion Application
       if (reducedMotion) root.classList.add('reduced-motion');
       else root.classList.remove('reduced-motion');
 
-      // High Contrast Application
       if (highContrast) root.classList.add('high-contrast');
       else root.classList.remove('high-contrast');
     };
 
     if (userData?.settings?.appearance) {
-      // User Preference
       const { theme, reducedMotion, highContrast } = userData.settings.appearance;
       applyTheme(theme, reducedMotion, highContrast);
 
@@ -414,9 +410,7 @@ export default function App() {
       }
       return () => cleanupListener();
     } else {
-      // Default / Logged Out State -> System Theme
       applyTheme('system');
-      
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       const handler = () => applyTheme('system');
       mediaQuery.addEventListener('change', handler);
@@ -426,7 +420,6 @@ export default function App() {
 
   // --- AUTH & USER SYNC ---
   useEffect(() => {
-    // Safety Timeout: Force stop loading if Auth listener hangs or network fails
     const safetyTimer = setTimeout(() => {
         setLoading((current) => {
             if (current) {
@@ -442,33 +435,25 @@ export default function App() {
       
       if (authUser) {
         setUser(authUser);
-        
-        // Sync User Data & Check for Ghost Session
         const userRef = doc(db, 'users', authUser.uid);
         const unsubUser = onSnapshot(userRef, (docSnap: any) => {
           if (docSnap.exists()) {
-            // Valid User Profile Found
             const data = docSnap.data() as User;
             setUserData({ ...data, id: docSnap.id });
-            
-            // Fetch Weather based on location
             if (data.location) {
               fetchWeather({ query: data.location })
                 .then(setWeather)
                 .catch(err => console.warn("Atmospheric sync deferred:", err));
             }
-            setLoading(false); // Stop spinner
+            setLoading(false); 
           } else {
             console.warn("Profile not found in Grid. Awaiting initialization...");
-            // Keep loading true if just created, handled by LandingPage usually
           }
         }, (error: any) => {
            console.error("Grid Sync Interrupted:", error.message);
-           // Handle permission errors by not blocking the UI completely, but user data might be stale
            setLoading(false);
         });
 
-        // Sync Notifications (Non-blocking)
         const notifQuery = query(
           collection(db, 'notifications'), 
           where('toUserId', '==', authUser.uid), 
@@ -479,14 +464,12 @@ export default function App() {
           setNotifications(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as AppNotification)));
         }, (e: any) => console.debug("Notif bus silent"));
 
-        // Sync Blocked Users
         const blockedRef = collection(db, 'users', authUser.uid, 'blocked');
         const unsubBlocked = onSnapshot(blockedRef, (snap: any) => {
             const ids = new Set<string>(snap.docs.map((d: any) => d.id));
             setBlockedIds(ids);
         });
 
-        // Sync Calls (Non-blocking)
         const callQuery = query(
           collection(db, 'calls'),
           where('receiverId', '==', authUser.uid),
@@ -506,7 +489,6 @@ export default function App() {
           unsubBlocked();
         };
       } else {
-        // No Auth User
         setUser(null);
         setUserData(null);
         setBlockedIds(new Set());
@@ -522,7 +504,6 @@ export default function App() {
 
   // --- GLOBAL DATA SYNC ---
   useEffect(() => {
-    // Sync Settings Globally
     const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (docSnap: any) => {
       if (docSnap.exists()) {
         setSystemSettings(prev => ({
@@ -532,12 +513,10 @@ export default function App() {
       }
     });
 
-    // Sync All Users (Lightweight)
     const unsubUsers = onSnapshot(query(collection(db, 'users'), limit(100)), (snap: any) => {
       setAllUsers(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as User)));
     });
 
-    // Sync Feed Posts
     const unsubPosts = onSnapshot(query(collection(db, 'posts'), orderBy('timestamp', 'desc'), limit(50)), (snap: any) => {
       setGlobalPosts(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Post)));
     });
@@ -547,9 +526,7 @@ export default function App() {
       unsubUsers();
       unsubPosts();
     };
-  }, []); // Run once on mount to ensure settings are always available for LandingPage
-
-  // --- ACTIONS ---
+  }, []);
 
   const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = Math.random().toString(36).substr(2, 9);
@@ -580,33 +557,27 @@ export default function App() {
     addToast("Signal Composer Active", "info");
   };
 
-  // --- INTERACTION LOGIC ---
+  // --- NAVIGATION HANDLER FOR PROFILES ---
+  const handleViewProfile = (user: User) => {
+    setSelectedUserProfile(user);
+    setActiveRoute(AppRoute.PUBLIC_PROFILE);
+    window.scrollTo(0, 0);
+  };
 
+  // --- INTERACTION LOGIC ---
   const handleLike = async (postId: string, frequency: string = 'pulse') => {
     if (!user || !userData) return;
     const postRef = doc(db, 'posts', postId);
-    
     try {
         const postSnap = await getDoc(postRef);
         if (!postSnap.exists()) return;
-        
         const postData = postSnap.data() as Post;
         const isLiked = postData.likedBy?.includes(user.uid);
-
         const batch = writeBatch(db);
-        
         if (isLiked) {
-            batch.update(postRef, {
-                likes: increment(-1),
-                likedBy: arrayRemove(user.uid)
-            });
+            batch.update(postRef, { likes: increment(-1), likedBy: arrayRemove(user.uid) });
         } else {
-            batch.update(postRef, {
-                likes: increment(1),
-                likedBy: arrayUnion(user.uid)
-            });
-            
-            // Notification (only if not self)
+            batch.update(postRef, { likes: increment(1), likedBy: arrayUnion(user.uid) });
             if (postData.authorId !== user.uid) {
                 const notifRef = doc(collection(db, 'notifications'));
                 batch.set(notifRef, {
@@ -626,7 +597,6 @@ export default function App() {
         await batch.commit();
         if (!isLiked) addToast("Frequency Synced", "success");
     } catch (error) {
-        console.error("Pulse error:", error);
         addToast("Pulse Failed", "error");
     }
   };
@@ -634,13 +604,10 @@ export default function App() {
   const handleBookmark = async (postId: string) => {
     if (!user) return;
     const postRef = doc(db, 'posts', postId);
-    
     try {
         const postSnap = await getDoc(postRef);
         if (!postSnap.exists()) return;
-        
         const isBookmarked = postSnap.data().bookmarkedBy?.includes(user.uid);
-        
         if (isBookmarked) {
             await updateDoc(postRef, { bookmarkedBy: arrayRemove(user.uid) });
             addToast("Removed from Data Vault", "info");
@@ -656,39 +623,27 @@ export default function App() {
   // --- RSVP LOGIC ---
   const handleRSVP = async (gatheringId: string, isAttendingOrWaitlisted: boolean) => {
     if (!db || !userData || rsvpProcessing.has(gatheringId)) return;
-    
-    // Lock this gathering
     setRsvpProcessing(prev => new Set(prev).add(gatheringId));
-
     try {
       const gatheringRef = doc(db, 'gatherings', gatheringId);
       const freshSnap = await getDoc(gatheringRef);
       if (!freshSnap.exists()) return;
-      
       const currentData = freshSnap.data() as Gathering;
       const userId = userData.id;
       const isCurrentlyAttending = currentData.attendees.includes(userId);
       const isCurrentlyWaitlisted = currentData.waitlist?.includes(userId);
       const max = currentData.maxAttendees || 0;
       const currentCount = currentData.attendees.length;
-
       const batch = writeBatch(db);
       let successMessage = "";
       let successType: 'success' | 'info' = 'info';
 
       if (isAttendingOrWaitlisted) {
-        // Withdrawing
         if (isCurrentlyAttending) {
             batch.update(gatheringRef, { attendees: arrayRemove(userId) });
-            
-            // Auto-promote
             if (currentData.waitlist && currentData.waitlist.length > 0) {
                 const nextUserId = currentData.waitlist[0];
-                batch.update(gatheringRef, { 
-                    waitlist: arrayRemove(nextUserId),
-                    attendees: arrayUnion(nextUserId) 
-                });
-
+                batch.update(gatheringRef, { waitlist: arrayRemove(nextUserId), attendees: arrayUnion(nextUserId) });
                 const notifRef = doc(collection(db, 'notifications'));
                 batch.set(notifRef, {
                     type: 'gathering_promote',
@@ -703,86 +658,58 @@ export default function App() {
                     pulseFrequency: 'velocity'
                 });
             }
-
             if (currentData.linkedChatId) {
-                batch.update(doc(db, 'chats', currentData.linkedChatId), {
-                    participants: arrayRemove(userId)
-                });
+                batch.update(doc(db, 'chats', currentData.linkedChatId), { participants: arrayRemove(userId) });
             }
             successMessage = "Withdrawn from Gathering";
             successType = "info";
-
         } else if (isCurrentlyWaitlisted) {
             batch.update(gatheringRef, { waitlist: arrayRemove(userId) });
             successMessage = "Removed from Waitlist";
             successType = "info";
         }
-
       } else {
-        // Joining
         if (max > 0 && currentCount >= max) {
             batch.update(gatheringRef, { waitlist: arrayUnion(userId) });
             successMessage = "Joined Waitlist";
             successType = "info";
         } else {
             batch.update(gatheringRef, { attendees: arrayUnion(userId) });
-            
             if (currentData.linkedChatId) {
                 const chatRef = doc(db, 'chats', currentData.linkedChatId);
                 const participantUpdate: any = {};
-                participantUpdate[`participantData.${userId}`] = { 
-                    displayName: userData.displayName, 
-                    avatarUrl: userData.avatarUrl 
-                };
-                batch.update(chatRef, { 
-                    participants: arrayUnion(userId),
-                    ...participantUpdate
-                });
+                participantUpdate[`participantData.${userId}`] = { displayName: userData.displayName, avatarUrl: userData.avatarUrl };
+                batch.update(chatRef, { participants: arrayUnion(userId), ...participantUpdate });
             }
             successMessage = "RSVP Confirmed";
             successType = "success";
         }
       }
-
       await batch.commit();
       if (successMessage) addToast(successMessage, successType);
-
     } catch (e) {
-      console.error(e);
       addToast("RSVP Protocol Failed", "error");
     } finally {
-      // Release lock
       setRsvpProcessing(prev => { const n = new Set(prev); n.delete(gatheringId); return n; });
     }
   };
 
-  // --- BLOCKING LOGIC ---
   const handleBlockUser = async (targetId: string) => {
     if (!db || !userData?.id || targetId === userData.id) return;
-    
     try {
         const batch = writeBatch(db);
         const myId = userData.id;
-
-        // 1. Add to blocked subcollection
         const blockedRef = doc(db, 'users', myId, 'blocked', targetId);
-        batch.set(blockedRef, {
-            blockedAt: serverTimestamp(),
-            blockedBy: myId
-        });
-
-        // 2. Unfollow (if exists)
+        batch.set(blockedRef, { blockedAt: serverTimestamp(), blockedBy: myId });
         const myFollowingRef = doc(db, 'users', myId, 'following', targetId);
         const theirFollowersRef = doc(db, 'users', targetId, 'followers', myId);
         batch.delete(myFollowingRef);
         batch.delete(theirFollowersRef);
         batch.update(doc(db, 'users', myId), { following: increment(-1) });
         batch.update(doc(db, 'users', targetId), { followers: increment(-1) });
-
         await batch.commit();
         addToast("Node Blocked. Signal Severed.", "success");
     } catch (e) {
-        console.error(e);
         addToast("Block Protocol Failed", "error");
     }
   };
@@ -797,17 +724,12 @@ export default function App() {
     }
   };
 
-  // --- HELPERS ---
   const isFeatureEnabled = (route: AppRoute) => {
-    // Admin always overrides
     if (userData?.role === 'admin') return true;
     return systemSettings.featureFlags?.[route] !== false;
   };
 
-  // Filter posts based on blocked users
   const filteredGlobalPosts = globalPosts.filter(p => !blockedIds.has(p.authorId));
-
-  // --- RENDER ---
 
   if (loading) {
     return (
@@ -820,12 +742,10 @@ export default function App() {
     );
   }
 
-  // SUSPENSION CHECK
   if (userData?.isSuspended && user) {
     return <SuspendedScreen onLogout={handleLogout} userData={userData} />;
   }
 
-  // MAINTENANCE MODE CHECK (Bypass for Admins)
   if (systemSettings.maintenanceMode && userData?.role !== 'admin' && user) {
     return <MaintenanceScreen />;
   }
@@ -870,9 +790,7 @@ export default function App() {
               onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
               onOpenCreate={() => handleCreatePost()}
               onTransmitStory={() => {}}
-              onGoLive={() => {
-                 setActiveStreamId(`stream_${user.uid}`);
-              }}
+              onGoLive={() => { setActiveStreamId(`stream_${user.uid}`); }}
               onJoinStream={(stream) => setWatchingStream(stream)}
             />
           ) : <FeatureDisabledScreen featureName="FEED" />
@@ -886,6 +804,7 @@ export default function App() {
               onLike={handleLike}
               onBookmark={handleBookmark}
               onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
+              onViewProfile={handleViewProfile}
               locale="en-GB"
             />
           ) : <FeatureDisabledScreen featureName="EXPLORE" />
@@ -916,6 +835,7 @@ export default function App() {
           ) : <FeatureDisabledScreen featureName="NOTIFICATIONS" />
         )}
 
+        {/* My Profile */}
         {activeRoute === AppRoute.PROFILE && userData && (
           isFeatureEnabled(AppRoute.PROFILE) ? (
             <ProfilePage 
@@ -925,11 +845,28 @@ export default function App() {
               locale="en-GB"
               sessionStartTime={Date.now()}
               onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
+              onViewProfile={handleViewProfile}
               onOpenSettings={() => setIsSettingsOpen(true)}
               onLike={handleLike}
               onBookmark={handleBookmark}
             />
           ) : <FeatureDisabledScreen featureName="PROFILE" />
+        )}
+
+        {/* Public Profile View */}
+        {activeRoute === AppRoute.PUBLIC_PROFILE && selectedUserProfile && (
+           <ProfilePage 
+             userData={selectedUserProfile}
+             onUpdateProfile={() => {}} // Read-only for others
+             addToast={addToast}
+             locale="en-GB"
+             sessionStartTime={Date.now()}
+             onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
+             onViewProfile={handleViewProfile} // Recursive viewing
+             onOpenSettings={() => {}} 
+             onLike={handleLike}
+             onBookmark={handleBookmark}
+           />
         )}
 
         {activeRoute === AppRoute.CLUSTERS && userData && (
@@ -978,10 +915,7 @@ export default function App() {
             allUsers={allUsers}
             locale="en-GB"
             onBack={() => { setSelectedGathering(null); setActiveRoute(AppRoute.GATHERINGS); }}
-            onDelete={(id) => {
-               deleteDoc(doc(db, 'gatherings', id));
-               setActiveRoute(AppRoute.GATHERINGS);
-            }}
+            onDelete={(id) => { deleteDoc(doc(db, 'gatherings', id)); setActiveRoute(AppRoute.GATHERINGS); }}
             onRSVP={handleRSVP}
             onOpenLobby={() => {}}
           />
@@ -999,10 +933,9 @@ export default function App() {
           />
         )}
 
-        {/* Other Pages */}
         {activeRoute === AppRoute.MESH && userData && (
           isFeatureEnabled(AppRoute.MESH) ? (
-            <MeshPage currentUser={userData} locale="en-GB" addToast={addToast} onViewProfile={() => {}} />
+            <MeshPage currentUser={userData} locale="en-GB" addToast={addToast} onViewProfile={handleViewProfile} />
           ) : <FeatureDisabledScreen featureName="MESH NETWORK" />
         )}
         
@@ -1020,7 +953,7 @@ export default function App() {
         
         {activeRoute === AppRoute.VERIFIED_NODES && (
           isFeatureEnabled(AppRoute.VERIFIED_NODES) ? (
-            <VerifiedNodesPage users={allUsers.filter(u => !blockedIds.has(u.id))} onViewProfile={() => {}} />
+            <VerifiedNodesPage users={allUsers.filter(u => !blockedIds.has(u.id))} onViewProfile={handleViewProfile} />
           ) : <FeatureDisabledScreen featureName="VERIFIED NODES" />
         )}
         
@@ -1029,31 +962,21 @@ export default function App() {
         {activeRoute === AppRoute.TERMS && <TermsPage />}
         {activeRoute === AppRoute.COOKIES && <CookiesPage />}
         
-        {/* New Simulations Page */}
         {activeRoute === AppRoute.SIMULATIONS && (
           isFeatureEnabled(AppRoute.SIMULATIONS) ? (
             <SimulationsPage />
           ) : <FeatureDisabledScreen featureName="SIMULATIONS" />
         )}
 
-        {/* Resilience Module */}
         {activeRoute === AppRoute.RESILIENCE && userData && (
            isFeatureEnabled(AppRoute.RESILIENCE) ? (
-             <ResiliencePage 
-               userData={userData} 
-               addToast={addToast}
-             />
+             <ResiliencePage userData={userData} addToast={addToast} />
            ) : <FeatureDisabledScreen featureName="RESILIENCE" />
         )}
 
-        {/* Support Module */}
         {activeRoute === AppRoute.SUPPORT && userData && (
            isFeatureEnabled(AppRoute.SUPPORT) ? (
-             <SupportPage 
-               currentUser={userData} 
-               addToast={addToast} 
-               locale="en-GB"
-             />
+             <SupportPage currentUser={userData} addToast={addToast} locale="en-GB" />
            ) : <FeatureDisabledScreen featureName="SUPPORT MATRIX" />
         )}
 
@@ -1090,7 +1013,6 @@ export default function App() {
         />
       )}
 
-      {/* Settings Overlay */}
       {isSettingsOpen && userData && (
         <SettingsOverlay 
           userData={userData} 

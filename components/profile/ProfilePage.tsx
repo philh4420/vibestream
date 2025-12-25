@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { User, Post, Region } from '../../types';
 import { db, auth } from '../../services/firebase';
@@ -36,12 +37,24 @@ interface ProfilePageProps {
   locale: Region;
   sessionStartTime: number;
   onViewPost: (post: Post) => void;
+  onViewProfile: (user: User) => void;
   onOpenSettings?: () => void;
   onLike?: (id: string, freq?: string) => void;
   onBookmark?: (id: string) => void;
 }
 
-export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProfile, addToast, locale, sessionStartTime, onViewPost, onOpenSettings, onLike, onBookmark }) => {
+export const ProfilePage: React.FC<ProfilePageProps> = ({ 
+  userData, 
+  onUpdateProfile, 
+  addToast, 
+  locale, 
+  sessionStartTime, 
+  onViewPost, 
+  onViewProfile,
+  onOpenSettings, 
+  onLike, 
+  onBookmark 
+}) => {
   const [activeTab, setActiveTab] = useState<string>('broadcasting');
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -55,6 +68,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
   // Real-time Profile Data Sync
   useEffect(() => {
     if (!db || !userData.id) return;
+    setProfileData(userData); // Initialize immediate state
     const unsub = onSnapshot(doc(db, 'users', userData.id), (doc: any) => {
       if (doc.exists()) {
         setProfileData({ id: doc.id, ...doc.data() } as User);
@@ -176,13 +190,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
       
       batch.delete(myFollowingRef);
       batch.delete(theirFollowersRef);
-      // We don't decrement counts here to simplify rules, or we assume cloud functions handle it.
-      // But for client-side cleanliness, we can try if rules allow.
-      // Let's stick to just the blocking for now, unfollow logic in App.tsx handles the full cleanup generally.
       
       await batch.commit();
       addToast("Node Blocked. Redirecting...", "success");
-      // Could redirect to feed here
     } catch (e) {
       addToast("Block Protocol Failed", "error");
     }
@@ -203,7 +213,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
       case 'chronology':
         return <div className="max-w-[2560px] mx-auto"><ProfileChronologySection userData={profileData} locale={locale} /></div>;
       case 'connections':
-        return <div className="max-w-[2560px] mx-auto"><ProfileConnectionsSection userData={profileData} currentUser={userData} onViewProfile={(u) => console.log('View', u)} /></div>; 
+        return <div className="max-w-[2560px] mx-auto"><ProfileConnectionsSection userData={profileData} currentUser={userData} onViewProfile={onViewProfile} /></div>; 
       default:
         return (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-[2560px] mx-auto items-start">

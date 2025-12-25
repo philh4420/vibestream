@@ -9,6 +9,7 @@ interface ExplorePageProps {
   onLike: (id: string) => void;
   onBookmark: (id: string) => void;
   onViewPost: (post: Post) => void;
+  onViewProfile: (user: User) => void;
   locale: Region;
   searchQuery?: string;
   onClearSearch?: () => void;
@@ -19,7 +20,8 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
   users,
   onLike, 
   onBookmark,
-  onViewPost, 
+  onViewPost,
+  onViewProfile,
   locale,
   searchQuery = '',
   onClearSearch
@@ -155,7 +157,11 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
                
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {filteredData.nodes.slice(0, 6).map(user => (
-                     <div key={user.id} className="group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] p-5 flex items-center gap-4 hover:border-indigo-100 dark:hover:border-indigo-900 hover:shadow-lg transition-all duration-300">
+                     <div 
+                        key={user.id} 
+                        onClick={() => onViewProfile(user)}
+                        className="group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] p-5 flex items-center gap-4 hover:border-indigo-100 dark:hover:border-indigo-900 hover:shadow-lg transition-all duration-300 cursor-pointer"
+                     >
                         <div className="relative shrink-0">
                            <img src={user.avatarUrl} className="w-16 h-16 rounded-[1.4rem] object-cover border-2 border-slate-50 dark:border-slate-800 group-hover:scale-105 transition-transform" alt="" />
                            {user.verifiedHuman && (
@@ -165,7 +171,7 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
                            )}
                         </div>
                         <div className="flex-1 min-w-0">
-                           <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase italic tracking-tight truncate">{user.displayName}</h4>
+                           <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase italic tracking-tight truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{user.displayName}</h4>
                            <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 font-mono tracking-wider truncate">@{user.username}</p>
                            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-1 opacity-80">{user.bio || 'Node active.'}</p>
                         </div>
