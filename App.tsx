@@ -68,8 +68,6 @@ import { SupportPage } from './components/support/SupportPage';
 // Services
 import { fetchWeather } from './services/weather';
 
-// ... (Keep existing MaintenanceScreen, FeatureDisabledScreen, SuspendedScreen components)
-// For brevity in XML, assuming they are preserved as they were in the input file.
 const MaintenanceScreen = () => (
   <div className="fixed inset-0 z-[9999] bg-[#030712] flex flex-col items-center justify-center overflow-hidden font-sans selection:bg-rose-500 selection:text-white">
     <div className="relative z-10 flex flex-col items-center text-center p-8 w-full max-w-6xl">
@@ -336,7 +334,6 @@ export default function App() {
     }
   };
 
-  // ... (Other handlers like handleLike, handleBookmark, handleRSVP preserved logic)
   const handleLike = async (postId: string) => { /* ... */ };
   const handleBookmark = async (postId: string) => { /* ... */ };
   const handleRSVP = async (gatheringId: string, isAttendingOrWaitlisted: boolean) => { /* ... */ };
@@ -353,6 +350,16 @@ export default function App() {
   if (loading) return <div className="fixed inset-0 bg-slate-900 flex items-center justify-center text-white">Initializing_Grid...</div>;
   if (!user) return <LandingPage onEnter={() => {}} systemSettings={systemSettings} />;
 
+  // Maintenance Check (Admin Bypass)
+  if (systemSettings.maintenanceMode && userData?.role !== 'admin') {
+    return <MaintenanceScreen />;
+  }
+
+  // Suspension Check
+  if (userData?.isSuspended) {
+    return <SuspendedScreen onLogout={handleLogout} userData={userData} />;
+  }
+
   return (
     <>
       <Layout
@@ -360,6 +367,7 @@ export default function App() {
         onNavigate={setActiveRoute}
         onOpenCreate={() => addToast("Composer Ready", "info")}
         onLogout={handleLogout}
+        userRole={userData?.role}
         userData={userData}
         notifications={notifications.filter(n => !blockedIds.has(n.fromUserId))}
         onMarkRead={() => {}}
@@ -451,12 +459,152 @@ export default function App() {
            />
         )}
 
-        {/* ... (Other routes: Clusters, Gatherings, etc. - passing filteredUsers where applicable) */}
+        {activeRoute === AppRoute.ADMIN && userData?.role === 'admin' && (
+            <AdminPanel 
+              addToast={addToast}
+              locale="en-GB"
+              systemSettings={systemSettings}
+              userData={userData}
+            />
+        )}
+
+        {activeRoute === AppRoute.PRIVACY && <PrivacyPage />}
+        {activeRoute === AppRoute.TERMS && <TermsPage />}
+        {activeRoute === AppRoute.COOKIES && <CookiesPage />}
+
+        {activeRoute === AppRoute.MESH && userData && isFeatureEnabled(AppRoute.MESH) && (
+            <MeshPage 
+              currentUser={userData} 
+              locale="en-GB" 
+              addToast={addToast}
+              onViewProfile={(u) => { setSelectedUserProfile(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }}
+            />
+        )}
+
+        {activeRoute === AppRoute.CLUSTERS && userData && isFeatureEnabled(AppRoute.CLUSTERS) && (
+            <ClustersPage 
+              currentUser={userData} 
+              locale="en-GB" 
+              addToast={addToast}
+              onOpenChat={() => {}}
+              allUsers={filteredUsers}
+              weather={weather}
+            />
+        )}
+
+        {activeRoute === AppRoute.STREAM_GRID && isFeatureEnabled(AppRoute.STREAM_GRID) && (
+            <StreamGridPage 
+              locale="en-GB"
+              onJoinStream={setWatchingStream}
+              onGoLive={() => setActiveStreamId(`stream_${user.uid}`)}
+              userData={userData}
+              onTransmit={() => {}}
+            />
+        )}
+
+        {activeRoute === AppRoute.TEMPORAL && isFeatureEnabled(AppRoute.TEMPORAL) && (
+            <TemporalPage currentUser={userData} locale="en-GB" addToast={addToast} />
+        )}
+
+        {activeRoute === AppRoute.SAVED && userData && isFeatureEnabled(AppRoute.SAVED) && (
+            <DataVaultPage 
+              currentUser={userData} 
+              locale="en-GB" 
+              addToast={addToast}
+              onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
+            />
+        )}
+
+        {activeRoute === AppRoute.VERIFIED_NODES && isFeatureEnabled(AppRoute.VERIFIED_NODES) && (
+            <VerifiedNodesPage 
+              users={filteredUsers} 
+              onViewProfile={(u) => { setSelectedUserProfile(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }} 
+            />
+        )}
+
+        {activeRoute === AppRoute.GATHERINGS && userData && isFeatureEnabled(AppRoute.GATHERINGS) && (
+            <GatheringsPage 
+              currentUser={userData}
+              locale="en-GB"
+              addToast={addToast}
+              allUsers={filteredUsers}
+              onOpenLobby={(id) => { console.log('Open Lobby', id); }}
+              onViewGathering={(g) => { setSelectedGathering(g); setActiveRoute(AppRoute.SINGLE_GATHERING); }}
+              onRSVP={handleRSVP}
+            />
+        )}
+
+        {activeRoute === AppRoute.SINGLE_GATHERING && selectedGathering && userData && (
+            <SingleGatheringView 
+              gathering={selectedGathering}
+              currentUser={userData}
+              allUsers={filteredUsers}
+              locale="en-GB"
+              onBack={() => setActiveRoute(AppRoute.GATHERINGS)}
+              onDelete={() => {}}
+              onRSVP={handleRSVP}
+              onOpenLobby={(id) => { console.log('Open Lobby', id); }}
+            />
+        )}
+
+        {activeRoute === AppRoute.SIMULATIONS && isFeatureEnabled(AppRoute.SIMULATIONS) && (
+            <SimulationsPage />
+        )}
+
+        {activeRoute === AppRoute.RESILIENCE && userData && isFeatureEnabled(AppRoute.RESILIENCE) && (
+            <ResiliencePage userData={userData} addToast={addToast} />
+        )}
+
+        {activeRoute === AppRoute.SUPPORT && userData && isFeatureEnabled(AppRoute.SUPPORT) && (
+            <SupportPage currentUser={userData} locale="en-GB" addToast={addToast} />
+        )}
+
+        {activeRoute === AppRoute.SINGLE_POST && selectedPost && (
+            <SinglePostView 
+              post={selectedPost} 
+              userData={userData} 
+              locale="en-GB" 
+              onClose={() => setActiveRoute(AppRoute.FEED)}
+              onLike={handleLike}
+              onBookmark={handleBookmark}
+              addToast={addToast}
+              blockedIds={blockedIds}
+            />
+        )}
+
+        {!isFeatureEnabled(activeRoute) && activeRoute !== AppRoute.ADMIN && (
+           <FeatureDisabledScreen featureName={activeRoute} />
+        )}
+
       </Layout>
 
       {/* Overlays */}
       {toasts.map(t => <div key={t.id} className="fixed top-24 right-6 z-[3000]"><Toast toast={t} onClose={removeToast} /></div>)}
       
+      {activeStreamId && userData && (
+        <LiveBroadcastOverlay 
+          userData={userData} 
+          onStart={() => {}} 
+          onEnd={() => setActiveStreamId(null)}
+          activeStreamId={activeStreamId}
+        />
+      )}
+
+      {watchingStream && (
+        <LiveWatcherOverlay 
+          stream={watchingStream} 
+          onLeave={() => setWatchingStream(null)} 
+        />
+      )}
+
+      {activeCall && userData && (
+        <NeuralLinkOverlay 
+          session={activeCall} 
+          userData={userData} 
+          onEnd={() => setActiveCall(null)} 
+        />
+      )}
+
       {isSettingsOpen && userData && (
         <SettingsOverlay 
           userData={userData} 

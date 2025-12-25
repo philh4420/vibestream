@@ -188,7 +188,9 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
 
         {/* System & Support */}
         <ProtocolGroup title="System" collapsed={collapsed}>
-          <NavItem route={AppRoute.SUPPORT} icon={ICONS.Support} label="Support Matrix" collapsed={collapsed} />
+          {userRole !== 'admin' && (
+            <NavItem route={AppRoute.SUPPORT} icon={ICONS.Support} label="Support Matrix" collapsed={collapsed} />
+          )}
           {userRole === 'admin' && (
             <NavItem route={AppRoute.ADMIN} icon={ICONS.Admin} label="Command Deck" collapsed={collapsed} />
           )}
