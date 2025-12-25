@@ -26,7 +26,7 @@ export const AdminContent: React.FC<AdminContentProps> = ({ signals, addToast })
     <div className="space-y-8 animate-in fade-in duration-500">
       
       {/* Header */}
-      <div className="bg-slate-950 rounded-[2.5rem] p-8 md:p-10 text-white shadow-2xl border border-white/10 relative overflow-hidden">
+      <div className="bg-slate-950 dark:bg-black rounded-[2.5rem] p-8 md:p-10 text-white shadow-2xl border border-white/10 dark:border-slate-800 relative overflow-hidden">
          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-rose-600/20 blur-[100px] rounded-full translate-x-1/3 -translate-y-1/3" />
          
          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start gap-6">
@@ -57,11 +57,11 @@ export const AdminContent: React.FC<AdminContentProps> = ({ signals, addToast })
         {signals.map((post, idx) => (
           <div 
             key={post.id} 
-            className="bg-white border border-slate-100 rounded-[2.5rem] p-4 group hover:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.1)] transition-all duration-300 flex flex-col relative overflow-hidden"
+            className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] p-4 group hover:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.1)] hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-300 flex flex-col relative overflow-hidden"
             style={{ animationDelay: `${idx * 50}ms` }}
           >
             {/* Visual Layer */}
-            <div className="aspect-[4/3] rounded-[2rem] overflow-hidden mb-4 bg-slate-50 border border-slate-50 relative">
+            <div className="aspect-[4/3] rounded-[2rem] overflow-hidden mb-4 bg-slate-50 dark:bg-slate-800 border border-slate-50 dark:border-slate-800 relative">
               {post.media?.[0]?.url ? (
                 <>
                   <img src={post.media[0].url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="" />
@@ -71,10 +71,10 @@ export const AdminContent: React.FC<AdminContentProps> = ({ signals, addToast })
                 </>
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center text-center p-6">
-                  <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mb-3 text-slate-300 shadow-sm">
+                  <div className="w-12 h-12 bg-white dark:bg-slate-700 rounded-2xl flex items-center justify-center mb-3 text-slate-300 dark:text-slate-500 shadow-sm">
                      <ICONS.Messages />
                   </div>
-                  <p className="text-[8px] text-slate-400 font-black uppercase tracking-widest font-mono">Text_Packet</p>
+                  <p className="text-[8px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest font-mono">Text_Packet</p>
                 </div>
               )}
               
@@ -92,20 +92,20 @@ export const AdminContent: React.FC<AdminContentProps> = ({ signals, addToast })
             {/* Meta Data */}
             <div className="flex-1 flex flex-col px-1">
               <div className="flex items-center gap-3 mb-3">
-                <img src={post.authorAvatar} className="w-8 h-8 rounded-[0.8rem] object-cover border border-slate-100 bg-slate-50" alt="" />
+                <img src={post.authorAvatar} className="w-8 h-8 rounded-[0.8rem] object-cover border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800" alt="" />
                 <div className="min-w-0">
-                   <p className="text-[10px] font-black text-slate-900 truncate tracking-tight uppercase italic">{post.authorName}</p>
-                   <p className="text-[8px] font-mono text-slate-400">ID: {post.id.slice(0, 6)}</p>
+                   <p className="text-[10px] font-black text-slate-900 dark:text-white truncate tracking-tight uppercase italic">{post.authorName}</p>
+                   <p className="text-[8px] font-mono text-slate-400 dark:text-slate-500">ID: {post.id.slice(0, 6)}</p>
                 </div>
               </div>
               
-              <p className="text-[11px] text-slate-600 font-medium line-clamp-3 leading-relaxed mb-4">
-                {post.content || <span className="italic text-slate-300">No textual content.</span>}
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium line-clamp-3 leading-relaxed mb-4">
+                {post.content || <span className="italic text-slate-300 dark:text-slate-600">No textual content.</span>}
               </p>
               
-              <div className="mt-auto pt-3 border-t border-slate-50 flex justify-between items-center text-[8px] font-black text-slate-400 uppercase tracking-widest font-mono">
+              <div className="mt-auto pt-3 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono">
                 <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-                <span className="flex items-center gap-1 text-slate-500">
+                <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                    {post.likes}
                 </span>
