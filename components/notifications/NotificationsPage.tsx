@@ -30,15 +30,49 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
   const [activeFilter, setActiveFilter] = useState<SignalFilter>('all');
   const [showPurgeModal, setShowPurgeModal] = useState(false);
 
-  const filteredNotifications = useMemo(() => {
-    switch (activeFilter) {
-      case 'pulses':
-        return notifications.filter(n => n.type === 'like' || n.type === 'relay' || n.type === 'follow');
-      case 'system':
-        return notifications.filter(n => n.type === 'system' || n.type === 'broadcast' || n.type === 'packet_summary' || n.type === 'gathering_rsvp' || n.type === 'gathering_create');
-      default:
-        return notifications;
+  // Group notifications by date sections
+  const groupedNotifications = useMemo(() => {
+    let filtered = notifications;
+    
+    // Apply type filter
+    if (activeFilter === 'pulses') {
+      filtered = notifications.filter(n => ['like', 'relay', 'follow'].includes(n.type));
+    } else if (activeFilter === 'system') {
+      filtered = notifications.filter(n => ['system', 'broadcast', 'packet_summary', 'gathering_rsvp', 'gathering_create'].includes(n.type));
     }
+
+    const groups: { label: string; items: AppNotification[] }[] = [
+      { label: 'Incoming_Signals', items: [] }, // Unread
+      { label: 'Today', items: [] },
+      { label: 'Yesterday', items: [] },
+      { label: 'Archive_Log', items: [] }
+    ];
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    filtered.forEach(n => {
+      if (!n.isRead) {
+        groups[0].items.push(n);
+        return;
+      }
+
+      const d = n.timestamp?.toDate ? n.timestamp.toDate() : new Date();
+      // Reset time for comparison
+      const checkDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+      if (checkDate.getTime() === today.getTime()) {
+        groups[1].items.push(n);
+      } else if (checkDate.getTime() === yesterday.getTime()) {
+        groups[2].items.push(n);
+      } else {
+        groups[3].items.push(n);
+      }
+    });
+
+    return groups.filter(g => g.items.length > 0);
   }, [notifications, activeFilter]);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
@@ -65,11 +99,6 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
     }
   };
 
-  const handlePurgeRequest = () => {
-    if (notifications.length === 0) return;
-    setShowPurgeModal(true);
-  };
-
   const executePurgeAll = async () => {
     if (!db || !userData) return;
     
@@ -92,18 +121,20 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
     const pulseConfig = PULSE_FREQUENCIES.find(f => f.id === pulseId);
     
     if (type === 'like' && pulseConfig) {
-       return <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-lg shadow-sm border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 ${pulseConfig.color}`}>{pulseConfig.emoji}</div>;
+       return <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm shadow-sm border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 ${pulseConfig.color}`}>{pulseConfig.emoji}</div>;
     }
 
+    const iconClasses = "w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-md scale-90";
+
     switch (type) {
-        case 'follow': return <div className="w-10 h-10 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200 dark:shadow-none"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M19 7.5v9m-4.5-4.5h9M3 13.5h9m-9-4.5h9m-9-4.5h9" /></svg></div>;
-        case 'broadcast': return <div className="w-10 h-10 bg-rose-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-rose-200 dark:shadow-none animate-pulse"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></div>;
-        case 'relay': return <div className="w-10 h-10 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-200 dark:shadow-none"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg></div>;
-        case 'message': return <div className="w-10 h-10 bg-indigo-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100 dark:shadow-none"><ICONS.Messages /></div>;
-        case 'like': return <div className="w-10 h-10 bg-rose-50 dark:bg-rose-900/30 text-rose-500 dark:text-rose-400 rounded-2xl flex items-center justify-center border border-rose-100 dark:border-rose-900">❤️</div>;
-        case 'gathering_rsvp': return <div className="w-10 h-10 bg-purple-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-purple-200 dark:shadow-none"><ICONS.Gatherings /></div>;
-        case 'gathering_create': return <div className="w-10 h-10 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl flex items-center justify-center shadow-lg"><ICONS.Gatherings /></div>;
-        default: return <div className="w-10 h-10 bg-slate-900 dark:bg-slate-700 text-white rounded-2xl flex items-center justify-center shadow-lg"><ICONS.Bell /></div>;
+        case 'follow': return <div className={`${iconClasses} bg-indigo-600`}><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M19 7.5v9m-4.5-4.5h9M3 13.5h9m-9-4.5h9m-9-4.5h9" /></svg></div>;
+        case 'broadcast': return <div className={`${iconClasses} bg-rose-600 animate-pulse`}><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></div>;
+        case 'relay': return <div className={`${iconClasses} bg-emerald-500`}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg></div>;
+        case 'message': return <div className={`${iconClasses} bg-indigo-500`}><ICONS.Messages /></div>;
+        case 'like': return <div className="w-8 h-8 bg-rose-50 dark:bg-rose-900/30 text-rose-500 dark:text-rose-400 rounded-xl flex items-center justify-center border border-rose-100 dark:border-rose-900 shadow-sm scale-90">❤️</div>;
+        case 'gathering_rsvp': return <div className={`${iconClasses} bg-purple-600`}><ICONS.Gatherings /></div>;
+        case 'gathering_create': return <div className={`${iconClasses} bg-slate-900 dark:bg-white text-white dark:text-slate-900`}><ICONS.Gatherings /></div>;
+        default: return <div className={`${iconClasses} bg-slate-700`}><ICONS.Bell /></div>;
     }
   };
 
@@ -116,7 +147,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
            <div className="flex items-center gap-3 mb-2">
               <div className={`w-2 h-2 rounded-full ${unreadCount > 0 ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500'}`} />
               <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] font-mono">
-                INBOX_STATUS: {unreadCount > 0 ? 'ACTIVE_SIGNALS' : 'IDLE'}
+                STATUS: {unreadCount > 0 ? `${unreadCount}_NEW_SIGNALS` : 'GRID_SYNCED'}
               </span>
            </div>
            <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic leading-none">
@@ -135,11 +166,11 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
              ) : (
                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M5 13l4 4L19 7" /></svg>
              )}
-             MARK_READ
+             MARK_ALL_READ
            </button>
            
            <button 
-             onClick={handlePurgeRequest}
+             onClick={() => setShowPurgeModal(true)}
              disabled={notifications.length === 0}
              className="h-12 w-12 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-200 dark:hover:border-rose-900 rounded-2xl flex items-center justify-center transition-all active:scale-90 shadow-sm disabled:opacity-50"
              title="Purge Archive"
@@ -164,87 +195,82 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
          </div>
       </div>
 
-      {/* 3. Notification Stream */}
-      <div className="space-y-4 px-4 md:px-0">
-         {filteredNotifications.length > 0 ? (
-           filteredNotifications.map((notif, idx) => {
-             const isRead = notif.isRead;
-             return (
-               <div 
-                 key={notif.id}
-                 onClick={() => handleItemClick(notif)}
-                 className={`group relative flex items-start gap-5 p-5 md:p-6 rounded-[2.5rem] border transition-all duration-500 cursor-pointer overflow-hidden active:scale-[0.99] ${
-                   !isRead 
-                     ? 'bg-white dark:bg-slate-900 border-indigo-100 dark:border-indigo-900 shadow-[0_20px_40px_-10px_rgba(79,70,229,0.15)] dark:shadow-none ring-1 ring-indigo-50 dark:ring-indigo-900/30 z-10' 
-                     : 'bg-[#f8fafc] dark:bg-slate-950/50 border-transparent hover:bg-white dark:hover:bg-slate-900 hover:border-slate-100 dark:hover:border-slate-800 hover:shadow-lg dark:hover:shadow-none'
-                 }`}
-                 style={{ animationDelay: `${idx * 50}ms` }}
-               >
-                 {/* Unread Indicator */}
-                 {!isRead && (
-                   <div className="absolute left-0 top-8 bottom-8 w-1.5 bg-indigo-500 rounded-r-full shadow-[0_0_10px_rgba(79,70,229,0.5)]" />
-                 )}
+      {/* 3. Notification Stream (Grouped) */}
+      <div className="space-y-10 px-4 md:px-0">
+         {groupedNotifications.length > 0 ? (
+           groupedNotifications.map((group) => (
+             <div key={group.label} className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+               <div className="flex items-center gap-4 mb-4 opacity-60">
+                  <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1" />
+                  <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] font-mono">{group.label}</span>
+                  <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1" />
+               </div>
 
-                 {/* Icon / Avatar Layer */}
-                 <div className="relative shrink-0 mt-1">
-                    <div className="relative z-10">
-                       <img src={notif.fromUserAvatar} className="w-12 h-12 md:w-14 md:h-14 rounded-[1.2rem] object-cover border-2 border-white dark:border-slate-800 bg-slate-100 dark:bg-slate-800 shadow-sm group-hover:scale-105 transition-transform" alt="" />
-                       <div className="absolute -bottom-2 -right-2 scale-75 shadow-sm">
-                          {getIcon(notif.type, notif.pulseFrequency)}
+               <div className="space-y-3">
+                 {group.items.map((notif) => {
+                   const isRead = notif.isRead;
+                   return (
+                     <div 
+                       key={notif.id}
+                       onClick={() => handleItemClick(notif)}
+                       className={`group relative flex items-start gap-4 p-4 rounded-[2rem] border transition-all duration-300 cursor-pointer overflow-hidden active:scale-[0.99] ${
+                         !isRead 
+                           ? 'bg-white dark:bg-slate-900 border-indigo-100 dark:border-indigo-900/50 shadow-lg ring-1 ring-indigo-50 dark:ring-indigo-900/20 z-10' 
+                           : 'bg-[#fcfcfd] dark:bg-slate-950/30 border-transparent hover:bg-white dark:hover:bg-slate-900 hover:border-slate-100 dark:hover:border-slate-800'
+                       }`}
+                     >
+                       {/* Unread Bar */}
+                       {!isRead && (
+                         <div className="absolute left-0 top-6 bottom-6 w-1 bg-indigo-500 rounded-r-full shadow-[0_0_10px_rgba(79,70,229,0.6)]" />
+                       )}
+
+                       {/* Avatar & Type */}
+                       <div className="relative shrink-0 mt-1 ml-2">
+                          <img src={notif.fromUserAvatar} className="w-10 h-10 rounded-xl object-cover border border-slate-100 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 shadow-sm" alt="" />
+                          <div className="absolute -bottom-2 -right-2">
+                             {getIcon(notif.type, notif.pulseFrequency)}
+                          </div>
                        </div>
-                    </div>
-                 </div>
 
-                 {/* Content Layer */}
-                 <div className="flex-1 min-w-0 pt-1">
-                    <div className="flex flex-wrap items-baseline gap-x-2 mb-1.5">
-                       <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase italic tracking-tight hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">{notif.fromUserName}</h4>
-                       <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 leading-tight">{notif.text}</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                       <div className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200/50 dark:border-slate-700/50">
-                          <p className="text-[8px] font-black text-slate-400 dark:text-slate-500 font-mono">
+                       {/* Text Content */}
+                       <div className="flex-1 min-w-0 pt-0.5 pl-2">
+                          <div className="flex flex-wrap items-baseline gap-x-1.5 mb-1">
+                             <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase italic tracking-tight">{notif.fromUserName}</h4>
+                             <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 leading-tight line-clamp-2">{notif.text}</span>
+                          </div>
+                          
+                          <p className="text-[8px] font-bold text-slate-300 dark:text-slate-600 uppercase tracking-widest font-mono">
                             {notif.timestamp?.toDate ? notif.timestamp.toDate().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'NOW'}
                           </p>
                        </div>
-                       {!isRead && (
-                         <span className="text-[8px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest animate-pulse">NEW_SIGNAL</span>
-                       )}
-                    </div>
-                 </div>
 
-                 {/* Action Layer */}
-                 <div className="shrink-0 self-center opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-4 group-hover:translate-x-0">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); onDelete(notif.id); }}
-                      className="p-3 bg-white dark:bg-slate-800 border border-rose-100 dark:border-rose-900 text-rose-400 dark:text-rose-500 hover:text-rose-600 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-2xl transition-all shadow-sm active:scale-90"
-                    >
-                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                    </button>
-                 </div>
+                       {/* Action */}
+                       <div className="shrink-0 self-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); onDelete(notif.id); }}
+                            className="p-2 text-slate-300 hover:text-rose-500 transition-colors"
+                          >
+                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                          </button>
+                       </div>
+                     </div>
+                   );
+                 })}
                </div>
-             );
-           })
+             </div>
+           ))
          ) : (
-           <div className="py-32 flex flex-col items-center justify-center text-center px-6">
-              <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-[2.5rem] flex items-center justify-center mb-6 text-slate-300 dark:text-slate-600 shadow-inner">
+           <div className="py-32 flex flex-col items-center justify-center text-center px-6 opacity-50">
+              <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-[2rem] flex items-center justify-center mb-6 text-slate-300 dark:text-slate-600 shadow-inner">
                  <ICONS.Bell />
               </div>
               <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-widest italic mb-2">Zero_Activity</h3>
               <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] font-mono max-w-xs leading-relaxed">
-                No new signals detected in your sector for this frequency range.
+                No signals detected in your sector.
               </p>
            </div>
          )}
       </div>
-
-      {/* Footer Decoration */}
-      {filteredNotifications.length > 0 && (
-        <div className="mt-12 flex justify-center opacity-30">
-           <div className="h-1 w-12 bg-slate-300 dark:bg-slate-700 rounded-full" />
-        </div>
-      )}
 
       {/* Purge Modal */}
       <DeleteConfirmationModal 

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as FirebaseAuth from 'firebase/auth';
 const { onAuthStateChanged, signOut } = FirebaseAuth as any;
 import { 
@@ -154,6 +154,16 @@ export default function App() {
   const [rsvpProcessing, setRsvpProcessing] = useState<Set<string>>(new Set());
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+  // Sound Refs
+  const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
+  const latestNotifIdRef = useRef<string | null>(null);
+
+  // Initialize Sound
+  useEffect(() => {
+    notificationSoundRef.current = new Audio('https://actions.google.com/sounds/v1/navigation/arrival_message_success.ogg');
+    notificationSoundRef.current.volume = 0.5;
+  }, []);
+
   // --- THEME ENGINE ---
   useEffect(() => {
     const applyTheme = () => {
@@ -196,6 +206,11 @@ export default function App() {
     }
   }, [activeRoute]);
 
+  const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    const id = Math.random().toString(36).substr(2, 9);
+    setToasts(prev => [...prev, { id, message, type }]);
+  };
+
   // Auth & User Sync
   useEffect(() => {
     const safetyTimer = setTimeout(() => {
@@ -229,7 +244,20 @@ export default function App() {
 
         const notifQuery = query(collection(db, 'notifications'), where('toUserId', '==', authUser.uid), orderBy('timestamp', 'desc'), limit(50));
         const unsubNotif = onSnapshot(notifQuery, (snap: any) => {
-          setNotifications(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as AppNotification)));
+          const newNotifs = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as AppNotification));
+          
+          if (newNotifs.length > 0) {
+             const latest = newNotifs[0];
+             // Play sound if new unread notification arrives (and it's not the initial load or duplicate)
+             if (latestNotifIdRef.current && latest.id !== latestNotifIdRef.current && !latest.isRead) {
+                 notificationSoundRef.current?.play().catch(() => {});
+                 // Optional: Trigger toast from here if needed, but the notifications page usually handles listing.
+                 // We can invoke addToast if desired, but we can't easily access the addToast function from this closure if it depends on state.
+                 // Instead, relying on the sound for now.
+             }
+             latestNotifIdRef.current = latest.id;
+          }
+          setNotifications(newNotifs);
         });
 
         // Block Lists Listeners
@@ -299,11 +327,6 @@ export default function App() {
 
     return () => { unsubSettings(); unsubUsers(); unsubPosts(); };
   }, []);
-
-  const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
-    const id = Math.random().toString(36).substr(2, 9);
-    setToasts(prev => [...prev, { id, message, type }]);
-  };
 
   const removeToast = (id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));
@@ -457,7 +480,13 @@ export default function App() {
             <NotificationsPage 
               notifications={notifications.filter(n => !blockedIds.has(n.fromUserId))}
               onDelete={(id) => deleteDoc(doc(db, 'notifications', id))}
-              onMarkRead={() => {}}
+              onMarkRead={() => {
+                  const batch = writeBatch(db);
+                  notifications.forEach(n => {
+                      if (!n.isRead) batch.update(doc(db, 'notifications', n.id), { isRead: true });
+                  });
+                  batch.commit();
+              }}
               addToast={addToast}
               locale="en-GB"
               userData={userData}
