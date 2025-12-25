@@ -1,15 +1,39 @@
-
-import React, { useState } from 'react';
-import { UserSettings } from '../../../types';
+import React, { useState, useEffect } from 'react';
+import { UserSettings, User } from '../../../types';
+import { db } from '../../../services/firebase';
+import * as Firestore from 'firebase/firestore';
+const { doc, getDoc } = Firestore as any;
 
 interface SettingsSafetyProps {
   settings: UserSettings;
   handleChange: (category: keyof UserSettings, key: string, value: any) => void;
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
+  blockedIds?: string[];
+  onUnblock?: (id: string) => void;
 }
 
-export const SettingsSafety: React.FC<SettingsSafetyProps> = ({ settings, handleChange, addToast }) => {
+export const SettingsSafety: React.FC<SettingsSafetyProps> = ({ settings, handleChange, addToast, blockedIds = [], onUnblock }) => {
   const [hiddenWordInput, setHiddenWordInput] = useState('');
+  const [blockedUsers, setBlockedUsers] = useState<Partial<User>[]>([]);
+
+  // Fetch blocked user details
+  useEffect(() => {
+    const fetchBlockedUsers = async () => {
+        if (blockedIds.length === 0) {
+            setBlockedUsers([]);
+            return;
+        }
+        
+        const promises = blockedIds.map(id => getDoc(doc(db, 'users', id)));
+        const snaps = await Promise.all(promises);
+        const users = snaps
+            .map(s => s.exists() ? { id: s.id, displayName: s.data().displayName, username: s.data().username, avatarUrl: s.data().avatarUrl } : null)
+            .filter(Boolean) as Partial<User>[];
+        
+        setBlockedUsers(users);
+    };
+    fetchBlockedUsers();
+  }, [blockedIds]);
 
   const addHiddenWord = (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,7 +41,6 @@ export const SettingsSafety: React.FC<SettingsSafetyProps> = ({ settings, handle
     const word = hiddenWordInput.trim().toLowerCase();
     
     if (!settings.safety.hiddenWords.includes(word)) {
-      // Update parent state via handleChange using the new array
       handleChange('safety', 'hiddenWords', [...settings.safety.hiddenWords, word]);
       addToast(`Shield Updated: "${word}" blocked`, "info");
     }
@@ -61,6 +84,34 @@ export const SettingsSafety: React.FC<SettingsSafetyProps> = ({ settings, handle
       </div>
 
       <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
+        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono pl-2 mb-4">Neural_Firewall (Blocked Nodes)</p>
+        
+        {blockedUsers.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {blockedUsers.map(user => (
+                    <div key={user.id} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+                        <div className="flex items-center gap-3">
+                            <img src={user.avatarUrl} className="w-10 h-10 rounded-xl object-cover grayscale opacity-60" alt="" />
+                            <div className="min-w-0">
+                                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate">{user.displayName}</p>
+                                <p className="text-[9px] font-mono text-slate-400 dark:text-slate-500 truncate">@{user.username}</p>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => onUnblock && user.id && onUnblock(user.id)}
+                            className="text-[9px] font-black uppercase text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300 tracking-widest px-3 py-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-all"
+                        >
+                            Unblock
+                        </button>
+                    </div>
+                ))}
+            </div>
+        ) : (
+            <div className="p-6 text-center border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-2xl mb-6">
+                <p className="text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-widest">No Active Blocks</p>
+            </div>
+        )}
+
         <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono pl-2 mb-4">Keyword_Shield</p>
         <form onSubmit={addHiddenWord} className="flex gap-2 mb-4">
           <input 

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { User, UserSettings } from '../../types';
 import { db } from '../../services/firebase';
@@ -19,6 +18,8 @@ interface SettingsOverlayProps {
   onClose: () => void;
   onLogout: () => void;
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
+  blockedIds?: string[];
+  onUnblock?: (id: string) => void;
 }
 
 const DEFAULT_SETTINGS: UserSettings = {
@@ -57,7 +58,7 @@ const DEFAULT_SETTINGS: UserSettings = {
 
 type SettingTab = 'account' | 'privacy' | 'notifications' | 'appearance' | 'safety' | 'data';
 
-export const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ userData, onClose, onLogout, addToast }) => {
+export const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ userData, onClose, onLogout, addToast, blockedIds = [], onUnblock }) => {
   const [activeTab, setActiveTab] = useState<SettingTab>('account');
   const [settings, setSettings] = useState<UserSettings>(() => {
     // Deep merge defaults with user settings to ensure all fields exist
@@ -191,7 +192,13 @@ export const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ userData, onCl
               <SettingsAppearance settings={settings} handleChange={handleChange} handleToggle={handleToggle} />
             )}
             {activeTab === 'safety' && (
-              <SettingsSafety settings={settings} handleChange={handleChange} addToast={addToast} />
+              <SettingsSafety 
+                settings={settings} 
+                handleChange={handleChange} 
+                addToast={addToast} 
+                blockedIds={blockedIds} 
+                onUnblock={onUnblock}
+              />
             )}
             {activeTab === 'data' && (
               <SettingsData settings={settings} handleChange={handleChange} handleToggle={handleToggle} addToast={addToast} />

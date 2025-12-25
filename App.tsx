@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import * as FirebaseAuth from 'firebase/auth';
 const { onAuthStateChanged, signOut } = FirebaseAuth as any;
@@ -18,7 +17,9 @@ import {
   updateDoc,
   deleteDoc,
   addDoc,
-  increment
+  increment,
+  setDoc,
+  getDocs
 } from 'firebase/firestore'; 
 import { auth, db } from './services/firebase';
 import { 
@@ -349,6 +350,7 @@ export default function App() {
   // Global Data
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [globalPosts, setGlobalPosts] = useState<Post[]>([]);
+  const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
   
   // Selection States
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
@@ -477,6 +479,13 @@ export default function App() {
           setNotifications(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as AppNotification)));
         }, (e: any) => console.debug("Notif bus silent"));
 
+        // Sync Blocked Users
+        const blockedRef = collection(db, 'users', authUser.uid, 'blocked');
+        const unsubBlocked = onSnapshot(blockedRef, (snap: any) => {
+            const ids = new Set<string>(snap.docs.map((d: any) => d.id));
+            setBlockedIds(ids);
+        });
+
         // Sync Calls (Non-blocking)
         const callQuery = query(
           collection(db, 'calls'),
@@ -494,11 +503,13 @@ export default function App() {
           unsubUser();
           unsubNotif();
           unsubCalls();
+          unsubBlocked();
         };
       } else {
         // No Auth User
         setUser(null);
         setUserData(null);
+        setBlockedIds(new Set());
         setLoading(false);
       }
     });
@@ -745,12 +756,56 @@ export default function App() {
     }
   };
 
+  // --- BLOCKING LOGIC ---
+  const handleBlockUser = async (targetId: string) => {
+    if (!db || !userData?.id || targetId === userData.id) return;
+    
+    try {
+        const batch = writeBatch(db);
+        const myId = userData.id;
+
+        // 1. Add to blocked subcollection
+        const blockedRef = doc(db, 'users', myId, 'blocked', targetId);
+        batch.set(blockedRef, {
+            blockedAt: serverTimestamp(),
+            blockedBy: myId
+        });
+
+        // 2. Unfollow (if exists)
+        const myFollowingRef = doc(db, 'users', myId, 'following', targetId);
+        const theirFollowersRef = doc(db, 'users', targetId, 'followers', myId);
+        batch.delete(myFollowingRef);
+        batch.delete(theirFollowersRef);
+        batch.update(doc(db, 'users', myId), { following: increment(-1) });
+        batch.update(doc(db, 'users', targetId), { followers: increment(-1) });
+
+        await batch.commit();
+        addToast("Node Blocked. Signal Severed.", "success");
+    } catch (e) {
+        console.error(e);
+        addToast("Block Protocol Failed", "error");
+    }
+  };
+
+  const handleUnblockUser = async (targetId: string) => {
+    if (!db || !userData?.id) return;
+    try {
+        await deleteDoc(doc(db, 'users', userData.id, 'blocked', targetId));
+        addToast("Node Unblocked. Signal Restored.", "info");
+    } catch (e) {
+        addToast("Unblock Protocol Failed", "error");
+    }
+  };
+
   // --- HELPERS ---
   const isFeatureEnabled = (route: AppRoute) => {
     // Admin always overrides
     if (userData?.role === 'admin') return true;
     return systemSettings.featureFlags?.[route] !== false;
   };
+
+  // Filter posts based on blocked users
+  const filteredGlobalPosts = globalPosts.filter(p => !blockedIds.has(p.authorId));
 
   // --- RENDER ---
 
@@ -807,7 +862,7 @@ export default function App() {
         {activeRoute === AppRoute.FEED && (
           isFeatureEnabled(AppRoute.FEED) ? (
             <FeedPage 
-              posts={globalPosts} 
+              posts={filteredGlobalPosts} 
               userData={userData}
               locale="en-GB"
               onLike={handleLike}
@@ -826,8 +881,8 @@ export default function App() {
         {activeRoute === AppRoute.EXPLORE && (
           isFeatureEnabled(AppRoute.EXPLORE) ? (
             <ExplorePage 
-              posts={globalPosts}
-              users={allUsers}
+              posts={filteredGlobalPosts}
+              users={allUsers.filter(u => !blockedIds.has(u.id))}
               onLike={handleLike}
               onBookmark={handleBookmark}
               onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
@@ -843,7 +898,7 @@ export default function App() {
               locale="en-GB"
               addToast={addToast}
               weather={weather}
-              allUsers={allUsers}
+              allUsers={allUsers.filter(u => !blockedIds.has(u.id))}
             />
           ) : <FeatureDisabledScreen featureName="MESSAGES" />
         )}
@@ -871,6 +926,8 @@ export default function App() {
               sessionStartTime={Date.now()}
               onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
               onOpenSettings={() => setIsSettingsOpen(true)}
+              onLike={handleLike}
+              onBookmark={handleBookmark}
             />
           ) : <FeatureDisabledScreen featureName="PROFILE" />
         )}
@@ -882,7 +939,7 @@ export default function App() {
               locale="en-GB"
               addToast={addToast}
               onOpenChat={() => {}}
-              allUsers={allUsers}
+              allUsers={allUsers.filter(u => !blockedIds.has(u.id))}
               weather={weather}
             />
           ) : <FeatureDisabledScreen featureName="CLUSTERS" />
@@ -908,7 +965,7 @@ export default function App() {
               addToast={addToast}
               onViewGathering={(g) => { setSelectedGathering(g); setActiveRoute(AppRoute.SINGLE_GATHERING); }}
               onRSVP={handleRSVP}
-              allUsers={allUsers}
+              allUsers={allUsers.filter(u => !blockedIds.has(u.id))}
               onOpenLobby={() => {}}
             />
           ) : <FeatureDisabledScreen featureName="GATHERINGS" />
@@ -963,7 +1020,7 @@ export default function App() {
         
         {activeRoute === AppRoute.VERIFIED_NODES && (
           isFeatureEnabled(AppRoute.VERIFIED_NODES) ? (
-            <VerifiedNodesPage users={allUsers} onViewProfile={() => {}} />
+            <VerifiedNodesPage users={allUsers.filter(u => !blockedIds.has(u.id))} onViewProfile={() => {}} />
           ) : <FeatureDisabledScreen featureName="VERIFIED NODES" />
         )}
         
@@ -1040,6 +1097,8 @@ export default function App() {
           onClose={() => setIsSettingsOpen(false)} 
           onLogout={handleLogout}
           addToast={addToast}
+          blockedIds={Array.from(blockedIds)}
+          onUnblock={handleUnblockUser}
         />
       )}
     </>

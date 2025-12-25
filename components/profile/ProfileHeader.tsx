@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { User, PresenceStatus } from '../../types';
 import { ICONS } from '../../constants';
@@ -11,6 +10,7 @@ interface ProfileHeaderProps {
   isFollowing?: boolean;
   onFollowToggle?: () => void;
   onOpenSettings?: () => void;
+  onBlock?: () => void;
 }
 
 const PRESENCE_DOTS: Record<PresenceStatus, string> = {
@@ -30,7 +30,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   isOwnProfile,
   isFollowing,
   onFollowToggle,
-  onOpenSettings
+  onOpenSettings,
+  onBlock
 }) => {
   const showActivity = userData.settings?.privacy?.activityStatus !== false;
   const showLocation = userData.settings?.privacy?.showLocation !== false;
@@ -138,6 +139,11 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 <button className="h-16 w-16 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 rounded-[2rem] flex items-center justify-center hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all active:scale-90 shadow-lg">
                   <ICONS.Messages />
                 </button>
+                {onBlock && (
+                  <button onClick={onBlock} className="h-16 w-16 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 rounded-[2rem] flex items-center justify-center hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-200 dark:hover:border-rose-900 transition-all active:scale-90 shadow-lg" title="Block Node">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                  </button>
+                )}
               </>
             )}
           </div>

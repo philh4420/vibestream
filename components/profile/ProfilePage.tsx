@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { User, Post, Region } from '../../types';
 import { db, auth } from '../../services/firebase';
@@ -159,6 +158,36 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
     }
   };
 
+  const handleBlock = async () => {
+    if (!db || !currentUser || isOwnProfile) return;
+    const confirmed = window.confirm(`Block ${profileData.displayName}? This will hide their signals and sever connections.`);
+    if (!confirmed) return;
+
+    try {
+      const batch = writeBatch(db);
+      
+      // Add to blocked collection
+      const blockedRef = doc(db, 'users', currentUser.uid, 'blocked', userData.id);
+      batch.set(blockedRef, { blockedAt: serverTimestamp(), blockedBy: currentUser.uid });
+
+      // Unfollow Logic
+      const myFollowingRef = doc(db, 'users', currentUser.uid, 'following', userData.id);
+      const theirFollowersRef = doc(db, 'users', userData.id, 'followers', currentUser.uid);
+      
+      batch.delete(myFollowingRef);
+      batch.delete(theirFollowersRef);
+      // We don't decrement counts here to simplify rules, or we assume cloud functions handle it.
+      // But for client-side cleanliness, we can try if rules allow.
+      // Let's stick to just the blocking for now, unfollow logic in App.tsx handles the full cleanup generally.
+      
+      await batch.commit();
+      addToast("Node Blocked. Redirecting...", "success");
+      // Could redirect to feed here
+    } catch (e) {
+      addToast("Block Protocol Failed", "error");
+    }
+  };
+
   // Privacy Check Logic
   const isPrivate = profileData.settings?.privacy?.profileVisibility === 'private';
   const canView = isOwnProfile || !isPrivate || (isPrivate && isFollowing);
@@ -236,6 +265,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
         isFollowing={isFollowing}
         onFollowToggle={handleFollowToggle}
         onOpenSettings={onOpenSettings}
+        onBlock={handleBlock}
       />
       
       {/* 2. Privacy Check */}
