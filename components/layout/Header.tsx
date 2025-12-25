@@ -198,21 +198,52 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  const mobileNavItems = [
-    { l: 'Hub', i: ICONS.Home, r: AppRoute.FEED },
-    { l: 'Explore', i: ICONS.Explore, r: AppRoute.EXPLORE },
-    { l: 'Comms', i: ICONS.Messages, r: AppRoute.MESSAGES },
-    { l: 'Alerts', i: ICONS.Bell, r: AppRoute.NOTIFICATIONS },
-    { l: 'Mesh', i: ICONS.Profile, r: AppRoute.MESH },
-    { l: 'Clusters', i: ICONS.Clusters, r: AppRoute.CLUSTERS },
-    { l: 'Live', i: ICONS.Streams, r: AppRoute.STREAM_GRID, b: 'ON_AIR' },
-    { l: 'Vault', i: ICONS.Saved, r: AppRoute.SAVED },
-    { l: 'Time', i: ICONS.Temporal, r: AppRoute.TEMPORAL },
-    { l: 'Events', i: ICONS.Gatherings, r: AppRoute.GATHERINGS },
-    { l: 'Sims', i: ICONS.Simulations, r: AppRoute.SIMULATIONS },
-    { l: 'Health', i: ICONS.Resilience, r: AppRoute.RESILIENCE },
-    { l: 'Support', i: ICONS.Support, r: AppRoute.SUPPORT }
+  // Structured Nav Groups mimicking LeftSidebar
+  const navGroups = [
+    {
+      title: 'Core_Uplink',
+      items: [
+        { label: 'Hub', icon: ICONS.Home, route: AppRoute.FEED },
+        { label: 'Explore', icon: ICONS.Explore, route: AppRoute.EXPLORE },
+        { label: 'Comms', icon: ICONS.Messages, route: AppRoute.MESSAGES },
+        { label: 'Alerts', icon: ICONS.Bell, route: AppRoute.NOTIFICATIONS, badge: unreadCount > 0 ? unreadCount : undefined },
+      ]
+    },
+    {
+      title: 'Network',
+      items: [
+        { label: 'Mesh', icon: ICONS.Profile, route: AppRoute.MESH },
+        { label: 'Clusters', icon: ICONS.Clusters, route: AppRoute.CLUSTERS },
+        { label: 'Verified', icon: ICONS.Verified, route: AppRoute.VERIFIED_NODES },
+      ]
+    },
+    {
+      title: 'Media_Stream',
+      items: [
+        { label: 'Live', icon: ICONS.Streams, route: AppRoute.STREAM_GRID, badge: 'ON_AIR' },
+        { label: 'Vault', icon: ICONS.Saved, route: AppRoute.SAVED },
+      ]
+    },
+    {
+      title: 'Modules',
+      items: [
+        { label: 'Time', icon: ICONS.Temporal, route: AppRoute.TEMPORAL },
+        { label: 'Events', icon: ICONS.Gatherings, route: AppRoute.GATHERINGS },
+        { label: 'Sims', icon: ICONS.Simulations, route: AppRoute.SIMULATIONS },
+        { label: 'Health', icon: ICONS.Resilience, route: AppRoute.RESILIENCE },
+      ]
+    },
+    {
+      title: 'System',
+      items: [
+        { label: 'Support', icon: ICONS.Support, route: AppRoute.SUPPORT },
+      ]
+    }
   ];
+
+  if (userRole === 'admin') {
+    navGroups[4].items.push({ label: 'Admin', icon: ICONS.Admin, route: AppRoute.ADMIN, badge: undefined });
+  }
 
   return (
     <header 
@@ -388,18 +419,26 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
 
                   <div className="p-6 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
-                    {/* Mobile Nav Grid - Expanded for Mobile First Access */}
-                    <div className="lg:hidden space-y-3">
-                      <p className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.3em] font-mono ml-1">Full_Matrix_Access</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {mobileNavItems.map(item => (
-                          <button key={item.l} onClick={() => { onNavigate(item.r); setIsSystemMenuOpen(false); }} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all text-slate-600 dark:text-slate-400">
-                             <div className="scale-75"><item.i /></div>
-                             <span className="text-[10px] font-black uppercase tracking-wide truncate">{item.l}</span>
-                             {item.b && <span className="ml-auto text-[7px] font-black bg-rose-500 text-white px-1.5 py-0.5 rounded animate-pulse">{item.b}</span>}
-                          </button>
-                        ))}
-                      </div>
+                    {/* Mobile Nav Groups */}
+                    <div className="lg:hidden space-y-6">
+                      {navGroups.map(group => (
+                        <div key={group.title} className="space-y-2">
+                           <p className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.3em] font-mono ml-1">{group.title}</p>
+                           <div className="grid grid-cols-2 gap-2">
+                              {group.items.map(item => (
+                                <button 
+                                  key={item.label} 
+                                  onClick={() => { onNavigate(item.route); setIsSystemMenuOpen(false); }} 
+                                  className={`flex items-center gap-3 p-3 rounded-2xl transition-all ${activeRoute === item.route ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30'}`}
+                                >
+                                   <div className="scale-75"><item.icon /></div>
+                                   <span className="text-[10px] font-black uppercase tracking-wide truncate">{item.label}</span>
+                                   {item.badge && <span className="ml-auto text-[7px] font-black bg-rose-500 text-white px-1.5 py-0.5 rounded animate-pulse">{item.badge}</span>}
+                                </button>
+                              ))}
+                           </div>
+                        </div>
+                      ))}
                     </div>
                     
                     {/* Region Selector */}
