@@ -1,4 +1,3 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -103,6 +102,10 @@ service cloud.firestore {
       match /followers/{followerId} {
         allow read, list: if isAuthenticated();
         allow write: if isUser(followerId) || isAdmin(); // Follower writes to their own ID in target's subcollection
+      }
+
+      match /blocked/{targetId} {
+        allow read, write: if isUser(userId);
       }
 
       match /identity_shards/{shardId} { 
