@@ -318,6 +318,15 @@ export const PostCard: React.FC<PostCardProps> = ({
               );
             })}
           </div>
+          
+          {/* Captured Status Injection */}
+          {post.capturedStatus && (
+             <div className="mt-6 mb-2 inline-flex items-center gap-4 px-6 py-4 bg-slate-50/80 dark:bg-slate-800/80 rounded-[2rem] border border-slate-100 dark:border-slate-700 mx-auto max-w-full">
+                <span className="text-2xl filter drop-shadow-sm">{post.capturedStatus.emoji}</span>
+                <div className="h-6 w-px bg-slate-200 dark:bg-slate-700" />
+                <p className="text-sm font-bold text-slate-600 dark:text-slate-300 italic">"{post.capturedStatus.message}"</p>
+             </div>
+          )}
         </div>
 
         {/* 4. VISUAL ARTIFACTS */}
