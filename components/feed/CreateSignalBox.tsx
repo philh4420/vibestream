@@ -266,21 +266,13 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         </div>
       )}
 
-      {/* Pickers */}
-      {showEmojiPicker && (
-        <div className="absolute top-full mt-2 left-0 z-50">
-          <div className="fixed inset-0" onClick={() => setShowEmojiPicker(false)} />
-          <div className="relative">
-            <EmojiPicker onSelect={handleEmojiSelect} onClose={() => setShowEmojiPicker(false)} />
-          </div>
-        </div>
-      )}
-
-      {showGifPicker && (
-        <div className="absolute top-full mt-2 left-0 z-50 w-full max-w-md">
-          <div className="fixed inset-0" onClick={() => setShowGifPicker(false)} />
-          <div className="relative">
-            <GiphyPicker onSelect={handleGifSelect} onClose={() => setShowGifPicker(false)} />
+      {/* FIXED PICKERS (Z-Index fix for clipping issues) */}
+      {(showEmojiPicker || showGifPicker) && (
+        <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="absolute inset-0 bg-transparent" onClick={() => { setShowEmojiPicker(false); setShowGifPicker(false); }} />
+          <div className="relative animate-in zoom-in-95 duration-300">
+            {showEmojiPicker && <EmojiPicker onSelect={handleEmojiSelect} onClose={() => setShowEmojiPicker(false)} />}
+            {showGifPicker && <GiphyPicker onSelect={handleGifSelect} onClose={() => setShowGifPicker(false)} />}
           </div>
         </div>
       )}

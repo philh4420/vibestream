@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
@@ -394,15 +393,15 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
       {/* Hidden Pickers & Inputs */}
       <input type="file" ref={fileInputRef} className="hidden" accept="image/*,video/*,.heic,.heif,.avif,.webp" onChange={handleFileSelect} />
       
-      {/* Absolute Positioned Pickers */}
+      {/* FIXED POSITION PICKERS */}
       {(isEmojiPickerOpen || isGiphyPickerOpen) && (
-        <div className="absolute bottom-28 left-4 z-[100] animate-in slide-in-from-bottom-4 zoom-in-95 duration-300 origin-bottom-left">
+        <div className="fixed bottom-24 left-4 z-[3000] animate-in slide-in-from-bottom-4 zoom-in-95 duration-300 origin-bottom-left">
            {isEmojiPickerOpen && <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />}
            {isGiphyPickerOpen && <GiphyPicker onSelect={handleGifSelect} onClose={() => setIsGiphyPickerOpen(false)} />}
         </div>
       )}
       {(isEmojiPickerOpen || isGiphyPickerOpen) && (
-        <div className="fixed inset-0 z-[90]" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />
+        <div className="fixed inset-0 z-[2900] bg-transparent" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />
       )}
 
       <DeleteConfirmationModal 

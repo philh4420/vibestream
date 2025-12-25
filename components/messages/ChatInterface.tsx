@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
@@ -331,28 +330,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId, currentUse
                 onClick={clearMedia}
                 className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600 transition-colors"
               >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 font-mono">Artifact Ready</p>
               <p className="text-xs font-bold text-slate-900 truncate max-w-[200px]">{selectedFile?.name || 'GIF Fragment'}</p>
             </div>
-          </div>
-        )}
-
-        {/* Overlays */}
-        {(isEmojiPickerOpen || isGiphyPickerOpen) && (
-          <div className="fixed inset-0 z-[100] bg-transparent" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />
-        )}
-        {isEmojiPickerOpen && (
-          <div className="absolute bottom-24 left-4 z-[200]">
-            <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />
-          </div>
-        )}
-        {isGiphyPickerOpen && (
-          <div className="absolute bottom-24 left-4 z-[200]">
-            <GiphyPicker onSelect={handleGifSelect} onClose={() => setIsGiphyPickerOpen(false)} />
           </div>
         )}
 
@@ -378,7 +362,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId, currentUse
               onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }}
               className={`p-2.5 md:p-3 rounded-2xl transition-all active:scale-90 border ${isEmojiPickerOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-indigo-100 hover:text-indigo-500 shadow-sm'}`}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" /></svg>
+              <span className="text-xl leading-none">😊</span>
             </button>
           </div>
 
@@ -406,8 +390,20 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId, currentUse
         </form>
       </div>
 
+      {/* Hidden Pickers & Inputs */}
       <input type="file" ref={fileInputRef} className="hidden" accept="image/*,video/*,.heic,.heif,.avif,.webp" onChange={handleFileSelect} />
       
+      {/* FIXED POSITION PICKERS */}
+      {(isEmojiPickerOpen || isGiphyPickerOpen) && (
+        <div className="fixed bottom-24 left-4 z-[3000] animate-in slide-in-from-bottom-4 zoom-in-95 duration-300 origin-bottom-left">
+           {isEmojiPickerOpen && <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />}
+           {isGiphyPickerOpen && <GiphyPicker onSelect={handleGifSelect} onClose={() => setIsGiphyPickerOpen(false)} />}
+        </div>
+      )}
+      {(isEmojiPickerOpen || isGiphyPickerOpen) && (
+        <div className="fixed inset-0 z-[2900] bg-transparent" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />
+      )}
+
       <DeleteConfirmationModal 
         isOpen={!!terminationTarget} 
         title="TERMINATION_PROTOCOL" 

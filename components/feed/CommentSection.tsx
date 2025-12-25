@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
@@ -251,7 +250,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
       {/* Input Overlay Backdrop */}
       {(isEmojiPickerOpen || isGiphyPickerOpen) && (
         <div 
-          className="fixed inset-0 z-[1500] bg-transparent animate-in fade-in duration-300"
+          className="fixed inset-0 z-[2900] bg-transparent animate-in fade-in duration-300"
           onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }}
         />
       )}
@@ -329,15 +328,11 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
       {/* Hidden Inputs */}
       <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} accept="image/*,video/*" />
 
-      {/* Pickers */}
-      {isEmojiPickerOpen && (
-        <div className="absolute bottom-20 left-0 z-[2000] animate-in slide-in-from-bottom-4 duration-300">
-          <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />
-        </div>
-      )}
-      {isGiphyPickerOpen && (
-        <div className="absolute bottom-20 left-0 z-[2000] animate-in slide-in-from-bottom-4 duration-300 w-full max-w-md">
-          <GiphyPicker onSelect={handleGifSelect} onClose={() => setIsGiphyPickerOpen(false)} />
+      {/* FIXED POSITION PICKERS (Z-Index Fix) */}
+      {(isEmojiPickerOpen || isGiphyPickerOpen) && (
+        <div className="fixed bottom-24 left-4 z-[3000] animate-in slide-in-from-bottom-4 zoom-in-95 duration-300 origin-bottom-left">
+          {isEmojiPickerOpen && <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />}
+          {isGiphyPickerOpen && <GiphyPicker onSelect={handleGifSelect} onClose={() => setIsGiphyPickerOpen(false)} />}
         </div>
       )}
 
