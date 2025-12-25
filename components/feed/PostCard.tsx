@@ -475,7 +475,13 @@ export const PostCard: React.FC<PostCardProps> = ({
         {/* 6. NEURAL ECHO FEED (Comments) */}
         {showComments && (
           <div onClick={(e) => e.stopPropagation()} className="animate-in fade-in slide-in-from-top-4 duration-500">
-            <CommentSection postId={post.id} userData={userData} addToast={addToast} locale={locale} />
+            <CommentSection 
+                postId={post.id} 
+                postAuthorId={post.authorId}
+                userData={userData} 
+                addToast={addToast} 
+                locale={locale} 
+            />
           </div>
         )}
       </div>

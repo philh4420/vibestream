@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -106,6 +107,12 @@ service cloud.firestore {
 
       match /blocked/{targetId} {
         allow read, write: if isUser(userId);
+      }
+
+      // TWO-WAY BLOCKING: Allow users to write their OWN ID into another user's blockedBy collection
+      match /blockedBy/{blockerId} {
+        allow read: if isUser(userId); // Only the user can see who blocked them
+        allow create, delete: if isUser(blockerId); // Only the blocker can add/remove themselves
       }
 
       match /identity_shards/{shardId} { 

@@ -42,6 +42,8 @@ interface ProfilePageProps {
   onOpenSettings?: () => void;
   onLike?: (id: string, freq?: string) => void;
   onBookmark?: (id: string) => void;
+  isBlocked?: boolean;
+  onBlock?: () => void;
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({ 
@@ -54,7 +56,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   onViewProfile,
   onOpenSettings, 
   onLike, 
-  onBookmark 
+  onBookmark,
+  isBlocked,
+  onBlock
 }) => {
   const [activeTab, setActiveTab] = useState<string>('broadcasting');
   const [userPosts, setUserPosts] = useState<Post[]>([]);
@@ -97,7 +101,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   // Fetch Posts
   useEffect(() => {
     const fetchUserPosts = async () => {
-      if (!db || !userData.id) return;
+      if (!db || !userData.id || isBlocked) return;
       try {
         const q = query(collection(db, 'posts'), where('authorId', '==', userData.id), orderBy('timestamp', 'desc'));
         const snap = await getDocs(q);
@@ -105,7 +109,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       } catch (e) { console.error(e); }
     };
     fetchUserPosts();
-  }, [userData.id]);
+  }, [userData.id, isBlocked]);
 
   const handleUpdateIdentity = async (processedData: any) => {
     if (!db) return;
@@ -180,35 +184,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   };
 
   const executeBlock = async () => {
-    if (!db || !currentUser || isOwnProfile) return;
-    
-    try {
-      const batch = writeBatch(db);
-      
-      // Add to blocked collection
-      const blockedRef = doc(db, 'users', currentUser.uid, 'blocked', userData.id);
-      batch.set(blockedRef, { blockedAt: serverTimestamp(), blockedBy: currentUser.uid });
-
-      // Unfollow Logic
-      const myFollowingRef = doc(db, 'users', currentUser.uid, 'following', userData.id);
-      const theirFollowersRef = doc(db, 'users', userData.id, 'followers', currentUser.uid);
-      
-      batch.delete(myFollowingRef);
-      batch.delete(theirFollowersRef);
-      
-      await batch.commit();
-      addToast("Node Blocked. Redirecting...", "success");
-      // Optional: Navigate away or update UI state
-    } catch (e) {
-      addToast("Block Protocol Failed", "error");
-    } finally {
-      setShowBlockModal(false);
+    if (onBlock) {
+        await onBlock();
+        setShowBlockModal(false);
     }
   };
 
   // Privacy Check Logic
   const isPrivate = profileData.settings?.privacy?.profileVisibility === 'private';
-  const canView = isOwnProfile || !isPrivate || (isPrivate && isFollowing);
+  const canView = !isBlocked && (isOwnProfile || !isPrivate || (isPrivate && isFollowing));
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -270,6 +254,28 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         );
     }
   };
+
+  // Blocked View
+  if (isBlocked) {
+    return (
+      <div className="animate-in fade-in duration-1000 bg-[#f0f2f5] dark:bg-[#020617] min-h-screen flex items-center justify-center p-6 -mx-4 sm:-mx-6 md:-mx-10 lg:-mx-14 -mt-6">
+         <div className="text-center max-w-md">
+            <div className="w-32 h-32 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner animate-pulse">
+               <svg className="w-16 h-16 text-slate-400 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+            </div>
+            <h1 className="text-4xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-4">Signal_Lost</h1>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed font-mono">
+              Connection to this neural node cannot be established. The frequency is restricted or unavailable.
+            </p>
+            {onBlock && (
+               <button onClick={onBlock} className="mt-8 px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.2em] hover:opacity-80 transition-opacity">
+                  Manage_Block
+               </button>
+            )}
+         </div>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-in fade-in duration-1000 bg-[#f0f2f5] dark:bg-[#020617] min-h-screen pb-20 -mx-4 sm:-mx-6 md:-mx-10 lg:-mx-14 -mt-6">

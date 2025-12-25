@@ -186,6 +186,7 @@ export const SinglePostView: React.FC<SinglePostViewProps> = ({
          <div className="relative">
             <CommentSection 
               postId={post.id} 
+              postAuthorId={post.authorId}
               userData={userData} 
               addToast={addToast} 
               locale={locale} 

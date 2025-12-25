@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { db } from '../../services/firebase';
@@ -22,12 +23,13 @@ import { GiphyGif } from '../../services/giphy';
 
 interface CommentSectionProps {
   postId: string;
+  postAuthorId: string;
   userData: User | null;
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
   locale?: string;
 }
 
-export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData, addToast, locale = 'en-GB' }) => {
+export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuthorId, userData, addToast, locale = 'en-GB' }) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
@@ -123,6 +125,23 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
       await updateDoc(doc(db, 'posts', postId), {
         comments: increment(1)
       });
+
+      // --- NOTIFICATION PROTOCOL ---
+      if (userData.id !== postAuthorId) {
+        await addDoc(collection(db, 'notifications'), {
+          type: 'comment',
+          fromUserId: userData.id,
+          fromUserName: userData.displayName,
+          fromUserAvatar: userData.avatarUrl,
+          toUserId: postAuthorId,
+          targetId: postId,
+          text: `echoed on your signal: "${commentText.substring(0, 30)}${commentText.length > 30 ? '...' : ''}"`,
+          isRead: false,
+          timestamp: serverTimestamp(),
+          pulseFrequency: 'intensity'
+        });
+      }
+      // -----------------------------
 
       setNewComment('');
       setReplyingTo(null);

@@ -350,7 +350,10 @@ export default function App() {
   // Global Data
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [globalPosts, setGlobalPosts] = useState<Post[]>([]);
-  const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
+  
+  // Block Logic - Split for 2-way blocking
+  const [myBlockedIds, setMyBlockedIds] = useState<Set<string>>(new Set());
+  const [blockedByIds, setBlockedByIds] = useState<Set<string>>(new Set());
   
   // Selection States
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
@@ -367,6 +370,9 @@ export default function App() {
 
   // Settings State
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Derived unified block set
+  const blockedIds = new Set([...myBlockedIds, ...blockedByIds]);
 
   // Save Route Changes
   useEffect(() => {
@@ -464,10 +470,18 @@ export default function App() {
           setNotifications(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as AppNotification)));
         }, (e: any) => console.debug("Notif bus silent"));
 
+        // LISTENER 1: Who I blocked
         const blockedRef = collection(db, 'users', authUser.uid, 'blocked');
-        const unsubBlocked = onSnapshot(blockedRef, (snap: any) => {
+        const unsubMyBlocked = onSnapshot(blockedRef, (snap: any) => {
             const ids = new Set<string>(snap.docs.map((d: any) => d.id));
-            setBlockedIds(ids);
+            setMyBlockedIds(ids);
+        });
+
+        // LISTENER 2: Who blocked me
+        const blockedByRef = collection(db, 'users', authUser.uid, 'blockedBy');
+        const unsubBlockedBy = onSnapshot(blockedByRef, (snap: any) => {
+            const ids = new Set<string>(snap.docs.map((d: any) => d.id));
+            setBlockedByIds(ids);
         });
 
         const callQuery = query(
@@ -486,12 +500,14 @@ export default function App() {
           unsubUser();
           unsubNotif();
           unsubCalls();
-          unsubBlocked();
+          unsubMyBlocked();
+          unsubBlockedBy();
         };
       } else {
         setUser(null);
         setUserData(null);
-        setBlockedIds(new Set());
+        setMyBlockedIds(new Set());
+        setBlockedByIds(new Set());
         setLoading(false);
       }
     });
@@ -699,26 +715,56 @@ export default function App() {
     try {
         const batch = writeBatch(db);
         const myId = userData.id;
-        const blockedRef = doc(db, 'users', myId, 'blocked', targetId);
-        batch.set(blockedRef, { blockedAt: serverTimestamp(), blockedBy: myId });
+        
+        // 1. My View: Block them (Prevents me seeing them)
+        const myBlockedRef = doc(db, 'users', myId, 'blocked', targetId);
+        batch.set(myBlockedRef, { blockedAt: serverTimestamp(), blockedBy: myId });
+        
+        // 2. Their View: I blocked them (Prevents them seeing me)
+        // Note: Rules allow this write if auth.uid matches the doc ID in the subcollection.
+        // Wait, the doc ID for 'blockedBy' should be the blocker's ID (myId).
+        const theirBlockedByRef = doc(db, 'users', targetId, 'blockedBy', myId);
+        batch.set(theirBlockedByRef, { blockedAt: serverTimestamp(), blockerId: myId });
+
+        // 3. Sever Connection (Unfollow both ways)
         const myFollowingRef = doc(db, 'users', myId, 'following', targetId);
         const theirFollowersRef = doc(db, 'users', targetId, 'followers', myId);
         batch.delete(myFollowingRef);
         batch.delete(theirFollowersRef);
-        batch.update(doc(db, 'users', myId), { following: increment(-1) });
-        batch.update(doc(db, 'users', targetId), { followers: increment(-1) });
+        
+        // Also remove if they follow me
+        const myFollowersRef = doc(db, 'users', myId, 'followers', targetId);
+        const theirFollowingRef = doc(db, 'users', targetId, 'following', myId);
+        batch.delete(myFollowersRef);
+        batch.delete(theirFollowingRef);
+
+        batch.update(doc(db, 'users', myId), { following: increment(-1), followers: increment(-1) });
+        batch.update(doc(db, 'users', targetId), { followers: increment(-1), following: increment(-1) });
+        
         await batch.commit();
-        addToast("Node Blocked. Signal Severed.", "success");
+        addToast("Node Blocked. Two-Way Signal Severed.", "success");
     } catch (e) {
+        console.error("Block Error:", e);
         addToast("Block Protocol Failed", "error");
     }
   };
 
   const handleUnblockUser = async (targetId: string) => {
     if (!db || !userData?.id) return;
+    const myId = userData.id;
     try {
-        await deleteDoc(doc(db, 'users', userData.id, 'blocked', targetId));
-        addToast("Node Unblocked. Signal Restored.", "info");
+        const batch = writeBatch(db);
+        
+        // 1. Remove from my blocked list
+        const myBlockedRef = doc(db, 'users', myId, 'blocked', targetId);
+        batch.delete(myBlockedRef);
+
+        // 2. Remove from their blockedBy list
+        const theirBlockedByRef = doc(db, 'users', targetId, 'blockedBy', myId);
+        batch.delete(theirBlockedByRef);
+
+        await batch.commit();
+        addToast("Node Unblocked. Signal Path Cleared.", "info");
     } catch (e) {
         addToast("Unblock Protocol Failed", "error");
     }
@@ -866,6 +912,8 @@ export default function App() {
              onOpenSettings={() => {}} 
              onLike={handleLike}
              onBookmark={handleBookmark}
+             isBlocked={blockedIds.has(selectedUserProfile.id)}
+             onBlock={() => handleBlockUser(selectedUserProfile.id)}
            />
         )}
 
@@ -1019,7 +1067,7 @@ export default function App() {
           onClose={() => setIsSettingsOpen(false)} 
           onLogout={handleLogout}
           addToast={addToast}
-          blockedIds={Array.from(blockedIds)}
+          blockedIds={Array.from(myBlockedIds)}
           onUnblock={handleUnblockUser}
         />
       )}
