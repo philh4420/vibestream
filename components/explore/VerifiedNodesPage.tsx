@@ -44,7 +44,7 @@ export const VerifiedNodesPage: React.FC<VerifiedNodesPageProps> = ({ users, onV
   }, []);
 
   const handleFollow = async (e: React.MouseEvent, targetUser: User) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Prevents navigation when clicking follow button
     if (!auth.currentUser || !db || processingIds.has(targetUser.id)) return;
     const currentUser = auth.currentUser;
     const isFollowing = followingIds.has(targetUser.id);

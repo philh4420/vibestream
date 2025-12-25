@@ -89,7 +89,7 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
   }, [activeTab, currentUser.id]);
 
   const handleToggleFollow = async (e: React.MouseEvent, targetUser: User) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Prevents clicking the card when clicking the button
     if (!db || !currentUser.id) return;
     
     const isFollowing = myFollowingIds.has(targetUser.id);
@@ -271,7 +271,7 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
                     <div className={`absolute top-0 left-0 right-0 h-1 ${user.presenceStatus === 'Online' && showActivity ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-800'} opacity-0 group-hover:opacity-100 transition-opacity`} />
 
                     <div className="flex items-start justify-between mb-4 relative z-10">
-                       <div className="flex items-center gap-4 cursor-pointer" onClick={() => onViewProfile(user)}>
+                       <div className="flex items-center gap-4">
                           <div className="relative">
                              <img src={user.avatarUrl} className="w-16 h-16 rounded-[1.5rem] object-cover border-2 border-slate-50 dark:border-slate-800 shadow-sm group-hover:scale-105 transition-transform duration-500" alt="" />
                              {user.verifiedHuman && (
