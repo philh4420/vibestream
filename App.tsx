@@ -154,6 +154,42 @@ export default function App() {
   const [rsvpProcessing, setRsvpProcessing] = useState<Set<string>>(new Set());
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+  // --- THEME ENGINE ---
+  useEffect(() => {
+    const applyTheme = () => {
+      const theme = userData?.settings?.appearance?.theme || 'system';
+      const root = document.documentElement;
+      
+      if (theme === 'dark') {
+        root.classList.add('dark');
+      } else if (theme === 'light') {
+        root.classList.remove('dark');
+      } else {
+        // System preference
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (systemDark) {
+          root.classList.add('dark');
+        } else {
+          root.classList.remove('dark');
+        }
+      }
+    };
+
+    // Apply immediately
+    applyTheme();
+
+    // Listen for system changes if using system preference
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = () => {
+      if (userData?.settings?.appearance?.theme === 'system' || !userData?.settings?.appearance?.theme) {
+        applyTheme();
+      }
+    };
+    
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, [userData?.settings?.appearance?.theme]);
+
   useEffect(() => {
     if (activeRoute !== AppRoute.SINGLE_POST && activeRoute !== AppRoute.SINGLE_GATHERING && activeRoute !== AppRoute.PUBLIC_PROFILE) {
       localStorage.setItem('vibestream_active_route', activeRoute);
@@ -201,7 +237,6 @@ export default function App() {
         const blockedByRef = collection(db, 'users', authUser.uid, 'blockedBy');
         
         const unsubBlocked = onSnapshot(blockedRef, (snap: any) => {
-            const ids = new Set<string>(snap.docs.map((d: any) => d.id));
             setBlockedIds(prev => {
                const newSet = new Set(prev);
                // Refresh from source
@@ -211,7 +246,6 @@ export default function App() {
         });
 
         const unsubBlockedBy = onSnapshot(blockedByRef, (snap: any) => {
-            const ids = new Set<string>(snap.docs.map((d: any) => d.id));
             setBlockedIds(prev => {
                 const newSet = new Set(prev);
                 snap.docs.forEach((d: any) => newSet.add(d.id));
