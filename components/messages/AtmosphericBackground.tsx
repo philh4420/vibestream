@@ -65,6 +65,8 @@ export const AtmosphericBackground: React.FC<AtmosphericBackgroundProps> = ({ we
       <style dangerouslySetInnerHTML={{ __html: `
         /* OKLCH Professional Palette 2026 - Adjusted for Global Backgrounds */
         .atmos-thunderstorm .bg-atmosphere-base { background: linear-gradient(180deg, oklch(0.15 0.02 260), oklch(0.2 0.02 260)); }
+        
+        /* Light Mode Weather */
         .atmos-rain .bg-atmosphere-base { background: linear-gradient(180deg, oklch(0.92 0.01 240), oklch(0.88 0.02 240)); }
         .atmos-drizzle .bg-atmosphere-base { background: linear-gradient(180deg, oklch(0.95 0.01 240), oklch(0.92 0.01 240)); }
         .atmos-snow .bg-atmosphere-base { background: linear-gradient(180deg, oklch(0.99 0.005 200), oklch(0.97 0.01 200)); }
@@ -73,7 +75,18 @@ export const AtmosphericBackground: React.FC<AtmosphericBackgroundProps> = ({ we
         .atmos-mist .bg-atmosphere-base { background: linear-gradient(180deg, oklch(0.96 0.01 220), oklch(0.94 0.01 220)); }
         .atmos-dust .bg-atmosphere-base { background: linear-gradient(180deg, oklch(0.92 0.02 60), oklch(0.88 0.03 60)); }
         .atmos-extreme .bg-atmosphere-base { background: linear-gradient(180deg, oklch(0.1 0.01 0), oklch(0.2 0.02 10)); }
-        .atmos-default .bg-atmosphere-base { background: oklch(0.99 0.005 240); }
+        
+        /* Default uses CSS Variable to respect System Theme */
+        .atmos-default .bg-atmosphere-base { background: var(--bg-main); }
+
+        /* Dark Mode Overrides for Weather Conditions */
+        html.dark .atmos-rain .bg-atmosphere-base { background: linear-gradient(180deg, #0f172a, #1e293b); }
+        html.dark .atmos-drizzle .bg-atmosphere-base { background: linear-gradient(180deg, #0f172a, #1e293b); }
+        html.dark .atmos-snow .bg-atmosphere-base { background: linear-gradient(180deg, #020617, #0f172a); }
+        html.dark .atmos-clear .bg-atmosphere-base { background: linear-gradient(180deg, #020617, #0f172a); }
+        html.dark .atmos-clouds .bg-atmosphere-base { background: linear-gradient(180deg, #0f172a, #1e293b); }
+        html.dark .atmos-mist .bg-atmosphere-base { background: linear-gradient(180deg, #020617, #1e293b); }
+        html.dark .atmos-dust .bg-atmosphere-base { background: linear-gradient(180deg, #2a1b0e, #1f150b); }
 
         .bg-gradient-radial { background-image: radial-gradient(var(--tw-gradient-stops)); }
         
