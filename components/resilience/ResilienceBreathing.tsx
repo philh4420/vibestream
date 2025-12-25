@@ -5,10 +5,8 @@ export const ResilienceBreathing: React.FC = () => {
   const [isBreathingActive, setIsBreathingActive] = useState(false);
   const [breathPhase, setBreathPhase] = useState<'Inhale' | 'Hold' | 'Exhale' | 'Rest'>('Inhale');
 
-  // Localized Breathing Logic
   useEffect(() => {
     if (!isBreathingActive) return;
-    
     let isMounted = true;
 
     const cycle = async () => {
@@ -36,9 +34,9 @@ export const ResilienceBreathing: React.FC = () => {
   }, [isBreathingActive]);
 
   return (
-    <div className="px-2 md:px-0 animate-in slide-in-from-bottom-4 duration-500">
-       <div className="bg-slate-950 rounded-[3.5rem] p-10 md:p-20 text-white text-center relative overflow-hidden shadow-2xl border border-white/5">
-          <div className="absolute inset-0 bg-gradient-radial from-teal-900/40 to-slate-950 z-0" />
+    <div className="animate-in slide-in-from-bottom-4 duration-500">
+       <div className="bg-slate-950 dark:bg-black rounded-[3.5rem] p-10 md:p-20 text-white text-center relative overflow-hidden shadow-2xl border border-white/5 dark:border-slate-800">
+          <div className="absolute inset-0 bg-gradient-radial from-teal-900/40 to-slate-950 dark:to-black z-0" />
           
           <div className="relative z-10 flex flex-col items-center">
              <h3 className="text-2xl font-black uppercase italic tracking-tighter mb-2">Bio_Synchronization</h3>

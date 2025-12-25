@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { User, PresenceStatus } from '../../types';
 import { db } from '../../services/firebase';
@@ -51,9 +52,6 @@ export const ResiliencePage: React.FC<ResiliencePageProps> = ({ userData, addToa
         presenceStatus: newStatus,
         statusMessage: newMsg
       });
-      // State updates via useEffect listening to userData changes or optimistic update if needed,
-      // but simpler here to rely on the side effect if parent passes fresh userData.
-      // However, for immediate feedback inside this component's local state logic:
       setIsFocusShieldActive(!isFocusShieldActive);
       addToast(isFocusShieldActive ? "Focus Shield Disengaged" : "Focus Shield Active", "success");
     } catch (e) {
@@ -62,7 +60,7 @@ export const ResiliencePage: React.FC<ResiliencePageProps> = ({ userData, addToa
   };
 
   return (
-    <div className="w-full max-w-[2400px] mx-auto pb-24 animate-in fade-in duration-700 space-y-8">
+    <div className="w-full max-w-[1920px] mx-auto pb-24 animate-in fade-in duration-700 space-y-8 px-4 md:px-8">
       
       {/* 1. Vitality Engine Header */}
       <ResilienceHero vitalityScore={vitalityScore} />
@@ -71,16 +69,18 @@ export const ResiliencePage: React.FC<ResiliencePageProps> = ({ userData, addToa
       <ResilienceNav activeTab={activeTab} setActiveTab={setActiveTab} />
 
       {/* 3. Module Content Swapper */}
-      {activeTab === 'monitor' && <ResilienceMonitor userData={userData} />}
-      
-      {activeTab === 'shield' && (
-        <ResilienceShield 
-          isFocusShieldActive={isFocusShieldActive} 
-          toggleFocusShield={toggleFocusShield} 
-        />
-      )}
-      
-      {activeTab === 'breath' && <ResilienceBreathing />}
+      <div className="min-h-[500px]">
+        {activeTab === 'monitor' && <ResilienceMonitor userData={userData} />}
+        
+        {activeTab === 'shield' && (
+          <ResilienceShield 
+            isFocusShieldActive={isFocusShieldActive} 
+            toggleFocusShield={toggleFocusShield} 
+          />
+        )}
+        
+        {activeTab === 'breath' && <ResilienceBreathing />}
+      </div>
 
     </div>
   );
