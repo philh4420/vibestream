@@ -16,6 +16,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ activeTab, setActiveTa
     { id: 'users', label: 'Nodes', icon: ICONS.Profile },
     { id: 'content', label: 'Signals', icon: ICONS.Explore },
     { id: 'features', label: 'Protocols', icon: ICONS.Settings },
+    { id: 'support', label: 'Support', icon: ICONS.Support },
     { id: 'system', label: 'Kernel', icon: ICONS.Admin },
   ];
 
