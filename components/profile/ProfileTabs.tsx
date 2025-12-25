@@ -18,9 +18,9 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({ activeTab, onTabChange
   ];
 
   return (
-    <div className="sticky top-[var(--header-h)] z-30 w-full bg-[#f0f2f5]/90 dark:bg-[#020617]/90 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800/60 shadow-sm transition-all duration-500">
-      <div className="max-w-[2560px] mx-auto px-4 sm:px-6 md:px-10 lg:px-14">
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+    <div className="sticky top-[var(--header-h)] z-30 w-full bg-slate-50/90 dark:bg-[#020617]/90 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800/60 shadow-sm transition-all duration-500">
+      <div className="max-w-[2560px] mx-auto px-4 sm:px-6 md:px-10 lg:px-14 py-3">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -28,27 +28,27 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({ activeTab, onTabChange
                 key={tab.id}
                 onClick={() => onTabChange(tab.id)}
                 className={`
-                  group relative flex items-center gap-3 px-6 py-4 transition-all duration-300 outline-none select-none shrink-0
-                  ${isActive ? 'opacity-100' : 'opacity-50 hover:opacity-80'}
+                  relative flex items-center gap-2.5 px-5 py-3 rounded-2xl transition-all duration-300 outline-none select-none shrink-0 group font-bold text-xs tracking-wide
+                  ${isActive 
+                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 shadow-lg scale-[1.02] ring-1 ring-black/5 dark:ring-white/20' 
+                    : 'bg-transparent text-slate-500 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white border border-transparent hover:border-slate-200/50 dark:hover:border-slate-700/50'
+                  }
                 `}
               >
                 {/* Icon */}
-                <div className={`transition-transform duration-300 scale-75 ${isActive ? 'text-indigo-600 dark:text-indigo-400 scale-90' : 'text-slate-500 dark:text-slate-400 group-hover:scale-90'}`}>
+                <div className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'scale-90 group-hover:scale-100 opacity-70 group-hover:opacity-100'}`}>
                   <tab.icon />
                 </div>
 
                 {/* Label */}
-                <span className={`text-[10px] font-black uppercase tracking-[0.25em] font-mono ${isActive ? 'text-indigo-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
+                <span className="uppercase tracking-widest font-mono text-[10px]">
                   {tab.label}
                 </span>
 
-                {/* Active Indicator (Bottom Bar) */}
+                {/* Active Indicator Dot */}
                 {isActive && (
-                  <div className="absolute bottom-0 left-4 right-4 h-[3px] bg-indigo-600 dark:bg-indigo-400 rounded-t-full shadow-[0_-2px_6px_rgba(79,70,229,0.3)] animate-in fade-in zoom-in-x duration-300" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 dark:bg-emerald-600 ml-1 animate-pulse shadow-[0_0_8px_currentColor]" />
                 )}
-                
-                {/* Hover Background */}
-                <div className={`absolute inset-2 rounded-xl bg-white dark:bg-slate-800 transition-opacity duration-300 -z-10 ${isActive ? 'opacity-100 shadow-sm' : 'opacity-0 group-hover:opacity-40'}`} />
               </button>
             );
           })}
