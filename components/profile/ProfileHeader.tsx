@@ -36,9 +36,9 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   const showLocation = userData.settings?.privacy?.showLocation !== false;
 
   return (
-    <div className="w-full bg-white shadow-sm relative z-20">
+    <div className="w-full bg-white dark:bg-slate-900 shadow-sm relative z-20 transition-colors duration-300">
       {/* 1. COVER PHOTO */}
-      <div className="max-w-[2560px] mx-auto relative h-[30vh] md:h-[480px] bg-slate-100 md:rounded-b-[3.5rem] overflow-hidden group">
+      <div className="max-w-[2560px] mx-auto relative h-[30vh] md:h-[480px] bg-slate-100 dark:bg-slate-800 md:rounded-b-[3.5rem] overflow-hidden group">
         <img 
           src={userData.coverUrl || 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80'} 
           className="w-full h-full object-cover transition-transform duration-[8s] group-hover:scale-105" 
@@ -62,15 +62,15 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           
           {/* Avatar Area */}
           <div className="relative group shrink-0">
-            <div className="p-2.5 bg-white rounded-[2.5rem] shadow-2xl">
+            <div className="p-2.5 bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl">
               <img 
                 src={userData.avatarUrl} 
-                className="w-36 h-36 md:w-56 md:h-56 rounded-[2rem] object-cover bg-slate-50 transition-transform duration-500 group-hover:scale-[1.02]" 
+                className="w-36 h-36 md:w-56 md:h-56 rounded-[2rem] object-cover bg-slate-50 dark:bg-slate-800 transition-transform duration-500 group-hover:scale-[1.02]" 
                 alt={userData.displayName} 
               />
             </div>
             {showActivity && (
-              <div className="absolute bottom-5 right-5 w-10 h-10 md:w-14 md:h-14 bg-white rounded-2xl p-1.5 shadow-xl flex items-center justify-center">
+              <div className="absolute bottom-5 right-5 w-10 h-10 md:w-14 md:h-14 bg-white dark:bg-slate-900 rounded-2xl p-1.5 shadow-xl flex items-center justify-center">
                 <div className={`w-full h-full rounded-xl ${PRESENCE_DOTS[userData.presenceStatus || 'Online']} animate-pulse`} />
               </div>
             )}
@@ -79,31 +79,31 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           {/* Text Identity */}
           <div className="flex-1 text-center md:text-left md:pb-4 min-w-0">
             <div className="flex flex-col md:flex-row items-center md:items-baseline gap-3 mb-3">
-              <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-none uppercase italic truncate max-w-full">
+              <h1 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tighter leading-none uppercase italic truncate max-w-full">
                 {userData.displayName}
               </h1>
               {userData.verifiedHuman && <div className="text-indigo-500 scale-125 drop-shadow-sm"><ICONS.Verified /></div>}
             </div>
             
             <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8 mb-6">
-               <div className="px-4 py-1.5 bg-slate-100 rounded-lg border border-slate-200">
-                 <p className="text-slate-500 font-bold font-mono text-xs tracking-wide">@{userData.username}</p>
+               <div className="px-4 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                 <p className="text-slate-500 dark:text-slate-400 font-bold font-mono text-xs tracking-wide">@{userData.username}</p>
                </div>
                
                {userData.statusMessage && showActivity && (
-                 <p className="text-sm font-medium text-slate-600 italic">"{userData.statusMessage}"</p>
+                 <p className="text-sm font-medium text-slate-600 dark:text-slate-300 italic">"{userData.statusMessage}"</p>
                )}
             </div>
 
             <div className="flex items-center justify-center md:justify-start gap-8">
               <div className="flex flex-col items-center md:items-start">
-                 <span className="text-2xl font-black text-slate-900 leading-none">{userData.following || 0}</span> 
-                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono mt-1">Following</span>
+                 <span className="text-2xl font-black text-slate-900 dark:text-white leading-none">{userData.following || 0}</span> 
+                 <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono mt-1">Following</span>
               </div>
-              <div className="w-px h-8 bg-slate-200" />
+              <div className="w-px h-8 bg-slate-200 dark:bg-slate-800" />
               <div className="flex flex-col items-center md:items-start">
-                 <span className="text-2xl font-black text-slate-900 leading-none">{userData.followers || 0}</span> 
-                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono mt-1">Followers</span>
+                 <span className="text-2xl font-black text-slate-900 dark:text-white leading-none">{userData.followers || 0}</span> 
+                 <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono mt-1">Followers</span>
               </div>
             </div>
           </div>
@@ -114,14 +114,14 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               <>
                 <button 
                   onClick={onEdit}
-                  className="flex-1 md:flex-none h-16 px-10 bg-slate-900 text-white rounded-[2rem] font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-indigo-600 transition-all active:scale-95 shadow-xl shadow-slate-200"
+                  className="flex-1 md:flex-none h-16 px-10 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-indigo-600 dark:hover:bg-indigo-400 hover:text-white transition-all active:scale-95 shadow-xl shadow-slate-200 dark:shadow-none"
                 >
                   <ICONS.Create /> Edit_Profile
                 </button>
                 {onOpenSettings && (
                   <button 
                     onClick={onOpenSettings}
-                    className="h-16 w-16 bg-white border border-slate-200 text-slate-400 rounded-[2rem] flex items-center justify-center hover:text-indigo-600 hover:border-indigo-200 transition-all active:scale-90 shadow-lg"
+                    className="h-16 w-16 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 rounded-[2rem] flex items-center justify-center hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all active:scale-90 shadow-lg"
                   >
                     <ICONS.Settings />
                   </button>
@@ -131,11 +131,11 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               <>
                 <button 
                   onClick={onFollowToggle}
-                  className={`flex-1 md:flex-none h-16 px-10 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl ${isFollowing ? 'bg-white border border-slate-200 text-slate-900 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-100' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200'}`}
+                  className={`flex-1 md:flex-none h-16 px-10 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl ${isFollowing ? 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-500 hover:border-rose-100 dark:hover:border-rose-900' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200 dark:shadow-none'}`}
                 >
                   {isFollowing ? 'LINKED' : 'CONNECT'}
                 </button>
-                <button className="h-16 w-16 bg-white border border-slate-200 text-slate-400 rounded-[2rem] flex items-center justify-center hover:text-indigo-600 hover:border-indigo-200 transition-all active:scale-90 shadow-lg">
+                <button className="h-16 w-16 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 rounded-[2rem] flex items-center justify-center hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all active:scale-90 shadow-lg">
                   <ICONS.Messages />
                 </button>
               </>

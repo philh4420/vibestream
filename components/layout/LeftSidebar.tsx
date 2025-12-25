@@ -127,7 +127,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           <div className={`relative shrink-0 transition-transform duration-500 ${collapsed ? 'w-full h-full' : 'w-12 h-12'} ${activeRoute === AppRoute.PROFILE ? 'scale-105' : 'group-hover:scale-105'}`}>
             <img 
               src={userData?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${auth.currentUser?.uid}`} 
-              className={`w-full h-full object-cover shadow-sm ${collapsed ? 'rounded-2xl' : 'rounded-2xl'}`}
+              className={`w-full h-full object-cover shadow-sm bg-slate-100 dark:bg-slate-800 ${collapsed ? 'rounded-2xl' : 'rounded-2xl'}`}
               alt="User" 
             />
             <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-[2.5px] border-white dark:border-slate-900 rounded-full z-10" />
@@ -213,7 +213,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
     <>
       {/* Desktop Sidebar (Expanded) */}
       <aside 
-        className="hidden lg:flex flex-col w-[280px] xl:w-[300px] shrink-0 border-r border-precision bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-xl pt-6 h-full relative z-30"
+        className="hidden lg:flex flex-col w-[280px] xl:w-[300px] shrink-0 border-r border-precision bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-xl pt-6 h-full relative z-30 transition-colors duration-300"
         style={{ paddingLeft: 'max(0.5rem, var(--sal))' }}
       >
         {sidebarContent(false)}
@@ -221,7 +221,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
 
       {/* Tablet Sidebar (Collapsed) */}
       <aside 
-        className="hidden md:flex lg:hidden flex-col shrink-0 w-[90px] border-r border-precision bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-xl pt-6 h-full items-center relative z-30" 
+        className="hidden md:flex lg:hidden flex-col shrink-0 w-[90px] border-r border-precision bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-xl pt-6 h-full items-center relative z-30 transition-colors duration-300" 
         style={{ paddingLeft: 'var(--sal)' }}
       >
         {sidebarContent(true)}

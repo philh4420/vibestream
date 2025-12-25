@@ -177,29 +177,29 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
         return (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-[2560px] mx-auto items-start">
             <div className="lg:col-span-5 space-y-4 lg:sticky lg:top-[calc(var(--header-h)+6rem)]">
-              <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
-                 <h3 className="text-xl font-black text-slate-900 tracking-tight mb-4 italic">Intro</h3>
+              <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-sm border border-slate-100 dark:border-slate-800">
+                 <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight mb-4 italic">Intro</h3>
                  <div className="space-y-4">
                     {profileData.statusMessage && profileData.settings?.privacy?.activityStatus !== false && (
-                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-center">
-                        <p className="text-sm font-bold text-slate-700 italic">"{profileData.statusMessage}"</p>
+                      <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 text-center">
+                        <p className="text-sm font-bold text-slate-700 dark:text-slate-300 italic">"{profileData.statusMessage}"</p>
                       </div>
                     )}
-                    <p className="text-slate-700 text-center text-sm font-medium py-2 leading-relaxed">
+                    <p className="text-slate-700 dark:text-slate-300 text-center text-sm font-medium py-2 leading-relaxed">
                       {profileData.bio || 'Establish your neural signature in calibration...'}
                     </p>
-                    <div className="h-px bg-slate-100" />
+                    <div className="h-px bg-slate-100 dark:bg-slate-800" />
                     <div className="space-y-4 py-2">
                        {profileData.occupation && (
-                          <div className="flex items-center gap-3 text-slate-600">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">ROLE:</span>
-                            <span className="text-xs font-bold text-slate-900 uppercase">{profileData.occupation}</span>
+                          <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">ROLE:</span>
+                            <span className="text-xs font-bold text-slate-900 dark:text-white uppercase">{profileData.occupation}</span>
                           </div>
                        )}
                        {profileData.location && profileData.settings?.privacy?.showLocation !== false && (
-                          <div className="flex items-center gap-3 text-slate-600">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">NODE:</span>
-                            <span className="text-xs font-bold text-slate-900 uppercase">{profileData.location}</span>
+                          <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">NODE:</span>
+                            <span className="text-xs font-bold text-slate-900 dark:text-white uppercase">{profileData.location}</span>
                           </div>
                        )}
                     </div>
@@ -221,7 +221,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
   };
 
   return (
-    <div className="animate-in fade-in duration-1000 bg-[#f0f2f5] min-h-screen pb-20 -mx-4 sm:-mx-6 md:-mx-10 lg:-mx-14 -mt-6">
+    <div className="animate-in fade-in duration-1000 bg-[#f0f2f5] dark:bg-[#020617] min-h-screen pb-20 -mx-4 sm:-mx-6 md:-mx-10 lg:-mx-14 -mt-6">
       
       {/* 1. Header Profile Identity */}
       <ProfileHeader 
@@ -237,17 +237,17 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
       {/* 2. Privacy Check */}
       {!canView ? (
         <div className="mt-8 px-4 sm:px-6 md:px-10 lg:px-14 flex flex-col items-center justify-center py-20 text-center">
-           <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6 text-slate-400 shadow-inner">
+           <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6 text-slate-400 shadow-inner">
               <div className="scale-150"><ICONS.Verified /></div>
            </div>
-           <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter mb-2">Private_Node</h3>
-           <p className="text-xs font-medium text-slate-500 max-w-sm leading-relaxed mb-8">
+           <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-2">Private_Node</h3>
+           <p className="text-xs font-medium text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed mb-8">
              This profile is shielded. Establish a verified link to access neural data and signal history.
            </p>
            {!isOwnProfile && (
              <button 
                 onClick={handleFollowToggle}
-                className="px-10 py-4 bg-slate-900 text-white rounded-[2rem] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-indigo-600 transition-all shadow-xl active:scale-95"
+                className="px-10 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-indigo-600 dark:hover:bg-indigo-400 transition-all shadow-xl active:scale-95"
              >
                 {isFollowing ? 'REQUEST_SENT' : 'REQUEST_ACCESS'}
              </button>

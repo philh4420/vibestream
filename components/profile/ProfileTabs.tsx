@@ -18,7 +18,7 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({ activeTab, onTabChange
   ];
 
   return (
-    <div className="sticky top-[var(--header-h)] z-30 w-full bg-[#f0f2f5]/90 backdrop-blur-xl border-b border-slate-200/60 shadow-sm transition-all duration-500">
+    <div className="sticky top-[var(--header-h)] z-30 w-full bg-[#f0f2f5]/90 dark:bg-[#020617]/90 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800/60 shadow-sm transition-all duration-500">
       <div className="max-w-[2560px] mx-auto px-4 sm:px-6 md:px-10 lg:px-14">
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
           {tabs.map((tab) => {
@@ -33,22 +33,22 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({ activeTab, onTabChange
                 `}
               >
                 {/* Icon */}
-                <div className={`transition-transform duration-300 scale-75 ${isActive ? 'text-indigo-600 scale-90' : 'text-slate-500 group-hover:scale-90'}`}>
+                <div className={`transition-transform duration-300 scale-75 ${isActive ? 'text-indigo-600 dark:text-indigo-400 scale-90' : 'text-slate-500 dark:text-slate-400 group-hover:scale-90'}`}>
                   <tab.icon />
                 </div>
 
                 {/* Label */}
-                <span className={`text-[10px] font-black uppercase tracking-[0.25em] font-mono ${isActive ? 'text-indigo-900' : 'text-slate-500'}`}>
+                <span className={`text-[10px] font-black uppercase tracking-[0.25em] font-mono ${isActive ? 'text-indigo-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
                   {tab.label}
                 </span>
 
                 {/* Active Indicator (Bottom Bar) */}
                 {isActive && (
-                  <div className="absolute bottom-0 left-4 right-4 h-[3px] bg-indigo-600 rounded-t-full shadow-[0_-2px_6px_rgba(79,70,229,0.3)] animate-in fade-in zoom-in-x duration-300" />
+                  <div className="absolute bottom-0 left-4 right-4 h-[3px] bg-indigo-600 dark:bg-indigo-400 rounded-t-full shadow-[0_-2px_6px_rgba(79,70,229,0.3)] animate-in fade-in zoom-in-x duration-300" />
                 )}
                 
                 {/* Hover Background */}
-                <div className={`absolute inset-2 rounded-xl bg-white transition-opacity duration-300 -z-10 ${isActive ? 'opacity-100 shadow-sm' : 'opacity-0 group-hover:opacity-40'}`} />
+                <div className={`absolute inset-2 rounded-xl bg-white dark:bg-slate-800 transition-opacity duration-300 -z-10 ${isActive ? 'opacity-100 shadow-sm' : 'opacity-0 group-hover:opacity-40'}`} />
               </button>
             );
           })}

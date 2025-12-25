@@ -208,16 +208,16 @@ export const PostCard: React.FC<PostCardProps> = ({
   return (
     <article 
       onClick={() => onViewPost?.(post)}
-      className={`group bg-white border border-slate-100 rounded-[3rem] transition-all duration-500 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)] mb-10 relative cursor-pointer overflow-hidden ${isPulse ? 'border-l-[6px] border-l-indigo-600' : ''}`}
+      className={`group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[3rem] transition-all duration-500 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)] mb-10 relative cursor-pointer overflow-hidden ${isPulse ? 'border-l-[6px] border-l-indigo-600' : ''}`}
     >
       {/* 1. RELAY HEADER - System Style */}
       {post.relaySource && (
-        <div className="px-8 py-3 bg-slate-50/80 border-b border-slate-100 flex items-center gap-3">
-           <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center text-indigo-500 shadow-sm">
+        <div className="px-8 py-3 bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3">
+           <div className="w-6 h-6 bg-white dark:bg-slate-700 rounded-lg flex items-center justify-center text-indigo-500 shadow-sm">
              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
            </div>
            <span className="text-[9px] font-black uppercase text-indigo-600 tracking-widest font-mono">
-             SIGNAL_RELAYED_FROM: <span className="text-slate-900">{post.relaySource.authorName}</span>
+             SIGNAL_RELAYED_FROM: <span className="text-slate-900 dark:text-white">{post.relaySource.authorName}</span>
            </span>
         </div>
       )}
@@ -228,28 +228,28 @@ export const PostCard: React.FC<PostCardProps> = ({
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <div className="relative group/avatar">
-              <img src={post.authorAvatar} alt={post.authorName} className="w-14 h-14 rounded-[1.6rem] object-cover ring-4 ring-slate-50 transition-all group-hover/avatar:ring-indigo-50 group-hover/avatar:scale-105 z-10 relative bg-white" />
+              <img src={post.authorAvatar} alt={post.authorName} className="w-14 h-14 rounded-[1.6rem] object-cover ring-4 ring-slate-50 dark:ring-slate-800 transition-all group-hover/avatar:ring-indigo-50 dark:group-hover/avatar:ring-indigo-900/30 group-hover/avatar:scale-105 z-10 relative bg-white dark:bg-slate-800" />
               {post.coAuthors?.map((ca, idx) => (
-                <img key={ca.id} src={ca.avatar} className="absolute top-0 w-14 h-14 rounded-[1.6rem] object-cover border-2 border-white shadow-md z-0 -right-4 grayscale group-hover/avatar:grayscale-0 transition-all" style={{ zIndex: -idx }} alt="" />
+                <img key={ca.id} src={ca.avatar} className="absolute top-0 w-14 h-14 rounded-[1.6rem] object-cover border-2 border-white dark:border-slate-800 shadow-md z-0 -right-4 grayscale group-hover/avatar:grayscale-0 transition-all" style={{ zIndex: -idx }} alt="" />
               ))}
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-[3px] border-white rounded-full z-20 shadow-sm" />
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-[3px] border-white dark:border-slate-900 rounded-full z-20 shadow-sm" />
             </div>
             
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
-                <h3 className="font-black text-slate-900 text-base tracking-tight leading-none uppercase italic">{post.authorName}</h3>
+                <h3 className="font-black text-slate-900 dark:text-white text-base tracking-tight leading-none uppercase italic">{post.authorName}</h3>
                 <div className="text-indigo-500 scale-90"><ICONS.Verified /></div>
               </div>
               <div className="flex items-center gap-2 mt-1.5">
-                 <div className="px-2 py-0.5 bg-slate-100 rounded-md border border-slate-200">
-                   <p className="text-[8px] text-slate-500 font-black uppercase tracking-widest font-mono leading-none whitespace-nowrap">
+                 <div className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-md border border-slate-200 dark:border-slate-700">
+                   <p className="text-[8px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest font-mono leading-none whitespace-nowrap">
                      {formattedTimestamp}
                    </p>
                  </div>
                  {signalVelocity > 0.5 && (
-                   <div className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-50 rounded-md border border-indigo-100">
+                   <div className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 rounded-md border border-indigo-100 dark:border-indigo-900">
                      <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
-                     <span className="text-[8px] font-black text-indigo-600 font-mono tracking-wider">VELOCITY: {signalVelocity}</span>
+                     <span className="text-[8px] font-black text-indigo-600 dark:text-indigo-400 font-mono tracking-wider">VELOCITY: {signalVelocity}</span>
                    </div>
                  )}
               </div>
@@ -259,16 +259,16 @@ export const PostCard: React.FC<PostCardProps> = ({
           <div className="relative" ref={optionsRef} onClick={(e) => e.stopPropagation()}>
             <button 
               onClick={() => setShowOptions(!showOptions)}
-              className={`w-10 h-10 flex items-center justify-center rounded-2xl transition-all active:scale-90 ${showOptions ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
+              className={`w-10 h-10 flex items-center justify-center rounded-2xl transition-all active:scale-90 ${showOptions ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-slate-300'}`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" /></svg>
             </button>
             {showOptions && (
-              <div className="absolute right-0 mt-3 w-48 bg-white/95 backdrop-blur-2xl border border-slate-100 rounded-[1.5rem] shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-2 duration-200">
+              <div className="absolute right-0 mt-3 w-48 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-100 dark:border-slate-800 rounded-[1.5rem] shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-2 duration-200">
                 <div className="p-1.5 space-y-0.5">
                   <button 
                     onClick={() => { onBookmark?.(post.id); setShowOptions(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all text-left group/opt"
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all text-left group/opt"
                   >
                     <div className={`transition-colors scale-75 ${isBookmarked ? 'text-indigo-600' : 'text-slate-400 group-hover/opt:text-indigo-500'}`}><ICONS.Saved /></div>
                     <span className="text-[9px] font-black uppercase tracking-widest font-mono">
@@ -276,7 +276,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                     </span>
                   </button>
                   {isAuthor && (
-                    <button onClick={handlePurgeSignal} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-50 transition-all text-left border-t border-slate-50 mt-1">
+                    <button onClick={handlePurgeSignal} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all text-left border-t border-slate-50 dark:border-slate-800 mt-1">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
                       <span className="text-[9px] font-black uppercase tracking-widest font-mono">Purge_Node</span>
                     </button>
@@ -289,18 +289,18 @@ export const PostCard: React.FC<PostCardProps> = ({
 
         {/* 3. CONTENT MATRIX */}
         <div className={`mb-8 ${isPulse ? 'text-center px-4' : ''}`}>
-          <div className={`text-slate-800 leading-relaxed font-medium tracking-tight ${isPulse ? 'text-2xl md:text-4xl font-black italic uppercase text-slate-900' : isDeep ? 'text-base md:text-lg border-l-4 border-indigo-100 pl-6 py-1' : 'text-base md:text-lg'}`}>
+          <div className={`text-slate-800 dark:text-slate-200 leading-relaxed font-medium tracking-tight ${isPulse ? 'text-2xl md:text-4xl font-black italic uppercase text-slate-900 dark:text-white' : isDeep ? 'text-base md:text-lg border-l-4 border-indigo-100 dark:border-indigo-900 pl-6 py-1' : 'text-base md:text-lg'}`}>
             {textChunks.map((chunk, idx) => {
               const reactions = post.inlineReactions?.[idx] || [];
               return (
                 <span key={idx} className="relative group/chunk inline-block">
-                  <span className="hover:bg-indigo-50/80 hover:text-indigo-900 rounded-lg transition-colors px-0.5 -mx-0.5 cursor-text">{chunk}</span>
+                  <span className="hover:bg-indigo-50/80 dark:hover:bg-indigo-900/30 hover:text-indigo-900 dark:hover:text-indigo-200 rounded-lg transition-colors px-0.5 -mx-0.5 cursor-text">{chunk}</span>
                   
                   {/* Micro-Reaction Menu */}
                   <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex gap-1 opacity-0 group-hover/chunk:opacity-100 transition-all duration-300 z-10 pointer-events-none group-hover/chunk:pointer-events-auto scale-90 group-hover/chunk:scale-100 origin-bottom" onClick={(e) => e.stopPropagation()}>
-                     <div className="bg-white rounded-full p-1 shadow-xl border border-slate-100 flex gap-1">
+                     <div className="bg-white dark:bg-slate-800 rounded-full p-1 shadow-xl border border-slate-100 dark:border-slate-700 flex gap-1">
                        {['🔥', '❤️', '💡', '🚀'].map(emoji => (
-                         <button key={emoji} onClick={(e) => handleInlineReact(e, idx, emoji)} className="w-8 h-8 hover:bg-slate-50 rounded-full flex items-center justify-center text-sm transition-transform hover:scale-110">{emoji}</button>
+                         <button key={emoji} onClick={(e) => handleInlineReact(e, idx, emoji)} className="w-8 h-8 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-full flex items-center justify-center text-sm transition-transform hover:scale-110">{emoji}</button>
                        ))}
                      </div>
                   </div>
@@ -308,7 +308,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                   {reactions.length > 0 && (
                     <div className="inline-flex gap-1 ml-1 align-middle translate-y-[-2px]">
                       {reactions.map(r => (
-                        <div key={r.emoji} className="flex items-center gap-0.5 bg-white px-2 py-0.5 rounded-md border border-slate-200 shadow-sm text-[9px] font-black">
+                        <div key={r.emoji} className="flex items-center gap-0.5 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm text-[9px] font-black">
                           {r.emoji} <span className="text-[8px] text-slate-400 font-mono">{r.count}</span>
                         </div>
                       ))}
@@ -322,7 +322,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
         {/* 4. VISUAL ARTIFACTS */}
         {post.media?.length > 0 && (
-          <div className="relative rounded-[2.5rem] overflow-hidden mb-8 bg-slate-950 border border-slate-200/50 shadow-lg group/carousel">
+          <div className="relative rounded-[2.5rem] overflow-hidden mb-8 bg-slate-950 border border-slate-200/50 dark:border-slate-800 shadow-lg group/carousel">
             <div className="flex transition-transform duration-500 ease-out" style={{ transform: `translateX(-${currentMediaIndex * 100}%)` }}>
               {post.media.map((item, idx) => (
                 <div key={idx} className="min-w-full flex items-center justify-center aspect-[4/3] md:aspect-video relative">
@@ -367,8 +367,8 @@ export const PostCard: React.FC<PostCardProps> = ({
                 onMouseDown={handlePulseStart} onMouseUp={handlePulseEnd} onTouchStart={handlePulseStart} onTouchEnd={handlePulseEnd} 
                 className={`flex items-center gap-3 h-12 md:h-14 px-5 md:px-6 rounded-2xl transition-all duration-300 group/btn border active:scale-95 ${
                   post.isLiked 
-                    ? 'bg-rose-50 border-rose-100 text-rose-600' 
-                    : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200 hover:shadow-md'
+                    ? 'bg-rose-50 dark:bg-rose-900/30 border-rose-100 dark:border-rose-900 text-rose-600 dark:text-rose-400' 
+                    : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-md'
                 }`}
               >
                 <div className={`transition-transform duration-500 ${post.isLiked ? 'scale-110' : 'group-hover/btn:scale-110'}`}>
@@ -389,12 +389,12 @@ export const PostCard: React.FC<PostCardProps> = ({
               {isPulseMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-[50] bg-transparent" onClick={() => setIsPulseMenuOpen(false)} />
-                  <div className="absolute bottom-full left-0 mb-3 bg-white/95 backdrop-blur-2xl rounded-[1.5rem] p-2 border border-slate-100 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.15)] flex gap-2 z-[60] animate-in slide-in-from-bottom-2 duration-300 origin-bottom-left">
+                  <div className="absolute bottom-full left-0 mb-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-[1.5rem] p-2 border border-slate-100 dark:border-slate-800 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.15)] flex gap-2 z-[60] animate-in slide-in-from-bottom-2 duration-300 origin-bottom-left">
                      {PULSE_FREQUENCIES.map(freq => (
                        <button 
                          key={freq.id} 
                          onClick={(e) => selectFrequency(e, freq.id)} 
-                         className="w-10 h-10 rounded-xl flex items-center justify-center text-xl hover:scale-110 transition-transform bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 shadow-sm"
+                         className="w-10 h-10 rounded-xl flex items-center justify-center text-xl hover:scale-110 transition-transform bg-slate-50 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 border border-transparent hover:border-slate-200 dark:hover:border-slate-600 shadow-sm"
                          title={freq.label}
                        >
                          {freq.emoji}
@@ -410,8 +410,8 @@ export const PostCard: React.FC<PostCardProps> = ({
               onClick={(e) => { e.stopPropagation(); setShowComments(!showComments); }}
               className={`flex items-center gap-3 h-12 md:h-14 px-5 md:px-6 rounded-2xl transition-all duration-300 group/btn border active:scale-95 ${
                 showComments 
-                  ? 'bg-indigo-50 border-indigo-100 text-indigo-600' 
-                  : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200 hover:shadow-md'
+                  ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-100 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400' 
+                  : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-md'
               }`}
             >
               <div className="group-hover/btn:scale-110 transition-transform duration-500">
@@ -423,7 +423,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             {/* RELAY BUTTON (Share) */}
             <button 
               onClick={handleRelay} 
-              className="flex items-center gap-3 h-12 md:h-14 px-5 md:px-6 rounded-2xl transition-all duration-300 group/btn border bg-slate-50 border-slate-100 text-slate-500 hover:bg-white hover:border-slate-200 hover:shadow-md hover:text-indigo-600 active:scale-95"
+              className="flex items-center gap-3 h-12 md:h-14 px-5 md:px-6 rounded-2xl transition-all duration-300 group/btn border bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-md hover:text-indigo-600 dark:hover:text-indigo-400 active:scale-95"
             >
               <div className="group-hover/btn:rotate-180 transition-transform duration-700">
                 <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
@@ -434,7 +434,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
           <button 
             onClick={(e) => { e.stopPropagation(); onBookmark?.(post.id); }}
-            className={`h-12 w-12 md:h-14 md:w-14 flex items-center justify-center rounded-2xl transition-all duration-300 active:scale-90 border border-transparent ${isBookmarked ? 'text-indigo-600 bg-indigo-50 border-indigo-100' : 'text-slate-300 hover:text-slate-900 hover:bg-slate-50 hover:border-slate-100'}`}
+            className={`h-12 w-12 md:h-14 md:w-14 flex items-center justify-center rounded-2xl transition-all duration-300 active:scale-90 border border-transparent ${isBookmarked ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 border-indigo-100 dark:border-indigo-900' : 'text-slate-300 dark:text-slate-600 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-100 dark:hover:border-slate-700'}`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill={isBookmarked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0-10.628a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5m0 10.628a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5" /></svg>
           </button>
@@ -452,18 +452,18 @@ export const PostCard: React.FC<PostCardProps> = ({
       {showDeleteModal && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300" onClick={(e) => e.stopPropagation()}>
           <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setShowDeleteModal(false)}></div>
-          <div className="relative bg-white w-full max-w-sm rounded-[3rem] p-10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] border border-white/20 overflow-hidden">
+          <div className="relative bg-white dark:bg-slate-900 w-full max-w-sm rounded-[3rem] p-10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] border border-white/20 dark:border-slate-800 overflow-hidden">
              <div className="absolute top-0 left-0 w-full h-1.5 bg-rose-600" />
              <div className="text-center space-y-4 mb-10">
-               <div className="w-16 h-16 bg-rose-50 text-rose-600 rounded-[1.5rem] flex items-center justify-center mx-auto mb-2 shadow-sm border border-rose-100">
+               <div className="w-16 h-16 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-500 rounded-[1.5rem] flex items-center justify-center mx-auto mb-2 shadow-sm border border-rose-100 dark:border-rose-900">
                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
                </div>
-               <h3 className="text-2xl font-black text-slate-950 tracking-tighter uppercase italic leading-none">PROTOCOL_ALERT</h3>
-               <p className="text-xs text-slate-500 font-bold leading-relaxed px-4">Terminate transmission sequence?</p>
+               <h3 className="text-2xl font-black text-slate-950 dark:text-white tracking-tighter uppercase italic leading-none">PROTOCOL_ALERT</h3>
+               <p className="text-xs text-slate-500 dark:text-slate-400 font-bold leading-relaxed px-4">Terminate transmission sequence?</p>
              </div>
              <div className="flex flex-col gap-3">
-                <button onClick={(e) => handlePurgeSignal(e)} className="w-full py-5 bg-rose-600 text-white rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.3em] shadow-xl shadow-rose-200 hover:bg-rose-700 transition-all active:scale-95 italic">CONFIRM_PURGE</button>
-                <button onClick={() => setShowDeleteModal(false)} className="w-full py-5 bg-slate-50 text-slate-400 rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-slate-100 transition-all active:scale-95 italic">ABORT_ACTION</button>
+                <button onClick={(e) => handlePurgeSignal(e)} className="w-full py-5 bg-rose-600 text-white rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.3em] shadow-xl shadow-rose-200/20 hover:bg-rose-700 transition-all active:scale-95 italic">CONFIRM_PURGE</button>
+                <button onClick={() => setShowDeleteModal(false)} className="w-full py-5 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-slate-100 dark:hover:bg-slate-700 transition-all active:scale-95 italic">ABORT_ACTION</button>
              </div>
           </div>
         </div>

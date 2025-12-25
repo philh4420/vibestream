@@ -16,11 +16,11 @@ export const FeedProtocols: React.FC<FeedProtocolsProps> = ({ active, onChange }
 
   return (
     <div className="w-full max-w-2xl mx-auto px-4 md:px-0">
-      <div className="relative flex p-1.5 bg-slate-200/60 backdrop-blur-2xl border border-white/60 rounded-[2.5rem] shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] overflow-hidden">
+      <div className="relative flex p-1.5 bg-slate-200/60 dark:bg-slate-800/60 backdrop-blur-2xl border border-white/60 dark:border-slate-700 rounded-[2.5rem] shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] overflow-hidden">
         
         {/* Animated Active Background Pill */}
         <div 
-          className="absolute top-1.5 bottom-1.5 rounded-[2rem] bg-white shadow-[0_10px_20px_-5px_rgba(0,0,0,0.1)] border border-white/50 transition-all duration-500 cubic-bezier(0.2, 0.8, 0.2, 1) z-0"
+          className="absolute top-1.5 bottom-1.5 rounded-[2rem] bg-white dark:bg-slate-900 shadow-[0_10px_20px_-5px_rgba(0,0,0,0.1)] border border-white/50 dark:border-slate-700 transition-all duration-500 cubic-bezier(0.2, 0.8, 0.2, 1) z-0"
           style={{
             left: '6px',
             width: 'calc(33.333% - 4px)',
@@ -39,9 +39,9 @@ export const FeedProtocols: React.FC<FeedProtocolsProps> = ({ active, onChange }
             <button
               key={p.id}
               onClick={() => onChange(p.id)}
-              className={`relative z-10 flex-1 flex flex-col items-center justify-center py-4 md:py-5 rounded-[2rem] transition-all duration-300 group touch-manipulation ${isActive ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`relative z-10 flex-1 flex flex-col items-center justify-center py-4 md:py-5 rounded-[2rem] transition-all duration-300 group touch-manipulation ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
             >
-              <div className={`mb-1.5 transition-all duration-500 ease-out ${isActive ? 'scale-110 text-indigo-600 -translate-y-0.5' : 'scale-90 group-hover:scale-100 group-hover:-translate-y-0.5'}`}>
+              <div className={`mb-1.5 transition-all duration-500 ease-out ${isActive ? 'scale-110 text-indigo-600 dark:text-indigo-400 -translate-y-0.5' : 'scale-90 group-hover:scale-100 group-hover:-translate-y-0.5'}`}>
                 <Icon />
               </div>
               
@@ -52,7 +52,7 @@ export const FeedProtocols: React.FC<FeedProtocolsProps> = ({ active, onChange }
                 
                 {/* Conditional Subtitle Reveal */}
                 <div className={`overflow-hidden transition-all duration-500 ease-out ${isActive ? 'max-h-4 opacity-100 mt-1' : 'max-h-0 opacity-0 mt-0'}`}>
-                   <span className="text-[7px] font-bold font-mono uppercase tracking-[0.2em] text-indigo-500 block">
+                   <span className="text-[7px] font-bold font-mono uppercase tracking-[0.2em] text-indigo-500 dark:text-indigo-400 block">
                      {p.subtitle}
                    </span>
                 </div>
