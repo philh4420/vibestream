@@ -2,8 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import * as FirebaseAuth from 'firebase/auth';
 const { onAuthStateChanged, signOut } = FirebaseAuth as any;
-import * as Firestore from 'firebase/firestore';
-const { 
+import { 
   doc, 
   onSnapshot, 
   collection, 
@@ -18,7 +17,7 @@ const {
   getDoc,
   updateDoc,
   deleteDoc
-} = Firestore as any;
+} from 'firebase/firestore'; // Fixed import source
 import { auth, db } from './services/firebase';
 import { 
   User, 
