@@ -62,6 +62,7 @@ import { NeuralLinkOverlay } from './components/messages/NeuralLinkOverlay';
 import { SimulationsPage } from './components/simulations/SimulationsPage';
 import { ResiliencePage } from './components/resilience/ResiliencePage';
 import { SettingsOverlay } from './components/settings/SettingsOverlay';
+import { SupportPage } from './components/support/SupportPage';
 
 // Services
 import { fetchWeather } from './services/weather';
@@ -840,6 +841,17 @@ export default function App() {
                addToast={addToast}
              />
            ) : <FeatureDisabledScreen featureName="RESILIENCE" />
+        )}
+
+        {/* Support Module */}
+        {activeRoute === AppRoute.SUPPORT && userData && (
+           isFeatureEnabled(AppRoute.SUPPORT) ? (
+             <SupportPage 
+               currentUser={userData} 
+               addToast={addToast} 
+               locale="en-GB"
+             />
+           ) : <FeatureDisabledScreen featureName="SUPPORT MATRIX" />
         )}
 
       </Layout>

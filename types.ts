@@ -62,6 +62,7 @@ export interface User {
   id: string;
   username: string;
   displayName: string;
+  email?: string;
   bio: string;
   avatarUrl: string;
   coverUrl: string;
@@ -287,7 +288,8 @@ export enum AppRoute {
   SINGLE_GATHERING = 'single_gathering',
   SIMULATIONS = 'sims',
   RESILIENCE = 'resilience',
-  SINGLE_POST = 'single_post'
+  SINGLE_POST = 'single_post',
+  SUPPORT = 'support'
 }
 
 export interface ToastMessage {

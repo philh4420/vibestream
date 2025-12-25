@@ -186,11 +186,13 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           <NavItem route={AppRoute.RESILIENCE} icon={ICONS.Resilience} label="Resilience" collapsed={collapsed} />
         </ProtocolGroup>
 
-        {userRole === 'admin' && (
-          <ProtocolGroup title="System" collapsed={collapsed}>
+        {/* System & Support */}
+        <ProtocolGroup title="System" collapsed={collapsed}>
+          <NavItem route={AppRoute.SUPPORT} icon={ICONS.Support} label="Support Matrix" collapsed={collapsed} />
+          {userRole === 'admin' && (
             <NavItem route={AppRoute.ADMIN} icon={ICONS.Admin} label="Command Deck" collapsed={collapsed} />
-          </ProtocolGroup>
-        )}
+          )}
+        </ProtocolGroup>
       </div>
 
       {/* FOOTER META */}
