@@ -1,14 +1,19 @@
 
 import React from 'react';
 import { ICONS } from '../../constants';
+import { User } from '../../types';
+import { db } from '../../services/firebase';
+import * as Firestore from 'firebase/firestore';
+const { doc, updateDoc } = Firestore as any;
 
 interface AdminHeaderProps {
   activeTab: string;
   setActiveTab: (tab: any) => void;
   locale: string;
+  userData: User | null;
 }
 
-export const AdminHeader: React.FC<AdminHeaderProps> = ({ activeTab, setActiveTab, locale }) => {
+export const AdminHeader: React.FC<AdminHeaderProps> = ({ activeTab, setActiveTab, locale, userData }) => {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: ICONS.Home },
     { id: 'users', label: 'Nodes', icon: ICONS.Profile },
@@ -16,6 +21,31 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ activeTab, setActiveTa
     { id: 'features', label: 'Protocols', icon: ICONS.Settings },
     { id: 'system', label: 'Kernel', icon: ICONS.Admin },
   ];
+
+  const currentTheme = userData?.settings?.appearance?.theme || 'system';
+
+  const handleToggleTheme = async () => {
+    if (!userData || !db) return;
+    
+    let nextTheme: 'system' | 'light' | 'dark' = 'system';
+    if (currentTheme === 'system') nextTheme = 'light';
+    else if (currentTheme === 'light') nextTheme = 'dark';
+    else nextTheme = 'system';
+
+    try {
+      await updateDoc(doc(db, 'users', userData.id), {
+        'settings.appearance.theme': nextTheme
+      });
+    } catch (e) {
+      console.error("Theme toggle failed", e);
+    }
+  };
+
+  const getThemeIcon = () => {
+    if (currentTheme === 'light') return <div className="text-amber-500">☀️</div>;
+    if (currentTheme === 'dark') return <div className="text-indigo-400">🌙</div>;
+    return <div className="text-slate-400 dark:text-slate-500">🖥️</div>;
+  };
 
   return (
     <div className="w-full">
@@ -40,29 +70,40 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ activeTab, setActiveTa
         </div>
 
         {/* Navigation Segments */}
-        <nav className="flex items-center p-1 bg-slate-100/50 dark:bg-slate-800/50 rounded-[1.6rem] overflow-x-auto no-scrollbar w-full md:w-auto">
-          {tabs.map(tab => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-5 py-3 rounded-[1.4rem] transition-all duration-300 relative group shrink-0 ${
-                  isActive 
-                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-md ring-1 ring-black/5 dark:ring-white/5' 
-                    : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50'
-                }`}
-              >
-                <div className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'scale-90 group-hover:scale-100'}`}>
-                  <tab.icon />
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-widest">
-                  {tab.label}
-                </span>
-              </button>
-            );
-          })}
-        </nav>
+        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto no-scrollbar">
+          <nav className="flex items-center p-1 bg-slate-100/50 dark:bg-slate-800/50 rounded-[1.6rem] shrink-0">
+            {tabs.map(tab => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-5 py-3 rounded-[1.4rem] transition-all duration-300 relative group shrink-0 ${
+                    isActive 
+                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-md ring-1 ring-black/5 dark:ring-white/5' 
+                      : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50'
+                  }`}
+                >
+                  <div className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'scale-90 group-hover:scale-100'}`}>
+                    <tab.icon />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest">
+                    {tab.label}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Theme Toggle */}
+          <button 
+            onClick={handleToggleTheme}
+            className="w-12 h-12 flex items-center justify-center rounded-[1.4rem] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm transition-all active:scale-95 hover:bg-slate-50 dark:hover:bg-slate-700 shrink-0"
+            title={`Theme: ${currentTheme.toUpperCase()}`}
+          >
+            {getThemeIcon()}
+          </button>
+        </div>
       </div>
     </div>
   );

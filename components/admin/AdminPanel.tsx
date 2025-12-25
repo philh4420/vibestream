@@ -25,9 +25,10 @@ interface AdminPanelProps {
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
   locale: Region;
   systemSettings: SystemSettings;
+  userData: User | null;
 }
 
-export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale, systemSettings }) => {
+export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale, systemSettings, userData }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'content' | 'features' | 'system'>('overview');
   const [nodes, setNodes] = useState<User[]>([]);
   const [signals, setSignals] = useState<Post[]>([]);
@@ -101,6 +102,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale, system
           activeTab={activeTab} 
           setActiveTab={setActiveTab} 
           locale={locale} 
+          userData={userData}
         />
       </div>
 

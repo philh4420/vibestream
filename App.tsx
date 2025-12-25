@@ -746,7 +746,7 @@ export default function App() {
           ) : <FeatureDisabledScreen featureName="VERIFIED NODES" />
         )}
         
-        {activeRoute === AppRoute.ADMIN && <AdminPanel addToast={addToast} locale="en-GB" systemSettings={systemSettings} />}
+        {activeRoute === AppRoute.ADMIN && <AdminPanel addToast={addToast} locale="en-GB" systemSettings={systemSettings} userData={userData} />}
         {activeRoute === AppRoute.PRIVACY && <PrivacyPage />}
         {activeRoute === AppRoute.TERMS && <TermsPage />}
         {activeRoute === AppRoute.COOKIES && <CookiesPage />}
