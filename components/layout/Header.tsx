@@ -270,7 +270,7 @@ export const Header: React.FC<HeaderProps> = ({
                      notifications.map(n => <NotificationItem key={n.id} notif={n} onDelete={onDeleteNotification} />)
                    ) : (
                      <div className="py-24 text-center flex flex-col items-center opacity-30">
-                        <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 text-slate-400"><ICONS.Bell /></div>
+                        <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 text-slate-400 dark:text-slate-600"><ICONS.Bell /></div>
                         <p className="text-[10px] font-black uppercase tracking-[0.4em] font-mono text-slate-900 dark:text-white">Buffer_Empty</p>
                      </div>
                    )}
