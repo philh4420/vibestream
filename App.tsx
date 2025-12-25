@@ -388,6 +388,32 @@ export default function App() {
     }
   };
 
+  // --- NOTIFICATION HANDLERS ---
+  const handleMarkAllRead = async () => {
+    const unread = notifications.filter(n => !n.isRead);
+    if (unread.length === 0) return;
+
+    try {
+      const batch = writeBatch(db);
+      unread.forEach(n => {
+        batch.update(doc(db, 'notifications', n.id), { isRead: true });
+      });
+      await batch.commit();
+      addToast("Signals Synchronised", "success");
+    } catch (e) {
+      addToast("Sync Protocol Failed", "error");
+    }
+  };
+
+  const handleDeleteNotification = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'notifications', id));
+      addToast("Signal Purged", "info");
+    } catch (e) {
+      addToast("Purge Failed", "error");
+    }
+  };
+
   // --- GLOBAL INTERACTIONS ---
 
   const handleLike = async (postId: string, frequency: string = 'pulse') => {
@@ -532,8 +558,8 @@ export default function App() {
         userRole={userData?.role}
         userData={userData}
         notifications={notifications.filter(n => !blockedIds.has(n.fromUserId))}
-        onMarkRead={() => {}}
-        onDeleteNotification={() => {}}
+        onMarkRead={handleMarkAllRead}
+        onDeleteNotification={handleDeleteNotification}
         currentRegion="en-GB"
         onRegionChange={() => {}}
         onSearch={() => {}}
@@ -584,14 +610,8 @@ export default function App() {
         {activeRoute === AppRoute.NOTIFICATIONS && isFeatureEnabled(AppRoute.NOTIFICATIONS) && (
             <NotificationsPage 
               notifications={notifications.filter(n => !blockedIds.has(n.fromUserId))}
-              onDelete={(id) => deleteDoc(doc(db, 'notifications', id))}
-              onMarkRead={() => {
-                  const batch = writeBatch(db);
-                  notifications.forEach(n => {
-                      if (!n.isRead) batch.update(doc(db, 'notifications', n.id), { isRead: true });
-                  });
-                  batch.commit();
-              }}
+              onDelete={handleDeleteNotification}
+              onMarkRead={handleMarkAllRead}
               addToast={addToast}
               locale="en-GB"
               userData={userData}
