@@ -3,7 +3,7 @@ import React, { useState, useRef } from 'react';
 import { User } from '../../types';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
-const { collection, addDoc, serverTimestamp } = Firestore as any;
+const { collection, addDoc, serverTimestamp, query, where, getDocs, writeBatch, doc } = Firestore as any;
 import { ICONS } from '../../constants';
 import { uploadToCloudinary } from '../../services/cloudinary';
 
@@ -33,10 +33,11 @@ export const SupportTicketModal: React.FC<SupportTicketModalProps> = ({ currentU
         attachmentUrl = await uploadToCloudinary(attachment);
       }
 
-      await addDoc(collection(db, 'support_tickets'), {
+      // 1. Create Ticket
+      const ticketRef = await addDoc(collection(db, 'support_tickets'), {
         userId: currentUser.id,
         userName: currentUser.displayName,
-        userEmail: currentUser.email || 'N/A', // Assuming email might be available
+        userEmail: currentUser.email || 'N/A',
         subject,
         description,
         category,
@@ -45,6 +46,33 @@ export const SupportTicketModal: React.FC<SupportTicketModalProps> = ({ currentU
         priority: 'normal',
         createdAt: serverTimestamp()
       });
+
+      // 2. Notify Admins
+      const adminQuery = query(collection(db, 'users'), where('role', '==', 'admin'));
+      const adminSnap = await getDocs(adminQuery);
+
+      if (!adminSnap.empty) {
+        const batch = writeBatch(db);
+        adminSnap.docs.forEach((adminDoc: any) => {
+           // Don't notify self if admin creates a ticket (though rare)
+           if (adminDoc.id === currentUser.id) return;
+
+           const notifRef = doc(collection(db, 'notifications'));
+           batch.set(notifRef, {
+             type: 'system',
+             fromUserId: currentUser.id,
+             fromUserName: currentUser.displayName,
+             fromUserAvatar: currentUser.avatarUrl,
+             toUserId: adminDoc.id,
+             targetId: ticketRef.id,
+             text: `Support Request: "${subject}" [${category.toUpperCase()}]`,
+             isRead: false,
+             timestamp: serverTimestamp(),
+             pulseFrequency: 'intensity'
+           });
+        });
+        await batch.commit();
+      }
 
       addToast("Ticket Successfully Logged", "success");
       onClose();
