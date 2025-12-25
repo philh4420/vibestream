@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { db, auth } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
 const { doc, updateDoc } = Firestore as any;
@@ -47,57 +47,60 @@ const STATUS_EMOJI_MAP: Record<string, string> = {
   'Offline': '💤'
 };
 
-const NotificationItem = ({ notif, onDelete }: { notif: AppNotification; onDelete: (id: string) => void }) => {
-  const pulseConfig = PULSE_FREQUENCIES.find(f => f.id === notif.pulseFrequency);
-  
-  const iconMap: Record<string, any> = {
-    like: (
-      <div className={`p-2.5 rounded-xl scale-90 transition-all duration-500 ${pulseConfig ? `bg-white dark:bg-slate-800 shadow-md border border-slate-100 dark:border-slate-700 ${pulseConfig.color}` : 'bg-rose-50 dark:bg-rose-900/30 text-rose-500 dark:text-rose-400'}`}>
-        <span className="relative z-10 text-lg leading-none">{pulseConfig?.emoji || '❤️'}</span>
-      </div>
-    ),
-    follow: <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 dark:text-indigo-400 rounded-xl scale-90"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M19 7.5v9m-4.5-4.5h9M3 13.5h9m-9-4.5h9m-9-4.5h9" /></svg></div>,
-    broadcast: <div className="p-2 bg-rose-600 text-white rounded-xl scale-90 shadow-lg shadow-rose-200/20 animate-pulse"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></div>,
-    system: <div className="p-2 bg-slate-900 dark:bg-slate-700 text-white rounded-xl scale-90"><ICONS.Admin /></div>,
-    relay: <div className="p-2 bg-indigo-600 text-white rounded-xl scale-90"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg></div>,
-    call: <div className="p-2 bg-emerald-600 text-white rounded-xl scale-90"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg></div>,
-    packet_summary: <div className="p-2 bg-amber-500 text-white rounded-xl scale-90 shadow-lg shadow-amber-100/20"><ICONS.Temporal /></div>,
-    message: <div className="p-2 bg-indigo-500 text-white rounded-xl scale-90 shadow-md shadow-indigo-200/20"><ICONS.Messages /></div>,
-    gathering_rsvp: <div className="p-2 bg-purple-600 text-white rounded-xl scale-90 shadow-lg shadow-purple-200/20"><ICONS.Gatherings /></div>,
-    gathering_create: <div className="p-2 bg-slate-900 dark:bg-slate-700 text-white rounded-xl scale-90 shadow-lg"><ICONS.Gatherings /></div>
-  };
+const getNotificationIcon = (type: string, pulseId?: string) => {
+    const pulseConfig = PULSE_FREQUENCIES.find(f => f.id === pulseId);
+    
+    if (type === 'like' && pulseConfig) {
+       return <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm shadow-sm border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 ${pulseConfig.color}`}>{pulseConfig.emoji}</div>;
+    }
 
+    const iconClasses = "w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-md scale-90";
+
+    switch (type) {
+        case 'follow': return <div className={`${iconClasses} bg-indigo-600`}><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M19 7.5v9m-4.5-4.5h9M3 13.5h9m-9-4.5h9m-9-4.5h9" /></svg></div>;
+        case 'broadcast': return <div className={`${iconClasses} bg-rose-600 animate-pulse`}><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></div>;
+        case 'relay': return <div className={`${iconClasses} bg-emerald-500`}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg></div>;
+        case 'message': return <div className={`${iconClasses} bg-indigo-500`}><ICONS.Messages /></div>;
+        case 'like': return <div className="w-8 h-8 bg-rose-50 dark:bg-rose-900/30 text-rose-500 dark:text-rose-400 rounded-xl flex items-center justify-center border border-rose-100 dark:border-rose-900 shadow-sm scale-90">❤️</div>;
+        case 'gathering_rsvp': return <div className={`${iconClasses} bg-purple-600`}><ICONS.Gatherings /></div>;
+        case 'gathering_create': return <div className={`${iconClasses} bg-slate-900 dark:bg-white text-white dark:text-slate-900`}><ICONS.Gatherings /></div>;
+        default: return <div className={`${iconClasses} bg-slate-700`}><ICONS.Bell /></div>;
+    }
+};
+
+const NotificationItem = ({ notif, onDelete }: { notif: AppNotification; onDelete: (id: string) => void }) => {
   return (
-    <div className={`group/item flex gap-4 p-4 hover:bg-slate-50/80 dark:hover:bg-slate-800/80 transition-all cursor-pointer border-b border-slate-50 dark:border-slate-800 last:border-0 relative overflow-hidden active:scale-[0.98] ${!notif.isRead ? 'bg-indigo-50/30 dark:bg-indigo-900/10' : ''}`}>
-      {!notif.isRead && <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500" />}
+    <div className={`group relative flex items-start gap-3 p-3 rounded-[1.5rem] transition-all duration-300 cursor-pointer overflow-hidden active:scale-[0.98] border ${
+        !notif.isRead 
+          ? 'bg-white dark:bg-slate-900 border-indigo-100 dark:border-indigo-900/50 shadow-md z-10' 
+          : 'bg-transparent border-transparent hover:bg-slate-50 dark:hover:bg-slate-800/50'
+      }`}
+    >
+      {/* Unread Indicator */}
+      {!notif.isRead && (
+        <div className="absolute left-2 top-1/2 -translate-y-1/2 w-0.5 h-8 bg-indigo-500 rounded-full" />
+      )}
       
-      <div className="shrink-0 relative">
-        <img src={notif.fromUserAvatar} className="w-10 h-10 rounded-[1rem] object-cover border border-slate-100 dark:border-slate-700 shadow-sm bg-white dark:bg-slate-800" alt="" />
-        <div className="absolute -bottom-1.5 -right-1.5 shadow-sm bg-white dark:bg-slate-800 rounded-full p-0.5 ring-2 ring-white dark:ring-slate-900">
-           {iconMap[notif.type] || iconMap.system}
+      <div className="shrink-0 relative ml-2 mt-1">
+        <img src={notif.fromUserAvatar} className="w-9 h-9 rounded-xl object-cover border border-slate-100 dark:border-slate-700 shadow-sm bg-white dark:bg-slate-800" alt="" />
+        <div className="absolute -bottom-2 -right-2 scale-75 origin-top-left">
+           {getNotificationIcon(notif.type, notif.pulseFrequency)}
         </div>
       </div>
 
       <div className="flex-1 min-w-0 pt-0.5">
-        <p className="text-[12px] font-bold text-slate-800 dark:text-slate-200 leading-tight">
-          <span className="font-black uppercase tracking-tight text-slate-900 dark:text-white">{notif.fromUserName}</span>
-          <span className="opacity-80"> {notif.text}</span>
-        </p>
-        <div className="flex items-center gap-2 mt-1.5">
-           <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono">
-             {notif.timestamp?.toDate ? notif.timestamp.toDate().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'NOW'}
-           </p>
-           {pulseConfig && (
-             <span className={`px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-widest border ${pulseConfig.color.replace('text', 'border')} ${pulseConfig.color.replace('text', 'bg-')}/5`}>
-               {pulseConfig.id}
-             </span>
-           )}
+        <div className="flex flex-wrap items-baseline gap-x-1.5 mb-0.5">
+           <span className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-tight">{notif.fromUserName}</span>
+           <span className="text-[9px] font-medium text-slate-500 dark:text-slate-400 leading-tight line-clamp-2">{notif.text}</span>
         </div>
+        <p className="text-[8px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-widest font-mono">
+          {notif.timestamp?.toDate ? notif.timestamp.toDate().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'NOW'}
+        </p>
       </div>
       
       <button 
         onClick={(e) => { e.stopPropagation(); onDelete(notif.id); }}
-        className="self-center p-2 text-slate-300 dark:text-slate-600 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all active:scale-90"
+        className="self-center p-2 text-slate-300 dark:text-slate-600 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all active:scale-90 opacity-0 group-hover:opacity-100"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" /></svg>
       </button>
@@ -129,7 +132,10 @@ export const Header: React.FC<HeaderProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  // Derived Notification Groups
+  const unreadNotifications = useMemo(() => notifications.filter(n => !n.isRead), [notifications]);
+  const readNotifications = useMemo(() => notifications.filter(n => n.isRead), [notifications]);
+  const unreadCount = unreadNotifications.length;
 
   const [localStatus, setLocalStatus] = useState({
     presenceStatus: userData?.presenceStatus || 'Online',
@@ -269,27 +275,57 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="absolute right-0 md:right-[-80px] top-full mt-6 w-[min(92vw,420px)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.25)] border border-white/20 dark:border-white/10 ring-1 ring-slate-950/5 overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-4 duration-400 flex flex-col max-h-[85vh]">
                  <div className="p-6 pb-4 border-b border-slate-100/80 dark:border-slate-800/80 flex items-center justify-between bg-white/50 dark:bg-slate-900/50 sticky top-0 z-10 backdrop-blur-md">
                    <div>
-                     <h3 className="text-lg font-black text-slate-950 dark:text-white tracking-tighter uppercase italic">Neural_Alerts</h3>
-                     <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] font-mono mt-0.5">Secure Feed</p>
+                     <h3 className="text-lg font-black text-slate-950 dark:text-white tracking-tighter uppercase italic">Signal_Log</h3>
+                     <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] font-mono mt-0.5">Encrypted Feed</p>
                    </div>
                    {unreadCount > 0 && (
                      <button 
                        onClick={() => onMarkRead()}
-                       className="text-[9px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all border border-indigo-100 dark:border-indigo-900"
+                       className="text-[9px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all border border-indigo-100 dark:border-indigo-900 shadow-sm"
                      >
-                       Clear_Buffer
+                       MARK_ALL_READ
                      </button>
                    )}
                  </div>
-                 <div className="flex-1 overflow-y-auto no-scrollbar scroll-container bg-white/40 dark:bg-slate-900/40">
+                 
+                 <div className="flex-1 overflow-y-auto no-scrollbar scroll-container bg-white/40 dark:bg-slate-900/40 p-4 space-y-6">
                    {notifications.length > 0 ? (
-                     notifications.map(n => <NotificationItem key={n.id} notif={n} onDelete={onDeleteNotification} />)
+                     <>
+                        {/* UNREAD SECTION */}
+                        {unreadNotifications.length > 0 && (
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3 px-2">
+                                    <div className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />
+                                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] font-mono">Incoming_Signals</span>
+                                </div>
+                                {unreadNotifications.map(n => <NotificationItem key={n.id} notif={n} onDelete={onDeleteNotification} />)}
+                            </div>
+                        )}
+
+                        {/* READ SECTION */}
+                        {readNotifications.length > 0 && (
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3 px-2 opacity-60">
+                                    <div className="w-1.5 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full" />
+                                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] font-mono">Recent_Log</span>
+                                </div>
+                                {readNotifications.map(n => <NotificationItem key={n.id} notif={n} onDelete={onDeleteNotification} />)}
+                            </div>
+                        )}
+                     </>
                    ) : (
                      <div className="py-24 text-center flex flex-col items-center opacity-30">
                         <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 text-slate-400 dark:text-slate-600"><ICONS.Bell /></div>
                         <p className="text-[10px] font-black uppercase tracking-[0.4em] font-mono text-slate-900 dark:text-white">Buffer_Empty</p>
                      </div>
                    )}
+                 </div>
+                 
+                 {/* Footer Link */}
+                 <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-center">
+                    <button onClick={() => { onNavigate(AppRoute.NOTIFICATIONS); setIsNotifOpen(false); }} className="text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest hover:underline">
+                        View_Full_History
+                    </button>
                  </div>
               </div>
             )}
