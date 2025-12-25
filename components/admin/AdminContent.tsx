@@ -104,7 +104,11 @@ export const AdminContent: React.FC<AdminContentProps> = ({ signals, addToast })
               </p>
               
               <div className="mt-auto pt-3 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono">
-                <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+                <span>
+                  {post.timestamp?.toDate 
+                    ? post.timestamp.toDate().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) 
+                    : 'RECENT LOG'}
+                </span>
                 <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                    {post.likes}
