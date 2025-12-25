@@ -24,6 +24,7 @@ interface LayoutProps {
   weather?: WeatherInfo | null;
   systemSettings?: SystemSettings;
   onOpenSettings?: () => void;
+  blockedIds?: Set<string>;
 }
 
 export const Layout: React.FC<LayoutProps> = ({ 
@@ -42,7 +43,8 @@ export const Layout: React.FC<LayoutProps> = ({
   onSearch,
   weather = null,
   systemSettings,
-  onOpenSettings
+  onOpenSettings,
+  blockedIds
 }) => {
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>(
     typeof window !== 'undefined' ? (window.innerHeight > window.innerWidth ? 'portrait' : 'landscape') : 'portrait'
@@ -98,7 +100,12 @@ export const Layout: React.FC<LayoutProps> = ({
         </main>
 
         {/* Refined Right Sidebar - visible on large screens */}
-        <RightSidebar userData={userData} weather={weather} onNavigate={onNavigate} />
+        <RightSidebar 
+          userData={userData} 
+          weather={weather} 
+          onNavigate={onNavigate} 
+          blockedIds={blockedIds}
+        />
       </div>
 
       {/* Portrait Mobile Tab Bar - Facebook Style Core Protocols */}

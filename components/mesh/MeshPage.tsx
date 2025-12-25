@@ -23,9 +23,10 @@ interface MeshPageProps {
   locale: Region;
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
   onViewProfile: (user: User) => void;
+  blockedIds?: Set<string>;
 }
 
-export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToast, onViewProfile }) => {
+export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToast, onViewProfile, blockedIds }) => {
   const [activeTab, setActiveTab] = useState<'following' | 'followers' | 'discover'>('following');
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -76,6 +77,11 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
           }
         }
 
+        // Apply Global Block Filter
+        if (blockedIds && blockedIds.size > 0) {
+            fetchedUsers = fetchedUsers.filter(u => !blockedIds.has(u.id));
+        }
+
         setUsers(fetchedUsers);
       } catch (e) {
         console.error("Mesh Sync Error", e);
@@ -86,7 +92,7 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
     };
 
     fetchGraphData();
-  }, [activeTab, currentUser.id]);
+  }, [activeTab, currentUser.id, blockedIds]); // Re-fetch if block list updates (e.g. user blocks someone)
 
   const handleToggleFollow = async (e: React.MouseEvent, targetUser: User) => {
     e.stopPropagation(); // Prevents clicking the card when clicking the button

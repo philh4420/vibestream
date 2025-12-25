@@ -23,9 +23,10 @@ interface RightSidebarProps {
   userData: VibeUser | null;
   weather: WeatherInfo | null;
   onNavigate: (route: AppRoute) => void;
+  blockedIds?: Set<string>;
 }
 
-export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, onNavigate }) => {
+export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, onNavigate, blockedIds }) => {
   const [activeContacts, setActiveContacts] = useState<VibeUser[]>([]);
   const [trendingPosts, setTrendingPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -77,7 +78,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
     setIsLoading(true);
 
     // Simplified query to ensure data appears even without complex indexes
-    const usersQuery = query(collection(db, 'users'), limit(30));
+    const usersQuery = query(collection(db, 'users'), limit(50));
     
     const unsubUsers = onSnapshot(usersQuery, (snap: any) => {
       const fetched = snap.docs
@@ -101,7 +102,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
       setIsLoading(false);
     });
 
-    const trendingQuery = query(collection(db, 'posts'), orderBy('likes', 'desc'), limit(5));
+    const trendingQuery = query(collection(db, 'posts'), orderBy('likes', 'desc'), limit(10));
     const unsubTrending = onSnapshot(trendingQuery, (snap: any) => {
       setTrendingPosts(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Post)));
     });
@@ -218,8 +219,12 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
     'Offline': 'bg-slate-300'
   };
 
-  // Filter based on privacy settings
+  // Filter based on privacy settings AND Block List
   const filteredContacts = activeContacts.filter(u => {
+    // 1. Block Filter
+    if (blockedIds?.has(u.id)) return false;
+
+    // 2. Privacy Filter
     const isVisible = u.settings?.privacy?.activityStatus !== false;
     const status = isVisible ? (u.presenceStatus || 'Offline') : 'Offline';
     
@@ -228,6 +233,8 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
     }
     return true;
   });
+
+  const filteredTrending = trendingPosts.filter(p => !blockedIds?.has(p.authorId)).slice(0, 5);
 
   return (
     <aside className="hidden lg:flex flex-col w-[320px] xl:w-[380px] shrink-0 bg-slate-50/50 dark:bg-slate-900/50 border-l border-precision h-full overflow-hidden transition-colors duration-300">
@@ -285,7 +292,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
         </div>
 
         {/* 2. TOP SIGNALS (TRENDING) */}
-        {trendingPosts.length > 0 && (
+        {filteredTrending.length > 0 && (
           <div className="space-y-5">
             <div className="flex items-center justify-between px-2">
               <div className="flex items-center gap-2">
@@ -296,7 +303,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
             </div>
             
             <div className="space-y-3">
-              {trendingPosts.map((post, idx) => (
+              {filteredTrending.map((post, idx) => (
                 <div 
                   key={post.id} 
                   onClick={() => handleViewPost(post)}

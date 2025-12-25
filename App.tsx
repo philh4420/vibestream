@@ -378,6 +378,7 @@ export default function App() {
         weather={weather}
         systemSettings={systemSettings}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        blockedIds={blockedIds}
       >
         {activeRoute === AppRoute.FEED && isFeatureEnabled(AppRoute.FEED) && (
             <FeedPage 
@@ -478,6 +479,7 @@ export default function App() {
               locale="en-GB" 
               addToast={addToast}
               onViewProfile={(u) => { setSelectedUserProfile(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }}
+              blockedIds={blockedIds}
             />
         )}
 
