@@ -335,7 +335,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                       controls 
                       playsInline
                       autoPlay={shouldAutoPlay}
-                      muted={shouldAutoPlay} // Mute if autoplaying to avoid audio blast
+                      muted={shouldAutoPlay} 
                     />
                   )}
                   {/* Cinematic Vignette */}

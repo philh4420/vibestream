@@ -57,13 +57,13 @@ const NotificationItem = ({ notif, onDelete }: { notif: AppNotification; onDelet
       </div>
     ),
     follow: <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 dark:text-indigo-400 rounded-xl scale-90"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M19 7.5v9m-4.5-4.5h9M3 13.5h9m-9-4.5h9m-9-4.5h9" /></svg></div>,
-    broadcast: <div className="p-2 bg-rose-600 text-white rounded-xl scale-90 shadow-lg shadow-rose-200 animate-pulse"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></div>,
+    broadcast: <div className="p-2 bg-rose-600 text-white rounded-xl scale-90 shadow-lg shadow-rose-200/20 animate-pulse"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></div>,
     system: <div className="p-2 bg-slate-900 dark:bg-slate-700 text-white rounded-xl scale-90"><ICONS.Admin /></div>,
     relay: <div className="p-2 bg-indigo-600 text-white rounded-xl scale-90"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg></div>,
     call: <div className="p-2 bg-emerald-600 text-white rounded-xl scale-90"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg></div>,
-    packet_summary: <div className="p-2 bg-amber-500 text-white rounded-xl scale-90 shadow-lg shadow-amber-100"><ICONS.Temporal /></div>,
-    message: <div className="p-2 bg-indigo-500 text-white rounded-xl scale-90 shadow-md shadow-indigo-200"><ICONS.Messages /></div>,
-    gathering_rsvp: <div className="p-2 bg-purple-600 text-white rounded-xl scale-90 shadow-lg shadow-purple-200"><ICONS.Gatherings /></div>,
+    packet_summary: <div className="p-2 bg-amber-500 text-white rounded-xl scale-90 shadow-lg shadow-amber-100/20"><ICONS.Temporal /></div>,
+    message: <div className="p-2 bg-indigo-500 text-white rounded-xl scale-90 shadow-md shadow-indigo-200/20"><ICONS.Messages /></div>,
+    gathering_rsvp: <div className="p-2 bg-purple-600 text-white rounded-xl scale-90 shadow-lg shadow-purple-200/20"><ICONS.Gatherings /></div>,
     gathering_create: <div className="p-2 bg-slate-900 dark:bg-slate-700 text-white rounded-xl scale-90 shadow-lg"><ICONS.Gatherings /></div>
   };
 
@@ -73,7 +73,7 @@ const NotificationItem = ({ notif, onDelete }: { notif: AppNotification; onDelet
       
       <div className="shrink-0 relative">
         <img src={notif.fromUserAvatar} className="w-10 h-10 rounded-[1rem] object-cover border border-slate-100 dark:border-slate-700 shadow-sm bg-white dark:bg-slate-800" alt="" />
-        <div className="absolute -bottom-1.5 -right-1.5 shadow-sm bg-white dark:bg-slate-800 rounded-full p-0.5">
+        <div className="absolute -bottom-1.5 -right-1.5 shadow-sm bg-white dark:bg-slate-800 rounded-full p-0.5 ring-2 ring-white dark:ring-slate-900">
            {iconMap[notif.type] || iconMap.system}
         </div>
       </div>
@@ -194,7 +194,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header 
-      className="fixed top-0 left-0 right-0 z-[1000] glass-panel border-b border-white/40 dark:border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.03)] flex items-center transition-all duration-500 backdrop-blur-xl bg-white/70 dark:bg-slate-950/70 supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-slate-950/60" 
+      className="fixed top-0 left-0 right-0 z-[1000] glass-panel border-b border-slate-200/50 dark:border-slate-800/50 shadow-[0_4px_30px_rgba(0,0,0,0.03)] flex items-center transition-all duration-500 backdrop-blur-xl bg-white/70 dark:bg-slate-950/70 supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-slate-950/60" 
       style={{ 
         height: 'var(--header-h)',
         paddingLeft: 'max(1rem, var(--sal))',
@@ -205,7 +205,7 @@ export const Header: React.FC<HeaderProps> = ({
         
         <div className="flex items-center gap-4 md:gap-6 flex-1 min-w-0">
           <button 
-            className="w-10 h-10 md:w-11 md:h-11 bg-slate-950 dark:bg-white rounded-[1.2rem] flex items-center justify-center shadow-lg active:scale-95 transition-all shrink-0 hover:bg-indigo-600 dark:hover:bg-indigo-400 group relative overflow-hidden"
+            className="w-10 h-10 md:w-11 md:h-11 bg-slate-950 dark:bg-white rounded-[1.2rem] flex items-center justify-center shadow-lg active:scale-95 transition-all shrink-0 hover:bg-indigo-600 dark:hover:bg-indigo-400 group relative overflow-hidden ring-2 ring-white dark:ring-slate-900"
             onClick={() => onNavigate(AppRoute.FEED)}
           >
             <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />

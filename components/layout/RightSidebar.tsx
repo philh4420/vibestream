@@ -230,7 +230,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
   });
 
   return (
-    <aside className="hidden lg:flex flex-col w-[320px] xl:w-[380px] shrink-0 bg-slate-50 dark:bg-slate-900 border-l border-precision h-full overflow-hidden transition-colors duration-300">
+    <aside className="hidden lg:flex flex-col w-[320px] xl:w-[380px] shrink-0 bg-slate-50/50 dark:bg-slate-900/50 border-l border-precision h-full overflow-hidden transition-colors duration-300">
       
       <div className="flex-1 overflow-y-auto custom-scrollbar px-6 space-y-8 py-8">
         

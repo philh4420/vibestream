@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ICONS } from '../../constants';
 
@@ -32,68 +33,68 @@ export const TermsPage: React.FC<TermsPageProps> = ({ onAccept }) => {
       <div className="space-y-4">
         
         {/* Term 1 */}
-        <div className="group bg-white border border-slate-100 rounded-[2.5rem] p-8 hover:border-indigo-200 transition-all duration-300 flex flex-col md:flex-row gap-6 md:items-start">
+        <div className="group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] p-8 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all duration-300 flex flex-col md:flex-row gap-6 md:items-start">
              <div className="shrink-0 md:w-48 pt-1">
-                <span className="inline-block px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest font-mono bg-rose-50 text-rose-600">
+                <span className="inline-block px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest font-mono bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400">
                   MANDATORY
                 </span>
              </div>
              <div>
-                <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tight mb-2 group-hover:text-indigo-600 transition-colors">
+                <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase italic tracking-tight mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                   Identity_Verification
                 </h3>
-                <p className="text-sm font-medium text-slate-600 leading-relaxed">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 leading-relaxed">
                   Users must maintain a valid biometric hash (verified email). Impersonation of Citadel Admins, System AI, or other nodes is a Class A violation.
                 </p>
              </div>
         </div>
 
         {/* Term 2 */}
-        <div className="group bg-white border border-slate-100 rounded-[2.5rem] p-8 hover:border-indigo-200 transition-all duration-300 flex flex-col md:flex-row gap-6 md:items-start">
+        <div className="group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] p-8 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all duration-300 flex flex-col md:flex-row gap-6 md:items-start">
              <div className="shrink-0 md:w-48 pt-1">
-                <span className="inline-block px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest font-mono bg-indigo-50 text-indigo-600">
+                <span className="inline-block px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest font-mono bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
                   ENFORCED
                 </span>
              </div>
              <div>
-                <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tight mb-2 group-hover:text-indigo-600 transition-colors">
+                <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase italic tracking-tight mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                   Signal_Decency
                 </h3>
-                <p className="text-sm font-medium text-slate-600 leading-relaxed">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 leading-relaxed">
                   Broadcasts containing hate speech, illicit contraband, or neural hazards (malware) will be intercepted by the automated moderation grid. Repeat offenders face grid exile.
                 </p>
              </div>
         </div>
 
         {/* Term 3 */}
-        <div className="group bg-white border border-slate-100 rounded-[2.5rem] p-8 hover:border-indigo-200 transition-all duration-300 flex flex-col md:flex-row gap-6 md:items-start">
+        <div className="group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] p-8 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all duration-300 flex flex-col md:flex-row gap-6 md:items-start">
              <div className="shrink-0 md:w-48 pt-1">
-                <span className="inline-block px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest font-mono bg-indigo-50 text-indigo-600">
+                <span className="inline-block px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest font-mono bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
                   SHARED
                 </span>
              </div>
              <div>
-                <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tight mb-2 group-hover:text-indigo-600 transition-colors">
+                <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase italic tracking-tight mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                   Intellectual_Property
                 </h3>
-                <p className="text-sm font-medium text-slate-600 leading-relaxed">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 leading-relaxed">
                   You retain full ownership of your transmitted artifacts. However, by broadcasting, you grant VibeStream a non-exclusive license to relay your signal across the global mesh.
                 </p>
              </div>
         </div>
 
         {/* Term 4 */}
-        <div className="group bg-white border border-slate-100 rounded-[2.5rem] p-8 hover:border-indigo-200 transition-all duration-300 flex flex-col md:flex-row gap-6 md:items-start">
+        <div className="group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] p-8 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all duration-300 flex flex-col md:flex-row gap-6 md:items-start">
              <div className="shrink-0 md:w-48 pt-1">
-                <span className="inline-block px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest font-mono bg-indigo-50 text-indigo-600">
+                <span className="inline-block px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest font-mono bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
                   VARIABLE
                 </span>
              </div>
              <div>
-                <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tight mb-2 group-hover:text-indigo-600 transition-colors">
+                <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase italic tracking-tight mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                   System_Availability
                 </h3>
-                <p className="text-sm font-medium text-slate-600 leading-relaxed">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 leading-relaxed">
                   The grid may undergo maintenance cycles during low-traffic temporal windows. We do not guarantee 100% uptime during solar flare events or infrastructure upgrades.
                 </p>
              </div>
@@ -103,8 +104,8 @@ export const TermsPage: React.FC<TermsPageProps> = ({ onAccept }) => {
 
       {/* Acceptance Footer (Only visible if onAccept is provided) */}
       {onAccept && (
-        <div className="mt-10 p-8 bg-slate-900 rounded-[2.5rem] border border-slate-800 text-center shadow-2xl animate-in slide-in-from-bottom-6">
-           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] font-mono mb-6">
+        <div className="mt-10 p-8 bg-slate-900 dark:bg-slate-800 rounded-[2.5rem] border border-slate-800 dark:border-slate-700 text-center shadow-2xl animate-in slide-in-from-bottom-6">
+           <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] font-mono mb-6">
              Digital Signature Required
            </p>
            <button 

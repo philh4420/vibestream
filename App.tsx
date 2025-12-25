@@ -230,37 +230,21 @@ export default function App() {
   }, [activeRoute]);
 
   // --- APPEARANCE & SETTINGS EFFECT ---
+  // If no user is logged in, default to System theme.
   useEffect(() => {
-    if (userData?.settings?.appearance) {
-      const { theme, reducedMotion, highContrast } = userData.settings.appearance;
-      const root = document.documentElement;
-
-      // Theme Application Logic
-      const applyTheme = () => {
-        // Clean slate
-        root.classList.remove('dark');
-        
-        let isDark = false;
-        if (theme === 'system') {
-           isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        } else if (theme === 'dark') {
-           isDark = true;
-        }
-
-        if (isDark) root.classList.add('dark');
-      };
-
-      // Initial Apply
-      applyTheme();
-
-      // Setup Listener for System Theme Changes
-      let cleanupListener = () => {};
+    const root = document.documentElement;
+    const applyTheme = (theme: 'system' | 'light' | 'dark', reducedMotion = false, highContrast = false) => {
+      // Clean slate
+      root.classList.remove('dark');
+      
+      let isDark = false;
       if (theme === 'system') {
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        const handler = () => applyTheme();
-        mediaQuery.addEventListener('change', handler);
-        cleanupListener = () => mediaQuery.removeEventListener('change', handler);
+         isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      } else if (theme === 'dark') {
+         isDark = true;
       }
+
+      if (isDark) root.classList.add('dark');
 
       // Reduced Motion Application
       if (reducedMotion) root.classList.add('reduced-motion');
@@ -269,8 +253,29 @@ export default function App() {
       // High Contrast Application
       if (highContrast) root.classList.add('high-contrast');
       else root.classList.remove('high-contrast');
+    };
 
+    if (userData?.settings?.appearance) {
+      // User Preference
+      const { theme, reducedMotion, highContrast } = userData.settings.appearance;
+      applyTheme(theme, reducedMotion, highContrast);
+
+      let cleanupListener = () => {};
+      if (theme === 'system') {
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const handler = () => applyTheme('system', reducedMotion, highContrast);
+        mediaQuery.addEventListener('change', handler);
+        cleanupListener = () => mediaQuery.removeEventListener('change', handler);
+      }
       return () => cleanupListener();
+    } else {
+      // Default / Logged Out State -> System Theme
+      applyTheme('system');
+      
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handler = () => applyTheme('system');
+      mediaQuery.addEventListener('change', handler);
+      return () => mediaQuery.removeEventListener('change', handler);
     }
   }, [userData?.settings?.appearance]);
 
@@ -535,10 +540,10 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-[#020617] flex items-center justify-center">
+      <div className="fixed inset-0 bg-slate-50 dark:bg-[#020617] flex items-center justify-center transition-colors duration-300">
         <div className="flex flex-col items-center gap-4">
             <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] font-mono animate-pulse">Initializing_Grid...</p>
+            <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.4em] font-mono animate-pulse">Initializing_Grid...</p>
         </div>
       </div>
     );

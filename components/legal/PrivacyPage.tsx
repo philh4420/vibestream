@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ICONS } from '../../constants';
 
@@ -37,60 +38,60 @@ export const PrivacyPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Card 1 */}
-        <div className="bg-white border border-slate-100 rounded-[3rem] p-8 md:p-10 hover:shadow-xl hover:border-emerald-200 transition-all duration-500 group relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-8 opacity-10 text-6xl font-black text-slate-200 group-hover:text-emerald-100 transition-colors select-none">
+        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[3rem] p-8 md:p-10 hover:shadow-xl hover:border-emerald-200 dark:hover:border-emerald-900 transition-all duration-500 group relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-8 opacity-10 text-6xl font-black text-slate-200 dark:text-slate-700 group-hover:text-emerald-100 dark:group-hover:text-emerald-900 transition-colors select-none">
                01
              </div>
              <div className="relative z-10">
-               <h3 className="text-xl font-black text-slate-900 uppercase italic tracking-tighter mb-4 group-hover:text-emerald-600 transition-colors">
+               <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-4 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                  Data_Ingestion
                </h3>
-               <p className="text-sm font-medium text-slate-500 leading-relaxed max-w-md">
+               <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed max-w-md">
                  We only intercept signals you explicitly broadcast. Passive biometric data (scroll velocity, dwell time) is processed locally on your node and never transmitted to the Core without consent.
                </p>
              </div>
         </div>
 
         {/* Card 2 */}
-        <div className="bg-white border border-slate-100 rounded-[3rem] p-8 md:p-10 hover:shadow-xl hover:border-emerald-200 transition-all duration-500 group relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-8 opacity-10 text-6xl font-black text-slate-200 group-hover:text-emerald-100 transition-colors select-none">
+        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[3rem] p-8 md:p-10 hover:shadow-xl hover:border-emerald-200 dark:hover:border-emerald-900 transition-all duration-500 group relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-8 opacity-10 text-6xl font-black text-slate-200 dark:text-slate-700 group-hover:text-emerald-100 dark:group-hover:text-emerald-900 transition-colors select-none">
                02
              </div>
              <div className="relative z-10">
-               <h3 className="text-xl font-black text-slate-900 uppercase italic tracking-tighter mb-4 group-hover:text-emerald-600 transition-colors">
+               <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-4 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                  Neural_Encryption
                </h3>
-               <p className="text-sm font-medium text-slate-500 leading-relaxed max-w-md">
+               <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed max-w-md">
                  All direct messages and private cluster comms use AES-256-GCM encryption. Even Citadel Admins cannot decrypt your private handshake protocols.
                </p>
              </div>
         </div>
 
         {/* Card 3 */}
-        <div className="bg-white border border-slate-100 rounded-[3rem] p-8 md:p-10 hover:shadow-xl hover:border-emerald-200 transition-all duration-500 group relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-8 opacity-10 text-6xl font-black text-slate-200 group-hover:text-emerald-100 transition-colors select-none">
+        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[3rem] p-8 md:p-10 hover:shadow-xl hover:border-emerald-200 dark:hover:border-emerald-900 transition-all duration-500 group relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-8 opacity-10 text-6xl font-black text-slate-200 dark:text-slate-700 group-hover:text-emerald-100 dark:group-hover:text-emerald-900 transition-colors select-none">
                03
              </div>
              <div className="relative z-10">
-               <h3 className="text-xl font-black text-slate-900 uppercase italic tracking-tighter mb-4 group-hover:text-emerald-600 transition-colors">
+               <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-4 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                  Third_Party_Resonance
                </h3>
-               <p className="text-sm font-medium text-slate-500 leading-relaxed max-w-md">
+               <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed max-w-md">
                  We maintain a strict isolation policy. Your identity hash is never leaked to advertising grids. External media (Cloudinary) is fetched via proxied, anonymized requests.
                </p>
              </div>
         </div>
 
         {/* Card 4 */}
-        <div className="bg-white border border-slate-100 rounded-[3rem] p-8 md:p-10 hover:shadow-xl hover:border-emerald-200 transition-all duration-500 group relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-8 opacity-10 text-6xl font-black text-slate-200 group-hover:text-emerald-100 transition-colors select-none">
+        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[3rem] p-8 md:p-10 hover:shadow-xl hover:border-emerald-200 dark:hover:border-emerald-900 transition-all duration-500 group relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-8 opacity-10 text-6xl font-black text-slate-200 dark:text-slate-700 group-hover:text-emerald-100 dark:group-hover:text-emerald-900 transition-colors select-none">
                04
              </div>
              <div className="relative z-10">
-               <h3 className="text-xl font-black text-slate-900 uppercase italic tracking-tighter mb-4 group-hover:text-emerald-600 transition-colors">
+               <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-4 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                  Right_To_Vanish
                </h3>
-               <p className="text-sm font-medium text-slate-500 leading-relaxed max-w-md">
+               <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed max-w-md">
                  Initiate a "Purge Protocol" from your settings to instantly wipe all trace of your existence from our servers. This action is irreversible and cryptographically verified.
                </p>
              </div>
@@ -100,7 +101,7 @@ export const PrivacyPage: React.FC = () => {
 
       {/* Footer Badge */}
       <div className="mt-12 text-center">
-        <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.4em] font-mono">
+        <p className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.4em] font-mono">
           Last_Updated: 2026.04.12 • Hash: #8f92a
         </p>
       </div>

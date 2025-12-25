@@ -14,14 +14,14 @@ const InputField = ({ label, type = "text", value, onChange, placeholder, icon: 
   <div className="space-y-2 group">
     <div className="flex items-center gap-2 mb-1">
       {Icon && <div className="text-slate-400 group-focus-within:text-indigo-500 transition-colors scale-75"><Icon /></div>}
-      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono group-focus-within:text-indigo-500 transition-colors">{label}</label>
+      <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono group-focus-within:text-indigo-500 dark:group-focus-within:text-indigo-400 transition-colors">{label}</label>
     </div>
     <input 
       type={type} 
       value={value || ''} 
       placeholder={placeholder}
       onChange={onChange} 
-      className="w-full bg-slate-50 border border-slate-200 rounded-[1.2rem] px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300 h-14" 
+      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[1.2rem] px-6 py-4 text-sm font-bold text-slate-900 dark:text-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-600 outline-none transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600 h-14" 
     />
   </div>
 );
@@ -108,20 +108,20 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
   return (
     <div className="fixed inset-0 z-[600] flex items-center justify-center p-0 md:p-6 overflow-hidden">
       <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose}></div>
-      <div className="relative bg-white w-full max-w-6xl h-full md:h-[90vh] md:rounded-[3.5rem] shadow-heavy overflow-hidden flex flex-col border border-white/20 animate-in zoom-in-95 duration-500">
+      <div className="relative bg-white dark:bg-slate-900 w-full max-w-6xl h-full md:h-[90vh] md:rounded-[3.5rem] shadow-heavy overflow-hidden flex flex-col border border-white/20 animate-in zoom-in-95 duration-500">
         
-        <div className="shrink-0 p-6 md:p-10 flex justify-between items-center border-b border-slate-50 bg-white/80 backdrop-blur-md">
+        <div className="shrink-0 p-6 md:p-10 flex justify-between items-center border-b border-slate-50 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
            <div>
-              <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter uppercase italic">Neural_Calibration</h2>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono mt-1">Profile Control Suite v2.9</p>
+              <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic">Neural_Calibration</h2>
+              <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] font-mono mt-1">Profile Control Suite v2.9</p>
            </div>
-           <button onClick={onClose} className="p-4 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all active:scale-90 shadow-sm border border-slate-200">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+           <button onClick={onClose} className="p-4 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-2xl transition-all active:scale-90 shadow-sm border border-slate-200 dark:border-slate-700">
+              <svg className="w-6 h-6 text-slate-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
            </button>
         </div>
 
         <div className="flex flex-1 overflow-hidden">
-          <nav className="hidden md:flex flex-col w-72 border-r border-slate-50 p-8 gap-3 bg-slate-50/30">
+          <nav className="hidden md:flex flex-col w-72 border-r border-slate-50 dark:border-slate-800 p-8 gap-3 bg-slate-50/30 dark:bg-slate-800/30">
              {[
                { id: 'intro', label: 'Identity & Biometrics', icon: ICONS.Profile },
                { id: 'media', label: 'Visual Interface', icon: ICONS.Create },
@@ -132,7 +132,7 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
                <button 
                   key={tab.id}
                   onClick={() => setActiveSubTab(tab.id as any)}
-                  className={`flex items-center gap-4 px-6 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeSubTab === tab.id ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-100' : 'text-slate-400 hover:bg-white hover:text-slate-900'}`}
+                  className={`flex items-center gap-4 px-6 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeSubTab === tab.id ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-100 dark:shadow-none' : 'text-slate-400 dark:text-slate-500 hover:bg-white dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'}`}
                >
                  <div className="scale-75"><tab.icon /></div>
                  {tab.label}
@@ -140,7 +140,7 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
              ))}
           </nav>
 
-          <div className="flex-1 overflow-y-auto p-6 md:p-12 scroll-container bg-white">
+          <div className="flex-1 overflow-y-auto p-6 md:p-12 scroll-container bg-white dark:bg-slate-900">
             {activeSubTab === 'intro' && (
               <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-300">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -152,11 +152,11 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
                   <InputField label="Neural Pronouns" value={form.pronouns} onChange={(e: any) => setForm({...form, pronouns: e.target.value})} placeholder="He/Him, They/Them..." />
                 </div>
                 <div className="space-y-3">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono ml-2">Neural Bio-Signature</label>
+                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono ml-2">Neural Bio-Signature</label>
                   <textarea 
                     value={form.bio} 
                     onChange={e => setForm({...form, bio: e.target.value})} 
-                    className="w-full h-40 bg-slate-50 border border-slate-200 rounded-[2rem] px-8 py-6 text-sm font-bold resize-none outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all placeholder:text-slate-300" 
+                    className="w-full h-40 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] px-8 py-6 text-sm font-bold text-slate-900 dark:text-white resize-none outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600" 
                     placeholder="Establish your signal history..."
                   />
                 </div>
@@ -168,13 +168,13 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
                 <InputField label="Primary Function (Work)" value={form.occupation} onChange={(e: any) => setForm({...form, occupation: e.target.value})} />
                 <InputField label="Training Centre (Education)" value={form.education} onChange={(e: any) => setForm({...form, education: e.target.value})} />
                 <div className="space-y-3">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono ml-2">Capability Matrix (Skills)</label>
+                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono ml-2">Capability Matrix (Skills)</label>
                   <input 
                     type="text" value={form.skills} onChange={(e: any) => setForm({...form, skills: e.target.value})} 
-                    className="w-full bg-slate-50 border border-slate-200 rounded-[1.2rem] px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all placeholder:text-slate-300 h-14"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[1.2rem] px-6 py-4 text-sm font-bold text-slate-900 dark:text-white focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600 h-14"
                     placeholder="React:90, UI Design:85, Typescript:95..."
                   />
-                  <p className="text-[9px] text-slate-400 font-mono mt-2 ml-2">Note: Format as 'SkillName:Level' (e.g. Design:80) for visual bars.</p>
+                  <p className="text-[9px] text-slate-400 dark:text-slate-500 font-mono mt-2 ml-2">Note: Format as 'SkillName:Level' (e.g. Design:80) for visual bars.</p>
                 </div>
               </div>
             )}
@@ -182,8 +182,8 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
             {activeSubTab === 'footprint' && (
               <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-300">
                 {/* Primary Website Integration */}
-                <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 mb-6">
-                  <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-6 font-mono">Primary_Uplink_Node</h4>
+                <div className="bg-slate-50 dark:bg-slate-800 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 mb-6">
+                  <h4 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest mb-6 font-mono">Primary_Uplink_Node</h4>
                   <InputField 
                     label="Primary Domain (Personal Website)" 
                     value={form.website} 
@@ -193,19 +193,19 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
                   />
                 </div>
 
-                <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100">
-                  <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-6 font-mono">Establish_External_Resonance</h4>
+                <div className="bg-slate-50 dark:bg-slate-800 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-700">
+                  <h4 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest mb-6 font-mono">Establish_External_Resonance</h4>
                   <div className="flex flex-col md:flex-row gap-4">
                     <select 
                       value={newSocial.platform} 
                       onChange={e => setNewSocial({...newSocial, platform: e.target.value})}
-                      className="bg-white border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-100 outline-none h-14"
+                      className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-100 outline-none h-14 text-slate-900 dark:text-white"
                     >
                       {platforms.map(p => <option key={p} value={p}>{p}</option>)}
                     </select>
                     <input 
                       type="url" placeholder="Paste ecosystem URL here..." value={newSocial.url} onChange={e => setNewSocial({...newSocial, url: e.target.value})}
-                      className="flex-1 bg-white border border-slate-200 rounded-2xl px-6 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-100 outline-none h-14"
+                      className="flex-1 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-2xl px-6 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-100 outline-none h-14 text-slate-900 dark:text-white placeholder:text-slate-400"
                     />
                     <button 
                       onClick={handleAddSocial}
@@ -218,15 +218,15 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {form.socialLinks.map((link, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-5 bg-white border border-slate-100 rounded-[1.5rem] shadow-sm group">
+                    <div key={idx} className="flex items-center justify-between p-5 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[1.5rem] shadow-sm group">
                       <div className="flex items-center gap-4 overflow-hidden">
-                        <div className="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center text-slate-600">
+                        <div className="w-10 h-10 bg-slate-50 dark:bg-slate-700 rounded-lg flex items-center justify-center text-slate-600 dark:text-slate-400">
                           {/* @ts-ignore */}
                           {ICONS.Social[link.platform] ? React.createElement(ICONS.Social[link.platform]) : <ICONS.Globe />}
                         </div>
                         <div className="overflow-hidden">
-                          <p className="font-black text-slate-900 text-[10px] uppercase tracking-widest">{link.platform}</p>
-                          <p className="text-[10px] text-slate-400 font-mono truncate">{link.url}</p>
+                          <p className="font-black text-slate-900 dark:text-white text-[10px] uppercase tracking-widest">{link.platform}</p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono truncate">{link.url}</p>
                         </div>
                       </div>
                       <button onClick={() => handleRemoveSocial(idx)} className="p-2 text-rose-300 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-all">
@@ -241,8 +241,8 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
             {activeSubTab === 'media' && (
               <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-300">
                 <div className="space-y-4">
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] font-mono ml-2">Cover_Layer_Interface</p>
-                   <div className="relative h-64 w-full rounded-[3rem] overflow-hidden bg-slate-100 border-2 border-dashed border-slate-200 cursor-pointer group" onClick={() => coverInputRef.current?.click()}>
+                   <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] font-mono ml-2">Cover_Layer_Interface</p>
+                   <div className="relative h-64 w-full rounded-[3rem] overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-slate-700 cursor-pointer group" onClick={() => coverInputRef.current?.click()}>
                       <img src={form.coverUrl} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
                          <span className="bg-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-900 shadow-xl">Update_Background_Protocol</span>
@@ -251,8 +251,8 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
                    </div>
                 </div>
                 <div className="space-y-4">
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] font-mono ml-2">Avatar_Core_Node</p>
-                   <div className="flex items-center gap-10 bg-slate-50 p-8 rounded-[3rem] border border-slate-100">
+                   <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] font-mono ml-2">Avatar_Core_Node</p>
+                   <div className="flex items-center gap-10 bg-slate-50 dark:bg-slate-800 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-700">
                       <div className="relative w-40 h-40 rounded-[2.5rem] overflow-hidden bg-white shadow-2xl cursor-pointer group" onClick={() => avatarInputRef.current?.click()}>
                          <img src={form.avatarUrl} className="w-full h-full object-cover" alt="" />
                          <input type="file" ref={avatarInputRef} className="hidden" onChange={(e) => handleFileUpload(e, 'avatar')} />
@@ -261,8 +261,8 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
                          </div>
                       </div>
                       <div className="flex-1">
-                        <h4 className="text-xl font-black text-slate-900 uppercase italic mb-2 tracking-tight">Identity Visual Hash</h4>
-                        <p className="text-xs text-slate-500 font-medium leading-relaxed">This visual artifact will be broadcasted to all synchronized nodes across the VibeStream grid.</p>
+                        <h4 className="text-xl font-black text-slate-900 dark:text-white uppercase italic mb-2 tracking-tight">Identity Visual Hash</h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">This visual artifact will be broadcasted to all synchronized nodes across the VibeStream grid.</p>
                       </div>
                    </div>
                 </div>
@@ -271,21 +271,21 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
 
             {activeSubTab === 'chronology' && (
               <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-300">
-                <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100">
-                  <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-6 font-mono">Inject_Timeline_Event</h4>
+                <div className="bg-slate-50 dark:bg-slate-800 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-700">
+                  <h4 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest mb-6 font-mono">Inject_Timeline_Event</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <input 
                       type="text" placeholder="Event Protocol Name" value={newEvent.title} onChange={e => setNewEvent({...newEvent, title: e.target.value})}
-                      className="bg-white border border-slate-200 rounded-[1.5rem] px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-100 outline-none h-14"
+                      className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-[1.5rem] px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-100 outline-none h-14 text-slate-900 dark:text-white placeholder:text-slate-400"
                     />
                     <input 
                       type="date" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})}
-                      className="bg-white border border-slate-200 rounded-[1.5rem] px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-100 outline-none h-14"
+                      className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-[1.5rem] px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-100 outline-none h-14 text-slate-900 dark:text-white"
                     />
                   </div>
                   <button 
                     onClick={handleAddEvent}
-                    className="w-full py-4 bg-slate-900 text-white rounded-[1.8rem] text-[10px] font-black uppercase tracking-[0.3em] hover:bg-black transition-all shadow-xl active:scale-95"
+                    className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[1.8rem] text-[10px] font-black uppercase tracking-[0.3em] hover:bg-black dark:hover:bg-slate-200 transition-all shadow-xl active:scale-95"
                   >
                     Commit_Event_To_Archive
                   </button>
@@ -293,12 +293,12 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
 
                 <div className="space-y-4">
                   {form.lifeEvents.map(event => (
-                    <div key={event.id} className="flex items-center justify-between p-6 bg-white border border-slate-100 rounded-[2rem] shadow-sm hover:shadow-md transition-all group">
+                    <div key={event.id} className="flex items-center justify-between p-6 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[2rem] shadow-sm hover:shadow-md transition-all group">
                       <div className="flex items-center gap-6">
-                        <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-3xl shadow-sm">{event.icon}</div>
+                        <div className="w-14 h-14 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center text-3xl shadow-sm">{event.icon}</div>
                         <div>
-                          <p className="font-black text-slate-900 text-sm uppercase tracking-tight">{event.title}</p>
-                          <p className="text-[10px] text-slate-400 font-mono font-bold uppercase mt-1 tracking-widest">{event.date}</p>
+                          <p className="font-black text-slate-900 dark:text-white text-sm uppercase tracking-tight">{event.title}</p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono font-bold uppercase mt-1 tracking-widest">{event.date}</p>
                         </div>
                       </div>
                       <button onClick={() => handleRemoveEvent(event.id)} className="p-3 text-rose-300 hover:text-rose-600 transition-all opacity-0 group-hover:opacity-100">
@@ -312,9 +312,9 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
           </div>
         </div>
         
-        <div className="shrink-0 p-8 md:p-12 flex gap-6 bg-white/80 backdrop-blur-md border-t border-slate-100">
-          <button onClick={onClose} className="flex-1 py-5 bg-white text-slate-400 border border-slate-200 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.3em] active:scale-95 transition-all">Abort_Synchronization</button>
-          <button onClick={handleCommit} className="flex-1 py-5 bg-indigo-600 text-white rounded-[2rem] font-black text-[10px] uppercase tracking-[0.3em] shadow-2xl shadow-indigo-200 active:scale-95 transition-all">Commit_Neural_Update</button>
+        <div className="shrink-0 p-8 md:p-12 flex gap-6 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-slate-100 dark:border-slate-800">
+          <button onClick={onClose} className="flex-1 py-5 bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.3em] active:scale-95 transition-all">Abort_Synchronization</button>
+          <button onClick={handleCommit} className="flex-1 py-5 bg-indigo-600 text-white rounded-[2rem] font-black text-[10px] uppercase tracking-[0.3em] shadow-2xl shadow-indigo-200/50 dark:shadow-none active:scale-95 transition-all">Commit_Neural_Update</button>
         </div>
       </div>
     </div>

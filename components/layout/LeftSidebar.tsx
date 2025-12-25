@@ -81,7 +81,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
             </span>
             <div className="flex items-center gap-2">
               {disabled && (
-                <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                <svg className="w-3 h-3 text-slate-400 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
               )}
               {badge !== undefined && (typeof badge === 'number' ? badge > 0 : badge !== '') && !disabled && (
                 <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg shadow-sm ${isActive ? 'bg-white text-slate-900 dark:bg-slate-900 dark:text-white' : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'}`}>
@@ -120,7 +120,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           onClick={() => onNavigate(AppRoute.PROFILE)}
           className={`relative w-full overflow-hidden transition-all duration-500 group border border-precision ${
             collapsed 
-              ? 'aspect-square rounded-[1.5rem] border-transparent hover:border-slate-200 hover:shadow-lg p-1' 
+              ? 'aspect-square rounded-[1.5rem] border-transparent hover:border-slate-200 dark:hover:border-slate-700 hover:shadow-lg p-1' 
               : 'p-3 rounded-[1.8rem] bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-indigo-100 dark:hover:border-indigo-900 hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.06)] flex items-center gap-4 text-left'
           } ${activeRoute === AppRoute.PROFILE ? 'ring-2 ring-indigo-500/20 border-indigo-500/30' : ''}`}
         >
@@ -148,7 +148,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           )}
           
           {!collapsed && (
-             <div className="opacity-0 group-hover:opacity-100 transition-opacity -ml-2 text-slate-300">
+             <div className="opacity-0 group-hover:opacity-100 transition-opacity -ml-2 text-slate-300 dark:text-slate-600">
                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" /></svg>
              </div>
           )}

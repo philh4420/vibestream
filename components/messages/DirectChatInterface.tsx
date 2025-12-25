@@ -295,9 +295,9 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
 
                 <div 
                   className={`
-                    p-4 md:p-5 rounded-[2rem] text-sm font-bold shadow-sm relative transition-all duration-300
+                    p-4 md:p-5 rounded-[2rem] text-sm font-medium shadow-sm relative transition-all duration-300
                     ${isMe 
-                      ? 'bg-slate-900 dark:bg-slate-700 text-white rounded-tr-sm shadow-xl shadow-slate-900/10 dark:shadow-slate-900/50' 
+                      ? 'bg-slate-900 dark:bg-slate-700 text-white rounded-tr-sm shadow-xl shadow-slate-900/10 dark:shadow-slate-900/30' 
                       : 'bg-white/90 dark:bg-slate-800/90 backdrop-blur-md text-slate-800 dark:text-slate-200 rounded-tl-sm border border-white/50 dark:border-slate-700 shadow-lg shadow-slate-200/50 dark:shadow-slate-900/30'
                     }
                   `}
@@ -313,7 +313,7 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
                     </div>
                   ))}
 
-                  <span className="leading-relaxed whitespace-pre-wrap">{msg.text}</span>
+                  <span className="leading-relaxed whitespace-pre-wrap font-bold">{msg.text}</span>
                   
                   <div className={`text-[8px] font-black uppercase mt-2 font-mono tracking-widest opacity-40 flex items-center gap-1 ${isMe ? 'justify-end text-white' : 'justify-start text-slate-500 dark:text-slate-400'}`}>
                     {msg.timestamp?.toDate ? msg.timestamp.toDate().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'SENDING'}
@@ -340,12 +340,12 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
                 ) : (
                   <img src={mediaPreview} className="h-16 w-16 object-cover rounded-xl border border-slate-200 dark:border-slate-700" alt="Preview" />
                 )}
-                <button onClick={clearMedia} className="absolute -top-2 -right-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-full p-1 shadow-md scale-90 hover:scale-100 transition-all">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
+                <button onClick={clearMedia} className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600 transition-colors">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
               <div>
-                <p className="text-[9px] font-black uppercase tracking-widest text-indigo-500 font-mono">Attachment_Ready</p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-indigo-500 font-mono">Payload_Ready</p>
                 <p className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate max-w-[150px]">{selectedFile?.name || 'GIF_FRAGMENT'}</p>
               </div>
             </div>
