@@ -174,6 +174,59 @@ const FeatureDisabledScreen = ({ featureName }: { featureName: string }) => (
   </div>
 );
 
+/**
+ * SCREEN 3: ACCOUNT SUSPENDED (Severe, Red, Final)
+ */
+const SuspendedScreen = ({ onLogout }: { onLogout: () => void }) => (
+  <div className="fixed inset-0 z-[9999] bg-[#050101] flex flex-col items-center justify-center overflow-hidden font-sans selection:bg-rose-500 selection:text-white">
+    
+    {/* Ambient Red Glow */}
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(220,38,38,0.15),transparent_70%)] animate-pulse-slow" />
+    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
+
+    <div className="relative z-10 flex flex-col items-center text-center p-8 max-w-2xl w-full">
+      
+      {/* Icon */}
+      <div className="w-32 h-32 bg-rose-500/10 rounded-full flex items-center justify-center mb-10 border border-rose-500/30 shadow-[0_0_60px_-20px_rgba(244,63,94,0.6)]">
+        <svg className="w-12 h-12 text-rose-500 drop-shadow-[0_0_10px_rgba(244,63,94,0.8)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+        </svg>
+      </div>
+
+      <h1 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter italic mb-6 leading-none">
+        Node<span className="text-rose-600">_</span>Suspended
+      </h1>
+      
+      <div className="px-6 py-2 bg-rose-950/50 border border-rose-500/30 rounded-lg mb-8">
+        <p className="text-xs font-bold text-rose-400 font-mono uppercase tracking-[0.2em]">Access_Protocol: DENIED</p>
+      </div>
+
+      <p className="text-slate-400 text-sm md:text-base font-medium leading-relaxed max-w-md mb-12">
+        Your connection to the grid has been terminated due to a violation of the VibeStream Core Protocols. This suspension is effective immediately.
+      </p>
+
+      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-sm">
+        <button 
+          onClick={onLogout}
+          className="flex-1 py-4 bg-white text-black rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-200 transition-all active:scale-95 shadow-xl"
+        >
+          Terminate_Session
+        </button>
+        <a 
+          href="mailto:appeals@vibestream.network"
+          className="flex-1 py-4 bg-rose-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-rose-700 transition-all active:scale-95 shadow-xl shadow-rose-900/50 flex items-center justify-center"
+        >
+          File_Appeal
+        </a>
+      </div>
+
+      <p className="absolute bottom-10 text-[9px] font-black text-rose-900/60 uppercase tracking-[0.5em] font-mono">
+        ERR_CODE: USER_BAN_0X99
+      </p>
+    </div>
+  </div>
+);
+
 export default function App() {
   const [user, setUser] = useState<any>(null);
   const [userData, setUserData] = useState<User | null>(null);
@@ -622,6 +675,11 @@ export default function App() {
         </div>
       </div>
     );
+  }
+
+  // SUSPENSION CHECK
+  if (userData?.isSuspended && user) {
+    return <SuspendedScreen onLogout={handleLogout} />;
   }
 
   // MAINTENANCE MODE CHECK (Bypass for Admins)
