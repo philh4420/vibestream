@@ -10,9 +10,10 @@ interface ProfileConnectionsSectionProps {
   userData: User;
   currentUser: User;
   onViewProfile: (user: User) => void;
+  addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-export const ProfileConnectionsSection: React.FC<ProfileConnectionsSectionProps> = ({ userData, currentUser, onViewProfile }) => {
+export const ProfileConnectionsSection: React.FC<ProfileConnectionsSectionProps> = ({ userData, currentUser, onViewProfile, addToast }) => {
   const [activeTab, setActiveTab] = useState<'followers' | 'following'>('followers');
   const [connections, setConnections] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +42,7 @@ export const ProfileConnectionsSection: React.FC<ProfileConnectionsSectionProps>
         }
       } catch (error) {
         console.error("Error fetching connections:", error);
+        addToast("Connection Sync Failed", "error");
       } finally {
         setLoading(false);
       }

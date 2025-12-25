@@ -21,6 +21,7 @@ import { ProfileHeader } from './ProfileHeader';
 import { ProfileTabs } from './ProfileTabs';
 import { CalibrationOverlay } from './CalibrationOverlay';
 import { ICONS } from '../../constants';
+import { DeleteConfirmationModal } from '../ui/DeleteConfirmationModal';
 
 // Modular Sections
 import { ProfileBroadcastingSection } from './sections/ProfileBroadcastingSection';
@@ -58,6 +59,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const [activeTab, setActiveTab] = useState<string>('broadcasting');
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
   const [profileData, setProfileData] = useState<User>(userData);
   const [isFollowing, setIsFollowing] = useState(false);
   const [isProcessingFollow, setIsProcessingFollow] = useState(false);
@@ -172,11 +174,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     }
   };
 
-  const handleBlock = async () => {
+  const handleBlockRequest = () => {
     if (!db || !currentUser || isOwnProfile) return;
-    const confirmed = window.confirm(`Block ${profileData.displayName}? This will hide their signals and sever connections.`);
-    if (!confirmed) return;
+    setShowBlockModal(true);
+  };
 
+  const executeBlock = async () => {
+    if (!db || !currentUser || isOwnProfile) return;
+    
     try {
       const batch = writeBatch(db);
       
@@ -193,8 +198,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       
       await batch.commit();
       addToast("Node Blocked. Redirecting...", "success");
+      // Optional: Navigate away or update UI state
     } catch (e) {
       addToast("Block Protocol Failed", "error");
+    } finally {
+      setShowBlockModal(false);
     }
   };
 
@@ -213,7 +221,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       case 'chronology':
         return <div className="max-w-[2560px] mx-auto"><ProfileChronologySection userData={profileData} locale={locale} /></div>;
       case 'connections':
-        return <div className="max-w-[2560px] mx-auto"><ProfileConnectionsSection userData={profileData} currentUser={userData} onViewProfile={onViewProfile} /></div>; 
+        return <div className="max-w-[2560px] mx-auto"><ProfileConnectionsSection userData={profileData} currentUser={userData} onViewProfile={onViewProfile} addToast={addToast} /></div>; 
       default:
         return (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-[2560px] mx-auto items-start">
@@ -275,7 +283,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         isFollowing={isFollowing}
         onFollowToggle={handleFollowToggle}
         onOpenSettings={onOpenSettings}
-        onBlock={handleBlock}
+        onBlock={handleBlockRequest}
       />
       
       {/* 2. Privacy Check */}
@@ -317,6 +325,16 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           onSave={handleUpdateIdentity} 
         />
       )}
+
+      {/* Block Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={showBlockModal}
+        title="BLOCK_NODE"
+        description={`Are you sure you want to block ${profileData.displayName}? This will hide their signals and sever all connections.`}
+        onConfirm={executeBlock}
+        onCancel={() => setShowBlockModal(false)}
+        confirmText="CONFIRM_BLOCK"
+      />
     </div>
   );
 };
