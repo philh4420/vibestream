@@ -43,7 +43,8 @@ export const VerifiedNodesPage: React.FC<VerifiedNodesPageProps> = ({ users, onV
     syncRelationships();
   }, []);
 
-  const handleFollow = async (targetUser: User) => {
+  const handleFollow = async (e: React.MouseEvent, targetUser: User) => {
+    e.stopPropagation();
     if (!auth.currentUser || !db || processingIds.has(targetUser.id)) return;
     const currentUser = auth.currentUser;
     const isFollowing = followingIds.has(targetUser.id);
@@ -149,12 +150,13 @@ export const VerifiedNodesPage: React.FC<VerifiedNodesPageProps> = ({ users, onV
            return (
              <div 
                key={user.id} 
-               className="group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[3rem] p-6 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)] dark:hover:shadow-black/20 hover:border-amber-200 dark:hover:border-amber-900 transition-all duration-500 relative flex flex-col animate-in fade-in slide-in-from-bottom-4"
+               onClick={() => onViewProfile(user)}
+               className="group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[3rem] p-6 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)] dark:hover:shadow-black/20 hover:border-amber-200 dark:hover:border-amber-900 transition-all duration-500 relative flex flex-col animate-in fade-in slide-in-from-bottom-4 cursor-pointer"
                style={{ animationDelay: `${idx * 50}ms` }}
              >
                 {/* Visual Header */}
                 <div className="flex items-start justify-between mb-6">
-                   <div className="flex items-center gap-4 cursor-pointer" onClick={() => onViewProfile(user)}>
+                   <div className="flex items-center gap-4">
                       <div className="relative">
                          <div className="p-1 bg-gradient-to-tr from-amber-200 to-yellow-500 rounded-[1.8rem] shadow-lg group-hover:scale-105 transition-transform duration-500">
                             <img src={user.avatarUrl} className="w-16 h-16 rounded-[1.6rem] object-cover border-2 border-white dark:border-slate-900 bg-slate-50 dark:bg-slate-800" alt="" />
@@ -172,7 +174,10 @@ export const VerifiedNodesPage: React.FC<VerifiedNodesPageProps> = ({ users, onV
                       </div>
                    </div>
                    
-                   <button onClick={() => onViewProfile(user)} className="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 border border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 rounded-2xl text-slate-300 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all active:scale-90">
+                   <button 
+                     onClick={(e) => { e.stopPropagation(); onViewProfile(user); }}
+                     className="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 border border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 rounded-2xl text-slate-300 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all active:scale-90"
+                   >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
                    </button>
                 </div>
@@ -200,7 +205,7 @@ export const VerifiedNodesPage: React.FC<VerifiedNodesPageProps> = ({ users, onV
                 <div className="mt-auto">
                    {!isMe && (
                      <button 
-                       onClick={() => handleFollow(user)}
+                       onClick={(e) => handleFollow(e, user)}
                        disabled={isProcessing}
                        className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-sm active:scale-95 disabled:opacity-50 ${
                          isFollowing 

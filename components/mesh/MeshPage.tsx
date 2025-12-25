@@ -88,7 +88,8 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
     fetchGraphData();
   }, [activeTab, currentUser.id]);
 
-  const handleToggleFollow = async (targetUser: User) => {
+  const handleToggleFollow = async (e: React.MouseEvent, targetUser: User) => {
+    e.stopPropagation();
     if (!db || !currentUser.id) return;
     
     const isFollowing = myFollowingIds.has(targetUser.id);
@@ -262,7 +263,8 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
                return (
                  <div 
                    key={user.id} 
-                   className="group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] p-5 hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] dark:hover:shadow-black/20 hover:border-indigo-100 dark:hover:border-indigo-900 transition-all duration-300 relative flex flex-col overflow-hidden"
+                   onClick={() => onViewProfile(user)}
+                   className="group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] p-5 hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] dark:hover:shadow-black/20 hover:border-indigo-100 dark:hover:border-indigo-900 transition-all duration-300 relative flex flex-col overflow-hidden cursor-pointer"
                    style={{ animationDelay: `${idx * 50}ms` }}
                  >
                     {/* Decorative Top Line */}
@@ -298,7 +300,7 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
                     <div className="mt-auto flex gap-2">
                        {!isMe && (
                          <button 
-                           onClick={() => handleToggleFollow(user)}
+                           onClick={(e) => handleToggleFollow(e, user)}
                            disabled={isProcessing}
                            className={`flex-1 py-3 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 disabled:opacity-50 ${
                              isFollowing 
@@ -310,7 +312,7 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
                          </button>
                        )}
                        <button 
-                         onClick={() => onViewProfile(user)} 
+                         onClick={(e) => { e.stopPropagation(); onViewProfile(user); }}
                          className="p-3 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl text-slate-300 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-white hover:border-indigo-100 dark:hover:border-indigo-900 transition-all active:scale-90 shadow-sm"
                        >
                           <ICONS.Profile />

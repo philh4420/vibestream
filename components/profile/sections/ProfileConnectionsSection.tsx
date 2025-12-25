@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, Region } from '../../../types';
+import { User } from '../../../types';
 import { db } from '../../../services/firebase';
 import * as Firestore from 'firebase/firestore';
 const { collection, getDocs, doc, getDoc } = Firestore as any;
