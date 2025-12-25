@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
 const { 
@@ -234,7 +235,7 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
       <div className="absolute top-4 left-4 right-4 z-20">
         <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/50 dark:border-slate-700 rounded-[2rem] p-3 shadow-sm flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button onClick={onBack} className="w-10 h-10 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-2xl flex items-center justify-center transition-all active:scale-90 border border-slate-100 dark:border-slate-700">
+            <button onClick={onBack} className="w-10 h-10 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-2xl flex items-center justify-center transition-all active:scale-90 border border-slate-100 dark:border-slate-700 shadow-sm">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3.5}><path d="M15 19l-7-7 7-7" /></svg>
             </button>
             
@@ -393,15 +394,16 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
       {/* Hidden Pickers & Inputs */}
       <input type="file" ref={fileInputRef} className="hidden" accept="image/*,video/*,.heic,.heif,.avif,.webp" onChange={handleFileSelect} />
       
-      {/* FIXED POSITION PICKERS */}
-      {(isEmojiPickerOpen || isGiphyPickerOpen) && (
-        <div className="fixed bottom-24 left-4 z-[3000] animate-in slide-in-from-bottom-4 zoom-in-95 duration-300 origin-bottom-left">
-           {isEmojiPickerOpen && <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />}
-           {isGiphyPickerOpen && <GiphyPicker onSelect={handleGifSelect} onClose={() => setIsGiphyPickerOpen(false)} />}
-        </div>
-      )}
-      {(isEmojiPickerOpen || isGiphyPickerOpen) && (
-        <div className="fixed inset-0 z-[2900] bg-transparent" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />
+      {/* FIXED POSITION PICKERS (Use Portal to break stacking context) */}
+      {(isEmojiPickerOpen || isGiphyPickerOpen) && createPortal(
+        <>
+          <div className="fixed inset-0 z-[9990] bg-transparent" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />
+          <div className="fixed bottom-24 left-4 z-[9999] animate-in slide-in-from-bottom-4 zoom-in-95 duration-300 origin-bottom-left">
+             {isEmojiPickerOpen && <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />}
+             {isGiphyPickerOpen && <GiphyPicker onSelect={handleGifSelect} onClose={() => setIsGiphyPickerOpen(false)} />}
+          </div>
+        </>,
+        document.body
       )}
 
       <DeleteConfirmationModal 

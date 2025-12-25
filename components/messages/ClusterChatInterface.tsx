@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
 const { 
@@ -511,7 +512,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
                 value={newMessage} 
                 onChange={(e) => setNewMessage(e.target.value)} 
                 placeholder="Broadcast to cluster..." 
-                className="flex-1 bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700 rounded-[2rem] px-6 py-4 text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-4 focus:ring-indigo-500/5 focus:bg-white dark:focus:bg-slate-900 focus:border-indigo-500 transition-all outline-none shadow-inner" 
+                className="flex-1 bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700 rounded-[2.2rem] px-6 py-4 text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-4 focus:ring-indigo-500/5 focus:bg-white dark:focus:bg-slate-900 focus:border-indigo-500 transition-all outline-none shadow-inner" 
               />
               
               <button 
@@ -630,14 +631,16 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
       {/* Hidden Inputs & Modals */}
       <input type="file" ref={fileInputRef} className="hidden" accept="image/*,video/*,.heic,.heif,.avif,.webp" onChange={handleFileSelect} />
       
-      {(isEmojiPickerOpen || isGiphyPickerOpen) && (
-        <div className="fixed bottom-24 left-4 z-[3000] animate-in slide-in-from-bottom-4 zoom-in-95 duration-300 origin-bottom-left">
-           {isEmojiPickerOpen && <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />}
-           {isGiphyPickerOpen && <GiphyPicker onSelect={handleGifSelect} onClose={() => setIsGiphyPickerOpen(false)} />}
-        </div>
-      )}
-      {(isEmojiPickerOpen || isGiphyPickerOpen) && (
-        <div className="fixed inset-0 z-[2900] bg-transparent" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />
+      {/* FIXED POSITION PICKERS (Use Portal to break stacking context) */}
+      {(isEmojiPickerOpen || isGiphyPickerOpen) && createPortal(
+        <>
+          <div className="fixed inset-0 z-[9990] bg-transparent" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />
+          <div className="fixed bottom-24 left-4 z-[9999] animate-in slide-in-from-bottom-4 zoom-in-95 duration-300 origin-bottom-left font-sans">
+             {isEmojiPickerOpen && <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />}
+             {isGiphyPickerOpen && <GiphyPicker onSelect={handleGifSelect} onClose={() => setIsGiphyPickerOpen(false)} />}
+          </div>
+        </>,
+        document.body
       )}
 
       {/* INVITE MODAL */}

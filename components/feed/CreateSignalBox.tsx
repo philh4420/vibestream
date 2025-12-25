@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { User } from '../../types';
 import { ICONS } from '../../constants';
 import { db } from '../../services/firebase';
@@ -266,15 +267,16 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         </div>
       )}
 
-      {/* FIXED PICKERS (Z-Index fix for clipping issues) */}
-      {(showEmojiPicker || showGifPicker) && (
-        <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4 animate-in fade-in duration-200">
+      {/* FIXED PICKERS VIA PORTAL */}
+      {(showEmojiPicker || showGifPicker) && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="absolute inset-0 bg-transparent" onClick={() => { setShowEmojiPicker(false); setShowGifPicker(false); }} />
           <div className="relative animate-in zoom-in-95 duration-300">
             {showEmojiPicker && <EmojiPicker onSelect={handleEmojiSelect} onClose={() => setShowEmojiPicker(false)} />}
             {showGifPicker && <GiphyPicker onSelect={handleGifSelect} onClose={() => setShowGifPicker(false)} />}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Hidden File Input */}

@@ -1,4 +1,6 @@
+
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
 const { 
@@ -373,7 +375,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId, currentUse
               value={newMessage} 
               onChange={(e) => setNewMessage(e.target.value)} 
               placeholder={selectedFile ? "Add a caption..." : "Establish broadcast sequence..."} 
-              className="w-full bg-slate-100/80 border border-slate-200 rounded-[2.2rem] pl-6 pr-6 py-4 md:py-5 text-sm font-bold focus:ring-4 focus:ring-indigo-500/5 focus:bg-white focus:border-indigo-500 transition-all outline-none italic placeholder:text-slate-400 shadow-inner" 
+              className="w-full bg-slate-100/80 border border-slate-200 rounded-[2.2rem] pl-6 pr-6 py-4 md:py-5 text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/5 focus:bg-white focus:border-indigo-500 transition-all outline-none italic placeholder:text-slate-400 shadow-inner" 
             />
           </div>
           
@@ -394,14 +396,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId, currentUse
       <input type="file" ref={fileInputRef} className="hidden" accept="image/*,video/*,.heic,.heif,.avif,.webp" onChange={handleFileSelect} />
       
       {/* FIXED POSITION PICKERS */}
-      {(isEmojiPickerOpen || isGiphyPickerOpen) && (
-        <div className="fixed bottom-24 left-4 z-[3000] animate-in slide-in-from-bottom-4 zoom-in-95 duration-300 origin-bottom-left">
-           {isEmojiPickerOpen && <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />}
-           {isGiphyPickerOpen && <GiphyPicker onSelect={handleGifSelect} onClose={() => setIsGiphyPickerOpen(false)} />}
-        </div>
-      )}
-      {(isEmojiPickerOpen || isGiphyPickerOpen) && (
-        <div className="fixed inset-0 z-[2900] bg-transparent" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />
+      {(isEmojiPickerOpen || isGiphyPickerOpen) && createPortal(
+        <>
+          <div className="fixed inset-0 z-[9990] bg-transparent" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />
+          <div className="fixed bottom-24 left-4 z-[9999] animate-in slide-in-from-bottom-4 zoom-in-95 duration-300 origin-bottom-left">
+             {isEmojiPickerOpen && <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />}
+             {isGiphyPickerOpen && <GiphyPicker onSelect={handleGifSelect} onClose={() => setIsGiphyPickerOpen(false)} />}
+          </div>
+        </>,
+        document.body
       )}
 
       <DeleteConfirmationModal 

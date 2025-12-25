@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
 const { 
@@ -247,14 +248,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
         )}
       </div>
 
-      {/* Input Overlay Backdrop */}
-      {(isEmojiPickerOpen || isGiphyPickerOpen) && (
-        <div 
-          className="fixed inset-0 z-[2900] bg-transparent animate-in fade-in duration-300"
-          onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }}
-        />
-      )}
-
       {/* Comment Form */}
       <form onSubmit={handleSubmitComment} className="flex flex-col gap-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-[2rem] border border-slate-100 dark:border-slate-800 relative group/input focus-within:border-indigo-200 dark:focus-within:border-indigo-800 focus-within:ring-4 focus-within:ring-indigo-500/5 transition-all">
         {replyingTo && (
@@ -328,12 +321,16 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, userData
       {/* Hidden Inputs */}
       <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} accept="image/*,video/*" />
 
-      {/* FIXED POSITION PICKERS (Z-Index Fix) */}
-      {(isEmojiPickerOpen || isGiphyPickerOpen) && (
-        <div className="fixed bottom-24 left-4 z-[3000] animate-in slide-in-from-bottom-4 zoom-in-95 duration-300 origin-bottom-left">
-          {isEmojiPickerOpen && <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />}
-          {isGiphyPickerOpen && <GiphyPicker onSelect={handleGifSelect} onClose={() => setIsGiphyPickerOpen(false)} />}
-        </div>
+      {/* FIXED POSITION PICKERS (Use Portal to break stacking context) */}
+      {(isEmojiPickerOpen || isGiphyPickerOpen) && createPortal(
+        <>
+          <div className="fixed inset-0 z-[9990] bg-transparent" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />
+          <div className="fixed bottom-24 left-4 z-[9999] animate-in slide-in-from-bottom-4 zoom-in-95 duration-300 origin-bottom-left font-sans">
+              {isEmojiPickerOpen && <EmojiPicker onSelect={insertEmoji} onClose={() => setIsEmojiPickerOpen(false)} />}
+              {isGiphyPickerOpen && <GiphyPicker onSelect={handleGifSelect} onClose={() => setIsGiphyPickerOpen(false)} />}
+          </div>
+        </>,
+        document.body
       )}
 
     </div>
