@@ -9,7 +9,9 @@ const {
   doc, 
   orderBy, 
   limit, 
-  onSnapshot 
+  onSnapshot,
+  addDoc,
+  serverTimestamp
 } = Firestore as any;
 import { Post, User, SystemSettings, AppRoute, Region } from '../../types';
 
@@ -73,6 +75,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale, system
     try {
       await setDoc(doc(db, 'users', userId), updates, { merge: true });
       addToast(`Node ${userId.slice(0, 5)} updated`, 'success');
+
+      // Send System Notification
+      let notifText = '';
+      if (updates.verifiedHuman !== undefined) {
+          notifText = updates.verifiedHuman 
+            ? 'Your neural node has been officially verified by Citadel Command.' 
+            : 'Verification badge has been revoked from your node.';
+      } else if (updates.role) {
+          notifText = `Your security clearance has been updated to: ${updates.role.toUpperCase()}`;
+      } else if (updates.isSuspended !== undefined) {
+          notifText = updates.isSuspended
+            ? 'Your node has been suspended for protocol violation.'
+            : 'Suspension lifted. Grid access restored.';
+      }
+
+      if (notifText) {
+          await addDoc(collection(db, 'notifications'), {
+              type: 'system',
+              fromUserId: 'SYSTEM',
+              fromUserName: 'Citadel Admin',
+              fromUserAvatar: '', 
+              toUserId: userId,
+              text: notifText,
+              isRead: false,
+              timestamp: serverTimestamp(),
+              pulseFrequency: 'resilience'
+          });
+      }
+
     } catch (e) {
       addToast('Update failed: Node authority clash', 'error');
     }

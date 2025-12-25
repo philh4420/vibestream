@@ -9,7 +9,10 @@ const {
   onSnapshot, 
   doc, 
   updateDoc, 
-  deleteDoc 
+  deleteDoc,
+  addDoc,
+  serverTimestamp,
+  getDoc 
 } = Firestore as any;
 import { ICONS } from '../../constants';
 import { DeleteConfirmationModal } from '../ui/DeleteConfirmationModal';
@@ -93,10 +96,26 @@ export const AdminSupport: React.FC<AdminSupportProps> = ({ addToast }) => {
     return () => unsub();
   }, []);
 
-  const handleUpdateStatus = async (id: string, newStatus: string) => {
+  const handleUpdateStatus = async (ticket: Ticket, newStatus: string) => {
     try {
-      await updateDoc(doc(db, 'support_tickets', id), { status: newStatus });
+      await updateDoc(doc(db, 'support_tickets', ticket.id), { status: newStatus });
       addToast(`Ticket marked as ${newStatus.toUpperCase()}`, 'success');
+
+      // Send Notification to User
+      if (ticket.userId) {
+          await addDoc(collection(db, 'notifications'), {
+              type: 'system',
+              fromUserId: 'SYSTEM',
+              fromUserName: 'Citadel Support',
+              fromUserAvatar: '', // System avatar handled by UI usually, or leave empty
+              toUserId: ticket.userId,
+              targetId: ticket.id,
+              text: `Your support ticket #${ticket.id.slice(0,4)} status has been updated to: ${newStatus.toUpperCase()}`,
+              isRead: false,
+              timestamp: serverTimestamp(),
+              pulseFrequency: 'resilience'
+          });
+      }
     } catch (e) {
       addToast("Status update failed", "error");
     }
@@ -117,8 +136,6 @@ export const AdminSupport: React.FC<AdminSupportProps> = ({ addToast }) => {
   const filteredTickets = tickets.filter(t => {
     if (filter === 'resolved') return t.status === 'resolved';
     if (filter === 'appeals') return t.category === 'appeal' && t.status !== 'resolved';
-    // Active includes everything open/escalated EXCEPT appeals (to keep the active queue clean for standard support)
-    // Or we can include appeals in active. Let's exclude appeals from 'active' so they have their own focused tab.
     return (t.status === 'open' || t.status === 'escalated') && t.category !== 'appeal';
   });
 
@@ -250,14 +267,14 @@ export const AdminSupport: React.FC<AdminSupportProps> = ({ addToast }) => {
                        {ticket.status !== 'resolved' ? (
                           <>
                              <button 
-                                onClick={() => handleUpdateStatus(ticket.id, 'resolved')}
+                                onClick={() => handleUpdateStatus(ticket, 'resolved')}
                                 className="flex-1 py-3 bg-emerald-500 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
                              >
                                 <ICONS.Verified /> {ticket.category === 'appeal' ? 'APPROVE_LIFT' : 'RESOLVE'}
                              </button>
                              {ticket.status !== 'escalated' && ticket.category !== 'appeal' && (
                                 <button 
-                                   onClick={() => handleUpdateStatus(ticket.id, 'escalated')}
+                                   onClick={() => handleUpdateStatus(ticket, 'escalated')}
                                    className="px-4 py-3 bg-rose-50 dark:bg-rose-900/30 text-rose-500 dark:text-rose-400 border border-rose-100 dark:border-rose-800 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-all active:scale-95"
                                 >
                                    Escalate
@@ -266,7 +283,7 @@ export const AdminSupport: React.FC<AdminSupportProps> = ({ addToast }) => {
                           </>
                        ) : (
                           <button 
-                             onClick={() => handleUpdateStatus(ticket.id, 'open')}
+                             onClick={() => handleUpdateStatus(ticket, 'open')}
                              className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-95"
                           >
                              Re-Open

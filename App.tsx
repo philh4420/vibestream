@@ -251,9 +251,6 @@ export default function App() {
              // Play sound if new unread notification arrives (and it's not the initial load or duplicate)
              if (latestNotifIdRef.current && latest.id !== latestNotifIdRef.current && !latest.isRead) {
                  notificationSoundRef.current?.play().catch(() => {});
-                 // Optional: Trigger toast from here if needed, but the notifications page usually handles listing.
-                 // We can invoke addToast if desired, but we can't easily access the addToast function from this closure if it depends on state.
-                 // Instead, relying on the sound for now.
              }
              latestNotifIdRef.current = latest.id;
           }
@@ -391,9 +388,117 @@ export default function App() {
     }
   };
 
-  const handleLike = async (postId: string) => { /* ... */ };
-  const handleBookmark = async (postId: string) => { /* ... */ };
-  const handleRSVP = async (gatheringId: string, isAttendingOrWaitlisted: boolean) => { /* ... */ };
+  // --- GLOBAL INTERACTIONS ---
+
+  const handleLike = async (postId: string, frequency: string = 'pulse') => {
+    if (!userData || !db) return;
+    try {
+        const postRef = doc(db, 'posts', postId);
+        // Find post author from global data if available, otherwise fetch
+        let postAuthorId = globalPosts.find(p => p.id === postId)?.authorId;
+        
+        if (!postAuthorId) {
+            const snap = await getDoc(postRef);
+            if (snap.exists()) postAuthorId = snap.data().authorId;
+        }
+
+        const post = globalPosts.find(p => p.id === postId);
+        const isLiked = post?.likedBy?.includes(userData.id);
+
+        if (isLiked) {
+            await updateDoc(postRef, {
+                likes: increment(-1),
+                likedBy: arrayRemove(userData.id)
+            });
+        } else {
+            await updateDoc(postRef, {
+                likes: increment(1),
+                likedBy: arrayUnion(userData.id),
+                [`reactions.${frequency}`]: increment(1)
+            });
+
+            // Send Notification
+            if (postAuthorId && postAuthorId !== userData.id) {
+                await addDoc(collection(db, 'notifications'), {
+                    type: 'like',
+                    fromUserId: userData.id,
+                    fromUserName: userData.displayName,
+                    fromUserAvatar: userData.avatarUrl,
+                    toUserId: postAuthorId,
+                    targetId: postId,
+                    text: 'pulsed your signal',
+                    pulseFrequency: frequency,
+                    isRead: false,
+                    timestamp: serverTimestamp()
+                });
+            }
+        }
+    } catch (e) {
+        console.error("Like interaction failed", e);
+    }
+  };
+
+  const handleBookmark = async (postId: string) => {
+    if (!userData || !db) return;
+    try {
+        const postRef = doc(db, 'posts', postId);
+        const post = globalPosts.find(p => p.id === postId);
+        // Check if bookmarked in local state or optimistic update
+        const isBookmarked = post?.bookmarkedBy?.includes(userData.id);
+
+        if (isBookmarked) {
+            await updateDoc(postRef, { bookmarkedBy: arrayRemove(userData.id) });
+            addToast("Removed from Data Vault", "info");
+        } else {
+            await updateDoc(postRef, { bookmarkedBy: arrayUnion(userData.id) });
+            addToast("Encrypted to Data Vault", "success");
+        }
+    } catch (e) {
+        addToast("Vault Protocol Failed", "error");
+    }
+  };
+
+  const handleRSVP = async (gatheringId: string, currentStatus: boolean) => {
+    if (!userData || !db) return;
+    try {
+        const gRef = doc(db, 'gatherings', gatheringId);
+        const gSnap = await getDoc(gRef);
+        if (!gSnap.exists()) return;
+        const gData = gSnap.data() as Gathering;
+
+        if (currentStatus) {
+            // Leaving (attendee or waitlist)
+            await updateDoc(gRef, {
+                attendees: arrayRemove(userData.id),
+                waitlist: arrayRemove(userData.id)
+            });
+            addToast("Withdrawn from Gathering", "info");
+        } else {
+            // Joining
+            await updateDoc(gRef, {
+                attendees: arrayUnion(userData.id)
+            });
+            addToast("RSVP Confirmed", "success");
+
+            if (gData.organizerId !== userData.id) {
+                await addDoc(collection(db, 'notifications'), {
+                    type: 'gathering_rsvp',
+                    fromUserId: userData.id,
+                    fromUserName: userData.displayName,
+                    fromUserAvatar: userData.avatarUrl,
+                    toUserId: gData.organizerId,
+                    targetId: gatheringId,
+                    text: `is attending your gathering: "${gData.title}"`,
+                    isRead: false,
+                    timestamp: serverTimestamp(),
+                    pulseFrequency: 'intensity'
+                });
+            }
+        }
+    } catch (e) {
+        addToast("RSVP Protocol Failed", "error");
+    }
+  };
 
   const isFeatureEnabled = (route: AppRoute) => {
     if (userData?.role === 'admin') return true;
@@ -503,6 +608,8 @@ export default function App() {
               onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
               onViewProfile={(u) => { setSelectedUserProfile(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }}
               onOpenSettings={() => setIsSettingsOpen(true)}
+              onLike={handleLike}
+              onBookmark={handleBookmark}
               blockedIds={blockedIds}
             />
         )}
@@ -516,6 +623,8 @@ export default function App() {
              sessionStartTime={Date.now()}
              onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
              onViewProfile={(u) => { setSelectedUserProfile(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }}
+             onLike={handleLike}
+             onBookmark={handleBookmark}
              blockedIds={blockedIds}
              isBlocked={blockedIds.has(selectedUserProfile.id)}
              onBlock={() => handleBlockUser(selectedUserProfile.id)}

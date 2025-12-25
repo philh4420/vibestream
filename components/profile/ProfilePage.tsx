@@ -123,6 +123,21 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         batch.set(theirRef, { linkedAt: serverTimestamp() });
         batch.update(doc(db, 'users', currentUser.uid), { following: increment(1) });
         batch.update(doc(db, 'users', userData.id), { followers: increment(1) });
+        
+        // Notification
+        const notifRef = doc(collection(db, 'notifications'));
+        batch.set(notifRef, {
+          type: 'follow',
+          fromUserId: currentUser.uid,
+          fromUserName: currentUser.displayName || 'Unknown Node',
+          fromUserAvatar: currentUser.photoURL || '',
+          toUserId: userData.id,
+          text: 'established a neural link with you',
+          isRead: false,
+          timestamp: serverTimestamp(),
+          pulseFrequency: 'cognition'
+        });
+
         setIsFollowing(true);
     }
     await batch.commit();

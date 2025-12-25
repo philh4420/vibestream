@@ -8,12 +8,14 @@ const {
   doc, 
   onSnapshot, 
   updateDoc, 
+  setDoc,
   addDoc, 
   serverTimestamp, 
   query, 
   orderBy, 
   limit,
-  increment
+  increment,
+  getDocs
 } = Firestore as any;
 import { User } from '../../types';
 import { ICONS } from '../../constants';
@@ -53,7 +55,9 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
   const [hwStatus, setHwStatus] = useState<'checking' | 'ready' | 'failed'>('checking');
   const [messages, setMessages] = useState<StreamMessage[]>([]);
   const [showChat, setShowChat] = useState(true);
-  const [chatInput, setChatInput] = useState(''); // Broadcaster chat input
+  const [chatInput, setChatInput] = useState(''); 
+  const [isLive, setIsLive] = useState(false); // Internal state to manage Pre-flight vs Live
+  const [isStarting, setIsStarting] = useState(false);
   
   // Archive Modal State
   const [showEndDialog, setShowEndDialog] = useState(false);
@@ -95,9 +99,61 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
     };
   }, []);
 
+  // START STREAM LOGIC
+  const handleStartStream = async () => {
+    if (!streamTitle.trim() || !activeStreamId || !db) return;
+    setIsStarting(true);
+
+    try {
+        // 1. Create Stream Document
+        await setDoc(doc(db, 'streams', activeStreamId), {
+            authorId: userData.id,
+            authorName: userData.displayName,
+            authorAvatar: userData.avatarUrl,
+            title: streamTitle,
+            viewerCount: 0,
+            startedAt: serverTimestamp(),
+            status: 'live',
+            thumbnailUrl: userData.avatarUrl // Placeholder until actual thumb capture
+        });
+
+        // 2. Notify Followers
+        const followersRef = collection(db, 'users', userData.id, 'followers');
+        const followersSnap = await getDocs(followersRef);
+        
+        if (!followersSnap.empty) {
+            const batch = Firestore.writeBatch(db);
+            followersSnap.docs.forEach((followerDoc: any) => {
+                const notifRef = doc(collection(db, 'notifications'));
+                batch.set(notifRef, {
+                    type: 'broadcast',
+                    fromUserId: userData.id,
+                    fromUserName: userData.displayName,
+                    fromUserAvatar: userData.avatarUrl,
+                    toUserId: followerDoc.id,
+                    targetId: activeStreamId,
+                    text: `is broadcasting live: "${streamTitle}"`,
+                    isRead: false,
+                    timestamp: serverTimestamp(),
+                    pulseFrequency: 'velocity'
+                });
+            });
+            await batch.commit();
+        }
+
+        setIsLive(true);
+        onStart(streamTitle);
+    } catch (e) {
+        console.error("Stream Start Failed", e);
+        window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Broadcast Init Failed", type: 'error' } }));
+    } finally {
+        setIsStarting(false);
+    }
+  };
+
   // Live Logic & Recording
   useEffect(() => {
-    if (activeStreamId && db) {
+    if (isLive && activeStreamId && db) {
       const timerInt = window.setInterval(() => setTimer(prev => prev + 1), 1000);
       
       // Start Recording
@@ -109,14 +165,9 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
           if (e.data.size > 0) chunksRef.current.push(e.data);
         };
         
-        recorder.start(1000); // Collect chunks every second
+        recorder.start(1000); 
         mediaRecorderRef.current = recorder;
       }
-
-      // 1. Increment Viewer Count (Broadcaster Presence)
-      updateDoc(doc(db, 'streams', activeStreamId), {
-        viewerCount: increment(1)
-      }).catch((err: any) => console.error("Broadcaster presence sync failed", err));
 
       // WebRTC Connection Handling
       const connectionsRef = collection(db, 'streams', activeStreamId, 'connections');
@@ -145,20 +196,17 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
 
       return () => { 
         clearInterval(timerInt);
-        // Stop recording
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
           mediaRecorderRef.current.stop();
         }
         
-        // 2. Decrement Viewer Count on Exit
-        updateDoc(doc(db, 'streams', activeStreamId), {
-          viewerCount: increment(-1)
-        }).catch((err: any) => {});
+        // Cleanup Stream Doc
+        updateDoc(doc(db, 'streams', activeStreamId), { status: 'ended' }).catch(() => {});
         
         unsubConns(); unsubMeta(); unsubChat();
       };
     }
-  }, [activeStreamId]);
+  }, [isLive, activeStreamId]);
 
   const setupPeer = async (id: string, offer: any, streamId: string) => {
     if (!streamRef.current) return;
@@ -207,23 +255,20 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
 
     if (activeStreamId && chunksRef.current.length > 0) {
       try {
-        // 1. Compile Blob
         const blob = new Blob(chunksRef.current, { type: 'video/webm' });
         const file = new File([blob], `broadcast_${activeStreamId}.webm`, { type: 'video/webm' });
         
-        // 2. Upload to Cloudinary
         setArchiveProgress('Uploading to Neural Cloud...');
         const videoUrl = await uploadToCloudinary(file);
         
-        // 3. Create Story Entry
         const durationStr = `${Math.floor(timer/60)}:${(timer%60).toString().padStart(2, '0')}`;
         await addDoc(collection(db, 'stories'), {
           authorId: userData.id,
           authorName: userData.displayName,
           authorAvatar: userData.avatarUrl,
-          coverUrl: videoUrl, // Use the uploaded video URL
+          coverUrl: videoUrl,
           timestamp: serverTimestamp(),
-          type: 'video', // Correctly set as video
+          type: 'video',
           isArchivedStream: true,
           streamTitle: streamTitle || 'Untitled Signal',
           streamStats: {
@@ -246,8 +291,6 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
     setArchiveProgress('');
     onEnd(); 
   };
-
-  const isLive = !!activeStreamId;
 
   // Render to Body (Portal)
   return createPortal(
@@ -296,11 +339,16 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
                  </div>
                  
                  <button 
-                   disabled={!streamTitle.trim() || hwStatus !== 'ready'}
-                   onClick={() => onStart(streamTitle)}
-                   className="w-full py-5 bg-white text-black rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-rose-500 hover:text-white hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+                   disabled={!streamTitle.trim() || hwStatus !== 'ready' || isStarting}
+                   onClick={handleStartStream}
+                   className="w-full py-5 bg-white text-black rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-rose-500 hover:text-white hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
                  >
-                   GO_LIVE
+                   {isStarting ? (
+                     <>
+                        <div className="w-4 h-4 border-2 border-slate-300 border-t-black rounded-full animate-spin" />
+                        INITIALIZING...
+                     </>
+                   ) : 'GO_LIVE'}
                  </button>
               </div>
            </div>
