@@ -12,13 +12,13 @@ export const SettingsAppearance: React.FC<SettingsAppearanceProps> = ({ settings
   const Toggle = ({ label, checked, onChange, description }: { label: string, checked: boolean, onChange: () => void, description?: string }) => (
     <div 
       onClick={onChange}
-      className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 hover:border-indigo-100 transition-all group cursor-pointer active:scale-[0.99]"
+      className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 hover:border-indigo-100 dark:hover:border-indigo-900 transition-all group cursor-pointer active:scale-[0.99]"
     >
       <div className="flex flex-col pr-4">
-        <span className="text-xs font-bold text-slate-900 group-hover:text-indigo-900 transition-colors">{label}</span>
-        {description && <span className="text-[9px] font-medium text-slate-400 mt-0.5 leading-tight">{description}</span>}
+        <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-indigo-900 dark:group-hover:text-indigo-400 transition-colors">{label}</span>
+        {description && <span className="text-[9px] font-medium text-slate-400 dark:text-slate-500 mt-0.5 leading-tight">{description}</span>}
       </div>
-      <div className={`w-11 h-6 rounded-full p-1 transition-all duration-300 relative shrink-0 ${checked ? 'bg-indigo-600' : 'bg-slate-200'}`}>
+      <div className={`w-11 h-6 rounded-full p-1 transition-all duration-300 relative shrink-0 ${checked ? 'bg-indigo-600 dark:bg-indigo-500' : 'bg-slate-200 dark:bg-slate-600'}`}>
         <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-300 absolute top-1 ${checked ? 'left-[22px]' : 'left-1'}`} />
       </div>
     </div>
@@ -28,8 +28,8 @@ export const SettingsAppearance: React.FC<SettingsAppearanceProps> = ({ settings
     <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
       <div>
         <div className="mb-6 pl-1">
-          <h3 className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] font-mono mb-1">Visual_Engine</h3>
-          <p className="text-lg font-black text-slate-900 italic tracking-tight">Interface Calibration</p>
+          <h3 className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-[0.3em] font-mono mb-1">Visual_Engine</h3>
+          <p className="text-lg font-black text-slate-900 dark:text-white italic tracking-tight">Interface Calibration</p>
         </div>
         <div className="grid grid-cols-3 gap-3 mb-8">
           {['system', 'light', 'dark'].map((theme) => (
@@ -38,8 +38,8 @@ export const SettingsAppearance: React.FC<SettingsAppearanceProps> = ({ settings
               onClick={() => handleChange('appearance', 'theme', theme)}
               className={`py-6 rounded-[2rem] text-[10px] font-black uppercase tracking-widest border transition-all active:scale-95 ${
                 settings.appearance.theme === theme 
-                  ? 'bg-indigo-50 border-indigo-600 text-indigo-700 shadow-inner' 
-                  : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'
+                  ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-600 dark:border-indigo-500 text-indigo-700 dark:text-indigo-300 shadow-inner' 
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:border-slate-300 dark:hover:border-slate-600'
               }`}
             >
               {theme}
@@ -49,7 +49,7 @@ export const SettingsAppearance: React.FC<SettingsAppearanceProps> = ({ settings
       </div>
 
       <div className="space-y-3">
-        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono pl-2 mb-2">Accessibility_&_Motion</h4>
+        <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono pl-2 mb-2">Accessibility_&_Motion</h4>
         <Toggle 
           label="Reduced Motion" 
           description="Minimize interface animations and parallax effects."

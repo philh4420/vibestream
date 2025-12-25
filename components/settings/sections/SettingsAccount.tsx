@@ -39,7 +39,7 @@ export const SettingsAccount: React.FC<SettingsAccountProps> = ({ userData, onLo
 
   const executeDeactivation = async () => {
     setIsProcessing(true);
-    setShowDeactivateModal(false); // Close modal immediately to show processing state in button if needed, or keep open. Better to close and show toast.
+    setShowDeactivateModal(false); 
     
     try {
       await updateDoc(doc(db, 'users', userData.id), {
@@ -61,7 +61,8 @@ export const SettingsAccount: React.FC<SettingsAccountProps> = ({ userData, onLo
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
-      <div className="p-8 rounded-[2.5rem] bg-slate-900 text-white shadow-xl relative overflow-hidden group">
+      {/* Profile Card - Keeping dark style for contrast, adjusting border for dark mode */}
+      <div className="p-8 rounded-[2.5rem] bg-slate-900 dark:bg-black text-white shadow-xl relative overflow-hidden group border border-transparent dark:border-slate-800">
         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 blur-[80px] rounded-full translate-x-1/3 -translate-y-1/3" />
         <div className="relative z-10 flex items-center gap-6">
           <div className="relative">
@@ -83,44 +84,44 @@ export const SettingsAccount: React.FC<SettingsAccountProps> = ({ userData, onLo
 
       <div>
         <div className="mb-6 pl-1">
-          <h3 className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] font-mono mb-1">Security_Protocol</h3>
-          <p className="text-lg font-black text-slate-900 italic tracking-tight">Credentials & Access</p>
+          <h3 className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-[0.3em] font-mono mb-1">Security_Protocol</h3>
+          <p className="text-lg font-black text-slate-900 dark:text-white italic tracking-tight">Credentials & Access</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button 
             onClick={handleTwoFactorToggle}
-            className="p-6 rounded-[2rem] border border-slate-200 hover:border-indigo-200 bg-white hover:shadow-lg transition-all text-left group active:scale-[0.98]"
+            className="p-6 rounded-[2rem] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-lg transition-all text-left group active:scale-[0.98]"
           >
-            <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <ICONS.Admin />
             </div>
-            <p className="text-xs font-black text-slate-900 uppercase tracking-wide mb-1">2-Factor Auth</p>
-            <p className="text-[10px] text-slate-500 font-medium">Secure your node with biometric hardware keys.</p>
+            <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wide mb-1">2-Factor Auth</p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Secure your node with biometric hardware keys.</p>
           </button>
           <button 
             onClick={handleDataDownload}
-            className="p-6 rounded-[2rem] border border-slate-200 hover:border-indigo-200 bg-white hover:shadow-lg transition-all text-left group active:scale-[0.98]"
+            className="p-6 rounded-[2rem] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-lg transition-all text-left group active:scale-[0.98]"
           >
-            <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <ICONS.Saved />
             </div>
-            <p className="text-xs font-black text-slate-900 uppercase tracking-wide mb-1">Data Download</p>
-            <p className="text-[10px] text-slate-500 font-medium">Export your neural footprint archive.</p>
+            <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wide mb-1">Data Download</p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Export your neural footprint archive.</p>
           </button>
         </div>
       </div>
 
-      <div className="pt-8 border-t border-slate-100">
+      <div className="pt-8 border-t border-slate-100 dark:border-slate-800">
         <h4 className="text-[10px] font-black text-rose-500 uppercase tracking-[0.3em] font-mono mb-4">Danger_Zone</h4>
-        <div className="p-6 rounded-[2rem] bg-rose-50/50 border border-rose-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="p-6 rounded-[2rem] bg-rose-50/50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-black text-rose-900">Deactivate Node</p>
-            <p className="text-[10px] text-rose-700/60 mt-1 max-w-sm">This will temporarily hide your profile and signals. You can reactivate anytime by logging in.</p>
+            <p className="text-sm font-black text-rose-900 dark:text-rose-400">Deactivate Node</p>
+            <p className="text-[10px] text-rose-700/60 dark:text-rose-400/60 mt-1 max-w-sm">This will temporarily hide your profile and signals. You can reactivate anytime by logging in.</p>
           </div>
           <button 
             onClick={() => setShowDeactivateModal(true)}
             disabled={isProcessing}
-            className="px-6 py-3 bg-white border border-rose-200 text-rose-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-rose-600 hover:text-white transition-all shadow-sm active:scale-95 disabled:opacity-50"
+            className="px-6 py-3 bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-rose-600 hover:text-white dark:hover:bg-rose-500 dark:hover:text-white transition-all shadow-sm active:scale-95 disabled:opacity-50"
           >
             {isProcessing ? 'TERMINATING...' : 'Deactivate'}
           </button>
