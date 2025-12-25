@@ -229,6 +229,19 @@ export default function App() {
       if (authUser) {
         setUser(authUser);
         const userRef = doc(db, 'users', authUser.uid);
+
+        // VibeStream 2026: Auto-restore presence on login
+        // Checks if user is stuck in 'Offline' state from last session and restores their preferred state
+        getDoc(userRef).then(async (snap: any) => {
+            if (snap.exists()) {
+                const data = snap.data();
+                if (data.presenceStatus === 'Offline') {
+                    const nextStatus = data.lastActiveStatus || 'Online';
+                    await updateDoc(userRef, { presenceStatus: nextStatus });
+                }
+            }
+        }).catch((e: any) => console.debug("Presence restoration skipped:", e));
+
         const unsubUser = onSnapshot(userRef, (docSnap: any) => {
           if (docSnap.exists()) {
             const data = docSnap.data() as User;
@@ -330,7 +343,17 @@ export default function App() {
   };
 
   const handleLogout = async () => {
-    if (userData?.id) await updateDoc(doc(db, 'users', userData.id), { presenceStatus: 'Offline' });
+    if (userData?.id) {
+        // Save current status to allow restoration on next login
+        const restoreState = (userData.presenceStatus === 'Offline' || !userData.presenceStatus) 
+            ? 'Online' 
+            : userData.presenceStatus;
+            
+        await updateDoc(doc(db, 'users', userData.id), { 
+            presenceStatus: 'Offline',
+            lastActiveStatus: restoreState
+        });
+    }
     await signOut(auth);
     setUser(null);
     setUserData(null);
