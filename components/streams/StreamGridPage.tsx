@@ -94,7 +94,7 @@ export const StreamGridPage: React.FC<StreamGridPageProps> = ({ locale, onJoinSt
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
           {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-            <div key={i} className="aspect-[9/14] rounded-[2.5rem] bg-slate-100 animate-pulse border border-slate-200" />
+            <div key={i} className="aspect-[9/14] rounded-[2.5rem] bg-slate-100 dark:bg-slate-800 animate-pulse border border-slate-200 dark:border-slate-700" />
           ))}
         </div>
       ) : streams.length > 0 ? (
@@ -149,12 +149,12 @@ export const StreamGridPage: React.FC<StreamGridPageProps> = ({ locale, onJoinSt
           ))}
         </div>
       ) : (
-        <div className="py-40 flex flex-col items-center justify-center text-center opacity-60 bg-slate-50/50 rounded-[4rem] border-2 border-dashed border-slate-200">
-           <div className="w-20 h-20 bg-white rounded-[2rem] flex items-center justify-center mb-6 text-slate-300 shadow-sm border border-slate-100">
+        <div className="py-40 flex flex-col items-center justify-center text-center opacity-60 bg-slate-50/50 dark:bg-slate-800/50 rounded-[4rem] border-2 border-dashed border-slate-200 dark:border-slate-700">
+           <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-[2rem] flex items-center justify-center mb-6 text-slate-300 dark:text-slate-500 shadow-sm border border-slate-100 dark:border-slate-700">
               <ICONS.Streams />
            </div>
-           <h3 className="text-xl font-black text-slate-900 uppercase tracking-widest italic leading-none">Grid_Silence</h3>
-           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono mt-3 max-w-xs leading-relaxed">
+           <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-widest italic leading-none">Grid_Silence</h3>
+           <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] font-mono mt-3 max-w-xs leading-relaxed">
              No active signal transmissions detected.
            </p>
            <button 

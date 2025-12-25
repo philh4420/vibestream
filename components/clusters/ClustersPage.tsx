@@ -64,7 +64,7 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
   // If a cluster is active, show the specialized cluster chat interface
   if (activeClusterId && activeClusterData) {
     return (
-      <div className="mx-2 md:mx-6 lg:mx-8 xl:mx-10 h-[calc(100vh-var(--header-h)-var(--bottom-nav-h)-2rem)] md:h-[calc(100vh-var(--header-h)-3rem)] bg-[#fcfcfd] rounded-[2.5rem] md:rounded-[3.5rem] overflow-hidden shadow-heavy relative border border-slate-100 animate-in fade-in duration-500 max-w-[1920px] 2xl:mx-auto">
+      <div className="mx-2 md:mx-6 lg:mx-8 xl:mx-10 h-[calc(100vh-var(--header-h)-var(--bottom-nav-h)-2rem)] md:h-[calc(100vh-var(--header-h)-3rem)] bg-[#fcfcfd] dark:bg-slate-900 rounded-[2.5rem] md:rounded-[3.5rem] overflow-hidden shadow-heavy relative border border-slate-100 dark:border-slate-800 animate-in fade-in duration-500 max-w-[1920px] 2xl:mx-auto">
          <AtmosphericBackground weather={weather || null}>
             <ClusterChatInterface 
                 chatId={activeClusterId}
@@ -123,7 +123,7 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
            {[1,2,3,4,5,6].map(i => (
-             <div key={i} className="h-[320px] bg-slate-50 rounded-[3rem] animate-pulse border border-slate-100" />
+             <div key={i} className="h-[320px] bg-slate-50 dark:bg-slate-800 rounded-[3rem] animate-pulse border border-slate-100 dark:border-slate-700" />
            ))}
         </div>
       ) : clusters.length > 0 ? (
@@ -132,31 +132,31 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
              <div 
                key={cluster.id}
                onClick={() => setActiveClusterId(cluster.id)}
-               className="group bg-white/70 backdrop-blur-xl border border-slate-100 rounded-[3rem] p-8 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] hover:border-indigo-200 transition-all duration-500 cursor-pointer relative overflow-hidden flex flex-col min-h-[340px] hover:-translate-y-1"
+               className="group bg-white/70 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-100 dark:border-slate-800 rounded-[3rem] p-8 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] hover:border-indigo-200 dark:hover:border-indigo-900 transition-all duration-500 cursor-pointer relative overflow-hidden flex flex-col min-h-[340px] hover:-translate-y-1"
              >
                 {/* Active Indicator & Avatar */}
                 <div className="flex justify-between items-start mb-12 relative z-10">
                    <div className="relative">
-                      <div className="w-20 h-20 rounded-[2rem] bg-slate-50 border border-slate-100 p-1 shadow-sm group-hover:scale-110 transition-transform duration-500">
+                      <div className="w-20 h-20 rounded-[2rem] bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 p-1 shadow-sm group-hover:scale-110 transition-transform duration-500">
                          <img src={cluster.clusterAvatar} className="w-full h-full object-cover rounded-[1.8rem]" alt="" />
                       </div>
-                      <div className="absolute -bottom-2 -right-2 bg-white p-1.5 rounded-xl shadow-lg border border-slate-100 scale-90">
+                      <div className="absolute -bottom-2 -right-2 bg-white dark:bg-slate-900 p-1.5 rounded-xl shadow-lg border border-slate-100 dark:border-slate-800 scale-90">
                          <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_#10b981]" />
                       </div>
                    </div>
                    
-                   <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 shadow-sm">
+                   <div className="w-10 h-10 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-center text-slate-300 dark:text-slate-600 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 shadow-sm">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
                    </div>
                 </div>
 
                 {/* Info Block */}
                 <div className="flex-1 relative z-10">
-                   <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter leading-none mb-4 group-hover:text-indigo-600 transition-colors line-clamp-2">
+                   <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter leading-none mb-4 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2">
                      {cluster.clusterName}
                    </h3>
-                   <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-100/50 backdrop-blur-sm group-hover:bg-white group-hover:shadow-md transition-all">
-                      <p className="text-[10px] font-bold text-slate-500 line-clamp-2 leading-relaxed">
+                   <div className="p-4 bg-slate-50/80 dark:bg-slate-800/80 rounded-2xl border border-slate-100/50 dark:border-slate-700/50 backdrop-blur-sm group-hover:bg-white dark:group-hover:bg-slate-800 group-hover:shadow-md transition-all">
+                      <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
                         <span className="text-indigo-500 mr-1">Last Signal:</span> 
                         "{cluster.lastMessage || 'Channel established.'}"
                       </p>
@@ -164,10 +164,10 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
                 </div>
 
                 {/* Footer Stats */}
-                <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between relative z-10">
+                <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between relative z-10">
                    <div className="flex -space-x-3 pl-1">
                       {cluster.participants.slice(0, 4).map((pId, i) => (
-                        <div key={i} className="w-9 h-9 rounded-full border-[3px] border-white bg-slate-200 overflow-hidden shadow-sm relative z-0 hover:z-10 hover:scale-110 transition-transform">
+                        <div key={i} className="w-9 h-9 rounded-full border-[3px] border-white dark:border-slate-900 bg-slate-200 dark:bg-slate-800 overflow-hidden shadow-sm relative z-0 hover:z-10 hover:scale-110 transition-transform">
                            <img 
                              src={allUsers.find(u => u.id === pId)?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${pId}`} 
                              className="w-full h-full object-cover" 
@@ -176,14 +176,14 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
                         </div>
                       ))}
                       {cluster.participants.length > 4 && (
-                        <div className="w-9 h-9 rounded-full border-[3px] border-white bg-slate-900 text-white flex items-center justify-center text-[9px] font-black z-10 shadow-md">
+                        <div className="w-9 h-9 rounded-full border-[3px] border-white dark:border-slate-900 bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-[9px] font-black z-10 shadow-md">
                           +{cluster.participants.length - 4}
                         </div>
                       )}
                    </div>
                    <div className="flex flex-col items-end">
-                      <span className="text-[9px] font-black text-slate-900 font-mono">{cluster.participants.length} NODES</span>
-                      <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">{cluster.isEventLobby ? 'LOBBY' : 'SYNCED'}</span>
+                      <span className="text-[9px] font-black text-slate-900 dark:text-white font-mono">{cluster.participants.length} NODES</span>
+                      <span className="text-[7px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{cluster.isEventLobby ? 'LOBBY' : 'SYNCED'}</span>
                    </div>
                 </div>
 
@@ -193,12 +193,12 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
            ))}
         </div>
       ) : (
-        <div className="py-40 text-center bg-white rounded-[4rem] border border-slate-100 shadow-sm border-dashed">
-           <div className="w-24 h-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 text-slate-300 shadow-inner animate-pulse">
+        <div className="py-40 text-center bg-white dark:bg-slate-900 rounded-[4rem] border border-slate-100 dark:border-slate-800 shadow-sm border-dashed">
+           <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 text-slate-300 dark:text-slate-600 shadow-inner animate-pulse">
               <ICONS.Clusters />
            </div>
-           <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">No_Active_Clusters</h2>
-           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono mt-3 px-10 mb-10">You are not synced with any hive minds.</p>
+           <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic">No_Active_Clusters</h2>
+           <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] font-mono mt-3 px-10 mb-10">You are not synced with any hive minds.</p>
            <button 
              onClick={() => setIsModalOpen(true)}
              className="px-10 py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-xl hover:bg-indigo-700 transition-all active:scale-95"

@@ -68,7 +68,7 @@ export const FeedPage: React.FC<FeedPageProps> = ({
 
       {/* 3. Sticky Protocol Interface */}
       <section className="sticky top-[calc(var(--header-h)+1rem)] z-30 mb-8">
-        <div className="py-2 bg-[#fcfcfd]/90 backdrop-blur-xl rounded-[2.5rem] border border-white/50 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.05)] transition-all">
+        <div className="py-2 bg-[#fcfcfd]/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-[2.5rem] border border-white/50 dark:border-white/10 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.05)] transition-all">
            <FeedProtocols active={activeProtocol} onChange={setActiveProtocol} />
         </div>
       </section>
@@ -94,18 +94,18 @@ export const FeedPage: React.FC<FeedPageProps> = ({
           ))
         ) : (
           <div className="py-24 flex flex-col items-center justify-center text-center animate-in zoom-in-95 duration-500 px-6">
-             <div className="w-24 h-24 bg-white border border-slate-100 rounded-[2.5rem] flex items-center justify-center mb-6 text-slate-300 shadow-sm relative z-10">
+             <div className="w-24 h-24 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] flex items-center justify-center mb-6 text-slate-300 dark:text-slate-600 shadow-sm relative z-10">
                 <ICONS.Explore />
              </div>
              
-             <h3 className="text-xl font-black text-slate-900 tracking-tighter uppercase italic leading-none mb-3">Signal_Void</h3>
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] font-mono italic max-w-xs leading-relaxed">
+             <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic leading-none mb-3">Signal_Void</h3>
+             <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] font-mono italic max-w-xs leading-relaxed">
                No active transmissions in this sector.
              </p>
              
              <button 
                onClick={() => onOpenCreate()}
-               className="mt-8 px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-[9px] uppercase tracking-[0.3em] shadow-xl hover:bg-indigo-600 transition-all active:scale-95"
+               className="mt-8 px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black text-[9px] uppercase tracking-[0.3em] shadow-xl hover:bg-indigo-600 dark:hover:bg-indigo-400 dark:hover:text-white transition-all active:scale-95"
              >
                Initialize_Signal
              </button>
@@ -115,8 +115,8 @@ export const FeedPage: React.FC<FeedPageProps> = ({
         {/* End of Stream Indicator */}
         {filteredPosts.length > 0 && (
           <div className="py-12 flex flex-col items-center justify-center gap-3 opacity-40">
-             <div className="w-1.5 h-1.5 bg-slate-300 rounded-full" />
-             <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono">BUFFER_LIMIT_REACHED</span>
+             <div className="w-1.5 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full" />
+             <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] font-mono">BUFFER_LIMIT_REACHED</span>
           </div>
         )}
       </section>

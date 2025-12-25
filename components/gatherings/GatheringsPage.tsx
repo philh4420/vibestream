@@ -219,13 +219,13 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
 
       {/* 2. Filter Bar */}
       <div className="sticky top-[calc(var(--header-h)+1rem)] z-30 mb-8 px-2 md:px-0">
-         <div className="bg-white/90 backdrop-blur-xl border border-white/60 p-2 rounded-[2.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] overflow-x-auto no-scrollbar">
+         <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-white/60 dark:border-white/10 p-2 rounded-[2.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] overflow-x-auto no-scrollbar">
             <div className="flex gap-2 min-w-max">
                {(['All', 'Social', 'Tech', 'Gaming', 'Nightlife', 'Workshop'] as const).map(cat => (
                  <button
                    key={cat}
                    onClick={() => setActiveFilter(cat)}
-                   className={`px-6 py-3 rounded-[1.8rem] text-[10px] font-black uppercase tracking-widest transition-all ${activeFilter === cat ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-700'}`}
+                   className={`px-6 py-3 rounded-[1.8rem] text-[10px] font-black uppercase tracking-widest transition-all ${activeFilter === cat ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg' : 'text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-white'}`}
                  >
                    {cat}
                  </button>
@@ -239,7 +239,7 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
          {isLoading ? (
            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
              {[1,2,3,4,5,6].map(i => (
-               <div key={i} className="h-[420px] bg-slate-50 rounded-[3rem] animate-pulse border border-slate-100" />
+               <div key={i} className="h-[420px] bg-slate-50 dark:bg-slate-800 rounded-[3rem] animate-pulse border border-slate-100 dark:border-slate-700" />
              ))}
            </div>
          ) : filteredGatherings.length > 0 ? (
@@ -259,11 +259,11 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
                  <div 
                    key={gathering.id} 
                    onClick={() => onViewGathering(gathering)}
-                   className="group bg-white border border-slate-100 rounded-[3rem] p-4 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] hover:border-purple-200 transition-all duration-500 relative flex flex-col h-full hover:-translate-y-1 cursor-pointer"
+                   className="group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[3rem] p-4 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] hover:border-purple-200 dark:hover:border-purple-900 transition-all duration-500 relative flex flex-col h-full hover:-translate-y-1 cursor-pointer"
                    style={{ animationDelay: `${idx * 50}ms` }}
                  >
                     {/* Image Layer */}
-                    <div className="relative aspect-video rounded-[2.5rem] overflow-hidden bg-slate-100 mb-6">
+                    <div className="relative aspect-video rounded-[2.5rem] overflow-hidden bg-slate-100 dark:bg-slate-800 mb-6">
                        {isVideoCover ? (
                           <video 
                             src={gathering.coverUrl} 
@@ -295,24 +295,27 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
                              {gathering.type === 'virtual' ? 'NEURAL' : 'GEO'}
                           </span>
                        </div>
+                       <span className="absolute bottom-4 right-4 px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] text-white bg-white/10 backdrop-blur-md border border-white/20">
+                          {gathering.category}
+                       </span>
                     </div>
 
                     {/* Content */}
                     <div className="px-2 flex-1 flex flex-col">
                        <div className="flex justify-between items-start mb-3">
                           <div>
-                            <h3 className="text-xl font-black text-slate-900 uppercase italic tracking-tighter leading-tight line-clamp-2 group-hover:text-purple-600 transition-colors">
+                            <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter leading-tight line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
                                 {gathering.title}
                             </h3>
                             {gathering.recurrence && gathering.recurrence !== 'none' && (
-                                <span className="inline-block mt-1 text-[8px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded uppercase tracking-widest border border-indigo-100">
+                                <span className="inline-block mt-1 text-[8px] font-black text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded uppercase tracking-widest border border-indigo-100 dark:border-indigo-800">
                                     Recurring: {gathering.recurrence}
                                 </span>
                             )}
                           </div>
                        </div>
                        
-                       <div className="flex items-center gap-2 mb-4 text-slate-500">
+                       <div className="flex items-center gap-2 mb-4 text-slate-500 dark:text-slate-400">
                           <ICONS.Globe />
                           <p className="text-[10px] font-bold font-mono uppercase tracking-wide truncate">{gathering.location}</p>
                        </div>
@@ -320,21 +323,21 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
                        {capacity > 0 && (
                            <div className="mb-4">
                                <div className="flex justify-between items-end mb-1">
-                                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Capacity</span>
-                                   <span className={`text-[8px] font-black font-mono ${isFull ? 'text-rose-500' : 'text-slate-600'}`}>{currentCount}/{capacity}</span>
+                                   <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Capacity</span>
+                                   <span className={`text-[8px] font-black font-mono ${isFull ? 'text-rose-500' : 'text-slate-600 dark:text-slate-300'}`}>{currentCount}/{capacity}</span>
                                </div>
-                               <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                   <div className={`h-full rounded-full ${isFull ? 'bg-rose-500' : 'bg-purple-600'}`} style={{ width: `${Math.min((currentCount / capacity) * 100, 100)}%` }} />
+                               <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                   <div className={`h-full rounded-full transition-all duration-1000 ${isFull ? 'bg-rose-500' : 'bg-purple-600'}`} style={{ width: `${Math.min((currentCount / capacity) * 100, 100)}%` }} />
                                </div>
                            </div>
                        )}
 
-                       <p className="text-[11px] text-slate-500 font-medium leading-relaxed line-clamp-2 mb-6">
+                       <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed line-clamp-2 mb-6">
                          {gathering.description}
                        </p>
 
                        {/* Attendees Pile */}
-                       <div className="mt-auto pt-6 border-t border-slate-50 flex items-center justify-between">
+                       <div className="mt-auto pt-6 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between">
                           <div className="flex -space-x-2 pl-2">
                              {gathering.attendees.slice(0, 4).map((attId, i) => {
                                const attendee = allUsers.find(u => u.id === attId);
@@ -342,13 +345,13 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
                                  <img 
                                    key={i} 
                                    src={attendee?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${attId}`} 
-                                   className="w-8 h-8 rounded-full border-2 border-white bg-slate-100 object-cover shadow-sm" 
+                                   className="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 bg-slate-100 dark:bg-slate-800 object-cover shadow-sm" 
                                    alt="" 
                                  />
                                );
                              })}
                              {gathering.attendees.length > 4 && (
-                               <div className="w-8 h-8 rounded-full border-2 border-white bg-slate-900 text-white flex items-center justify-center text-[8px] font-black shadow-sm">
+                               <div className="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-[8px] font-black shadow-sm">
                                  +{gathering.attendees.length - 4}
                                </div>
                              )}
@@ -358,7 +361,7 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
                               {isAttending && gathering.linkedChatId && (
                                   <button 
                                     onClick={(e) => { e.stopPropagation(); onOpenLobby(gathering.linkedChatId!); }}
-                                    className="px-4 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all border border-indigo-200"
+                                    className="px-4 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all border border-indigo-200 dark:border-indigo-800"
                                   >
                                     LOBBY
                                   </button>
@@ -368,19 +371,19 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
                                   onClick={(e) => { e.stopPropagation(); onRSVP(gathering.id, isAttending || isWaitlisted || false); }}
                                   className={`px-5 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg ${
                                       isAttending 
-                                      ? 'bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-500' 
+                                      ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-500' 
                                       : isWaitlisted 
-                                      ? 'bg-amber-100 text-amber-600 hover:bg-rose-50 hover:text-rose-500'
+                                      ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 hover:bg-rose-50 hover:text-rose-500'
                                       : isFull
                                       ? 'bg-amber-500 text-white hover:bg-amber-600'
-                                      : 'bg-slate-900 text-white hover:bg-purple-600'
+                                      : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-purple-600 dark:hover:bg-purple-400'
                                   }`}
                                 >
                                   {isAttending ? 'WITHDRAW' : isWaitlisted ? 'LEAVE_QUEUE' : isFull ? 'JOIN_WAITLIST' : 'RSVP_CONFIRM'}
                                 </button>
                               )}
                               {isOrganizer && (
-                                <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg">ORGANIZER</span>
+                                <span className="text-[8px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-widest bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg">ORGANIZER</span>
                               )}
                           </div>
                        </div>
@@ -390,12 +393,12 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
              })}
            </div>
          ) : (
-           <div className="py-40 flex flex-col items-center justify-center text-center opacity-50 bg-slate-50/50 rounded-[4rem] border-2 border-dashed border-slate-200">
-              <div className="w-24 h-24 bg-white rounded-[2.5rem] flex items-center justify-center mb-8 text-slate-300 shadow-sm border border-slate-100">
+           <div className="py-40 flex flex-col items-center justify-center text-center opacity-50 bg-slate-50/50 dark:bg-slate-800/50 rounded-[4rem] border-2 border-dashed border-slate-200 dark:border-slate-700">
+              <div className="w-24 h-24 bg-white dark:bg-slate-900 rounded-[2.5rem] flex items-center justify-center mb-8 text-slate-300 dark:text-slate-600 shadow-sm border border-slate-100 dark:border-slate-800">
                  <ICONS.Gatherings />
               </div>
-              <h3 className="text-2xl font-black uppercase tracking-widest italic text-slate-900">No_Signals</h3>
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] font-mono mt-3 text-slate-400 max-w-xs leading-relaxed">
+              <h3 className="text-2xl font-black uppercase tracking-widest italic text-slate-900 dark:text-white">No_Signals</h3>
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] font-mono mt-3 text-slate-400 dark:text-slate-500 max-w-xs leading-relaxed">
                 No gatherings detected in this frequency band. Initialize one to start the sync.
               </p>
            </div>

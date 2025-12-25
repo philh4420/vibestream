@@ -81,20 +81,20 @@ export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData, onTransmit
         <div className="relative shrink-0 snap-start">
           <button 
             onClick={() => setIsSelectionOpen(true)}
-            className="flex flex-col justify-end w-[100px] h-[160px] md:w-[120px] md:h-[200px] rounded-[1.8rem] bg-white border border-slate-100 overflow-hidden relative group shadow-sm hover:shadow-xl hover:border-indigo-200 transition-all duration-500 active:scale-95"
+            className="flex flex-col justify-end w-[100px] h-[160px] md:w-[120px] md:h-[200px] rounded-[1.8rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 overflow-hidden relative group shadow-sm hover:shadow-xl hover:border-indigo-200 dark:hover:border-indigo-900 transition-all duration-500 active:scale-95"
           >
             <img 
               src={userData?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=neutral`} 
               className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-opacity duration-500 grayscale group-hover:grayscale-0" 
               alt="" 
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent dark:from-slate-900 dark:via-slate-900/20" />
             
             <div className="relative z-10 flex flex-col items-center pb-4 w-full">
-              <div className="w-10 h-10 rounded-xl bg-slate-900 text-white group-hover:bg-indigo-600 flex items-center justify-center shadow-lg mb-2 transition-colors duration-300 ring-4 ring-white">
+              <div className="w-10 h-10 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 group-hover:bg-indigo-600 dark:group-hover:bg-indigo-400 group-hover:text-white flex items-center justify-center shadow-lg mb-2 transition-colors duration-300 ring-4 ring-white dark:ring-slate-900">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4.5v15m7.5-7.5h-15" strokeWidth="3" strokeLinecap="round" /></svg>
               </div>
-              <span className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-900 font-mono">Inject</span>
+              <span className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white font-mono">Inject</span>
             </div>
           </button>
         </div>
@@ -104,7 +104,7 @@ export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData, onTransmit
           <div key={stream.id} className="relative shrink-0 snap-start">
             <button 
               onClick={() => onJoinStream(stream)}
-              className="w-[100px] h-[160px] md:w-[120px] md:h-[200px] rounded-[1.8rem] bg-slate-900 overflow-hidden relative group shadow-lg ring-2 ring-rose-500 ring-offset-2 ring-offset-[#fcfcfd] transition-all hover:scale-[1.02] active:scale-95"
+              className="w-[100px] h-[160px] md:w-[120px] md:h-[200px] rounded-[1.8rem] bg-slate-900 overflow-hidden relative group shadow-lg ring-2 ring-rose-500 ring-offset-2 ring-offset-[#fcfcfd] dark:ring-offset-slate-950 transition-all hover:scale-[1.02] active:scale-95"
             >
               <img 
                 src={stream.thumbnailUrl} 
@@ -133,7 +133,7 @@ export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData, onTransmit
         {/* 3. Temporal Peer Fragments (Stories) */}
         {loading ? (
           [1, 2, 3].map(i => (
-            <div key={i} className="shrink-0 snap-start w-[100px] h-[160px] md:w-[120px] md:h-[200px] rounded-[1.8rem] bg-slate-100 animate-pulse border border-slate-50" />
+            <div key={i} className="shrink-0 snap-start w-[100px] h-[160px] md:w-[120px] md:h-[200px] rounded-[1.8rem] bg-slate-100 dark:bg-slate-800 animate-pulse border border-slate-50 dark:border-slate-700" />
           ))
         ) : (
           stories.map(story => (
@@ -195,11 +195,11 @@ export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData, onTransmit
 
         {/* Empty State Indicator */}
         {!loading && stories.length === 0 && activeStreams.length === 0 && (
-          <div className="shrink-0 snap-start flex flex-col items-center justify-center w-[100px] h-[160px] md:w-[120px] md:h-[200px] rounded-[1.8rem] bg-slate-50 border border-dashed border-slate-200 p-4 text-center group cursor-default">
-             <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center mb-3 text-slate-300 shadow-sm group-hover:scale-110 transition-transform">
+          <div className="shrink-0 snap-start flex flex-col items-center justify-center w-[100px] h-[160px] md:w-[120px] md:h-[200px] rounded-[1.8rem] bg-slate-50 dark:bg-slate-800 border border-dashed border-slate-200 dark:border-slate-700 p-4 text-center group cursor-default">
+             <div className="w-8 h-8 bg-white dark:bg-slate-700 rounded-xl flex items-center justify-center mb-3 text-slate-300 dark:text-slate-500 shadow-sm group-hover:scale-110 transition-transform">
                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" strokeWidth="2.5" strokeLinecap="round" /></svg>
              </div>
-             <p className="text-[7px] font-black text-slate-300 uppercase tracking-widest font-mono leading-relaxed">Grid_Silence<br/>Detected</p>
+             <p className="text-[7px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-widest font-mono leading-relaxed">Grid_Silence<br/>Detected</p>
           </div>
         )}
       </div>
@@ -208,49 +208,49 @@ export const StoriesStrip: React.FC<StoriesStripProps> = ({ userData, onTransmit
       {isSelectionOpen && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-transparent" onClick={() => setIsSelectionOpen(false)}></div>
-          <div className="relative bg-white w-full max-w-sm rounded-[3rem] p-8 md:p-10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-500 overflow-hidden border border-white/20">
+          <div className="relative bg-white dark:bg-slate-900 w-full max-w-sm rounded-[3rem] p-8 md:p-10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-500 overflow-hidden border border-white/20 dark:border-white/10">
              {/* Decorative Top Bar */}
              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-rose-500" />
              
              <div className="mb-8 text-center">
-               <div className="w-16 h-16 bg-slate-50 rounded-[1.5rem] flex items-center justify-center mx-auto mb-6 text-slate-900 shadow-sm border border-slate-100">
+               <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-[1.5rem] flex items-center justify-center mx-auto mb-6 text-slate-900 dark:text-white shadow-sm border border-slate-100 dark:border-slate-700">
                   <ICONS.Create />
                </div>
-               <h3 className="text-2xl font-black text-slate-950 tracking-tighter uppercase italic mb-2">Uplink_Protocol</h3>
-               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] font-mono">Select Transmission Type</p>
+               <h3 className="text-2xl font-black text-slate-950 dark:text-white tracking-tighter uppercase italic mb-2">Uplink_Protocol</h3>
+               <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] font-mono">Select Transmission Type</p>
              </div>
 
              <div className="space-y-4">
                 <button 
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full flex items-center gap-5 p-5 bg-slate-50 hover:bg-white hover:shadow-xl hover:border-indigo-100 rounded-[2rem] transition-all border border-transparent group active:scale-95"
+                  className="w-full flex items-center gap-5 p-5 bg-slate-50 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 hover:shadow-xl hover:border-indigo-100 dark:hover:border-indigo-900 rounded-[2rem] transition-all border border-transparent group active:scale-95"
                 >
-                  <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-indigo-200">
+                  <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-indigo-200 dark:shadow-none">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Z" /></svg>
                   </div>
                   <div className="text-left">
-                    <p className="font-black text-slate-900 text-xs uppercase tracking-wide mb-0.5">Temporal Fragment</p>
-                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest font-mono">24h Visibility • Image/Video</p>
+                    <p className="font-black text-slate-900 dark:text-white text-xs uppercase tracking-wide mb-0.5">Temporal Fragment</p>
+                    <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono">24h Visibility • Image/Video</p>
                   </div>
                 </button>
 
                 <button 
                   onClick={() => { onGoLive(); setIsSelectionOpen(false); }}
-                  className="w-full flex items-center gap-5 p-5 bg-slate-50 hover:bg-white hover:shadow-xl hover:border-rose-100 rounded-[2rem] transition-all border border-transparent group active:scale-95"
+                  className="w-full flex items-center gap-5 p-5 bg-slate-50 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 hover:shadow-xl hover:border-rose-100 dark:hover:border-rose-900 rounded-[2rem] transition-all border border-transparent group active:scale-95"
                 >
-                  <div className="w-12 h-12 bg-rose-600 text-white rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-rose-200">
+                  <div className="w-12 h-12 bg-rose-600 text-white rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-rose-200 dark:shadow-none">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                   </div>
                   <div className="text-left">
-                    <p className="font-black text-rose-600 text-xs uppercase tracking-wide mb-0.5">Live Broadcast</p>
-                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest font-mono">Real-Time Grid Sync</p>
+                    <p className="font-black text-rose-600 dark:text-rose-400 text-xs uppercase tracking-wide mb-0.5">Live Broadcast</p>
+                    <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono">Real-Time Grid Sync</p>
                   </div>
                 </button>
              </div>
              
              <button 
                onClick={() => setIsSelectionOpen(false)}
-               className="w-full mt-8 py-4 text-slate-400 hover:text-slate-900 rounded-2xl text-[9px] font-black uppercase tracking-[0.3em] transition-all active:scale-95"
+               className="w-full mt-8 py-4 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-2xl text-[9px] font-black uppercase tracking-[0.3em] transition-all active:scale-95"
              >
                Abort_Sequence
              </button>
