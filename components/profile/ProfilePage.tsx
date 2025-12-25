@@ -15,15 +15,13 @@ const {
   writeBatch,
   serverTimestamp,
   increment,
-  getDoc
+  getDoc,
+  deleteDoc
 } = Firestore as any;
 import { ProfileHeader } from './ProfileHeader';
 import { ProfileTabs } from './ProfileTabs';
 import { CalibrationOverlay } from './CalibrationOverlay';
-import { ICONS } from '../../constants';
 import { DeleteConfirmationModal } from '../ui/DeleteConfirmationModal';
-
-// Modular Sections
 import { ProfileBroadcastingSection } from './sections/ProfileBroadcastingSection';
 import { ProfileAboutSection } from './sections/ProfileAboutSection';
 import { ProfileVisualsSection } from './sections/ProfileVisualsSection';
@@ -44,6 +42,8 @@ interface ProfilePageProps {
   onBookmark?: (id: string) => void;
   isBlocked?: boolean;
   onBlock?: () => void;
+  onUnblock?: () => void;
+  blockedIds?: Set<string>;
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({ 
@@ -51,14 +51,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   onUpdateProfile, 
   addToast, 
   locale, 
-  sessionStartTime, 
   onViewPost, 
   onViewProfile,
   onOpenSettings, 
   onLike, 
   onBookmark,
   isBlocked,
-  onBlock
+  onBlock,
+  onUnblock,
+  blockedIds
 }) => {
   const [activeTab, setActiveTab] = useState<string>('broadcasting');
   const [userPosts, setUserPosts] = useState<Post[]>([]);
@@ -66,210 +67,81 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [profileData, setProfileData] = useState<User>(userData);
   const [isFollowing, setIsFollowing] = useState(false);
-  const [isProcessingFollow, setIsProcessingFollow] = useState(false);
 
   const currentUser = auth.currentUser;
   const isOwnProfile = currentUser?.uid === userData.id;
 
-  // Real-time Profile Data Sync
   useEffect(() => {
     if (!db || !userData.id) return;
-    setProfileData(userData); // Initialize immediate state
+    setProfileData(userData);
     const unsub = onSnapshot(doc(db, 'users', userData.id), (doc: any) => {
-      if (doc.exists()) {
-        setProfileData({ id: doc.id, ...doc.data() } as User);
-      }
+      if (doc.exists()) setProfileData({ id: doc.id, ...doc.data() } as User);
     });
     return () => unsub();
   }, [userData.id]);
 
-  // Check Relationship Status
   useEffect(() => {
-    const checkFollowStatus = async () => {
+    const checkFollow = async () => {
       if (!db || !currentUser || isOwnProfile) return;
-      try {
-        const docRef = doc(db, 'users', currentUser.uid, 'following', userData.id);
-        const docSnap = await getDoc(docRef);
-        setIsFollowing(docSnap.exists());
-      } catch (e) {
-        console.error("Relation Check Failed", e);
-      }
+      const docRef = doc(db, 'users', currentUser.uid, 'following', userData.id);
+      const snap = await getDoc(docRef);
+      setIsFollowing(snap.exists());
     };
-    checkFollowStatus();
-  }, [userData.id, currentUser, isOwnProfile]);
+    checkFollow();
+  }, [userData.id, currentUser]);
 
-  // Fetch Posts
   useEffect(() => {
     const fetchUserPosts = async () => {
       if (!db || !userData.id || isBlocked) return;
-      try {
-        const q = query(collection(db, 'posts'), where('authorId', '==', userData.id), orderBy('timestamp', 'desc'));
-        const snap = await getDocs(q);
-        setUserPosts(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Post)));
-      } catch (e) { console.error(e); }
+      const q = query(collection(db, 'posts'), where('authorId', '==', userData.id), orderBy('timestamp', 'desc'));
+      const snap = await getDocs(q);
+      setUserPosts(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Post)));
     };
     fetchUserPosts();
   }, [userData.id, isBlocked]);
 
-  const handleUpdateIdentity = async (processedData: any) => {
-    if (!db) return;
-    try {
-      await updateDoc(doc(db, 'users', userData.id), processedData);
-      onUpdateProfile(processedData);
-      setIsEditModalOpen(false);
-      addToast('Neural Identity Clusters Synchronised', 'success');
-    } catch (e) { 
-      addToast('Sync Error: Neural Handshake Refused', 'error'); 
-    }
+  const handleUpdate = async (data: any) => {
+    await updateDoc(doc(db, 'users', userData.id), data);
+    onUpdateProfile(data);
+    setIsEditModalOpen(false);
   };
 
   const handleFollowToggle = async () => {
-    if (!db || !currentUser || isOwnProfile || isProcessingFollow) return;
-    setIsProcessingFollow(true);
-    
-    // Optimistic UI
-    const nextState = !isFollowing;
-    setIsFollowing(nextState);
-
+    if (!currentUser || isOwnProfile) return;
     const batch = writeBatch(db);
-    const myFollowingRef = doc(db, 'users', currentUser.uid, 'following', userData.id);
-    const theirFollowersRef = doc(db, 'users', userData.id, 'followers', currentUser.uid);
-    const myRef = doc(db, 'users', currentUser.uid);
-    const theirRef = doc(db, 'users', userData.id);
-
-    try {
-      if (nextState) {
-        // Follow
-        batch.set(myFollowingRef, { linkedAt: serverTimestamp() });
-        batch.set(theirFollowersRef, { linkedAt: serverTimestamp() });
-        batch.update(myRef, { following: increment(1) });
-        batch.update(theirRef, { followers: increment(1) });
-        
-        // Notification
-        const notifRef = doc(collection(db, 'notifications'));
-        batch.set(notifRef, {
-          type: 'follow',
-          fromUserId: currentUser.uid,
-          fromUserName: currentUser.displayName || 'Unknown Node',
-          fromUserAvatar: currentUser.photoURL || '',
-          toUserId: userData.id,
-          text: 'established a neural link with you',
-          isRead: false,
-          timestamp: serverTimestamp(),
-          pulseFrequency: 'cognition'
-        });
-
-        addToast(`Link established with ${userData.displayName}`, 'success');
-      } else {
-        // Unfollow
-        batch.delete(myFollowingRef);
-        batch.delete(theirFollowersRef);
-        batch.update(myRef, { following: increment(-1) });
-        batch.update(theirRef, { followers: increment(-1) });
-        addToast(`Link severed with ${userData.displayName}`, 'info');
-      }
-      
-      await batch.commit();
-    } catch (e) {
-      setIsFollowing(!nextState); // Revert logic on error
-      addToast("Connection Protocol Failed", 'error');
-    } finally {
-      setIsProcessingFollow(false);
+    const myRef = doc(db, 'users', currentUser.uid, 'following', userData.id);
+    const theirRef = doc(db, 'users', userData.id, 'followers', currentUser.uid);
+    
+    if (isFollowing) {
+        batch.delete(myRef);
+        batch.delete(theirRef);
+        batch.update(doc(db, 'users', currentUser.uid), { following: increment(-1) });
+        batch.update(doc(db, 'users', userData.id), { followers: increment(-1) });
+        setIsFollowing(false);
+    } else {
+        batch.set(myRef, { linkedAt: serverTimestamp() });
+        batch.set(theirRef, { linkedAt: serverTimestamp() });
+        batch.update(doc(db, 'users', currentUser.uid), { following: increment(1) });
+        batch.update(doc(db, 'users', userData.id), { followers: increment(1) });
+        setIsFollowing(true);
     }
+    await batch.commit();
   };
 
-  const handleBlockRequest = () => {
-    if (!db || !currentUser || isOwnProfile) return;
-    setShowBlockModal(true);
-  };
-
-  const executeBlock = async () => {
-    if (onBlock) {
-        await onBlock();
-        setShowBlockModal(false);
-    }
-  };
-
-  // Privacy Check Logic
-  const isPrivate = profileData.settings?.privacy?.profileVisibility === 'private';
-  const canView = !isBlocked && (isOwnProfile || !isPrivate || (isPrivate && isFollowing));
-
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'identity':
-        return <div className="max-w-[2560px] mx-auto"><ProfileAboutSection userData={profileData} locale={locale} /></div>;
-      case 'visuals':
-        return <div className="max-w-[2560px] mx-auto"><ProfileVisualsSection posts={userPosts} onViewPost={onViewPost} /></div>;
-      case 'resonance':
-        return <div className="max-w-[2560px] mx-auto"><ProfileResonanceSection userData={profileData} /></div>;
-      case 'chronology':
-        return <div className="max-w-[2560px] mx-auto"><ProfileChronologySection userData={profileData} locale={locale} /></div>;
-      case 'connections':
-        return <div className="max-w-[2560px] mx-auto"><ProfileConnectionsSection userData={profileData} currentUser={userData} onViewProfile={onViewProfile} addToast={addToast} /></div>; 
-      default:
-        return (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-[2560px] mx-auto items-start">
-            <div className="lg:col-span-5 space-y-4 lg:sticky lg:top-[calc(var(--header-h)+6rem)]">
-              <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-sm border border-slate-100 dark:border-slate-800">
-                 <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight mb-4 italic">Intro</h3>
-                 <div className="space-y-4">
-                    {profileData.statusMessage && profileData.settings?.privacy?.activityStatus !== false && (
-                      <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 text-center">
-                        <p className="text-sm font-bold text-slate-700 dark:text-slate-300 italic">"{profileData.statusMessage}"</p>
-                      </div>
-                    )}
-                    <p className="text-slate-700 dark:text-slate-300 text-center text-sm font-medium py-2 leading-relaxed">
-                      {profileData.bio || 'Establish your neural signature in calibration...'}
-                    </p>
-                    <div className="h-px bg-slate-100 dark:bg-slate-800" />
-                    <div className="space-y-4 py-2">
-                       {profileData.occupation && (
-                          <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">ROLE:</span>
-                            <span className="text-xs font-bold text-slate-900 dark:text-white uppercase">{profileData.occupation}</span>
-                          </div>
-                       )}
-                       {profileData.location && profileData.settings?.privacy?.showLocation !== false && (
-                          <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">NODE:</span>
-                            <span className="text-xs font-bold text-slate-900 dark:text-white uppercase">{profileData.location}</span>
-                          </div>
-                       )}
-                    </div>
-                 </div>
-              </div>
-            </div>
-            <div className="lg:col-span-7 space-y-4">
-              <ProfileBroadcastingSection 
-                posts={userPosts} 
-                locale={locale} 
-                userData={profileData}
-                addToast={addToast}
-                onViewPost={onViewPost}
-                onLike={onLike}
-                onBookmark={onBookmark}
-              />
-            </div>
-          </div>
-        );
-    }
-  };
-
-  // Blocked View
   if (isBlocked) {
     return (
       <div className="animate-in fade-in duration-1000 bg-[#f0f2f5] dark:bg-[#020617] min-h-screen flex items-center justify-center p-6 -mx-4 sm:-mx-6 md:-mx-10 lg:-mx-14 -mt-6">
-         <div className="text-center max-w-md">
-            <div className="w-32 h-32 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner animate-pulse">
-               <svg className="w-16 h-16 text-slate-400 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+         <div className="text-center max-w-md bg-white dark:bg-slate-900 p-10 rounded-[3rem] shadow-xl border border-slate-100 dark:border-slate-800">
+            <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300 dark:text-slate-600">
+               <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
             </div>
-            <h1 className="text-4xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-4">Signal_Lost</h1>
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed font-mono">
-              Connection to this neural node cannot be established. The frequency is restricted or unavailable.
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-4">Signal_Severed</h1>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-8">
+              Connection to this node has been blocked.
             </p>
-            {onBlock && (
-               <button onClick={onBlock} className="mt-8 px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.2em] hover:opacity-80 transition-opacity">
-                  Manage_Block
+            {onUnblock && (
+               <button onClick={onUnblock} className="px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.2em] hover:opacity-90 transition-opacity">
+                  Restore_Link
                </button>
             )}
          </div>
@@ -279,8 +151,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
   return (
     <div className="animate-in fade-in duration-1000 bg-[#f0f2f5] dark:bg-[#020617] min-h-screen pb-20 -mx-4 sm:-mx-6 md:-mx-10 lg:-mx-14 -mt-6">
-      
-      {/* 1. Header Profile Identity */}
       <ProfileHeader 
         userData={profileData} 
         onEdit={() => setIsEditModalOpen(true)} 
@@ -289,55 +159,27 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         isFollowing={isFollowing}
         onFollowToggle={handleFollowToggle}
         onOpenSettings={onOpenSettings}
-        onBlock={handleBlockRequest}
+        onBlock={() => setShowBlockModal(true)}
       />
       
-      {/* 2. Privacy Check */}
-      {!canView ? (
-        <div className="mt-8 px-4 sm:px-6 md:px-10 lg:px-14 flex flex-col items-center justify-center py-20 text-center">
-           <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6 text-slate-400 shadow-inner">
-              <div className="scale-150"><ICONS.Verified /></div>
-           </div>
-           <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-2">Private_Node</h3>
-           <p className="text-xs font-medium text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed mb-8">
-             This profile is shielded. Establish a verified link to access neural data and signal history.
-           </p>
-           {!isOwnProfile && (
-             <button 
-                onClick={handleFollowToggle}
-                className="px-10 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-indigo-600 dark:hover:bg-indigo-400 transition-all shadow-xl active:scale-95"
-             >
-                {isFollowing ? 'REQUEST_SENT' : 'REQUEST_ACCESS'}
-             </button>
-           )}
-        </div>
-      ) : (
-        <>
-          {/* 3. Sticky Tab Navigation */}
-          <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
+      <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-          {/* 4. Content Area */}
-          <div className="mt-8 px-4 sm:px-6 md:px-10 lg:px-14">
-            {renderTabContent()}
-          </div>
-        </>
-      )}
+      <div className="mt-8 px-4 sm:px-6 md:px-10 lg:px-14">
+        {activeTab === 'broadcasting' && <ProfileBroadcastingSection posts={userPosts} locale={locale} userData={profileData} addToast={addToast} onViewPost={onViewPost} onLike={onLike} onBookmark={onBookmark} />}
+        {activeTab === 'identity' && <ProfileAboutSection userData={profileData} locale={locale} />}
+        {activeTab === 'visuals' && <ProfileVisualsSection posts={userPosts} onViewPost={onViewPost} />}
+        {activeTab === 'resonance' && <ProfileResonanceSection userData={profileData} />}
+        {activeTab === 'chronology' && <ProfileChronologySection userData={profileData} locale={locale} />}
+        {activeTab === 'connections' && <ProfileConnectionsSection userData={profileData} currentUser={userData} onViewProfile={onViewProfile} addToast={addToast} />}
+      </div>
 
-      {/* Edit Modal */}
-      {isEditModalOpen && (
-        <CalibrationOverlay 
-          userData={profileData} 
-          onClose={() => setIsEditModalOpen(false)} 
-          onSave={handleUpdateIdentity} 
-        />
-      )}
-
-      {/* Block Confirmation Modal */}
+      {isEditModalOpen && <CalibrationOverlay userData={profileData} onClose={() => setIsEditModalOpen(false)} onSave={handleUpdate} />}
+      
       <DeleteConfirmationModal
         isOpen={showBlockModal}
         title="BLOCK_NODE"
-        description={`Are you sure you want to block ${profileData.displayName}? This will hide their signals and sever all connections.`}
-        onConfirm={executeBlock}
+        description={`Block ${profileData.displayName}? This will hide their signals and sever all connections.`}
+        onConfirm={() => { onBlock?.(); setShowBlockModal(false); }}
         onCancel={() => setShowBlockModal(false)}
         confirmText="CONFIRM_BLOCK"
       />

@@ -2,15 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
-const { 
-  collection, 
-  query, 
-  where, 
-  onSnapshot, 
-  orderBy,
-  addDoc,
-  serverTimestamp
-} = Firestore as any;
+const { collection, query, where, onSnapshot, orderBy, addDoc, serverTimestamp } = Firestore as any;
 import { User as VibeUser, Chat, Region, WeatherInfo } from '../../types';
 import { ICONS } from '../../constants';
 import { AtmosphericBackground } from './AtmosphericBackground';
@@ -22,9 +14,10 @@ interface MessagesPageProps {
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
   weather: WeatherInfo | null;
   allUsers?: VibeUser[];
+  blockedIds?: Set<string>;
 }
 
-export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale, addToast, weather, allUsers = [] }) => {
+export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale, addToast, weather, allUsers = [], blockedIds }) => {
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [view, setView] = useState<'list' | 'chat'>('list');
@@ -35,28 +28,30 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
     if (!db || !currentUser.id) return;
     const q = query(collection(db, 'chats'), where('participants', 'array-contains', currentUser.id), orderBy('lastMessageTimestamp', 'desc'));
     const unsub = onSnapshot(q, (snap: any) => {
-      // STRICT FILTER: Only allow non-cluster chats (1-to-1) in Neural Comms
       const fetchedChats = snap.docs
         .map((d: any) => ({ id: d.id, ...d.data() } as Chat))
-        .filter((c: Chat) => !c.isCluster);
+        .filter((c: Chat) => {
+            // Filter non-cluster chats (1-to-1)
+            if (c.isCluster) return false;
+            // Block Check: Hide chat if other participant is blocked
+            const otherId = c.participants.find(id => id !== currentUser.id);
+            return otherId && !blockedIds?.has(otherId);
+        });
         
       setChats(fetchedChats);
     });
     return () => unsub();
-  }, [currentUser.id]);
+  }, [currentUser.id, blockedIds]);
 
   const handleStartChat = async (targetUser: VibeUser) => {
-    // 1. Check local state for existing chat
     const existingChat = chats.find(c => c.participants.includes(targetUser.id));
-    
     if (existingChat) {
       setSelectedChatId(existingChat.id);
-      setSearchQuery(''); // Clear search
+      setSearchQuery('');
       setView('chat');
       return;
     }
 
-    // 2. Create new chat if none exists
     setIsCreating(true);
     try {
       const participantData = {
@@ -72,7 +67,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
         isCluster: false
       });
 
-      // Optimistically select the new chat ID (Firestore listener will catch up shortly)
       setSelectedChatId(docRef.id);
       setSearchQuery('');
       setView('chat');
@@ -87,14 +81,14 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
   const filteredUsers = searchQuery.trim() 
     ? allUsers.filter(u => 
         u.id !== currentUser.id && 
-        u.settings?.privacy?.allowTagging !== false && // Respect privacy setting
+        !blockedIds?.has(u.id) &&
+        u.settings?.privacy?.allowTagging !== false &&
         (u.displayName.toLowerCase().includes(searchQuery.toLowerCase()) || 
          u.username.toLowerCase().includes(searchQuery.toLowerCase()))
       )
     : [];
 
   const activeChat = chats.find(c => c.id === selectedChatId);
-  
   const PRESENCE_AURA: Record<string, string> = {
     'Online': 'bg-emerald-500 shadow-[0_0_8px_#10b981]',
     'Focus': 'bg-amber-500 shadow-[0_0_8px_#f59e0b]',
@@ -106,9 +100,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
   return (
     <div className="flex h-full w-full bg-slate-50 dark:bg-slate-900 rounded-[2rem] md:rounded-[3rem] overflow-hidden shadow-sm border border-slate-200/60 dark:border-slate-800 relative animate-in fade-in duration-500">
       
-      {/* SIDEBAR: CONTACTS FEED (1-to-1 Only) */}
       <div className={`${view === 'chat' ? 'hidden md:flex' : 'flex'} w-full md:w-[360px] lg:w-[400px] border-r border-slate-100 dark:border-slate-800 flex-col bg-white dark:bg-slate-900 shrink-0 z-20 relative overflow-hidden`}>
-        {/* Header Area */}
         <div className="px-6 py-6 pb-2 shrink-0">
           <div className="flex items-center justify-between mb-6">
              <div>
@@ -137,7 +129,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
 
         <div className="flex-1 overflow-y-auto no-scrollbar px-3 pb-4 space-y-1">
           {searchQuery.trim() ? (
-            // SEARCH RESULTS VIEW
             filteredUsers.length > 0 ? (
               <>
                 <p className="px-4 py-2 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono">Directory_Results</p>
@@ -158,9 +149,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                       <p className="font-black text-sm text-slate-900 dark:text-white truncate tracking-tight">{user.displayName}</p>
                       <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500 truncate">@{user.username}</p>
                     </div>
-                    <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-xl opacity-0 group-hover:opacity-100 transition-all shadow-sm">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                    </div>
                   </button>
                 ))}
               </>
@@ -170,7 +158,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
               </div>
             )
           ) : (
-            // EXISTING CHATS VIEW
             chats.length > 0 ? (
               chats.map(chat => {
                 const pId = chat.participants.find(id => id !== currentUser.id);
@@ -217,7 +204,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
         </div>
       </div>
 
-      {/* MAIN VIEWPORT: CHAT STREAM */}
       <div className={`${view === 'list' ? 'hidden md:flex' : 'flex'} flex-1 flex-col min-w-0 bg-[#f8fafc] dark:bg-[#0f172a] relative z-10`}>
         <AtmosphericBackground weather={weather}>
           {selectedChatId && activeChat ? (

@@ -18,6 +18,7 @@ interface FeedPageProps {
   onGoLive: () => void;
   onJoinStream: (stream: LiveStream) => void;
   locale: Region;
+  blockedIds?: Set<string>;
 }
 
 export const FeedPage: React.FC<FeedPageProps> = ({ 
@@ -30,24 +31,24 @@ export const FeedPage: React.FC<FeedPageProps> = ({
   onTransmitStory,
   onGoLive,
   onJoinStream,
-  locale 
+  locale,
+  blockedIds
 }) => {
   const [activeProtocol, setActiveProtocol] = useState<'mesh' | 'pulse' | 'recent'>('mesh');
 
   const filteredPosts = useMemo(() => {
-    let result = [...posts];
+    // Also filter here just in case parent didn't
+    let result = posts.filter(p => !blockedIds?.has(p.authorId));
     switch (activeProtocol) {
       case 'pulse': return result.sort((a, b) => (b.likes || 0) - (a.likes || 0));
       case 'recent': return result; 
       case 'mesh':
       default: return result;
     }
-  }, [posts, activeProtocol]);
+  }, [posts, activeProtocol, blockedIds]);
 
   return (
     <div className="relative min-h-screen pb-32 w-full max-w-2xl mx-auto">
-      
-      {/* 1. Temporal Strip (Stories) */}
       <section className="pt-2 pb-6 animate-in fade-in slide-in-from-top-4 duration-700">
         <StoriesStrip 
           userData={userData} 
@@ -57,7 +58,6 @@ export const FeedPage: React.FC<FeedPageProps> = ({
         />
       </section>
 
-      {/* 2. Signal Composer */}
       <section className="mb-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
         <CreateSignalBox 
           userData={userData} 
@@ -66,14 +66,12 @@ export const FeedPage: React.FC<FeedPageProps> = ({
         />
       </section>
 
-      {/* 3. Sticky Protocol Interface */}
       <section className="sticky top-[calc(var(--header-h)+1rem)] z-30 mb-8">
         <div className="py-2 bg-[#fcfcfd]/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-[2.5rem] border border-white/50 dark:border-white/10 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.05)] transition-all">
            <FeedProtocols active={activeProtocol} onChange={setActiveProtocol} />
         </div>
       </section>
 
-      {/* 4. Transmission Stream */}
       <section className="space-y-6 min-h-[400px]">
         {filteredPosts.length > 0 ? (
           filteredPosts.map((post, idx) => (
@@ -86,9 +84,8 @@ export const FeedPage: React.FC<FeedPageProps> = ({
                 locale={locale} 
                 isAuthor={userData?.id === post.authorId}
                 userData={userData}
-                addToast={(msg, type) => {
-                   window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg, type } }));
-                }}
+                addToast={(msg, type) => window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg, type } }))}
+                blockedIds={blockedIds}
               />
             </div>
           ))
@@ -97,26 +94,8 @@ export const FeedPage: React.FC<FeedPageProps> = ({
              <div className="w-24 h-24 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] flex items-center justify-center mb-6 text-slate-300 dark:text-slate-600 shadow-sm relative z-10">
                 <ICONS.Explore />
              </div>
-             
              <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic leading-none mb-3">Signal_Void</h3>
-             <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] font-mono italic max-w-xs leading-relaxed">
-               No active transmissions in this sector.
-             </p>
-             
-             <button 
-               onClick={() => onOpenCreate()}
-               className="mt-8 px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black text-[9px] uppercase tracking-[0.3em] shadow-xl hover:bg-indigo-600 dark:hover:bg-indigo-400 dark:hover:text-white transition-all active:scale-95"
-             >
-               Initialize_Signal
-             </button>
-          </div>
-        )}
-        
-        {/* End of Stream Indicator */}
-        {filteredPosts.length > 0 && (
-          <div className="py-12 flex flex-col items-center justify-center gap-3 opacity-40">
-             <div className="w-1.5 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full" />
-             <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] font-mono">BUFFER_LIMIT_REACHED</span>
+             <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] font-mono italic max-w-xs leading-relaxed">No active transmissions.</p>
           </div>
         )}
       </section>

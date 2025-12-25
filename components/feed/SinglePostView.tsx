@@ -12,6 +12,7 @@ interface SinglePostViewProps {
   onLike: (id: string, freq?: string) => void;
   onBookmark: (id: string) => void;
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
+  blockedIds?: Set<string>;
 }
 
 export const SinglePostView: React.FC<SinglePostViewProps> = ({ 
@@ -21,10 +22,9 @@ export const SinglePostView: React.FC<SinglePostViewProps> = ({
   onClose, 
   onLike,
   onBookmark,
-  addToast 
+  addToast,
+  blockedIds
 }) => {
-  
-  // Scroll to top of the central viewport when mounting
   useEffect(() => {
     const mainViewport = document.querySelector('.scroll-viewport');
     if (mainViewport) mainViewport.scrollTo({ top: 0, behavior: 'smooth' });
@@ -34,25 +34,16 @@ export const SinglePostView: React.FC<SinglePostViewProps> = ({
   const formattedTimestamp = useMemo(() => {
     if (post.timestamp && post.timestamp.toDate) {
       return post.timestamp.toDate().toLocaleString(locale, {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
+        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false
       });
     }
-    // Fallback logic
     const now = new Date();
-    // If post.createdAt already has date, use it, otherwise append.
     if (post.createdAt.length > 10) return post.createdAt;
     return `${now.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })}, ${post.createdAt}`;
   }, [post.timestamp, post.createdAt, locale]);
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-32 max-w-4xl mx-auto w-full">
-      
-      {/* 1. NAVIGATION HEADER - Sticky & Adaptive */}
       <div className="flex items-center justify-between sticky top-0 z-30 py-4 -mt-6 px-2 bg-[#fcfcfd]/90 dark:bg-[#020617]/90 backdrop-blur-xl border-b border-transparent dark:border-slate-800/50 transition-colors">
         <button 
           onClick={onClose}
@@ -68,14 +59,10 @@ export const SinglePostView: React.FC<SinglePostViewProps> = ({
         </div>
       </div>
 
-      {/* 2. MAIN SIGNAL CARD */}
       <article className="bg-white dark:bg-slate-900 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] dark:shadow-none overflow-hidden relative transition-colors">
-        
-        {/* Decorative Header Line */}
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-rose-500 opacity-80" />
 
         <div className="p-8 md:p-10">
-          {/* Author & Time */}
           <div className="flex items-start justify-between gap-4 mb-8">
              <div className="flex items-center gap-5">
                <div className="relative">
@@ -104,12 +91,10 @@ export const SinglePostView: React.FC<SinglePostViewProps> = ({
              )}
           </div>
 
-          {/* Content Body */}
           <div className="mb-10">
              <p className="text-xl md:text-2xl text-slate-800 dark:text-slate-200 font-medium leading-relaxed tracking-tight whitespace-pre-wrap transition-colors">
                {post.content}
              </p>
-             
              {post.capturedStatus && (
                <div className="mt-8 inline-flex items-center gap-4 px-6 py-4 bg-slate-50/80 dark:bg-slate-800/80 rounded-[2rem] border border-slate-100 dark:border-slate-700 transition-colors">
                   <span className="text-2xl filter drop-shadow-sm">{post.capturedStatus.emoji}</span>
@@ -119,7 +104,6 @@ export const SinglePostView: React.FC<SinglePostViewProps> = ({
              )}
           </div>
 
-          {/* Visual Assets */}
           {post.media && post.media.length > 0 && (
             <div className="rounded-[2.5rem] overflow-hidden bg-slate-950 shadow-xl border border-slate-100 dark:border-slate-800 mb-10 relative group/media">
                {post.media[0].type === 'image' ? (
@@ -127,12 +111,10 @@ export const SinglePostView: React.FC<SinglePostViewProps> = ({
                ) : (
                  <video src={post.media[0].url} className="w-full h-full max-h-[600px] object-cover" controls playsInline />
                )}
-               {/* Cinematic gradient overlay */}
                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover/media:opacity-100 transition-opacity pointer-events-none" />
             </div>
           )}
 
-          {/* Control Surface */}
           <div className="flex flex-col sm:flex-row items-center gap-4 pt-8 border-t border-slate-100 dark:border-slate-800">
              <button 
                onClick={() => onLike(post.id)}
@@ -171,7 +153,6 @@ export const SinglePostView: React.FC<SinglePostViewProps> = ({
         </div>
       </article>
 
-      {/* 3. NEURAL ECHOES (Comments) */}
       <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 rounded-[3rem] p-8 md:p-10 shadow-inner min-h-[300px] transition-colors">
          <div className="flex items-center gap-4 mb-8">
             <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center text-slate-400 dark:text-slate-500 shadow-sm border border-slate-100 dark:border-slate-700">
@@ -190,10 +171,10 @@ export const SinglePostView: React.FC<SinglePostViewProps> = ({
               userData={userData} 
               addToast={addToast} 
               locale={locale} 
+              blockedIds={blockedIds}
             />
          </div>
       </div>
-
     </div>
   );
 };

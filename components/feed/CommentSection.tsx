@@ -27,9 +27,10 @@ interface CommentSectionProps {
   userData: User | null;
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
   locale?: string;
+  blockedIds?: Set<string>;
 }
 
-export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuthorId, userData, addToast, locale = 'en-GB' }) => {
+export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuthorId, userData, addToast, locale = 'en-GB', blockedIds }) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
@@ -48,15 +49,18 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
 
   useEffect(() => {
     if (!db) return;
-    const q = query(
-      collection(db, 'posts', postId, 'comments'), 
-      orderBy('timestamp', 'asc'), 
-      limit(100)
-    );
+    const q = query(collection(db, 'posts', postId, 'comments'), orderBy('timestamp', 'asc'), limit(100));
     return onSnapshot(q, (snap: any) => {
-      setComments(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Comment)));
+      // Filter out blocked comments locally since we can't easily query exclusion in Firestore with complex order/limits easily without composite indexes
+      const allComments = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Comment));
+      setComments(allComments);
     });
   }, [postId]);
+
+  // Filter blocked comments
+  const visibleComments = useMemo(() => {
+    return comments.filter(c => !blockedIds?.has(c.authorId));
+  }, [comments, blockedIds]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -126,7 +130,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
         comments: increment(1)
       });
 
-      // --- NOTIFICATION PROTOCOL ---
       if (userData.id !== postAuthorId) {
         await addDoc(collection(db, 'notifications'), {
           type: 'comment',
@@ -141,7 +144,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
           pulseFrequency: 'intensity'
         });
       }
-      // -----------------------------
 
       setNewComment('');
       setReplyingTo(null);
@@ -168,7 +170,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
     const before = text.substring(0, start);
     const after = text.substring(end, text.length);
     setNewComment(before + emoji + after);
-    
     setTimeout(() => {
       input.focus();
       input.setSelectionRange(start + emoji.length, start + emoji.length);
@@ -177,13 +178,13 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
 
   const commentThreads = useMemo(() => {
     const map: Record<string, Comment[]> = { root: [] };
-    comments.forEach(c => {
+    visibleComments.forEach(c => {
       const key = c.parentId || 'root';
       if (!map[key]) map[key] = [];
       map[key].push(c);
     });
     return map;
-  }, [comments]);
+  }, [visibleComments]);
 
   const renderComment = (comment: Comment) => {
     const isFocused = focusedCommentId === comment.id;
@@ -206,11 +207,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
                   <span className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest leading-none">{comment.authorName}</span>
                   <span className="text-[8px] font-mono font-bold text-slate-300 dark:text-slate-500">
                     {comment.timestamp?.toDate ? comment.timestamp.toDate().toLocaleString(locale, { 
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                      hour: '2-digit', 
-                      minute: '2-digit' 
+                      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' 
                     }) : 'SYNC...'}
                   </span>
                 </div>
@@ -229,10 +226,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
              </div>
 
              <div className="flex items-center gap-4 mt-1.5 ml-1">
-                <button className="text-[8px] font-black uppercase text-slate-400 dark:text-slate-500 hover:text-rose-500 transition-colors flex items-center gap-1">
-                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
-                   Pulse
-                </button>
                 <button 
                   onClick={() => setReplyingTo(comment.id)}
                   className="text-[8px] font-black uppercase text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1"
@@ -255,8 +248,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
 
   return (
     <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800 animate-in slide-in-from-bottom-2 duration-500">
-      
-      {/* Existing Comments */}
       <div className="space-y-6 mb-8">
         {commentThreads['root'].length > 0 ? (
           commentThreads['root'].map(comment => renderComment(comment))
@@ -267,7 +258,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
         )}
       </div>
 
-      {/* Comment Form */}
       <form onSubmit={handleSubmitComment} className="flex flex-col gap-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-[2rem] border border-slate-100 dark:border-slate-800 relative group/input focus-within:border-indigo-200 dark:focus-within:border-indigo-800 focus-within:ring-4 focus-within:ring-indigo-500/5 transition-all">
         {replyingTo && (
           <div className="flex items-center justify-between bg-indigo-100/50 dark:bg-indigo-900/30 px-4 py-2 rounded-xl text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-2 border border-indigo-100 dark:border-indigo-800">
@@ -276,7 +266,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
           </div>
         )}
 
-        {/* Media Preview Box */}
         {previewUrl && (
           <div className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-indigo-500 shadow-lg group/preview mb-2 mx-2 bg-slate-200 dark:bg-slate-800">
              {selectedFile?.type.startsWith('video/') ? (
@@ -300,7 +289,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
         )}
 
         <div className="flex gap-2 items-end">
-           {/* Buttons for Media/Gif/Emoji */}
            <div className="flex gap-1 shrink-0 pb-1.5">
               <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 transition-all active:scale-90">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Z" /></svg>
@@ -337,10 +325,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
         </div>
       </form>
       
-      {/* Hidden Inputs */}
       <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} accept="image/*,video/*" />
 
-      {/* FIXED POSITION PICKERS (Use Portal to break stacking context) */}
       {(isEmojiPickerOpen || isGiphyPickerOpen) && createPortal(
         <>
           <div className="fixed inset-0 z-[9990] bg-transparent" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />
@@ -351,7 +337,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
         </>,
         document.body
       )}
-
     </div>
   );
 };

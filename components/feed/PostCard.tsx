@@ -4,15 +4,7 @@ import { Post, User } from '../../types';
 import { ICONS, PULSE_FREQUENCIES } from '../../constants';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
-const { 
-  deleteDoc, 
-  doc, 
-  updateDoc, 
-  increment, 
-  addDoc, 
-  serverTimestamp, 
-  collection
-} = Firestore as any;
+const { deleteDoc, doc, updateDoc, increment, addDoc, serverTimestamp, collection } = Firestore as any;
 import { CommentSection } from './CommentSection';
 import { DeleteConfirmationModal } from '../ui/DeleteConfirmationModal';
 
@@ -25,6 +17,7 @@ interface PostCardProps {
   isAuthor?: boolean;
   userData: User | null;
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
+  blockedIds?: Set<string>;
 }
 
 export const PostCard: React.FC<PostCardProps> = ({ 
@@ -35,7 +28,8 @@ export const PostCard: React.FC<PostCardProps> = ({
   locale = 'en-GB', 
   isAuthor = false, 
   userData, 
-  addToast 
+  addToast,
+  blockedIds
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -43,13 +37,11 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [showComments, setShowComments] = useState(false);
   
-  // Pulse Spectrum State
   const [isPulseMenuOpen, setIsPulseMenuOpen] = useState(false);
   const [rippleEffect, setRippleEffect] = useState<{ x: number, y: number, color: string } | null>(null);
   const pulseTimerRef = useRef<any>(null);
   const optionsRef = useRef<HTMLDivElement>(null);
 
-  // Settings Check
   const shouldAutoPlay = userData?.settings?.appearance?.autoPlayVideo !== false;
 
   useEffect(() => {
@@ -84,11 +76,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const formattedTimestamp = useMemo(() => {
     if (post.timestamp && post.timestamp.toDate) {
       return post.timestamp.toDate().toLocaleString(locale, {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
       });
     }
     const now = new Date();
@@ -176,8 +164,6 @@ export const PostCard: React.FC<PostCardProps> = ({
         }
       });
       await updateDoc(doc(db, 'posts', post.id), { shares: increment(1) });
-      
-      // Notify original author if not self
       if (post.authorId !== userData.id) {
           await addDoc(collection(db, 'notifications'), {
               type: 'relay',
@@ -192,7 +178,6 @@ export const PostCard: React.FC<PostCardProps> = ({
               pulseFrequency: 'velocity'
           });
       }
-
       addToast("Signal Relayed", "success");
     } catch (e) {
       addToast("Relay failed", "error");
@@ -233,7 +218,6 @@ export const PostCard: React.FC<PostCardProps> = ({
       onClick={() => onViewPost?.(post)}
       className={`group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[3rem] transition-all duration-500 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)] mb-10 relative cursor-pointer overflow-hidden ${isPulse ? 'border-l-[6px] border-l-indigo-600' : ''}`}
     >
-      {/* 1. RELAY HEADER - System Style */}
       {post.relaySource && (
         <div className="px-8 py-3 bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3">
            <div className="w-6 h-6 bg-white dark:bg-slate-700 rounded-lg flex items-center justify-center text-indigo-500 shadow-sm">
@@ -246,15 +230,10 @@ export const PostCard: React.FC<PostCardProps> = ({
       )}
 
       <div className="p-6 md:p-9">
-        
-        {/* 2. NODE IDENTITY HEADER */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <div className="relative group/avatar">
               <img src={post.authorAvatar} alt={post.authorName} className="w-14 h-14 rounded-[1.6rem] object-cover ring-4 ring-slate-50 dark:ring-slate-800 transition-all group-hover/avatar:ring-indigo-50 dark:group-hover/avatar:ring-indigo-900/30 group-hover/avatar:scale-105 z-10 relative bg-white dark:bg-slate-800" />
-              {post.coAuthors?.map((ca, idx) => (
-                <img key={ca.id} src={ca.avatar} className="absolute top-0 w-14 h-14 rounded-[1.6rem] object-cover border-2 border-white dark:border-slate-800 shadow-md z-0 -right-4 grayscale group-hover/avatar:grayscale-0 transition-all" style={{ zIndex: -idx }} alt="" />
-              ))}
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-[3px] border-white dark:border-slate-900 rounded-full z-20 shadow-sm" />
             </div>
             
@@ -269,12 +248,6 @@ export const PostCard: React.FC<PostCardProps> = ({
                      {formattedTimestamp}
                    </p>
                  </div>
-                 {signalVelocity > 0.5 && (
-                   <div className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 rounded-md border border-indigo-100 dark:border-indigo-900">
-                     <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
-                     <span className="text-[8px] font-black text-indigo-600 dark:text-indigo-400 font-mono tracking-wider">VELOCITY: {signalVelocity}</span>
-                   </div>
-                 )}
               </div>
             </div>
           </div>
@@ -310,7 +283,6 @@ export const PostCard: React.FC<PostCardProps> = ({
           </div>
         </div>
 
-        {/* 3. CONTENT MATRIX */}
         <div className={`mb-8 ${isPulse ? 'text-center px-4' : ''}`}>
           <div className={`text-slate-800 dark:text-slate-200 leading-relaxed font-medium tracking-tight ${isPulse ? 'text-2xl md:text-4xl font-black italic uppercase text-slate-900 dark:text-white' : isDeep ? 'text-base md:text-lg border-l-4 border-indigo-100 dark:border-indigo-900 pl-6 py-1' : 'text-base md:text-lg'}`}>
             {textChunks.map((chunk, idx) => {
@@ -318,8 +290,6 @@ export const PostCard: React.FC<PostCardProps> = ({
               return (
                 <span key={idx} className="relative group/chunk inline-block">
                   <span className="hover:bg-indigo-50/80 dark:hover:bg-indigo-900/30 hover:text-indigo-900 dark:hover:text-indigo-200 rounded-lg transition-colors px-0.5 -mx-0.5 cursor-text">{chunk}</span>
-                  
-                  {/* Micro-Reaction Menu */}
                   <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex gap-1 opacity-0 group-hover/chunk:opacity-100 transition-all duration-300 z-10 pointer-events-none group-hover/chunk:pointer-events-auto scale-90 group-hover/chunk:scale-100 origin-bottom" onClick={(e) => e.stopPropagation()}>
                      <div className="bg-white dark:bg-slate-800 rounded-full p-1 shadow-xl border border-slate-100 dark:border-slate-700 flex gap-1">
                        {['🔥', '❤️', '💡', '🚀'].map(emoji => (
@@ -327,7 +297,6 @@ export const PostCard: React.FC<PostCardProps> = ({
                        ))}
                      </div>
                   </div>
-
                   {reactions.length > 0 && (
                     <div className="inline-flex gap-1 ml-1 align-middle translate-y-[-2px]">
                       {reactions.map(r => (
@@ -341,18 +310,8 @@ export const PostCard: React.FC<PostCardProps> = ({
               );
             })}
           </div>
-          
-          {/* Captured Status Injection */}
-          {post.capturedStatus && (
-             <div className="mt-6 mb-2 inline-flex items-center gap-4 px-6 py-4 bg-slate-50/80 dark:bg-slate-800/80 rounded-[2rem] border border-slate-100 dark:border-slate-700 mx-auto max-w-full">
-                <span className="text-2xl filter drop-shadow-sm">{post.capturedStatus.emoji}</span>
-                <div className="h-6 w-px bg-slate-200 dark:bg-slate-700" />
-                <p className="text-sm font-bold text-slate-600 dark:text-slate-300 italic">"{post.capturedStatus.message}"</p>
-             </div>
-          )}
         </div>
 
-        {/* 4. VISUAL ARTIFACTS */}
         {post.media?.length > 0 && (
           <div className="relative rounded-[2.5rem] overflow-hidden mb-8 bg-slate-950 border border-slate-200/50 dark:border-slate-800 shadow-lg group/carousel">
             <div className="flex transition-transform duration-500 ease-out" style={{ transform: `translateX(-${currentMediaIndex * 100}%)` }}>
@@ -370,12 +329,9 @@ export const PostCard: React.FC<PostCardProps> = ({
                       muted={shouldAutoPlay} 
                     />
                   )}
-                  {/* Cinematic Vignette */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover/carousel:opacity-100 transition-opacity pointer-events-none" />
                 </div>
               ))}
             </div>
-            
             {post.media.length > 1 && (
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/20 backdrop-blur-md p-1.5 rounded-full border border-white/10">
                 {post.media.map((_, idx) => (
@@ -390,10 +346,8 @@ export const PostCard: React.FC<PostCardProps> = ({
           </div>
         )}
 
-        {/* 5. TACTILE ACTION GRID */}
         <div className="flex items-center justify-between pt-2 relative">
           <div className="flex gap-3 md:gap-4 w-full">
-            {/* PULSE BUTTON (Like) */}
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button 
                 onMouseDown={handlePulseStart} onMouseUp={handlePulseEnd} onTouchStart={handlePulseStart} onTouchEnd={handlePulseEnd} 
@@ -409,7 +363,6 @@ export const PostCard: React.FC<PostCardProps> = ({
                 <span className="text-xs md:text-sm font-black tracking-tighter tabular-nums">{(post.likes || 0).toLocaleString(locale)}</span>
               </button>
               
-              {/* Ripple Effect Container */}
               {rippleEffect && (
                 <div 
                   className={`absolute pointer-events-none rounded-full animate-ping opacity-20 bg-${rippleEffect.color}-500 z-50`}
@@ -417,7 +370,6 @@ export const PostCard: React.FC<PostCardProps> = ({
                 />
               )}
 
-              {/* Frequency Selector */}
               {isPulseMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-[50] bg-transparent" onClick={() => setIsPulseMenuOpen(false)} />
@@ -437,7 +389,6 @@ export const PostCard: React.FC<PostCardProps> = ({
               )}
             </div>
 
-            {/* ECHO BUTTON (Comment) */}
             <button 
               onClick={(e) => { e.stopPropagation(); setShowComments(!showComments); }}
               className={`flex items-center gap-3 h-12 md:h-14 px-5 md:px-6 rounded-2xl transition-all duration-300 group/btn border active:scale-95 ${
@@ -452,7 +403,6 @@ export const PostCard: React.FC<PostCardProps> = ({
               <span className="text-xs md:text-sm font-black tracking-tighter tabular-nums">{(post.comments || 0).toLocaleString(locale)}</span>
             </button>
 
-            {/* RELAY BUTTON (Share) */}
             <button 
               onClick={handleRelay} 
               className="flex items-center gap-3 h-12 md:h-14 px-5 md:px-6 rounded-2xl transition-all duration-300 group/btn border bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-md hover:text-indigo-600 dark:hover:text-indigo-400 active:scale-95"
@@ -472,7 +422,6 @@ export const PostCard: React.FC<PostCardProps> = ({
           </button>
         </div>
 
-        {/* 6. NEURAL ECHO FEED (Comments) */}
         {showComments && (
           <div onClick={(e) => e.stopPropagation()} className="animate-in fade-in slide-in-from-top-4 duration-500">
             <CommentSection 
@@ -481,12 +430,12 @@ export const PostCard: React.FC<PostCardProps> = ({
                 userData={userData} 
                 addToast={addToast} 
                 locale={locale} 
+                blockedIds={blockedIds}
             />
           </div>
         )}
       </div>
 
-      {/* 7. KINETIC ALERT MODAL */}
       <DeleteConfirmationModal 
         isOpen={showDeleteModal}
         title="PROTOCOL_ALERT"
