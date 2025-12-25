@@ -412,7 +412,13 @@ service cloud.firestore {
     match /two_factor_auth/{id} { allow read, list: if isUser(id); allow write: if isUser(id); }
     match /backup_keys/{id} { allow read, list: if isUser(id); allow write: if isUser(id); }
     match /recovery_signals/{id} { allow read, list: if isUser(id); allow write: if isAdmin(); }
-    match /support_tickets/{id} { allow create: if isAuthenticated(); allow read, list, update: if isUser(get(/databases/$(database)/documents/support_tickets/$(id)).data.userId) || isAdmin(); }
+    
+    match /support_tickets/{id} { 
+      allow create: if isAuthenticated(); 
+      allow read, list, update: if isUser(get(/databases/$(database)/documents/support_tickets/$(id)).data.userId) || isAdmin(); 
+      allow delete: if isAdmin();
+    }
+    
     match /escalation_logs/{id} { allow read, list: if isAdmin(); allow write: if isAdmin(); }
     match /admin_audit_v2/{id} { allow read, list: if isAdmin(); allow write: if isAdmin(); }
     match /citadel_overrides/{id} { allow read, list: if isAdmin(); allow write: if isAdmin(); }

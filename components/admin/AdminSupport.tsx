@@ -65,7 +65,7 @@ export const AdminSupport: React.FC<AdminSupportProps> = ({ addToast }) => {
     if (!ticketToDelete) return;
     try {
       await deleteDoc(doc(db, 'support_tickets', ticketToDelete));
-      addToast("Ticket purged", "info");
+      addToast("Ticket purged", "success");
     } catch (e) {
       addToast("Purge failed", "error");
     } finally {
