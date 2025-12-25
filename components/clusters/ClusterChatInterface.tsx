@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
 const { 
@@ -210,7 +211,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
       recipients.forEach(recipientId => {
           const ref = doc(collection(db, 'notifications'));
           batch.set(ref, {
-            type: 'cluster_invite', // Reusing this type for generic cluster msg
+            type: 'message', // Standard message type for consistent icon
             fromUserId: currentUser.id,
             fromUserName: currentUser.displayName,
             fromUserAvatar: currentUser.avatarUrl,
@@ -483,7 +484,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
                    <img src={mediaPreview} className="h-16 w-16 object-cover rounded-xl border border-slate-200 dark:border-slate-700" alt="Preview" />
                  )}
                  <button onClick={clearMedia} className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600 transition-colors">
-                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
                  </button>
                </div>
                <div>
@@ -512,7 +513,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({ chat
                 value={newMessage} 
                 onChange={(e) => setNewMessage(e.target.value)} 
                 placeholder="Broadcast to cluster..." 
-                className="flex-1 bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700 rounded-[2rem] px-6 py-4 text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-4 focus:ring-indigo-500/5 focus:bg-white dark:focus:bg-slate-900 focus:border-indigo-500 transition-all outline-none shadow-inner" 
+                className="flex-1 bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700 rounded-[2.2rem] px-6 py-4 text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-4 focus:ring-indigo-500/5 focus:bg-white dark:focus:bg-slate-900 focus:border-indigo-500 transition-all outline-none shadow-inner" 
               />
               
               <button 

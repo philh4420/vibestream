@@ -113,6 +113,7 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
     if (!db) return;
     try {
         const batch = writeBatch(db);
+        const attendeesToNotify = liveGathering.attendees.filter(id => id !== currentUser.id);
 
         if (updateSeries && liveGathering.recurrenceId) {
             // Recurrence Update Logic: Fetch all related gatherings
@@ -157,6 +158,27 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
         } else {
             // Single Update
             await updateDoc(doc(db, 'gatherings', liveGathering.id), data);
+            
+            // Notify attendees of single update
+            if (attendeesToNotify.length > 0) {
+               const notifBatch = writeBatch(db);
+               attendeesToNotify.forEach(uid => {
+                  notifBatch.set(doc(collection(db, 'notifications')), {
+                     type: 'system',
+                     fromUserId: currentUser.id,
+                     fromUserName: currentUser.displayName,
+                     fromUserAvatar: currentUser.avatarUrl,
+                     toUserId: uid,
+                     targetId: liveGathering.id,
+                     text: `Protocol Updated: "${liveGathering.title}" details changed.`,
+                     isRead: false,
+                     timestamp: serverTimestamp(),
+                     pulseFrequency: 'intensity'
+                  });
+               });
+               await notifBatch.commit();
+            }
+
             window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Protocol Updated", type: 'success' } }));
         }
         
@@ -170,15 +192,53 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
   const handleDelete = async (deleteSeries = false) => {
     if (!db) return;
     try {
+        const attendeesToNotify = liveGathering.attendees.filter(id => id !== currentUser.id);
+        const batch = writeBatch(db);
+
         if (deleteSeries && liveGathering.recurrenceId) {
-            const batch = writeBatch(db);
             const q = query(collection(db, 'gatherings'), where('recurrenceId', '==', liveGathering.recurrenceId));
             const snap = await getDocs(q);
             snap.docs.forEach((d: any) => batch.delete(d.ref));
+            
+            // Notify attendees of series cancellation (simplified: notify current attendees)
+            attendeesToNotify.forEach(uid => {
+                batch.set(doc(collection(db, 'notifications')), {
+                    type: 'system',
+                    fromUserId: currentUser.id,
+                    fromUserName: currentUser.displayName,
+                    fromUserAvatar: currentUser.avatarUrl,
+                    toUserId: uid,
+                    text: `Series Cancelled: "${liveGathering.title}" loop terminated.`,
+                    isRead: false,
+                    timestamp: serverTimestamp(),
+                    pulseFrequency: 'resilience'
+                });
+            });
+
             await batch.commit();
             window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: `Series Purged (${snap.size} Events)`, type: 'success' } }));
         } else {
             await deleteDoc(doc(db, 'gatherings', liveGathering.id));
+            
+            // Notify attendees of single cancellation
+            if (attendeesToNotify.length > 0) {
+               const notifBatch = writeBatch(db);
+               attendeesToNotify.forEach(uid => {
+                  notifBatch.set(doc(collection(db, 'notifications')), {
+                     type: 'system',
+                     fromUserId: currentUser.id,
+                     fromUserName: currentUser.displayName,
+                     fromUserAvatar: currentUser.avatarUrl,
+                     toUserId: uid,
+                     text: `Event Cancelled: "${liveGathering.title}" protocol terminated.`,
+                     isRead: false,
+                     timestamp: serverTimestamp(),
+                     pulseFrequency: 'resilience'
+                  });
+               });
+               await notifBatch.commit();
+            }
+
             window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Event Cancelled", type: 'success' } }));
         }
         onBack();

@@ -130,6 +130,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
         comments: increment(1)
       });
 
+      // 1. Notify Post Author (if not self)
       if (userData.id !== postAuthorId) {
         await addDoc(collection(db, 'notifications'), {
           type: 'comment',
@@ -142,6 +143,22 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
           isRead: false,
           timestamp: serverTimestamp(),
           pulseFrequency: 'intensity'
+        });
+      }
+
+      // 2. Notify Parent Comment Author (if replying and not self and not post author to avoid double ping)
+      if (parent && parent.authorId !== userData.id && parent.authorId !== postAuthorId) {
+         await addDoc(collection(db, 'notifications'), {
+          type: 'comment', // Could be 'reply' but reusing comment type works
+          fromUserId: userData.id,
+          fromUserName: userData.displayName,
+          fromUserAvatar: userData.avatarUrl,
+          toUserId: parent.authorId,
+          targetId: postId,
+          text: `replied to your comment: "${commentText.substring(0, 30)}${commentText.length > 30 ? '...' : ''}"`,
+          isRead: false,
+          timestamp: serverTimestamp(),
+          pulseFrequency: 'cognition'
         });
       }
 
