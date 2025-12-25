@@ -506,4 +506,114 @@ END:VCALENDAR`;
                                     style={{ width: `${Math.min((currentCount / capacity) * 100, 100)}%` }} 
                                />
                            </div>
-                           {liveGathering.waitlist && liveGathering.waitlist.length > 0
+                           {liveGathering.waitlist && liveGathering.waitlist.length > 0 && (
+                                <p className="text-[8px] font-black text-amber-500 uppercase tracking-widest font-mono mt-2 text-right">
+                                    Queue: {liveGathering.waitlist.length} Nodes
+                                </p>
+                           )}
+                       </div>
+                   )}
+
+                   {/* Attendees List (Mini) */}
+                   <div className="flex flex-col gap-3">
+                      {attendeesList.slice(0, 5).map(user => (
+                        <div key={user.id} className="flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition-all">
+                           <img src={user.avatarUrl} className="w-8 h-8 rounded-lg object-cover" alt="" />
+                           <div className="min-w-0">
+                             <p className="text-[10px] font-black text-slate-900 dark:text-white uppercase truncate">{user.displayName}</p>
+                             <p className="text-[8px] font-mono text-slate-400">@{user.username}</p>
+                           </div>
+                        </div>
+                      ))}
+                      {currentCount > 5 && (
+                          <div className="text-center pt-2">
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">
+                                  + {currentCount - 5} More Signals
+                              </span>
+                          </div>
+                      )}
+                   </div>
+               </div>
+            
+               <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex flex-col gap-3">
+                     {isAttending && liveGathering.linkedChatId && (
+                         <button 
+                           onClick={() => onOpenLobby(liveGathering.linkedChatId!)}
+                           className="w-full py-4 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-black text-[10px] uppercase tracking-[0.2em] hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all border border-indigo-200 dark:border-indigo-800"
+                         >
+                            ACCESS_NEURAL_LOBBY
+                         </button>
+                     )}
+
+                     {!isOrganizer && (
+                         <button 
+                           onClick={() => onRSVP(liveGathering.id, isAttending || isWaitlisted || false)}
+                           className={`w-full py-5 rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.3em] shadow-xl transition-all active:scale-95 ${
+                               isAttending 
+                               ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-500' 
+                               : isWaitlisted 
+                               ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 hover:bg-rose-50 hover:text-rose-500'
+                               : isFull
+                               ? 'bg-amber-500 text-white hover:bg-amber-600'
+                               : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-indigo-600 dark:hover:bg-indigo-400'
+                           }`}
+                         >
+                           {isAttending ? 'WITHDRAW_SIGNAL' : isWaitlisted ? 'LEAVE_QUEUE' : isFull ? 'JOIN_WAITLIST' : 'CONFIRM_PRESENCE'}
+                         </button>
+                     )}
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      {/* 4. MEMORY BANK (Shared Media) */}
+      <GatheringMemoryBank 
+        gathering={liveGathering} 
+        currentUser={currentUser} 
+        isAttendee={isAttending} 
+        isOrganizer={isOrganizer}
+        addToast={window.dispatchEvent.bind(window, new CustomEvent('vibe-toast', { detail: { msg: '', type: 'info' } })) as any} 
+      />
+
+      {/* MODALS */}
+      <DeleteConfirmationModal 
+        isOpen={showDeleteModal}
+        title="CANCEL_GATHERING"
+        description="Are you sure you want to cancel this gathering? All attendees will be notified."
+        onConfirm={() => handleDelete(false)}
+        onCancel={() => setShowDeleteModal(false)}
+        confirmText="CONFIRM_CANCELLATION"
+      />
+
+      {/* Custom Modal for Recurring Delete */}
+      {showRecurringDeleteOptions && (
+        <div className="fixed inset-0 z-[3000] flex items-center justify-center p-6 animate-in fade-in duration-300">
+           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowRecurringDeleteOptions(false)}></div>
+           <div className="relative bg-white dark:bg-slate-900 w-full max-w-sm rounded-[3rem] p-10 shadow-2xl border border-white/20">
+               <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tight mb-4 text-center">Recurrence_Detected</h3>
+               <div className="space-y-3">
+                   <button onClick={() => { setShowRecurringDeleteOptions(false); handleDelete(false); }} className="w-full py-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl font-black text-[9px] uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700">
+                       Cancel Only This Event
+                   </button>
+                   <button onClick={() => { setShowRecurringDeleteOptions(false); handleDelete(true); }} className="w-full py-4 bg-rose-600 text-white rounded-2xl font-black text-[9px] uppercase tracking-widest hover:bg-rose-700 shadow-lg">
+                       Cancel Entire Series
+                   </button>
+               </div>
+           </div>
+        </div>
+      )}
+
+      {isEditOpen && (
+        <CreateGatheringModal 
+          currentUser={currentUser}
+          initialData={liveGathering}
+          onClose={() => setIsEditOpen(false)}
+          onConfirm={handleUpdate}
+        />
+      )}
+
+    </div>
+  );
+};
