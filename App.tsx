@@ -177,55 +177,143 @@ const FeatureDisabledScreen = ({ featureName }: { featureName: string }) => (
 /**
  * SCREEN 3: ACCOUNT SUSPENDED (Severe, Red, Final)
  */
-const SuspendedScreen = ({ onLogout }: { onLogout: () => void }) => (
-  <div className="fixed inset-0 z-[9999] bg-[#050101] flex flex-col items-center justify-center overflow-hidden font-sans selection:bg-rose-500 selection:text-white">
-    
-    {/* Ambient Red Glow */}
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(220,38,38,0.15),transparent_70%)] animate-pulse-slow" />
-    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
+const SuspendedScreen = ({ onLogout, userData }: { onLogout: () => void, userData: User | null }) => {
+  const [showAppealModal, setShowAppealModal] = useState(false);
+  const [appealReason, setAppealReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
-    <div className="relative z-10 flex flex-col items-center text-center p-8 max-w-2xl w-full">
+  const handleSubmitAppeal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!appealReason.trim() || !userData) return;
+    setIsSubmitting(true);
+
+    try {
+      await addDoc(collection(db, 'support_tickets'), {
+        userId: userData.id,
+        userName: userData.displayName,
+        userEmail: userData.email || 'N/A',
+        subject: 'URGENT: Suspension Appeal',
+        description: appealReason,
+        category: 'appeal',
+        status: 'open',
+        priority: 'high',
+        createdAt: serverTimestamp()
+      });
+      setHasSubmitted(true);
+      setTimeout(() => {
+        setShowAppealModal(false);
+        setAppealReason('');
+      }, 2500);
+    } catch (err) {
+      console.error("Appeal failed:", err);
+      // Fallback for user feedback
+      alert("Submission Error: Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-[#050101] flex flex-col items-center justify-center overflow-hidden font-sans selection:bg-rose-500 selection:text-white">
       
-      {/* Icon */}
-      <div className="w-32 h-32 bg-rose-500/10 rounded-full flex items-center justify-center mb-10 border border-rose-500/30 shadow-[0_0_60px_-20px_rgba(244,63,94,0.6)]">
-        <svg className="w-12 h-12 text-rose-500 drop-shadow-[0_0_10px_rgba(244,63,94,0.8)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-        </svg>
+      {/* Ambient Red Glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(220,38,38,0.15),transparent_70%)] animate-pulse-slow" />
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
+
+      <div className="relative z-10 flex flex-col items-center text-center p-8 max-w-2xl w-full">
+        
+        {/* Icon */}
+        <div className="w-32 h-32 bg-rose-500/10 rounded-full flex items-center justify-center mb-10 border border-rose-500/30 shadow-[0_0_60px_-20px_rgba(244,63,94,0.6)]">
+          <svg className="w-12 h-12 text-rose-500 drop-shadow-[0_0_10px_rgba(244,63,94,0.8)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+          </svg>
+        </div>
+
+        <h1 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter italic mb-6 leading-none">
+          Node<span className="text-rose-600">_</span>Suspended
+        </h1>
+        
+        <div className="px-6 py-2 bg-rose-950/50 border border-rose-500/30 rounded-lg mb-8">
+          <p className="text-xs font-bold text-rose-400 font-mono uppercase tracking-[0.2em]">Access_Protocol: DENIED</p>
+        </div>
+
+        <p className="text-slate-400 text-sm md:text-base font-medium leading-relaxed max-w-md mb-12">
+          Your connection to the grid has been terminated due to a violation of the VibeStream Core Protocols. This suspension is effective immediately.
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-sm relative z-20">
+          <button 
+            onClick={onLogout}
+            className="flex-1 py-4 bg-white text-black rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-200 transition-all active:scale-95 shadow-xl"
+          >
+            Terminate_Session
+          </button>
+          <button 
+            onClick={() => setShowAppealModal(true)}
+            className="flex-1 py-4 bg-rose-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-rose-700 transition-all active:scale-95 shadow-xl shadow-rose-900/50 flex items-center justify-center"
+          >
+            File_Appeal
+          </button>
+        </div>
+
+        {/* Updated Spacing for ERR_CODE to prevent overlap */}
+        <p className="mt-16 text-[9px] font-black text-rose-900/60 uppercase tracking-[0.5em] font-mono select-none">
+          ERR_CODE: USER_BAN_0X99
+        </p>
       </div>
 
-      <h1 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter italic mb-6 leading-none">
-        Node<span className="text-rose-600">_</span>Suspended
-      </h1>
-      
-      <div className="px-6 py-2 bg-rose-950/50 border border-rose-500/30 rounded-lg mb-8">
-        <p className="text-xs font-bold text-rose-400 font-mono uppercase tracking-[0.2em]">Access_Protocol: DENIED</p>
-      </div>
+      {/* APPEAL MODAL */}
+      {showAppealModal && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="relative bg-slate-900 w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl border border-rose-900/50 flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+              
+              {/* Header */}
+              <div className="mb-6 flex justify-between items-start">
+                 <div>
+                    <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">Submit_Appeal</h3>
+                    <p className="text-[10px] font-black text-rose-500 uppercase tracking-[0.3em] font-mono mt-1">Official Legal Protocol</p>
+                 </div>
+                 <button onClick={() => setShowAppealModal(false)} className="p-2 text-slate-500 hover:text-white transition-colors">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                 </button>
+              </div>
 
-      <p className="text-slate-400 text-sm md:text-base font-medium leading-relaxed max-w-md mb-12">
-        Your connection to the grid has been terminated due to a violation of the VibeStream Core Protocols. This suspension is effective immediately.
-      </p>
-
-      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-sm">
-        <button 
-          onClick={onLogout}
-          className="flex-1 py-4 bg-white text-black rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-200 transition-all active:scale-95 shadow-xl"
-        >
-          Terminate_Session
-        </button>
-        <a 
-          href="mailto:appeals@vibestream.network"
-          className="flex-1 py-4 bg-rose-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-rose-700 transition-all active:scale-95 shadow-xl shadow-rose-900/50 flex items-center justify-center"
-        >
-          File_Appeal
-        </a>
-      </div>
-
-      <p className="absolute bottom-10 text-[9px] font-black text-rose-900/60 uppercase tracking-[0.5em] font-mono">
-        ERR_CODE: USER_BAN_0X99
-      </p>
+              {hasSubmitted ? (
+                 <div className="py-12 flex flex-col items-center text-center space-y-4">
+                    <div className="w-16 h-16 bg-emerald-900/20 text-emerald-500 rounded-full flex items-center justify-center border border-emerald-500/20 mb-2">
+                       <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                    </div>
+                    <h4 className="text-xl font-black text-white uppercase italic">Appeal_Received</h4>
+                    <p className="text-xs text-slate-400 max-w-xs">Your case has been logged in the Citadel docket. An admin will review your node history shortly.</p>
+                 </div>
+              ) : (
+                 <form onSubmit={handleSubmitAppeal} className="space-y-6">
+                    <div className="space-y-2">
+                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono ml-2">Defense_Statement</label>
+                       <textarea 
+                         value={appealReason}
+                         onChange={(e) => setAppealReason(e.target.value)}
+                         placeholder="Explain why this suspension should be lifted..."
+                         className="w-full bg-black/40 border border-slate-700 rounded-2xl p-4 text-sm font-medium text-white placeholder:text-slate-600 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/50 outline-none resize-none h-40 transition-all"
+                       />
+                    </div>
+                    
+                    <button 
+                      type="submit"
+                      disabled={!appealReason.trim() || isSubmitting}
+                      className="w-full py-5 bg-white text-black rounded-xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-slate-200 transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      {isSubmitting ? 'TRANSMITTING...' : 'SUBMIT_TO_COUNCIL'}
+                    </button>
+                 </form>
+              )}
+           </div>
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 export default function App() {
   const [user, setUser] = useState<any>(null);
@@ -679,7 +767,7 @@ export default function App() {
 
   // SUSPENSION CHECK
   if (userData?.isSuspended && user) {
-    return <SuspendedScreen onLogout={handleLogout} />;
+    return <SuspendedScreen onLogout={handleLogout} userData={userData} />;
   }
 
   // MAINTENANCE MODE CHECK (Bypass for Admins)
