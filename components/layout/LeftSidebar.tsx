@@ -24,19 +24,24 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
 }) => {
   
   const unreadCount = notifications.filter(n => !n.isRead).length;
-  
-  // Determine verification status
   const isVerified = userData?.verifiedHuman || ['verified', 'creator', 'admin'].includes(userData?.role || '');
 
-  // Helper to check if a feature is enabled
+  // Safety check for feature flags - default to TRUE if undefined to prevent missing links
   const isEnabled = (route: AppRoute) => {
-    // Admin always has access to Admin Panel, others strictly follow flags
     if (route === AppRoute.ADMIN) return userRole === 'admin';
-    // If flags are missing, default to true
-    return systemSettings?.featureFlags?.[route] !== false;
+    if (!systemSettings || !systemSettings.featureFlags) return true;
+    return systemSettings.featureFlags[route] !== false;
   };
 
-  const NavItem = ({ route, icon: Icon, label, customIcon, collapsed = false, badge, isSubItem = false }: { 
+  const NavItem = ({ 
+    route, 
+    icon: Icon, 
+    label, 
+    customIcon, 
+    collapsed = false, 
+    badge, 
+    isSubItem = false 
+  }: { 
     route?: AppRoute, 
     icon?: React.FC, 
     label: string, 
@@ -45,16 +50,18 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
     badge?: string | number,
     isSubItem?: boolean
   }) => {
-    // Check disabled state
-    const disabled = route && !isEnabled(route);
-    // Only Admin Panel is hidden if not admin
+    // Admin check is strict
     if (route === AppRoute.ADMIN && userRole !== 'admin') return null;
-
+    
+    // Feature flag check (visual dimming only, or hide if preferred - here we just dim)
+    const enabled = route ? isEnabled(route) : true;
     const isActive = route && activeRoute === route;
+
     return (
       <button 
-        onClick={() => route && onNavigate(route)}
+        onClick={() => route && enabled && onNavigate(route)}
         title={collapsed ? label : undefined}
+        disabled={!enabled}
         className={`group relative flex items-center w-full transition-all duration-300 ease-out outline-none tap-feedback ${
           collapsed 
             ? 'justify-center p-3 rounded-2xl' 
@@ -63,7 +70,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           isActive 
             ? 'bg-slate-900 text-white shadow-xl shadow-indigo-900/10 dark:bg-white dark:text-slate-950 dark:shadow-none' 
             : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
-        } ${disabled ? 'opacity-60 grayscale' : ''}`}
+        } ${!enabled ? 'opacity-50 grayscale cursor-not-allowed' : 'cursor-pointer'}`}
       >
         {/* Active Indicator Glow */}
         {isActive && !collapsed && (
@@ -80,10 +87,10 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
               {label}
             </span>
             <div className="flex items-center gap-2">
-              {disabled && (
+              {!enabled && (
                 <svg className="w-3 h-3 text-slate-400 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
               )}
-              {badge !== undefined && (typeof badge === 'number' ? badge > 0 : badge !== '') && !disabled && (
+              {badge !== undefined && (typeof badge === 'number' ? badge > 0 : badge !== '') && enabled && (
                 <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg shadow-sm ${isActive ? 'bg-white text-slate-900 dark:bg-slate-900 dark:text-white' : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'}`}>
                   {badge}
                 </span>
@@ -188,9 +195,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
 
         {/* System & Support */}
         <ProtocolGroup title="System" collapsed={collapsed}>
-          {userRole !== 'admin' && (
-            <NavItem route={AppRoute.SUPPORT} icon={ICONS.Support} label="Support Matrix" collapsed={collapsed} />
-          )}
+          <NavItem route={AppRoute.SUPPORT} icon={ICONS.Support} label="Support Matrix" collapsed={collapsed} />
           {userRole === 'admin' && (
             <NavItem route={AppRoute.ADMIN} icon={ICONS.Admin} label="Command Deck" collapsed={collapsed} />
           )}

@@ -192,6 +192,22 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
+  const mobileNavItems = [
+    { l: 'Hub', i: ICONS.Home, r: AppRoute.FEED },
+    { l: 'Explore', i: ICONS.Explore, r: AppRoute.EXPLORE },
+    { l: 'Comms', i: ICONS.Messages, r: AppRoute.MESSAGES },
+    { l: 'Alerts', i: ICONS.Bell, r: AppRoute.NOTIFICATIONS },
+    { l: 'Mesh', i: ICONS.Profile, r: AppRoute.MESH },
+    { l: 'Clusters', i: ICONS.Clusters, r: AppRoute.CLUSTERS },
+    { l: 'Live', i: ICONS.Streams, r: AppRoute.STREAM_GRID, b: 'ON_AIR' },
+    { l: 'Vault', i: ICONS.Saved, r: AppRoute.SAVED },
+    { l: 'Time', i: ICONS.Temporal, r: AppRoute.TEMPORAL },
+    { l: 'Events', i: ICONS.Gatherings, r: AppRoute.GATHERINGS },
+    { l: 'Sims', i: ICONS.Simulations, r: AppRoute.SIMULATIONS },
+    { l: 'Health', i: ICONS.Resilience, r: AppRoute.RESILIENCE },
+    { l: 'Support', i: ICONS.Support, r: AppRoute.SUPPORT }
+  ];
+
   return (
     <header 
       className="fixed top-0 left-0 right-0 z-[1000] glass-panel border-b border-slate-200/50 dark:border-slate-800/50 shadow-[0_4px_30px_rgba(0,0,0,0.03)] flex items-center transition-all duration-500 backdrop-blur-xl bg-white/70 dark:bg-slate-950/70 supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-slate-950/60" 
@@ -309,10 +325,10 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             {isSystemMenuOpen && !isHubOpen && (
-              <div className="absolute right-0 top-full mt-4 w-[min(90vw,360px)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.25)] border border-white/20 dark:border-white/10 ring-1 ring-slate-950/5 overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-4 duration-400 flex flex-col">
+              <div className="absolute right-0 top-full mt-4 w-[min(90vw,360px)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.25)] border border-white/20 dark:border-white/10 ring-1 ring-slate-950/5 overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-4 duration-400 flex flex-col max-h-[85vh]">
                   
                   {/* Status Hub Trigger */}
-                  <div className="p-2">
+                  <div className="p-2 shrink-0">
                     <button 
                       onClick={() => { setIsHubOpen(true); setIsSystemMenuOpen(false); }}
                       className="w-full p-4 bg-slate-50/80 dark:bg-slate-800/80 rounded-[2rem] hover:bg-white dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:border-indigo-100 dark:hover:border-indigo-900 hover:shadow-lg transition-all text-left group flex items-start gap-4"
@@ -335,20 +351,15 @@ export const Header: React.FC<HeaderProps> = ({
                     </button>
                   </div>
 
-                  <div className="p-6 space-y-6">
-                    {/* Mobile Nav Grid */}
+                  <div className="p-6 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
+                    {/* Mobile Nav Grid - Expanded for Mobile First Access */}
                     <div className="lg:hidden space-y-3">
-                      <p className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.3em] font-mono ml-1">Navigation_Matrix</p>
+                      <p className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.3em] font-mono ml-1">Full_Matrix_Access</p>
                       <div className="grid grid-cols-2 gap-2">
-                        {[
-                          { l: 'Hub', i: ICONS.Home, r: AppRoute.FEED },
-                          { l: 'Comms', i: ICONS.Messages, r: AppRoute.MESSAGES },
-                          { l: 'Clusters', i: ICONS.Clusters, r: AppRoute.CLUSTERS },
-                          { l: 'Live', i: ICONS.Streams, r: AppRoute.STREAM_GRID, b: 'LIVE' },
-                        ].map(item => (
+                        {mobileNavItems.map(item => (
                           <button key={item.l} onClick={() => { onNavigate(item.r); setIsSystemMenuOpen(false); }} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all text-slate-600 dark:text-slate-400">
                              <div className="scale-75"><item.i /></div>
-                             <span className="text-[10px] font-black uppercase tracking-wide">{item.l}</span>
+                             <span className="text-[10px] font-black uppercase tracking-wide truncate">{item.l}</span>
                              {item.b && <span className="ml-auto text-[7px] font-black bg-rose-500 text-white px-1.5 py-0.5 rounded animate-pulse">{item.b}</span>}
                           </button>
                         ))}
@@ -373,7 +384,7 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                   </div>
                   
-                  <div className="p-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex flex-col gap-2">
+                  <div className="p-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex flex-col gap-2 shrink-0">
                     {onOpenSettings && (
                       <button 
                         onClick={() => { onOpenSettings(); setIsSystemMenuOpen(false); }}
@@ -396,11 +407,11 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Hub Dropdown (Replacing Modal) */}
             {isHubOpen && (
-              <div className="absolute right-0 top-full mt-4 w-[min(92vw,400px)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.25)] border border-white/20 dark:border-white/10 ring-1 ring-slate-950/5 overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-4 duration-400 flex flex-col">
+              <div className="absolute right-0 top-full mt-4 w-[min(92vw,400px)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.25)] border border-white/20 dark:border-white/10 ring-1 ring-slate-950/5 overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-4 duration-400 flex flex-col max-h-[85vh]">
                   
                   <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-rose-500" />
                   
-                  <div className="flex justify-between items-start p-6 pb-2">
+                  <div className="flex justify-between items-start p-6 pb-2 shrink-0">
                      <div>
                        <h2 className="text-xl font-black text-slate-950 dark:text-white tracking-tighter uppercase italic leading-none">Neural_State</h2>
                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono mt-1">Broadcast Config</p>
@@ -410,7 +421,7 @@ export const Header: React.FC<HeaderProps> = ({
                      </button>
                   </div>
 
-                  <div className="space-y-6 p-6 pt-2 flex-1 overflow-y-auto no-scrollbar scroll-container max-h-[70vh]">
+                  <div className="space-y-6 p-6 pt-2 flex-1 overflow-y-auto no-scrollbar scroll-container">
                      <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800 p-3 rounded-[1.8rem] border border-slate-100 dark:border-slate-700">
                         <div className="w-16 h-16 bg-white dark:bg-slate-700 rounded-[1.4rem] flex items-center justify-center text-4xl shadow-sm border border-slate-100 dark:border-slate-600 shrink-0">
                           {localStatus.statusEmoji}
