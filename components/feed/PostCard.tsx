@@ -14,6 +14,7 @@ const {
   collection
 } = Firestore as any;
 import { CommentSection } from './CommentSection';
+import { DeleteConfirmationModal } from '../ui/DeleteConfirmationModal';
 
 interface PostCardProps {
   post: Post;
@@ -95,8 +96,13 @@ export const PostCard: React.FC<PostCardProps> = ({
     return `${dateStr}, ${post.createdAt}`; 
   }, [post.timestamp, post.createdAt, locale]);
 
-  const handlePurgeSignal = async (e: React.MouseEvent) => {
+  const initiateDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setShowOptions(false);
+    setShowDeleteModal(true);
+  };
+
+  const handlePurgeSignal = async () => {
     if (!isAuthor || !db) return;
     setIsDeleting(true);
     setShowDeleteModal(false);
@@ -293,7 +299,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                     </span>
                   </button>
                   {isAuthor && (
-                    <button onClick={handlePurgeSignal} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all text-left border-t border-slate-50 dark:border-slate-800 mt-1">
+                    <button onClick={initiateDelete} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all text-left border-t border-slate-50 dark:border-slate-800 mt-1">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
                       <span className="text-[9px] font-black uppercase tracking-widest font-mono">Purge_Node</span>
                     </button>
@@ -475,25 +481,14 @@ export const PostCard: React.FC<PostCardProps> = ({
       </div>
 
       {/* 7. KINETIC ALERT MODAL */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300" onClick={(e) => e.stopPropagation()}>
-          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setShowDeleteModal(false)}></div>
-          <div className="relative bg-white dark:bg-slate-900 w-full max-w-sm rounded-[3rem] p-10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] border border-white/20 dark:border-slate-800 overflow-hidden">
-             <div className="absolute top-0 left-0 w-full h-1.5 bg-rose-600" />
-             <div className="text-center space-y-4 mb-10">
-               <div className="w-16 h-16 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-500 rounded-[1.5rem] flex items-center justify-center mx-auto mb-2 shadow-sm border border-rose-100 dark:border-rose-900">
-                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
-               </div>
-               <h3 className="text-2xl font-black text-slate-950 dark:text-white tracking-tighter uppercase italic leading-none">PROTOCOL_ALERT</h3>
-               <p className="text-xs text-slate-500 dark:text-slate-400 font-bold leading-relaxed px-4">Terminate transmission sequence?</p>
-             </div>
-             <div className="flex flex-col gap-3">
-                <button onClick={(e) => handlePurgeSignal(e)} className="w-full py-5 bg-rose-600 text-white rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.3em] shadow-xl shadow-rose-200/20 hover:bg-rose-700 transition-all active:scale-95 italic">CONFIRM_PURGE</button>
-                <button onClick={() => setShowDeleteModal(false)} className="w-full py-5 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-slate-100 dark:hover:bg-slate-700 transition-all active:scale-95 italic">ABORT_ACTION</button>
-             </div>
-          </div>
-        </div>
-      )}
+      <DeleteConfirmationModal 
+        isOpen={showDeleteModal}
+        title="PROTOCOL_ALERT"
+        description="Terminate transmission sequence? This action is irreversible."
+        onConfirm={handlePurgeSignal}
+        onCancel={() => setShowDeleteModal(false)}
+        confirmText="CONFIRM_PURGE"
+      />
     </article>
   );
 };
