@@ -25,13 +25,15 @@ export const AtmosphericBackground: React.FC<AtmosphericBackgroundProps> = ({ we
   };
 
   const styleClass = getAtmosphericStyle();
+  const isDefault = styleClass === 'atmos-default';
 
   return (
     <div className={`relative w-full h-full flex flex-col overflow-hidden transition-all duration-1000 ${styleClass}`}>
       {/* Dynamic Visual Layers */}
       <div className="absolute inset-0 pointer-events-none z-0">
         {/* Base Neural Gradient Layer - Primary Atmosphere Color */}
-        <div className="absolute inset-0 bg-atmosphere-base opacity-100 transition-colors duration-1000" />
+        {/* FIXED: Using direct Tailwind classes for default state to guarantee Dark Mode switch */}
+        <div className={`absolute inset-0 transition-colors duration-1000 ${isDefault ? 'bg-slate-50 dark:bg-[#020617]' : 'bg-atmosphere-base opacity-100'}`} />
         
         {/* UK Condensation Layer (Rain/Drizzle/Storm) */}
         {(condition.includes('rain') || condition.includes('storm') || condition.includes('drizzle')) && (
@@ -54,7 +56,7 @@ export const AtmosphericBackground: React.FC<AtmosphericBackgroundProps> = ({ we
         )}
 
         {/* Neural Grid Noise (2026 Refractive Texture) */}
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] mix-blend-overlay" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] mix-blend-overlay dark:opacity-[0.04]" />
       </div>
 
       {/* Content Interface Container */}
@@ -76,9 +78,6 @@ export const AtmosphericBackground: React.FC<AtmosphericBackgroundProps> = ({ we
         .atmos-dust .bg-atmosphere-base { background: linear-gradient(180deg, oklch(0.92 0.02 60), oklch(0.88 0.03 60)); }
         .atmos-extreme .bg-atmosphere-base { background: linear-gradient(180deg, oklch(0.1 0.01 0), oklch(0.2 0.02 10)); }
         
-        /* Default uses CSS Variable to respect System Theme */
-        .atmos-default .bg-atmosphere-base { background: var(--bg-main); }
-
         /* Dark Mode Overrides for Weather Conditions */
         html.dark .atmos-rain .bg-atmosphere-base { background: linear-gradient(180deg, #0f172a, #1e293b); }
         html.dark .atmos-drizzle .bg-atmosphere-base { background: linear-gradient(180deg, #0f172a, #1e293b); }
