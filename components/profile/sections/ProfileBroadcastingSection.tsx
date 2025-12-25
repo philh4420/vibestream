@@ -9,6 +9,8 @@ interface ProfileBroadcastingSectionProps {
   userData: User | null;
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
   onViewPost: (post: Post) => void;
+  onLike?: (id: string, freq?: string) => void;
+  onBookmark?: (id: string) => void;
 }
 
 export const ProfileBroadcastingSection: React.FC<ProfileBroadcastingSectionProps> = ({ 
@@ -16,7 +18,9 @@ export const ProfileBroadcastingSection: React.FC<ProfileBroadcastingSectionProp
   locale,
   userData,
   addToast,
-  onViewPost
+  onViewPost,
+  onLike,
+  onBookmark
 }) => {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[2560px] mx-auto">
@@ -26,7 +30,8 @@ export const ProfileBroadcastingSection: React.FC<ProfileBroadcastingSectionProp
           <PostCard 
             key={post.id} 
             post={post} 
-            onLike={() => {}} 
+            onLike={(id, freq) => onLike?.(id, freq)} 
+            onBookmark={(id) => onBookmark?.(id)}
             onViewPost={onViewPost}
             locale={locale} 
             userData={userData}

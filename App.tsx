@@ -16,8 +16,10 @@ import {
   arrayUnion, 
   getDoc,
   updateDoc,
-  deleteDoc
-} from 'firebase/firestore'; // Fixed import source
+  deleteDoc,
+  addDoc,
+  increment
+} from 'firebase/firestore'; 
 import { auth, db } from './services/firebase';
 import { 
   User, 
@@ -425,6 +427,79 @@ export default function App() {
     addToast("Signal Composer Active", "info");
   };
 
+  // --- INTERACTION LOGIC ---
+
+  const handleLike = async (postId: string, frequency: string = 'pulse') => {
+    if (!user || !userData) return;
+    const postRef = doc(db, 'posts', postId);
+    
+    try {
+        const postSnap = await getDoc(postRef);
+        if (!postSnap.exists()) return;
+        
+        const postData = postSnap.data() as Post;
+        const isLiked = postData.likedBy?.includes(user.uid);
+
+        const batch = writeBatch(db);
+        
+        if (isLiked) {
+            batch.update(postRef, {
+                likes: increment(-1),
+                likedBy: arrayRemove(user.uid)
+            });
+        } else {
+            batch.update(postRef, {
+                likes: increment(1),
+                likedBy: arrayUnion(user.uid)
+            });
+            
+            // Notification (only if not self)
+            if (postData.authorId !== user.uid) {
+                const notifRef = doc(collection(db, 'notifications'));
+                batch.set(notifRef, {
+                    type: 'like',
+                    pulseFrequency: frequency,
+                    fromUserId: user.uid,
+                    fromUserName: userData.displayName,
+                    fromUserAvatar: userData.avatarUrl,
+                    toUserId: postData.authorId,
+                    targetId: postId,
+                    text: 'pulsed your signal',
+                    isRead: false,
+                    timestamp: serverTimestamp()
+                });
+            }
+        }
+        await batch.commit();
+        if (!isLiked) addToast("Frequency Synced", "success");
+    } catch (error) {
+        console.error("Pulse error:", error);
+        addToast("Pulse Failed", "error");
+    }
+  };
+
+  const handleBookmark = async (postId: string) => {
+    if (!user) return;
+    const postRef = doc(db, 'posts', postId);
+    
+    try {
+        const postSnap = await getDoc(postRef);
+        if (!postSnap.exists()) return;
+        
+        const isBookmarked = postSnap.data().bookmarkedBy?.includes(user.uid);
+        
+        if (isBookmarked) {
+            await updateDoc(postRef, { bookmarkedBy: arrayRemove(user.uid) });
+            addToast("Removed from Data Vault", "info");
+        } else {
+            await updateDoc(postRef, { bookmarkedBy: arrayUnion(user.uid) });
+            addToast("Secured in Data Vault", "success");
+        }
+    } catch (error) {
+        addToast("Vault Protocol Error", "error");
+    }
+  };
+
   // --- RSVP LOGIC ---
   const handleRSVP = async (gatheringId: string, isAttendingOrWaitlisted: boolean) => {
     if (!db || !userData || rsvpProcessing.has(gatheringId)) return;
@@ -588,8 +663,8 @@ export default function App() {
               posts={globalPosts} 
               userData={userData}
               locale="en-GB"
-              onLike={() => {}}
-              onBookmark={() => {}}
+              onLike={handleLike}
+              onBookmark={handleBookmark}
               onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
               onOpenCreate={() => handleCreatePost()}
               onTransmitStory={() => {}}
@@ -606,8 +681,8 @@ export default function App() {
             <ExplorePage 
               posts={globalPosts}
               users={allUsers}
-              onLike={() => {}}
-              onBookmark={() => {}}
+              onLike={handleLike}
+              onBookmark={handleBookmark}
               onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
               locale="en-GB"
             />
@@ -714,8 +789,8 @@ export default function App() {
             userData={userData}
             locale="en-GB"
             onClose={() => { setSelectedPost(null); setActiveRoute(AppRoute.FEED); }}
-            onLike={() => {}}
-            onBookmark={() => {}}
+            onLike={handleLike}
+            onBookmark={handleBookmark}
             addToast={addToast}
           />
         )}

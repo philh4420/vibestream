@@ -38,9 +38,11 @@ interface ProfilePageProps {
   sessionStartTime: number;
   onViewPost: (post: Post) => void;
   onOpenSettings?: () => void;
+  onLike?: (id: string, freq?: string) => void;
+  onBookmark?: (id: string) => void;
 }
 
-export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProfile, addToast, locale, sessionStartTime, onViewPost, onOpenSettings }) => {
+export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProfile, addToast, locale, sessionStartTime, onViewPost, onOpenSettings, onLike, onBookmark }) => {
   const [activeTab, setActiveTab] = useState<string>('broadcasting');
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -213,6 +215,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onUpdateProf
                 userData={profileData}
                 addToast={addToast}
                 onViewPost={onViewPost}
+                onLike={onLike}
+                onBookmark={onBookmark}
               />
             </div>
           </div>

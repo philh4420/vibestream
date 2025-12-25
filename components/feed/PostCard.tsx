@@ -170,6 +170,23 @@ export const PostCard: React.FC<PostCardProps> = ({
         }
       });
       await updateDoc(doc(db, 'posts', post.id), { shares: increment(1) });
+      
+      // Notify original author if not self
+      if (post.authorId !== userData.id) {
+          await addDoc(collection(db, 'notifications'), {
+              type: 'relay',
+              fromUserId: userData.id,
+              fromUserName: userData.displayName,
+              fromUserAvatar: userData.avatarUrl,
+              toUserId: post.authorId,
+              targetId: post.id,
+              text: 'relayed your signal',
+              isRead: false,
+              timestamp: serverTimestamp(),
+              pulseFrequency: 'velocity'
+          });
+      }
+
       addToast("Signal Relayed", "success");
     } catch (e) {
       addToast("Relay failed", "error");
