@@ -169,7 +169,10 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
                       type="number" 
                       min="0"
                       value={formData.maxAttendees} 
-                      onChange={e => setFormData({...formData, maxAttendees: parseInt(e.target.value)})}
+                      onChange={e => {
+                        const val = parseInt(e.target.value);
+                        setFormData({...formData, maxAttendees: isNaN(val) ? 0 : val});
+                      }}
                       placeholder="0 for unlimited"
                       className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white dark:focus:bg-slate-700 transition-all text-slate-900 dark:text-white"
                     />
