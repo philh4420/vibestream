@@ -34,8 +34,9 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
   // Mentions
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionResults, setMentionResults] = useState<User[]>([]);
-  const [mentionedUserCache, setMentionedUserCache] = useState<User[]>([]); // Stores full user objects of selected mentions
+  const [mentionedUserCache, setMentionedUserCache] = useState<User[]>([]);
   const [showMentionList, setShowMentionList] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -53,19 +54,25 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
     }
 
     const searchUsers = async () => {
-      // Basic search on username - scalable solution would use Algolia/Typesense
-      // This matches exact start of username
-      const q = query(
-        collection(db, 'users'),
-        where('username', '>=', mentionQuery.toLowerCase()),
-        where('username', '<=', mentionQuery.toLowerCase() + '\uf8ff'),
-        limit(5)
-      );
+      setIsSearching(true);
+      setShowMentionList(true); // Show dropdown immediately in loading state
       
-      const snap = await getDocs(q);
-      const users = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as User));
-      setMentionResults(users);
-      setShowMentionList(users.length > 0);
+      try {
+        const q = query(
+          collection(db, 'users'),
+          where('username', '>=', mentionQuery.toLowerCase()),
+          where('username', '<=', mentionQuery.toLowerCase() + '\uf8ff'),
+          limit(5)
+        );
+        
+        const snap = await getDocs(q);
+        const users = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as User));
+        setMentionResults(users);
+      } catch (e) {
+        console.error("Mention search failed", e);
+      } finally {
+        setIsSearching(false);
+      }
     };
 
     const timer = setTimeout(searchUsers, 300);
@@ -83,14 +90,15 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
 
     if (lastWord && lastWord.startsWith('@')) {
       const query = lastWord.slice(1);
-      // Only search if query is at least 1 char
       if (query.length >= 1) {
         setMentionQuery(query);
       } else {
         setMentionQuery(null);
+        setShowMentionList(false);
       }
     } else {
       setMentionQuery(null);
+      setShowMentionList(false);
     }
   };
 
@@ -100,10 +108,13 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
     const textAfter = content.slice(cursor);
     const lastWordIndex = textBefore.lastIndexOf('@');
     
-    const newContent = content.slice(0, lastWordIndex) + `@${user.username} ` + textAfter;
+    // Check if we found the @ index correctly
+    if (lastWordIndex !== -1) {
+        const newContent = content.slice(0, lastWordIndex) + `@${user.username} ` + textAfter;
+        setContent(newContent);
+        setMentionedUserCache(prev => [...prev, user]);
+    }
     
-    setContent(newContent);
-    setMentionedUserCache(prev => [...prev, user]);
     setMentionQuery(null);
     setShowMentionList(false);
     
@@ -124,7 +135,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
       const newPreviews = newFiles.map(file => URL.createObjectURL(file));
       setMediaPreviews(prev => [...prev, ...newPreviews]);
       
-      // Clear GIF if regular media is selected (mutually exclusive usually for simplicity)
+      // Clear GIF if regular media is selected
       setSelectedGif(null);
       setIsExpanded(true);
     }
@@ -145,7 +156,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
   const handleGifSelect = (gif: GiphyGif) => {
     setSelectedGif(gif);
     setShowGifPicker(false);
-    // Clear other media
     setSelectedFiles([]);
     setMediaPreviews([]);
     setIsExpanded(true);
@@ -202,9 +212,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
 
       // 4. Process Mentions
       const finalContent = content.trim();
-      // Find matches in final text to ensure we don't notify for deleted mentions
       const mentionsToNotify = mentionedUserCache.filter(u => finalContent.includes(`@${u.username}`));
-      // Deduplicate by ID
       const uniqueMentions = Array.from(new Set(mentionsToNotify.map(u => u.id)))
         .map(id => mentionsToNotify.find(u => u.id === id));
 
@@ -234,6 +242,8 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
       setShowEmojiPicker(false);
       setShowGifPicker(false);
       setMentionedUserCache([]);
+      setMentionQuery(null);
+      setShowMentionList(false);
       
       window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Signal Broadcasted Successfully", type: 'success' } }));
 
@@ -245,7 +255,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
     }
   };
 
-  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -254,7 +263,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
   }, [content]);
 
   return (
-    <div className={`bg-white dark:bg-slate-900 border-precision rounded-[3rem] p-6 md:p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)] hover:shadow-[0_30px_60px_-12px_rgba(0,0,0,0.08)] transition-all duration-500 group relative z-20 ${isExpanded ? 'ring-2 ring-indigo-500/20' : ''}`}>
+    <div className={`bg-white dark:bg-slate-900 border-precision rounded-[3rem] p-6 md:p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)] hover:shadow-[0_30px_60px_-12px_rgba(0,0,0,0.08)] transition-all duration-500 group relative z-40 ${isExpanded ? 'ring-2 ring-indigo-500/20' : ''}`}>
       
       {/* Top Input Area */}
       <div className="flex gap-6 relative">
@@ -280,11 +289,19 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
 
           {/* MENTION DROPDOWN */}
           {showMentionList && (
-            <div className="absolute top-full left-0 z-50 w-64 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl mt-2 overflow-hidden animate-in fade-in slide-in-from-top-2">
+            <div className="absolute top-full left-0 z-50 w-64 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl mt-2 overflow-hidden animate-in fade-in slide-in-from-top-2">
                 <div className="px-3 py-2 bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 font-mono">Neural_Lookup</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 font-mono">
+                      {isSearching ? 'Scanning_Grid...' : 'Neural_Lookup'}
+                    </span>
                 </div>
-                {mentionResults.map(user => (
+                
+                {isSearching ? (
+                   <div className="p-4 text-center">
+                      <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                   </div>
+                ) : mentionResults.length > 0 ? (
+                   mentionResults.map(user => (
                     <button
                         key={user.id}
                         onClick={() => selectMention(user)}
@@ -299,7 +316,12 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
                             <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 truncate">@{user.username}</span>
                         </div>
                     </button>
-                ))}
+                   ))
+                ) : (
+                   <div className="px-4 py-3 text-[10px] text-slate-400 dark:text-slate-500 italic text-center">
+                      No matching nodes found.
+                   </div>
+                )}
             </div>
           )}
         </div>
