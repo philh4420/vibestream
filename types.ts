@@ -203,6 +203,21 @@ export interface Story {
   };
 }
 
+export type AudioFilterType = 'raw' | 'cyber' | 'lofi' | 'deep';
+
+export interface SonicEcho {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  audioUrl: string;
+  waveform: number[]; // Array of normalized amplitudes (0-1)
+  filter: AudioFilterType;
+  duration: number; // Seconds
+  timestamp: any;
+  listens: number;
+}
+
 export interface LiveStream {
   id: string;
   authorId: string;

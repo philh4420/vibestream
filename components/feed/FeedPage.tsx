@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Post, User, Region, LiveStream } from '../../types';
 import { StoriesStrip } from './StoriesStrip';
+import { SonicEchoStrip } from '../echoes/SonicEchoStrip';
 import { CreateSignalBox } from './CreateSignalBox';
 import { FeedProtocols } from './FeedProtocols';
 import { PostCard } from './PostCard';
@@ -49,13 +50,17 @@ export const FeedPage: React.FC<FeedPageProps> = ({
 
   return (
     <div className="relative min-h-screen pb-32 w-full max-w-2xl mx-auto">
-      <section className="pt-2 pb-6 animate-in fade-in slide-in-from-top-4 duration-700">
+      <section className="pt-2 pb-2 animate-in fade-in slide-in-from-top-4 duration-700">
         <StoriesStrip 
           userData={userData} 
           onTransmit={onTransmitStory} 
           onGoLive={onGoLive} 
           onJoinStream={onJoinStream} 
         />
+      </section>
+
+      <section className="mb-4 animate-in fade-in slide-in-from-right-4 duration-700 delay-100">
+         <SonicEchoStrip userData={userData} />
       </section>
 
       <section className="mb-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
