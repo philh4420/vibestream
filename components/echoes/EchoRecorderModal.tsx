@@ -37,15 +37,35 @@ export const EchoRecorderModal: React.FC<EchoRecorderModalProps> = ({ userData, 
   const animationFrameRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
 
+  // Helper to strictly kill all media tracks
+  const stopMediaTracks = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => {
+        track.stop();
+        track.enabled = false;
+      });
+      streamRef.current = null;
+    }
+    if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+      audioCtxRef.current.close().catch(console.error);
+    }
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+  };
+
   // Initialize Audio Context on Mount
   useEffect(() => {
     audioCtxRef.current = createAudioContext();
     return () => {
-      audioCtxRef.current?.close();
-      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      stopMediaTracks();
     };
   }, []);
+
+  const handleClose = () => {
+    stopMediaTracks();
+    onClose();
+  };
 
   const startRecording = async () => {
     if (!audioCtxRef.current) return;
@@ -58,10 +78,6 @@ export const EchoRecorderModal: React.FC<EchoRecorderModalProps> = ({ userData, 
       const analyser = analyzeAudio(audioCtxRef.current, source);
       analyserRef.current = analyser;
 
-      // Note: We don't apply filter to the RECORDER, only to playback. 
-      // But we could route source -> filter -> destination for monitoring if needed.
-      // For mobile simplicity, we just visualize.
-
       mediaRecorderRef.current = new MediaRecorder(stream);
       chunksRef.current = [];
 
@@ -72,8 +88,10 @@ export const EchoRecorderModal: React.FC<EchoRecorderModalProps> = ({ userData, 
       mediaRecorderRef.current.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
         setAudioBlob(blob);
-        const tracks = stream.getTracks();
-        tracks.forEach(track => track.stop());
+        // Note: We don't stop tracks here yet, as we might want to re-record or keep visualizer
+        // But for this simple UI, we stop recording logic, but keep stream for visualizer or just stop?
+        // Let's stop visualizer here to save resources
+        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
       };
 
       mediaRecorderRef.current.start();
@@ -91,8 +109,11 @@ export const EchoRecorderModal: React.FC<EchoRecorderModalProps> = ({ userData, 
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
       setDuration((Date.now() - startTimeRef.current) / 1000);
+      // Stop the mic immediately after recording finishes to indicate "done"
+      if (streamRef.current) {
+          streamRef.current.getTracks().forEach(t => t.stop());
+      }
     }
   };
 
@@ -117,14 +138,17 @@ export const EchoRecorderModal: React.FC<EchoRecorderModalProps> = ({ userData, 
 
   const handlePublish = async () => {
     if (!audioBlob) return;
+    
+    // CRITICAL: Stop hardware access immediately before upload starts
+    stopMediaTracks();
+    
     setIsUploading(true);
 
     try {
       const file = new File([audioBlob], "echo.webm", { type: 'audio/webm' });
-      const url = await uploadToCloudinary(file); // Cloudinary handles audio well as video type or auto
+      const url = await uploadToCloudinary(file);
 
-      // Generate a static waveform representation (simplified for now, just use last frame or random)
-      // Ideally we'd analyze the whole blob, but for MVP we use the last capture
+      // Generate a static waveform representation
       const staticWaveform = waveform.map(v => Math.round((v / 128) * 100) / 100);
 
       await addDoc(collection(db, 'echoes'), {
@@ -151,11 +175,12 @@ export const EchoRecorderModal: React.FC<EchoRecorderModalProps> = ({ userData, 
   const reset = () => {
     setAudioBlob(null);
     setWaveform(new Array(20).fill(10));
+    // Restart context if needed, though startRecording handles it
   };
 
   return createPortal(
     <div className="fixed inset-0 z-[5000] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-6 animate-in fade-in duration-300">
-      <button onClick={onClose} className="absolute top-6 right-6 p-4 bg-white/10 rounded-full text-white"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth={3} /></svg></button>
+      <button onClick={handleClose} className="absolute top-6 right-6 p-4 bg-white/10 rounded-full text-white hover:bg-white/20 transition-colors"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth={3} /></svg></button>
 
       <div className="w-full max-w-md flex flex-col items-center gap-10">
         
@@ -212,11 +237,11 @@ export const EchoRecorderModal: React.FC<EchoRecorderModalProps> = ({ userData, 
 
               {/* Actions */}
               <div className="flex gap-4">
-                 <button onClick={reset} className="flex-1 py-4 bg-slate-800 text-white rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em]">Discard</button>
+                 <button onClick={reset} className="flex-1 py-4 bg-slate-800 text-white rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-700">Discard</button>
                  <button 
                    onClick={handlePublish} 
                    disabled={isUploading}
-                   className="flex-[2] py-4 bg-white text-slate-900 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em] shadow-xl flex items-center justify-center gap-2"
+                   className="flex-[2] py-4 bg-white text-slate-900 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em] shadow-xl flex items-center justify-center gap-2 hover:bg-slate-200"
                  >
                     {isUploading ? 'UPLOADING...' : 'BROADCAST_ECHO'}
                  </button>

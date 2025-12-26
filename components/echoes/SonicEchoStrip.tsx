@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
-const { collection, query, orderBy, limit, onSnapshot, doc, updateDoc, increment } = Firestore as any;
+const { collection, query, orderBy, limit, onSnapshot, doc, updateDoc, increment, deleteDoc } = Firestore as any;
 import { SonicEcho, User } from '../../types';
 import { EchoRecorderModal } from './EchoRecorderModal';
 import { ICONS } from '../../constants';
@@ -104,6 +104,19 @@ export const SonicEchoStrip: React.FC<SonicEchoStripProps> = ({ userData }) => {
     }
   };
 
+  const handleDelete = async (echoId: string) => {
+    if (!db) return;
+    if (confirm("Permanently remove this Sonic Echo?")) {
+        try {
+            await deleteDoc(doc(db, 'echoes', echoId));
+            if (playingId === echoId) stopPlayback();
+            window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Echo Purged", type: 'success' } }));
+        } catch (e) {
+            window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Deletion Failed", type: 'error' } }));
+        }
+    }
+  };
+
   return (
     <div className="mb-6 pl-4">
        <div className="flex items-center gap-2 mb-3">
@@ -126,51 +139,64 @@ export const SonicEchoStrip: React.FC<SonicEchoStripProps> = ({ userData }) => {
           {/* Echo Pills */}
           {echoes.map(echo => {
              const isPlaying = playingId === echo.id;
+             const isAuthor = userData?.id === echo.authorId;
+
              return (
-               <button 
-                 key={echo.id}
-                 onClick={() => playEcho(echo)}
-                 className={`shrink-0 h-14 px-4 rounded-[1.2rem] flex items-center gap-3 transition-all border relative overflow-hidden group ${
-                    isPlaying 
-                        ? 'bg-indigo-600 border-indigo-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.4)] w-48' 
-                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 w-36 hover:w-40 hover:border-indigo-300 dark:hover:border-slate-600'
-                 }`}
-               >
-                  {/* Avatar */}
-                  <img src={echo.authorAvatar} className={`w-8 h-8 rounded-lg object-cover bg-slate-100 border ${isPlaying ? 'border-white/30' : 'border-slate-100 dark:border-slate-600'}`} alt="" />
-                  
-                  {/* Waveform Visualization */}
-                  <div className="flex-1 flex items-center justify-center gap-[2px] h-full">
-                     {isPlaying && visualData ? (
-                        // Live Visuals
-                        Array.from({length: 12}).map((_, i) => {
-                            const val = visualData[i * 2] || 0;
-                            const h = Math.max(10, (val / 255) * 100);
-                            return (
+               <div key={echo.id} className="relative group/echo">
+                   <button 
+                     onClick={() => playEcho(echo)}
+                     className={`shrink-0 h-14 px-4 rounded-[1.2rem] flex items-center gap-3 transition-all border relative overflow-hidden group ${
+                        isPlaying 
+                            ? 'bg-indigo-600 border-indigo-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.4)] w-48' 
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 w-36 hover:w-40 hover:border-indigo-300 dark:hover:border-slate-600'
+                     }`}
+                   >
+                      {/* Avatar */}
+                      <img src={echo.authorAvatar} className={`w-8 h-8 rounded-lg object-cover bg-slate-100 border ${isPlaying ? 'border-white/30' : 'border-slate-100 dark:border-slate-600'}`} alt="" />
+                      
+                      {/* Waveform Visualization */}
+                      <div className="flex-1 flex items-center justify-center gap-[2px] h-full">
+                         {isPlaying && visualData ? (
+                            // Live Visuals
+                            Array.from({length: 12}).map((_, i) => {
+                                const val = visualData[i * 2] || 0;
+                                const h = Math.max(10, (val / 255) * 100);
+                                return (
+                                    <div 
+                                        key={i} 
+                                        className="w-1 bg-white rounded-full transition-all duration-75"
+                                        style={{ height: `${h}%` }}
+                                    />
+                                );
+                            })
+                         ) : (
+                            // Static Waveform (Mock based on duration/id hash if needed, or simple lines)
+                            echo.waveform?.slice(0, 12).map((val, i) => (
                                 <div 
                                     key={i} 
-                                    className="w-1 bg-white rounded-full transition-all duration-75"
-                                    style={{ height: `${h}%` }}
+                                    className={`w-1 rounded-full ${isPlaying ? 'bg-white' : 'bg-slate-300 dark:bg-slate-600'}`}
+                                    style={{ height: `${val * 100}%` }}
                                 />
-                            );
-                        })
-                     ) : (
-                        // Static Waveform (Mock based on duration/id hash if needed, or simple lines)
-                        echo.waveform?.slice(0, 12).map((val, i) => (
-                            <div 
-                                key={i} 
-                                className={`w-1 rounded-full ${isPlaying ? 'bg-white' : 'bg-slate-300 dark:bg-slate-600'}`}
-                                style={{ height: `${val * 100}%` }}
-                            />
-                        ))
-                     )}
-                  </div>
+                            ))
+                         )}
+                      </div>
 
-                  {/* Filter Indicator */}
-                  {echo.filter !== 'raw' && !isPlaying && (
-                      <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-indigo-400 rounded-full" />
-                  )}
-               </button>
+                      {/* Filter Indicator */}
+                      {echo.filter !== 'raw' && !isPlaying && (
+                          <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-indigo-400 rounded-full" />
+                      )}
+                   </button>
+
+                   {/* Delete Button */}
+                   {isAuthor && (
+                        <button 
+                            onClick={(e) => handleDelete(echo.id)}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-md opacity-0 group-hover/echo:opacity-100 transition-opacity z-10 hover:bg-rose-600 active:scale-90"
+                        >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                   )}
+               </div>
              );
           })}
        </div>
