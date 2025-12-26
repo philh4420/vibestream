@@ -179,7 +179,7 @@ export const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ userData, onCl
              </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 md:p-12 pb-32 md:pb-12 space-y-10 scroll-container">
+          <div className="flex-1 overflow-y-auto p-6 md:p-12 pb-32 md:pb-12 space-y-10 scroll-container relative">
             {activeTab === 'account' && (
               <SettingsAccount userData={userData} onLogout={onLogout} addToast={addToast} />
             )}
@@ -210,6 +210,9 @@ export const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ userData, onCl
               <SettingsData settings={settings} handleChange={handleChange} handleToggle={handleToggle} addToast={addToast} />
             )}
           </div>
+          
+          {/* Scroll Hint Mask - Only visible when content is long */}
+          <div className="absolute bottom-[88px] md:bottom-[96px] left-0 right-0 h-12 bg-gradient-to-t from-[#fcfcfd] dark:from-slate-900 to-transparent pointer-events-none z-10 opacity-80" />
 
           {/* Persistent Footer */}
           <div className="p-6 md:p-8 border-t border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl flex justify-end gap-4 shrink-0 absolute bottom-0 left-0 right-0 z-20 md:relative">
