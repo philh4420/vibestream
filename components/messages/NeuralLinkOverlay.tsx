@@ -43,9 +43,35 @@ export const NeuralLinkOverlay: React.FC<NeuralLinkOverlayProps> = ({ session, u
   const ringSoundRef = useRef<HTMLAudioElement | null>(null);
   const ringbackSoundRef = useRef<HTMLAudioElement | null>(null);
 
+  // Missed Call Tracking Refs
+  const wasConnectedRef = useRef(false);
+  const notificationSentRef = useRef(false);
+
   const isCaller = session.callerId === userData.id;
   const targetAvatar = isCaller ? session.receiverAvatar : session.callerAvatar;
   const targetName = isCaller ? session.receiverName : session.callerName;
+
+  // Notification Trigger
+  const sendMissedCallNotification = async (reason: string) => {
+    if (!isCaller) return; // Only the caller logs the missed call for the receiver
+    
+    try {
+      await addDoc(collection(db, 'notifications'), {
+        type: 'call',
+        fromUserId: userData.id,
+        fromUserName: userData.displayName,
+        fromUserAvatar: userData.avatarUrl,
+        toUserId: session.receiverId,
+        targetId: session.id,
+        text: reason === 'rejected' ? 'Call declined' : 'Missed Neural Link',
+        isRead: false,
+        timestamp: serverTimestamp(),
+        pulseFrequency: 'intensity'
+      });
+    } catch (e) {
+      console.error("Missed Call Notification Error:", e);
+    }
+  };
 
   // 1. Initial Setup & Hardware
   useEffect(() => {
@@ -82,8 +108,21 @@ export const NeuralLinkOverlay: React.FC<NeuralLinkOverlayProps> = ({ session, u
     const unsub = onSnapshot(doc(db, 'calls', session.id), (snap: any) => {
       if (!snap.exists()) { onEnd(); return; }
       const data = snap.data();
+      
+      if (data.status === 'connected') {
+        wasConnectedRef.current = true;
+      }
+
       setCallStatus(data.status);
-      if (data.status === 'rejected' || data.status === 'ended') cleanup();
+      
+      if (data.status === 'rejected' || data.status === 'ended') {
+        // Missed Call Protocol: If we are the caller, never connected, and haven't logged it yet.
+        if (isCaller && !wasConnectedRef.current && !notificationSentRef.current) {
+           notificationSentRef.current = true;
+           sendMissedCallNotification(data.status);
+        }
+        cleanup();
+      }
     });
 
     return () => { unsub(); cleanup(); };
@@ -102,7 +141,6 @@ export const NeuralLinkOverlay: React.FC<NeuralLinkOverlayProps> = ({ session, u
     pc.ontrack = (e) => {
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = e.streams[0];
-        // FIX: Ensure remote stream starts playing audio immediately
         remoteVideoRef.current.play().catch(console.error);
       }
     };
@@ -142,7 +180,6 @@ export const NeuralLinkOverlay: React.FC<NeuralLinkOverlayProps> = ({ session, u
     pc.ontrack = (e) => {
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = e.streams[0];
-        // FIX: High-priority play on acceptance
         remoteVideoRef.current.play().catch(err => console.warn("Auto-play blocked by browser. User interaction required."));
       }
     };
@@ -195,6 +232,7 @@ export const NeuralLinkOverlay: React.FC<NeuralLinkOverlayProps> = ({ session, u
 
   const handleTerminate = async () => {
     if (!db) return;
+    // Note: If we are terminating before connection, logic in snapshot listener will handle 'Missed Call' notification
     try { await updateDoc(doc(db, 'calls', session.id), { status: 'ended' }); } finally { cleanup(); }
   };
 
