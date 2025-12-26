@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { User, UserSettings } from '../../types';
 import { db } from '../../services/firebase';
@@ -178,7 +179,7 @@ export const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ userData, onCl
              </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 md:p-12 space-y-10 scroll-container">
+          <div className="flex-1 overflow-y-auto p-6 md:p-12 pb-32 md:pb-12 space-y-10 scroll-container">
             {activeTab === 'account' && (
               <SettingsAccount userData={userData} onLogout={onLogout} addToast={addToast} />
             )}
@@ -189,7 +190,12 @@ export const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ userData, onCl
               <SettingsNotifications settings={settings} handleToggle={handleToggle} />
             )}
             {activeTab === 'appearance' && (
-              <SettingsAppearance settings={settings} handleChange={handleChange} handleToggle={handleToggle} />
+              <SettingsAppearance 
+                settings={settings} 
+                handleChange={handleChange} 
+                handleToggle={handleToggle}
+                currentSignalColor={userData.cosmetics?.signalColor}
+              />
             )}
             {activeTab === 'safety' && (
               <SettingsSafety 

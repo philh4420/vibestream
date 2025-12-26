@@ -11,9 +11,10 @@ interface SettingsAppearanceProps {
   settings: UserSettings;
   handleChange: (category: keyof UserSettings, key: string, value: any) => void;
   handleToggle: (category: keyof UserSettings, key: string) => void;
+  currentSignalColor?: string;
 }
 
-export const SettingsAppearance: React.FC<SettingsAppearanceProps> = ({ settings, handleChange, handleToggle }) => {
+export const SettingsAppearance: React.FC<SettingsAppearanceProps> = ({ settings, handleChange, handleToggle, currentSignalColor }) => {
   const [previewColor, setPreviewColor] = useState<string | null>(null);
 
   const handleSignalColorChange = async (colorId: string) => {
@@ -82,28 +83,32 @@ export const SettingsAppearance: React.FC<SettingsAppearanceProps> = ({ settings
             Define your broadcast aesthetic. This color will override the interface of any node visiting your profile, marking your digital territory.
         </p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {SIGNAL_COLORS.map(color => (
-                <button
-                    key={color.id}
-                    onClick={() => handleSignalColorChange(color.id)}
-                    className={`relative p-3 rounded-2xl border transition-all active:scale-95 flex flex-col items-center gap-2 group overflow-hidden ${
-                        (previewColor === color.id) 
-                        ? 'border-slate-900 dark:border-white ring-1 ring-slate-900 dark:ring-white bg-slate-50 dark:bg-slate-800' 
-                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-400 dark:hover:border-slate-500'
-                    }`}
-                >
-                    <div 
-                        className="w-full h-8 rounded-xl shadow-inner transition-transform group-hover:scale-105"
-                        style={{ backgroundColor: color.hex }}
-                    />
-                    <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide truncate w-full text-center">
-                        {color.label}
-                    </span>
-                    {previewColor === color.id && (
-                        <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-500 shadow-sm animate-pulse" />
-                    )}
-                </button>
-            ))}
+            {SIGNAL_COLORS.map(color => {
+                const isActive = previewColor ? previewColor === color.id : currentSignalColor === color.id;
+                
+                return (
+                    <button
+                        key={color.id}
+                        onClick={() => handleSignalColorChange(color.id)}
+                        className={`relative p-3 rounded-2xl border transition-all active:scale-95 flex flex-col items-center gap-2 group overflow-hidden ${
+                            isActive
+                            ? 'border-slate-900 dark:border-white ring-1 ring-slate-900 dark:ring-white bg-slate-50 dark:bg-slate-800' 
+                            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-400 dark:hover:border-slate-500'
+                        }`}
+                    >
+                        <div 
+                            className="w-full h-8 rounded-xl shadow-inner transition-transform group-hover:scale-105"
+                            style={{ backgroundColor: color.hex }}
+                        />
+                        <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide truncate w-full text-center">
+                            {color.label}
+                        </span>
+                        {isActive && (
+                            <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-500 shadow-sm animate-pulse" />
+                        )}
+                    </button>
+                );
+            })}
         </div>
       </div>
 
