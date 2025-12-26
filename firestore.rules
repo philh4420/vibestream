@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -78,7 +79,9 @@ service cloud.firestore {
             'lastActionTimestamp', 
             'presenceStatus', 
             'statusEmoji', 
-            'statusMessage'
+            'statusMessage',
+            'resonance',
+            'cosmetics'
         ]));
 
       match /following/{targetId} {
@@ -137,7 +140,7 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
-    // TEMPORAL FRAGMENTS (Stories)
+    // TEMPORAL FRAGMENTS (Stories) & SONIC ECHOES
     // -------------------------------------------------------------------------
 
     match /stories/{storyId} {
@@ -145,6 +148,13 @@ service cloud.firestore {
       allow create: if isAuthenticated() && incomingData().authorId == request.auth.uid;
       allow delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isAdmin());
       allow update: if isAdmin();
+    }
+
+    match /echoes/{echoId} {
+      allow read, list: if isAuthenticated();
+      allow create: if isAuthenticated() && incomingData().authorId == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isAdmin());
+      allow update: if isAuthenticated() && (incomingData().diff(existingData()).affectedKeys().hasOnly(['listens']));
     }
 
     match /temporal_archive/{archId} { 
