@@ -7,6 +7,7 @@ import { SonicEcho, User } from '../../types';
 import { EchoRecorderModal } from './EchoRecorderModal';
 import { ICONS } from '../../constants';
 import { createAudioContext, applyAudioFilter, analyzeAudio } from '../../services/audioEffects';
+import { DeleteConfirmationModal } from '../ui/DeleteConfirmationModal';
 
 interface SonicEchoStripProps {
   userData: User | null;
@@ -16,6 +17,7 @@ export const SonicEchoStrip: React.FC<SonicEchoStripProps> = ({ userData }) => {
   const [echoes, setEchoes] = useState<SonicEcho[]>([]);
   const [isRecorderOpen, setIsRecorderOpen] = useState(false);
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   
   // Audio Refs
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -104,16 +106,16 @@ export const SonicEchoStrip: React.FC<SonicEchoStripProps> = ({ userData }) => {
     }
   };
 
-  const handleDelete = async (echoId: string) => {
-    if (!db) return;
-    if (confirm("Permanently remove this Sonic Echo?")) {
-        try {
-            await deleteDoc(doc(db, 'echoes', echoId));
-            if (playingId === echoId) stopPlayback();
-            window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Echo Purged", type: 'success' } }));
-        } catch (e) {
-            window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Deletion Failed", type: 'error' } }));
-        }
+  const confirmDelete = async () => {
+    if (!db || !deleteId) return;
+    try {
+        await deleteDoc(doc(db, 'echoes', deleteId));
+        if (playingId === deleteId) stopPlayback();
+        window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Echo Dissolved", type: 'success' } }));
+    } catch (e) {
+        window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Dissolution Failed", type: 'error' } }));
+    } finally {
+        setDeleteId(null);
     }
   };
 
@@ -190,7 +192,7 @@ export const SonicEchoStrip: React.FC<SonicEchoStripProps> = ({ userData }) => {
                    {/* Delete Button */}
                    {isAuthor && (
                         <button 
-                            onClick={(e) => handleDelete(echo.id)}
+                            onClick={(e) => setDeleteId(echo.id)}
                             className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-md opacity-0 group-hover/echo:opacity-100 transition-opacity z-10 hover:bg-rose-600 active:scale-90"
                         >
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -204,6 +206,15 @@ export const SonicEchoStrip: React.FC<SonicEchoStripProps> = ({ userData }) => {
        {isRecorderOpen && userData && (
          <EchoRecorderModal userData={userData} onClose={() => setIsRecorderOpen(false)} />
        )}
+
+       <DeleteConfirmationModal
+         isOpen={!!deleteId}
+         title="DISSOLVE_ECHO"
+         description="Permanently purge this sonic fragment? This action cannot be reversed."
+         onConfirm={confirmDelete}
+         onCancel={() => setDeleteId(null)}
+         confirmText="CONFIRM_DISSOLVE"
+       />
     </div>
   );
 };

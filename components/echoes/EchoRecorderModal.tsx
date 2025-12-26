@@ -37,7 +37,7 @@ export const EchoRecorderModal: React.FC<EchoRecorderModalProps> = ({ userData, 
   const animationFrameRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
 
-  // Helper to strictly kill all media tracks
+  // Helper to strictly kill all media tracks immediately
   const stopMediaTracks = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => {
@@ -88,9 +88,6 @@ export const EchoRecorderModal: React.FC<EchoRecorderModalProps> = ({ userData, 
       mediaRecorderRef.current.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
         setAudioBlob(blob);
-        // Note: We don't stop tracks here yet, as we might want to re-record or keep visualizer
-        // But for this simple UI, we stop recording logic, but keep stream for visualizer or just stop?
-        // Let's stop visualizer here to save resources
         if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
       };
 
@@ -110,7 +107,9 @@ export const EchoRecorderModal: React.FC<EchoRecorderModalProps> = ({ userData, 
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       setDuration((Date.now() - startTimeRef.current) / 1000);
-      // Stop the mic immediately after recording finishes to indicate "done"
+      
+      // Stop the mic hardware immediately after recording finishes (UX: light off)
+      // We don't need it for preview unless we were doing live monitoring
       if (streamRef.current) {
           streamRef.current.getTracks().forEach(t => t.stop());
       }
@@ -175,11 +174,13 @@ export const EchoRecorderModal: React.FC<EchoRecorderModalProps> = ({ userData, 
   const reset = () => {
     setAudioBlob(null);
     setWaveform(new Array(20).fill(10));
-    // Restart context if needed, though startRecording handles it
+    // Re-initialize audio context if user discarded and wants to record again
+    // But since we stopped tracks on stopRecording, we need to ensure startRecording gets new stream
+    // startRecording logic already handles getUserMedia, so we are good.
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[5000] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-6 animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[5000] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-6 animate-in fade-in duration-300 touch-none">
       <button onClick={handleClose} className="absolute top-6 right-6 p-4 bg-white/10 rounded-full text-white hover:bg-white/20 transition-colors"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth={3} /></svg></button>
 
       <div className="w-full max-w-md flex flex-col items-center gap-10">
@@ -237,11 +238,11 @@ export const EchoRecorderModal: React.FC<EchoRecorderModalProps> = ({ userData, 
 
               {/* Actions */}
               <div className="flex gap-4">
-                 <button onClick={reset} className="flex-1 py-4 bg-slate-800 text-white rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-700">Discard</button>
+                 <button onClick={reset} className="flex-1 py-4 bg-slate-800 text-white rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-700 transition-colors">Discard</button>
                  <button 
                    onClick={handlePublish} 
                    disabled={isUploading}
-                   className="flex-[2] py-4 bg-white text-slate-900 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em] shadow-xl flex items-center justify-center gap-2 hover:bg-slate-200"
+                   className="flex-[2] py-4 bg-white text-slate-900 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em] shadow-xl flex items-center justify-center gap-2 hover:bg-slate-200 transition-colors"
                  >
                     {isUploading ? 'UPLOADING...' : 'BROADCAST_ECHO'}
                  </button>
