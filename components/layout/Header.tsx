@@ -231,6 +231,7 @@ export const Header: React.FC<HeaderProps> = ({
         { label: 'Events', icon: ICONS.Gatherings, route: AppRoute.GATHERINGS },
         { label: 'Sims', icon: ICONS.Simulations, route: AppRoute.SIMULATIONS },
         { label: 'Health', icon: ICONS.Resilience, route: AppRoute.RESILIENCE },
+        { label: 'Market', icon: ICONS.Marketplace, route: AppRoute.MARKETPLACE },
       ]
     },
     {
@@ -288,6 +289,19 @@ export const Header: React.FC<HeaderProps> = ({
 
         <div className="flex items-center gap-3 md:gap-5 justify-end pl-2">
           
+          {/* Resonance Points Display (Gamification) */}
+          <button 
+            onClick={() => onNavigate(AppRoute.MARKETPLACE)}
+            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 transition-all group"
+          >
+             <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center text-[10px] shadow-sm">
+                <ICONS.Marketplace />
+             </div>
+             <span className="text-[10px] font-black font-mono text-slate-600 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+               {userData?.resonance?.toLocaleString() || '0'} PTS
+             </span>
+          </button>
+
           {/* Notifications */}
           <div className="relative" ref={notifRef}>
             <button 
@@ -371,7 +385,7 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="relative shrink-0">
                 <img 
                   src={userData?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${auth.currentUser?.uid}`} 
-                  className="w-8 h-8 md:w-9 md:h-9 rounded-[1rem] object-cover shadow-sm bg-slate-100 dark:bg-slate-800" 
+                  className={`w-8 h-8 md:w-9 md:h-9 rounded-[1rem] object-cover shadow-sm bg-slate-100 dark:bg-slate-800 ${userData?.cosmetics?.activeBorder ? `cosmetic-border-${userData.cosmetics.activeBorder}` : ''}`} 
                   alt="User" 
                 />
                 <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-[2px] border-white dark:border-slate-900 shadow-sm ${getStatusStyle(userData?.presenceStatus)}`} />

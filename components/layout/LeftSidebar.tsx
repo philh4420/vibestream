@@ -191,6 +191,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           <NavItem route={AppRoute.GATHERINGS} icon={ICONS.Gatherings} label="Gatherings" collapsed={collapsed} />
           <NavItem route={AppRoute.SIMULATIONS} icon={ICONS.Simulations} label="Simulations" collapsed={collapsed} />
           <NavItem route={AppRoute.RESILIENCE} icon={ICONS.Resilience} label="Resilience" collapsed={collapsed} />
+          <NavItem route={AppRoute.MARKETPLACE} icon={ICONS.Marketplace} label="Cyber Bazaar" collapsed={collapsed} />
         </ProtocolGroup>
 
         {/* System & Support */}

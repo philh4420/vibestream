@@ -64,6 +64,8 @@ import { SimulationsPage } from './components/simulations/SimulationsPage';
 import { ResiliencePage } from './components/resilience/ResiliencePage';
 import { SettingsOverlay } from './components/settings/SettingsOverlay';
 import { SupportPage } from './components/support/SupportPage';
+import { ResonanceMarketplace } from './components/marketplace/ResonanceMarketplace';
+import { SignalTrail } from './components/ui/SignalTrail';
 
 // Services
 import { fetchWeather } from './services/weather';
@@ -573,6 +575,7 @@ export default function App() {
 
   return (
     <>
+      <SignalTrail activeTrail={userData?.cosmetics?.activeTrail} />
       <Layout
         activeRoute={activeRoute}
         onNavigate={setActiveRoute}
@@ -787,6 +790,10 @@ export default function App() {
               addToast={addToast}
               blockedIds={blockedIds}
             />
+        )}
+
+        {activeRoute === AppRoute.MARKETPLACE && userData && (
+            <ResonanceMarketplace userData={userData} addToast={addToast} />
         )}
 
         {!isFeatureEnabled(activeRoute) && activeRoute !== AppRoute.ADMIN && (

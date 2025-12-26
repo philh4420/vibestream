@@ -243,6 +243,157 @@ html.reduced-motion *::after {
   animation: ring-pulse-2026 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* =========================================================================
+   RESONANCE MARKETPLACE: COSMETIC PROTOCOLS
+   ========================================================================= */
+
+/* --- Avatar Borders --- */
+
+/* Neon Pulse Border */
+@keyframes neon-spin {
+  0% { --gradient-angle: 0deg; }
+  100% { --gradient-angle: 360deg; }
+}
+
+@property --gradient-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.cosmetic-border-neon {
+  position: relative;
+  z-index: 0;
+  border-radius: inherit; /* Inherit rounded corners from parent image */
+}
+
+.cosmetic-border-neon::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--gradient-angle),
+    #ff00ea,
+    #00eaff,
+    #ff00ea
+  );
+  animation: neon-spin 2s linear infinite;
+  z-index: -1;
+  filter: blur(4px);
+}
+
+.cosmetic-border-neon::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--gradient-angle),
+    #ff00ea,
+    #00eaff,
+    #ff00ea
+  );
+  animation: neon-spin 2s linear infinite;
+  z-index: -2;
+}
+
+/* Gold Halo Border */
+.cosmetic-border-gold {
+  box-shadow: 0 0 0 2px #ffd700, 0 0 15px #ffd700;
+  border: 1px solid #fff;
+  animation: gold-pulse 2s infinite alternate;
+}
+
+@keyframes gold-pulse {
+  0% { box-shadow: 0 0 0 2px #ffd700, 0 0 5px #ffd700; }
+  100% { box-shadow: 0 0 0 2px #fff, 0 0 20px #ffd700; }
+}
+
+/* Glitch Ring Border */
+.cosmetic-border-glitch {
+  box-shadow: -2px 0 #00ffff, 2px 0 #ff00ff;
+  animation: glitch-skew 1s infinite linear alternate-reverse;
+}
+
+@keyframes glitch-skew {
+  0% { transform: skew(0deg); }
+  20% { transform: skew(-2deg); }
+  40% { transform: skew(2deg); }
+  60% { transform: skew(-1deg); }
+  80% { transform: skew(1deg); }
+  100% { transform: skew(0deg); }
+}
+
+/* --- Signal Trails (Particles) --- */
+.signal-trail-dot {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  border-radius: 50%;
+  animation: trail-fade 0.8s ease-out forwards;
+}
+
+@keyframes trail-fade {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0); }
+}
+
+.trail-cyber {
+  background: #00eaff;
+  box-shadow: 0 0 5px #00eaff;
+}
+
+.trail-matrix {
+  background: #0f0;
+  box-shadow: 0 0 5px #0f0;
+  border-radius: 0; /* Square for matrix */
+}
+
+.trail-fire {
+  background: #ff4500;
+  box-shadow: 0 0 8px #ff8c00;
+}
+
+/* --- Post Filters --- */
+
+/* CRT Filter */
+.filter-crt {
+  position: relative;
+  overflow: hidden;
+}
+.filter-crt::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 2;
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+}
+
+/* Vaporwave Filter */
+.filter-vapor {
+  filter: hue-rotate(20deg) contrast(1.2) saturate(1.5);
+  position: relative;
+}
+.filter-vapor::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(255, 0, 255, 0.1), transparent);
+  pointer-events: none;
+}
+
+/* Noir Filter */
+.filter-noir {
+  filter: grayscale(100%) contrast(1.5) brightness(0.9);
+}
+
 /* 5. RESPONSIVE CALIBRATION */
 @media (max-width: 480px) {
   :root {

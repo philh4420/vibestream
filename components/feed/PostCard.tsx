@@ -64,15 +64,6 @@ export const PostCard: React.FC<PostCardProps> = ({
     }).filter(Boolean);
   }, [post.content]);
 
-  const signalVelocity = useMemo(() => {
-    if (!post.timestamp) return 0;
-    const postTime = post.timestamp.toDate ? post.timestamp.toDate().getTime() : new Date(post.createdAt).getTime();
-    const now = Date.now();
-    const hoursElapsed = Math.max((now - postTime) / (1000 * 60 * 60), 0.1);
-    const totalEngagement = post.likes + post.comments + post.shares;
-    return Math.round(totalEngagement / hoursElapsed * 10) / 10;
-  }, [post.likes, post.comments, post.shares, post.timestamp]);
-
   const formattedTimestamp = useMemo(() => {
     if (post.timestamp && post.timestamp.toDate) {
       return post.timestamp.toDate().toLocaleString(locale, {
@@ -161,6 +152,12 @@ export const PostCard: React.FC<PostCardProps> = ({
           postId: post.id,
           authorName: post.authorName,
           authorAvatar: post.authorAvatar
+        },
+        // Carry over original cosmetics if any, or maybe relayer's? 
+        // For now, new post inherits current user's active cosmetics
+        authorCosmetics: {
+            border: userData.cosmetics?.activeBorder,
+            filter: userData.cosmetics?.activeFilter
         }
       });
       await updateDoc(doc(db, 'posts', post.id), { shares: increment(1) });
@@ -213,10 +210,14 @@ export const PostCard: React.FC<PostCardProps> = ({
   // @ts-ignore
   const isBookmarked = post.isBookmarked || (post.bookmarkedBy && userData && post.bookmarkedBy.includes(userData.id));
 
+  // Cosmetic Classes
+  const borderClass = post.authorCosmetics?.border ? `cosmetic-border-${post.authorCosmetics.border}` : '';
+  const filterClass = post.authorCosmetics?.filter ? `filter-${post.authorCosmetics.filter}` : '';
+
   return (
     <article 
       onClick={() => onViewPost?.(post)}
-      className={`group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[3rem] transition-all duration-500 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)] mb-10 relative cursor-pointer overflow-hidden ${isPulse ? 'border-l-[6px] border-l-indigo-600' : ''}`}
+      className={`group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[3rem] transition-all duration-500 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)] mb-10 relative cursor-pointer overflow-hidden ${isPulse ? 'border-l-[6px] border-l-indigo-600' : ''} ${filterClass}`}
     >
       {post.relaySource && (
         <div className="px-8 py-3 bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3">
@@ -233,7 +234,11 @@ export const PostCard: React.FC<PostCardProps> = ({
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <div className="relative group/avatar">
-              <img src={post.authorAvatar} alt={post.authorName} className="w-14 h-14 rounded-[1.6rem] object-cover ring-4 ring-slate-50 dark:ring-slate-800 transition-all group-hover/avatar:ring-indigo-50 dark:group-hover/avatar:ring-indigo-900/30 group-hover/avatar:scale-105 z-10 relative bg-white dark:bg-slate-800" />
+              <img 
+                src={post.authorAvatar} 
+                alt={post.authorName} 
+                className={`w-14 h-14 rounded-[1.6rem] object-cover ring-4 ring-slate-50 dark:ring-slate-800 transition-all group-hover/avatar:scale-105 z-10 relative bg-white dark:bg-slate-800 ${borderClass}`} 
+              />
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-[3px] border-white dark:border-slate-900 rounded-full z-20 shadow-sm" />
             </div>
             

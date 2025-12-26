@@ -98,6 +98,14 @@ export interface User {
     icon: string;
   }[];
   settings?: UserSettings;
+  // Resonance Gamification
+  resonance?: number;
+  cosmetics?: {
+    activeBorder?: string;
+    activeTrail?: string;
+    activeFilter?: string;
+    unlockedItems: string[];
+  };
 }
 
 export type NotificationType = 'like' | 'comment' | 'follow' | 'mention' | 'broadcast' | 'system' | 'relay' | 'call' | 'cluster_invite' | 'packet_summary' | 'message' | 'gathering_rsvp' | 'gathering_create' | 'gathering_promote';
@@ -171,6 +179,11 @@ export interface Post {
     authorAvatar: string;
   };
   pulseFrequency?: string; 
+  // Visual Overrides based on author's cosmetics
+  authorCosmetics?: {
+    border?: string;
+    filter?: string;
+  };
 }
 
 export interface Story {
@@ -290,7 +303,8 @@ export enum AppRoute {
   SIMULATIONS = 'sims',
   RESILIENCE = 'resilience',
   SINGLE_POST = 'single_post',
-  SUPPORT = 'support'
+  SUPPORT = 'support',
+  MARKETPLACE = 'marketplace'
 }
 
 export interface ToastMessage {
