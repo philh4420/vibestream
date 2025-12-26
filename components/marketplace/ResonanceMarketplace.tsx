@@ -42,9 +42,8 @@ export const ResonanceMarketplace: React.FC<ResonanceMarketplaceProps> = ({ user
   const [activeTab, setActiveTab] = useState<'all' | 'border' | 'trail' | 'filter'>('all');
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  // Initialize wallet if missing (Mock Logic for Demo)
-  // In a real app, this would be handled by backend triggers
-  const currentPoints = userData.resonance ?? 5000; 
+  // Initialize wallet (Default to 0 for non-admins to prevent free currency)
+  const currentPoints = userData.resonance ?? 0; 
   const unlockedItems = userData.cosmetics?.unlockedItems || [];
   const activeBorder = userData.cosmetics?.activeBorder;
   const activeTrail = userData.cosmetics?.activeTrail;
@@ -53,18 +52,28 @@ export const ResonanceMarketplace: React.FC<ResonanceMarketplaceProps> = ({ user
   const handlePurchase = async (item: CosmeticItem) => {
     if (!db || !userData.id || processingId) return;
     
-    if (currentPoints < item.price) {
+    const isAdmin = userData.role === 'admin';
+
+    if (!isAdmin && currentPoints < item.price) {
       addToast("Insufficient Resonance Points", "error");
       return;
     }
 
     setProcessingId(item.id);
     try {
-      await updateDoc(doc(db, 'users', userData.id), {
-        resonance: increment(-item.price),
+      const updatePayload: any = {
         'cosmetics.unlockedItems': arrayUnion(item.id)
-      });
-      addToast(`Acquired: ${item.name}`, "success");
+      };
+
+      // Only deduct points if user is NOT an admin
+      if (!isAdmin) {
+        updatePayload.resonance = increment(-item.price);
+      }
+
+      await updateDoc(doc(db, 'users', userData.id), updatePayload);
+      
+      addToast(isAdmin ? `System Override: ${item.name} Unlocked` : `Acquired: ${item.name}`, "success");
+      
       // Vibration feedback
       if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(50);
     } catch (e) {
@@ -162,7 +171,8 @@ export const ResonanceMarketplace: React.FC<ResonanceMarketplaceProps> = ({ user
                 (item.type === 'trail' && activeTrail === item.id) ||
                 (item.type === 'filter' && activeFilter === item.id);
             
-            const canAfford = currentPoints >= item.price;
+            const isAdmin = userData.role === 'admin';
+            const canAfford = isAdmin || currentPoints >= item.price;
 
             return (
                 <div 
@@ -231,7 +241,11 @@ export const ResonanceMarketplace: React.FC<ResonanceMarketplaceProps> = ({ user
                                 : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
                             }`}
                           >
-                             <span>{item.price} PTS</span>
+                             {isAdmin ? (
+                                <span className="flex items-center gap-2 text-emerald-400"><ICONS.Verified /> ADMIN UNLOCK</span>
+                             ) : (
+                                <span>{item.price} PTS</span>
+                             )}
                              {!canAfford && <span className="text-[7px] bg-slate-300 dark:bg-slate-700 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400">LOCKED</span>}
                           </button>
                       )}
