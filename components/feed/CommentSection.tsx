@@ -13,13 +13,16 @@ const {
   limit, 
   updateDoc, 
   increment,
-  doc
+  doc,
+  where,
+  getDocs
 } = Firestore as any;
 import { Comment, User } from '../../types';
 import { EmojiPicker } from '../ui/EmojiPicker';
 import { GiphyPicker } from '../ui/GiphyPicker';
 import { uploadToCloudinary } from '../../services/cloudinary';
 import { GiphyGif } from '../../services/giphy';
+import { ICONS } from '../../constants';
 
 interface CommentSectionProps {
   postId: string;
@@ -44,6 +47,12 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
 
+  // Mention State
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionResults, setMentionResults] = useState<User[]>([]);
+  const [mentionedUserCache, setMentionedUserCache] = useState<User[]>([]);
+  const [showMentionList, setShowMentionList] = useState(false);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -61,6 +70,71 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
   const visibleComments = useMemo(() => {
     return comments.filter(c => !blockedIds?.has(c.authorId));
   }, [comments, blockedIds]);
+
+  // --- MENTION LOGIC START ---
+  useEffect(() => {
+    if (mentionQuery === null) {
+      setMentionResults([]);
+      setShowMentionList(false);
+      return;
+    }
+
+    const searchUsers = async () => {
+      const q = query(
+        collection(db, 'users'),
+        where('username', '>=', mentionQuery.toLowerCase()),
+        where('username', '<=', mentionQuery.toLowerCase() + '\uf8ff'),
+        limit(3) // Smaller limit for comments
+      );
+      
+      const snap = await getDocs(q);
+      const users = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as User));
+      setMentionResults(users);
+      setShowMentionList(users.length > 0);
+    };
+
+    const timer = setTimeout(searchUsers, 300);
+    return () => clearTimeout(timer);
+  }, [mentionQuery]);
+
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setNewComment(val);
+
+    const cursor = e.target.selectionStart || 0;
+    const textBeforeCursor = val.slice(0, cursor);
+    const lastWord = textBeforeCursor.split(/\s/).pop();
+
+    if (lastWord && lastWord.startsWith('@')) {
+      const query = lastWord.slice(1);
+      if (query.length >= 1) {
+        setMentionQuery(query);
+      } else {
+        setMentionQuery(null);
+      }
+    } else {
+      setMentionQuery(null);
+    }
+  };
+
+  const selectMention = (user: User) => {
+    const cursor = inputRef.current?.selectionStart || 0;
+    const textBefore = newComment.slice(0, cursor);
+    const textAfter = newComment.slice(cursor);
+    const lastWordIndex = textBefore.lastIndexOf('@');
+    
+    const newContent = newComment.slice(0, lastWordIndex) + `@${user.username} ` + textAfter;
+    
+    setNewComment(newContent);
+    setMentionedUserCache(prev => [...prev, user]);
+    setMentionQuery(null);
+    setShowMentionList(false);
+    
+    setTimeout(() => {
+        inputRef.current?.focus();
+    }, 10);
+  };
+  // --- MENTION LOGIC END ---
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -125,14 +199,17 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
       };
       if (replyingTo) payload.parentId = replyingTo;
 
-      await addDoc(collection(db, 'posts', postId, 'comments'), payload);
+      const commentRef = await addDoc(collection(db, 'posts', postId, 'comments'), payload);
       await updateDoc(doc(db, 'posts', postId), {
         comments: increment(1)
       });
 
+      // --- NOTIFICATIONS ---
+      const batch = Firestore.writeBatch(db);
+
       // 1. Notify Post Author (if not self)
       if (userData.id !== postAuthorId) {
-        await addDoc(collection(db, 'notifications'), {
+        batch.set(doc(collection(db, 'notifications')), {
           type: 'comment',
           fromUserId: userData.id,
           fromUserName: userData.displayName,
@@ -146,10 +223,10 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
         });
       }
 
-      // 2. Notify Parent Comment Author (if replying and not self and not post author to avoid double ping)
+      // 2. Notify Parent Comment Author
       if (parent && parent.authorId !== userData.id && parent.authorId !== postAuthorId) {
-         await addDoc(collection(db, 'notifications'), {
-          type: 'comment', // Could be 'reply' but reusing comment type works
+         batch.set(doc(collection(db, 'notifications')), {
+          type: 'comment',
           fromUserId: userData.id,
           fromUserName: userData.displayName,
           fromUserAvatar: userData.avatarUrl,
@@ -162,10 +239,35 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
         });
       }
 
+      // 3. Notify Mentioned Users
+      const mentionsToNotify = mentionedUserCache.filter(u => commentText.includes(`@${u.username}`));
+      const uniqueMentions = Array.from(new Set(mentionsToNotify.map(u => u.id)))
+        .map(id => mentionsToNotify.find(u => u.id === id));
+
+      uniqueMentions.forEach(targetUser => {
+        if (targetUser && targetUser.id !== userData.id && targetUser.id !== postAuthorId && (!parent || targetUser.id !== parent.authorId)) {
+            batch.set(doc(collection(db, 'notifications')), {
+                type: 'mention',
+                fromUserId: userData.id,
+                fromUserName: userData.displayName,
+                fromUserAvatar: userData.avatarUrl,
+                toUserId: targetUser.id,
+                targetId: postId, // Link to post, future: deep link to comment
+                text: `mentioned you in a comment: "${commentText.substring(0, 30)}..."`,
+                isRead: false,
+                timestamp: serverTimestamp(),
+                pulseFrequency: 'velocity'
+            });
+        }
+      });
+
+      await batch.commit();
+
       setNewComment('');
       setReplyingTo(null);
       setIsEmojiPickerOpen(false);
       removeSelectedFile();
+      setMentionedUserCache([]);
       addToast("Frequency Echo Synchronised", "success");
     } catch (e) {
       addToast("Neural Broadcast Failed", "error");
@@ -207,6 +309,14 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
     const isFocused = focusedCommentId === comment.id;
     const hasChildren = commentThreads[comment.id] && commentThreads[comment.id].length > 0;
     
+    // Highlight mentions in content (basic parsing)
+    const contentWithMentions = comment.content.split(/(@\w+)/g).map((part, i) => {
+        if (part.startsWith('@')) {
+            return <span key={i} className="text-indigo-600 dark:text-indigo-400 font-bold">{part}</span>;
+        }
+        return part;
+    });
+
     return (
       <div key={comment.id} className={`relative flex flex-col animate-in fade-in slide-in-from-top-2 duration-300 group/comment ${isFocused ? 'z-[10]' : ''}`}>
         <div className="flex gap-3 relative">
@@ -229,7 +339,9 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
                   </span>
                 </div>
                 
-                <p className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-relaxed whitespace-pre-wrap">{comment.content}</p>
+                <p className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-relaxed whitespace-pre-wrap">
+                    {contentWithMentions}
+                </p>
                 
                 {comment.media && comment.media.length > 0 && (
                   <div className="mt-3 rounded-xl overflow-hidden border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 max-w-[240px]">
@@ -323,10 +435,33 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
                 ref={inputRef}
                 type="text" 
                 value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
+                onChange={handleInput}
                 className="w-full bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700 rounded-[2.2rem] pl-6 pr-14 py-4 text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-0 focus:bg-white dark:focus:bg-slate-900 focus:border-indigo-500 dark:focus:border-indigo-500 transition-all outline-none"
                 placeholder="Broadcast your echo..."
               />
+              
+              {/* MENTION DROPDOWN (Positioned Above) */}
+              {showMentionList && (
+                <div className="absolute bottom-full left-0 mb-2 w-56 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 z-50">
+                    <div className="px-3 py-1.5 bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
+                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 font-mono">Select_Node</span>
+                    </div>
+                    {mentionResults.map(user => (
+                        <button
+                            key={user.id}
+                            onClick={() => selectMention(user)}
+                            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors text-left group"
+                        >
+                            <img src={user.avatarUrl} className="w-6 h-6 rounded-md object-cover" alt="" />
+                            <div className="min-w-0">
+                                <span className="text-[10px] font-bold text-slate-900 dark:text-white truncate block">{user.displayName}</span>
+                                <span className="text-[8px] font-mono text-slate-400 dark:text-slate-500 truncate block">@{user.username}</span>
+                            </div>
+                        </button>
+                    ))}
+                </div>
+              )}
+
               <button 
                 type="submit"
                 disabled={(!newComment.trim() && !selectedFile && !selectedGif) || isSubmittingComment}

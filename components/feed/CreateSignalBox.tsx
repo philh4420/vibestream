@@ -1,10 +1,11 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { User } from '../../types';
 import { ICONS } from '../../constants';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
-const { collection, addDoc, serverTimestamp } = Firestore as any;
+const { collection, addDoc, serverTimestamp, query, where, limit, getDocs } = Firestore as any;
 import { uploadToCloudinary } from '../../services/cloudinary';
 import { EmojiPicker } from '../ui/EmojiPicker';
 import { GiphyPicker } from '../ui/GiphyPicker';
@@ -12,7 +13,7 @@ import { GiphyGif } from '../../services/giphy';
 
 interface CreateSignalBoxProps {
   userData: User | null;
-  onOpen?: (initialAction?: 'media' | 'gif') => void; // Kept for compatibility if needed
+  onOpen?: (initialAction?: 'media' | 'gif') => void; 
   onFileSelect?: (file: File) => void;
 }
 
@@ -30,12 +31,89 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showGifPicker, setShowGifPicker] = useState(false);
 
+  // Mentions
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionResults, setMentionResults] = useState<User[]>([]);
+  const [mentionedUserCache, setMentionedUserCache] = useState<User[]>([]); // Stores full user objects of selected mentions
+  const [showMentionList, setShowMentionList] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleFocus = () => {
     setIsExpanded(true);
   };
+
+  // --- MENTION LOGIC ---
+  useEffect(() => {
+    if (mentionQuery === null) {
+      setMentionResults([]);
+      setShowMentionList(false);
+      return;
+    }
+
+    const searchUsers = async () => {
+      // Basic search on username - scalable solution would use Algolia/Typesense
+      // This matches exact start of username
+      const q = query(
+        collection(db, 'users'),
+        where('username', '>=', mentionQuery.toLowerCase()),
+        where('username', '<=', mentionQuery.toLowerCase() + '\uf8ff'),
+        limit(5)
+      );
+      
+      const snap = await getDocs(q);
+      const users = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as User));
+      setMentionResults(users);
+      setShowMentionList(users.length > 0);
+    };
+
+    const timer = setTimeout(searchUsers, 300);
+    return () => clearTimeout(timer);
+  }, [mentionQuery]);
+
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setContent(val);
+
+    // Detect @
+    const cursor = e.target.selectionStart;
+    const textBeforeCursor = val.slice(0, cursor);
+    const lastWord = textBeforeCursor.split(/\s/).pop();
+
+    if (lastWord && lastWord.startsWith('@')) {
+      const query = lastWord.slice(1);
+      // Only search if query is at least 1 char
+      if (query.length >= 1) {
+        setMentionQuery(query);
+      } else {
+        setMentionQuery(null);
+      }
+    } else {
+      setMentionQuery(null);
+    }
+  };
+
+  const selectMention = (user: User) => {
+    const cursor = textareaRef.current?.selectionStart || 0;
+    const textBefore = content.slice(0, cursor);
+    const textAfter = content.slice(cursor);
+    const lastWordIndex = textBefore.lastIndexOf('@');
+    
+    const newContent = content.slice(0, lastWordIndex) + `@${user.username} ` + textAfter;
+    
+    setContent(newContent);
+    setMentionedUserCache(prev => [...prev, user]);
+    setMentionQuery(null);
+    setShowMentionList(false);
+    
+    // Reset focus
+    setTimeout(() => {
+        textareaRef.current?.focus();
+    }, 10);
+  };
+
+  // --- END MENTION LOGIC ---
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -75,7 +153,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
 
   const handleEmojiSelect = (emoji: string) => {
     setContent(prev => prev + emoji);
-    // Keep picker open or close it? Let's keep it open for multiple
   };
 
   const handlePost = async () => {
@@ -108,7 +185,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
       }
 
       // 3. Create Post
-      await addDoc(collection(db, 'posts'), {
+      const postRef = await addDoc(collection(db, 'posts'), {
         authorId: userData.id,
         authorName: userData.displayName,
         authorAvatar: userData.avatarUrl,
@@ -123,7 +200,32 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         likedBy: []
       });
 
-      // 4. Reset
+      // 4. Process Mentions
+      const finalContent = content.trim();
+      // Find matches in final text to ensure we don't notify for deleted mentions
+      const mentionsToNotify = mentionedUserCache.filter(u => finalContent.includes(`@${u.username}`));
+      // Deduplicate by ID
+      const uniqueMentions = Array.from(new Set(mentionsToNotify.map(u => u.id)))
+        .map(id => mentionsToNotify.find(u => u.id === id));
+
+      for (const targetUser of uniqueMentions) {
+        if (targetUser && targetUser.id !== userData.id) {
+            await addDoc(collection(db, 'notifications'), {
+                type: 'mention',
+                fromUserId: userData.id,
+                fromUserName: userData.displayName,
+                fromUserAvatar: userData.avatarUrl,
+                toUserId: targetUser.id,
+                targetId: postRef.id,
+                text: `mentioned you in a signal: "${finalContent.substring(0, 30)}..."`,
+                isRead: false,
+                timestamp: serverTimestamp(),
+                pulseFrequency: 'cognition'
+            });
+        }
+      }
+
+      // 5. Reset
       setContent('');
       setSelectedFiles([]);
       setMediaPreviews([]);
@@ -131,6 +233,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
       setIsExpanded(false);
       setShowEmojiPicker(false);
       setShowGifPicker(false);
+      setMentionedUserCache([]);
       
       window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Signal Broadcasted Successfully", type: 'success' } }));
 
@@ -154,7 +257,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
     <div className={`bg-white dark:bg-slate-900 border-precision rounded-[3rem] p-6 md:p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)] hover:shadow-[0_30px_60px_-12px_rgba(0,0,0,0.08)] transition-all duration-500 group relative z-20 ${isExpanded ? 'ring-2 ring-indigo-500/20' : ''}`}>
       
       {/* Top Input Area */}
-      <div className="flex gap-6">
+      <div className="flex gap-6 relative">
         <div className="relative shrink-0">
           <img 
             src={userData?.avatarUrl} 
@@ -164,16 +267,41 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
           <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full animate-pulse shadow-sm" />
         </div>
         
-        <div className="flex-1 pt-1">
+        <div className="flex-1 pt-1 relative">
           <textarea
             ref={textareaRef}
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={handleInput}
             onFocus={handleFocus}
             placeholder={`Initiate a new signal, ${userData?.displayName.split(' ')[0]}...`}
             className="w-full bg-transparent border-none text-slate-900 dark:text-white font-medium text-lg placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-0 resize-none overflow-hidden min-h-[60px]"
             rows={1}
           />
+
+          {/* MENTION DROPDOWN */}
+          {showMentionList && (
+            <div className="absolute top-full left-0 z-50 w-64 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl mt-2 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                <div className="px-3 py-2 bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 font-mono">Neural_Lookup</span>
+                </div>
+                {mentionResults.map(user => (
+                    <button
+                        key={user.id}
+                        onClick={() => selectMention(user)}
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors text-left group"
+                    >
+                        <img src={user.avatarUrl} className="w-8 h-8 rounded-lg object-cover" alt="" />
+                        <div className="min-w-0">
+                            <div className="flex items-center gap-1">
+                                <span className="text-xs font-bold text-slate-900 dark:text-white truncate">{user.displayName}</span>
+                                {user.verifiedHuman && <span className="text-indigo-500 text-[10px]"><ICONS.Verified /></span>}
+                            </div>
+                            <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 truncate">@{user.username}</span>
+                        </div>
+                    </button>
+                ))}
+            </div>
+          )}
         </div>
       </div>
 
