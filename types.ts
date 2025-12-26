@@ -104,6 +104,7 @@ export interface User {
     activeBorder?: string;
     activeTrail?: string;
     activeFilter?: string;
+    signalColor?: string; // Prism Feature
     unlockedItems: string[];
   };
 }

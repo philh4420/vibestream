@@ -1,6 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { UserSettings } from '../../../types';
+import { SIGNAL_COLORS } from '../../../constants';
+import { db } from '../../../services/firebase';
+import * as Firestore from 'firebase/firestore';
+const { doc, updateDoc } = Firestore as any;
+import { auth } from '../../../services/firebase';
 
 interface SettingsAppearanceProps {
   settings: UserSettings;
@@ -9,6 +14,29 @@ interface SettingsAppearanceProps {
 }
 
 export const SettingsAppearance: React.FC<SettingsAppearanceProps> = ({ settings, handleChange, handleToggle }) => {
+  const [previewColor, setPreviewColor] = useState<string | null>(null);
+
+  const handleSignalColorChange = async (colorId: string) => {
+    // Optimistic UI update for immediate feedback
+    setPreviewColor(colorId);
+    
+    // Update user profile in Firestore
+    if (auth.currentUser) {
+        try {
+            await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+                'cosmetics.signalColor': colorId
+            });
+            
+            // Trigger a quick vibration for haptic confirmation
+            if (window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(20);
+            }
+        } catch (e) {
+            console.error("Failed to update signal color", e);
+        }
+    }
+  };
+
   const Toggle = ({ label, checked, onChange, description }: { label: string, checked: boolean, onChange: () => void, description?: string }) => (
     <div 
       onClick={onChange}
@@ -48,7 +76,38 @@ export const SettingsAppearance: React.FC<SettingsAppearanceProps> = ({ settings
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
+        <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono pl-2 mb-2">Prism_Signal_Frequency</h4>
+        <p className="text-[10px] text-slate-500 dark:text-slate-400 px-2 mb-4 leading-relaxed">
+            Define your broadcast aesthetic. This color will override the interface of any node visiting your profile, marking your digital territory.
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {SIGNAL_COLORS.map(color => (
+                <button
+                    key={color.id}
+                    onClick={() => handleSignalColorChange(color.id)}
+                    className={`relative p-3 rounded-2xl border transition-all active:scale-95 flex flex-col items-center gap-2 group overflow-hidden ${
+                        (previewColor === color.id) 
+                        ? 'border-slate-900 dark:border-white ring-1 ring-slate-900 dark:ring-white bg-slate-50 dark:bg-slate-800' 
+                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-400 dark:hover:border-slate-500'
+                    }`}
+                >
+                    <div 
+                        className="w-full h-8 rounded-xl shadow-inner transition-transform group-hover:scale-105"
+                        style={{ backgroundColor: color.hex }}
+                    />
+                    <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide truncate w-full text-center">
+                        {color.label}
+                    </span>
+                    {previewColor === color.id && (
+                        <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-500 shadow-sm animate-pulse" />
+                    )}
+                </button>
+            ))}
+        </div>
+      </div>
+
+      <div className="space-y-3 pt-6 border-t border-slate-100 dark:border-slate-800">
         <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono pl-2 mb-2">Accessibility_&_Motion</h4>
         <Toggle 
           label="Reduced Motion" 

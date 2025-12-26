@@ -34,6 +34,7 @@ import {
   CallSession,
   SystemSettings
 } from './types';
+import { SIGNAL_COLORS } from './constants';
 
 // Components
 import { LandingPage } from './components/landing/LandingPage';
@@ -106,6 +107,35 @@ const SuspendedScreen = ({ onLogout, userData }: { onLogout: () => void, userDat
       </div>
     </div>
 );
+
+// --- PRISM INJECTOR COMPONENT ---
+const PrismInjector = ({ colorId }: { colorId: string | undefined }) => {
+  useEffect(() => {
+    if (!colorId || colorId === 'default') {
+      document.documentElement.removeAttribute('style');
+      return;
+    }
+
+    const signalConfig = SIGNAL_COLORS.find(c => c.id === colorId);
+    if (signalConfig) {
+      const { shades } = signalConfig;
+      const root = document.documentElement;
+      
+      // Inject CSS Variables to override globals
+      root.style.setProperty('--p-50', shades[50]);
+      root.style.setProperty('--p-100', shades[100]);
+      root.style.setProperty('--p-500', shades[500]);
+      root.style.setProperty('--p-600', shades[600]);
+      root.style.setProperty('--p-900', shades[900]);
+    }
+
+    return () => {
+      document.documentElement.removeAttribute('style');
+    };
+  }, [colorId]);
+
+  return null;
+};
 
 export default function App() {
   const [user, setUser] = useState<any>(null);
@@ -560,6 +590,11 @@ export default function App() {
   const filteredGlobalPosts = globalPosts.filter(p => !blockedIds.has(p.authorId));
   const filteredUsers = allUsers.filter(u => !blockedIds.has(u.id));
 
+  // Determine Signal Color for Prism Effect
+  const activeSignalColor = (activeRoute === AppRoute.PUBLIC_PROFILE && selectedUserProfile?.cosmetics?.signalColor) 
+    ? selectedUserProfile.cosmetics.signalColor 
+    : undefined;
+
   if (loading) return <div className="fixed inset-0 bg-slate-900 flex items-center justify-center text-white">Initializing_Grid...</div>;
   if (!user) return <LandingPage onEnter={() => {}} systemSettings={systemSettings} />;
 
@@ -576,6 +611,8 @@ export default function App() {
   return (
     <>
       <SignalTrail activeTrail={userData?.cosmetics?.activeTrail} />
+      <PrismInjector colorId={activeSignalColor} />
+      
       <Layout
         activeRoute={activeRoute}
         onNavigate={setActiveRoute}

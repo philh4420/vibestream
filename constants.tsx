@@ -31,6 +31,17 @@ export const PULSE_FREQUENCIES: PulseFrequency[] = [
 
 export const IDENTITY_SIGNALS = ['⚡', '🔋', '🚀', '🧠', '🎧', '✈️', '💻', '☕', '🌟', '🛡️', '🛰️'];
 
+// Prism System Colors
+export const SIGNAL_COLORS = [
+  { id: 'default', label: 'System Default', hex: '#6366f1', shades: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 900: '#312e81' } },
+  { id: 'neon_lime', label: 'Neon Lime', hex: '#84cc16', shades: { 50: '#f7fee7', 100: '#ecfccb', 500: '#84cc16', 600: '#65a30d', 900: '#365314' } },
+  { id: 'cyber_yellow', label: 'Cyber Yellow', hex: '#eab308', shades: { 50: '#fefce8', 100: '#fef9c3', 500: '#eab308', 600: '#ca8a04', 900: '#713f12' } },
+  { id: 'hot_pink', label: 'Hot Pink', hex: '#d946ef', shades: { 50: '#fdf4ff', 100: '#fae8ff', 500: '#d946ef', 600: '#c026d3', 900: '#701a75' } },
+  { id: 'electric_blue', label: 'Electric Blue', hex: '#06b6d4', shades: { 50: '#ecfeff', 100: '#cffafe', 500: '#06b6d4', 600: '#0891b2', 900: '#164e63' } },
+  { id: 'plasma_red', label: 'Plasma Red', hex: '#ef4444', shades: { 50: '#fef2f2', 100: '#fee2e2', 500: '#ef4444', 600: '#dc2626', 900: '#7f1d1d' } },
+  { id: 'void_white', label: 'Void Mono', hex: '#64748b', shades: { 50: '#f8fafc', 100: '#f1f5f9', 500: '#64748b', 600: '#475569', 900: '#0f172a' } },
+];
+
 export const ICONS = {
   Home: () => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
