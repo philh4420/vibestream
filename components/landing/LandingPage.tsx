@@ -9,7 +9,7 @@ const {
   sendPasswordResetEmail
 } = FirebaseAuth as any;
 import * as Firestore from 'firebase/firestore';
-const { doc, setDoc, serverTimestamp, collection, query, limit, getDocs, getDoc, getDocFromServer } = Firestore as any;
+const { doc, setDoc, serverTimestamp, collection, query, limit, getDocs, getDoc, getDocFromServer, addDoc } = Firestore as any;
 import { SystemSettings, ToastMessage } from '../../types';
 import { PrivacyPage } from '../legal/PrivacyPage';
 import { TermsPage } from '../legal/TermsPage';
@@ -233,6 +233,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
         badges: badges,
         tags: [],
         socialLinks: []
+      });
+
+      // WELCOME SEQUENCE: Inject System Notification
+      await addDoc(collection(db, 'notifications'), {
+        type: 'system',
+        fromUserId: 'SYSTEM',
+        fromUserName: 'VibeStream Core',
+        fromUserAvatar: '',
+        toUserId: user.uid,
+        targetId: 'onboarding',
+        text: `Welcome to the Grid, ${fullName}. Your neural node is active. Complete your profile to increase signal velocity.`,
+        isRead: false,
+        timestamp: serverTimestamp(),
+        pulseFrequency: 'resilience'
       });
       
       onEnter();
