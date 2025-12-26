@@ -207,9 +207,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
         console.warn('Role assignment check skipped, defaulting to member');
       }
 
+      // GENERATE USERNAME FROM NAME (Fallback to email if name is all symbols)
+      const nameBase = fullName.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const emailBase = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+      const username = nameBase.length > 0 ? nameBase : emailBase;
+
       await setDoc(doc(db, 'users', user.uid), {
         id: user.uid,
-        username: email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, ''),
+        username: username,
         displayName: fullName, 
         email: email,
         bio: bio,

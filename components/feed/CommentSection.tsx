@@ -52,6 +52,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
   const [mentionResults, setMentionResults] = useState<User[]>([]);
   const [mentionedUserCache, setMentionedUserCache] = useState<User[]>([]);
   const [showMentionList, setShowMentionList] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -80,17 +81,25 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
     }
 
     const searchUsers = async () => {
-      const q = query(
-        collection(db, 'users'),
-        where('username', '>=', mentionQuery.toLowerCase()),
-        where('username', '<=', mentionQuery.toLowerCase() + '\uf8ff'),
-        limit(3) // Smaller limit for comments
-      );
-      
-      const snap = await getDocs(q);
-      const users = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as User));
-      setMentionResults(users);
-      setShowMentionList(users.length > 0);
+      setIsSearching(true);
+      setShowMentionList(true); // Show dropdown immediately in loading state
+
+      try {
+        const q = query(
+          collection(db, 'users'),
+          where('username', '>=', mentionQuery.toLowerCase()),
+          where('username', '<=', mentionQuery.toLowerCase() + '\uf8ff'),
+          limit(3) // Smaller limit for comments
+        );
+        
+        const snap = await getDocs(q);
+        const users = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as User));
+        setMentionResults(users);
+      } catch (e) {
+        console.error("Mention search error", e);
+      } finally {
+        setIsSearching(false);
+      }
     };
 
     const timer = setTimeout(searchUsers, 300);
@@ -111,9 +120,11 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
         setMentionQuery(query);
       } else {
         setMentionQuery(null);
+        setShowMentionList(false);
       }
     } else {
       setMentionQuery(null);
+      setShowMentionList(false);
     }
   };
 
@@ -268,6 +279,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
       setIsEmojiPickerOpen(false);
       removeSelectedFile();
       setMentionedUserCache([]);
+      setMentionQuery(null);
+      setShowMentionList(false);
       addToast("Frequency Echo Synchronised", "success");
     } catch (e) {
       addToast("Neural Broadcast Failed", "error");
@@ -387,7 +400,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
         )}
       </div>
 
-      <form onSubmit={handleSubmitComment} className="flex flex-col gap-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-[2rem] border border-slate-100 dark:border-slate-800 relative group/input focus-within:border-indigo-200 dark:focus-within:border-indigo-800 focus-within:ring-4 focus-within:ring-indigo-500/5 transition-all">
+      <form onSubmit={handleSubmitComment} className="flex flex-col gap-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-[2rem] border border-slate-100 dark:border-slate-800 relative group/input focus-within:border-indigo-200 dark:focus-within:border-indigo-800 focus-within:ring-4 focus-within:ring-indigo-500/5 transition-all z-20">
         {replyingTo && (
           <div className="flex items-center justify-between bg-indigo-100/50 dark:bg-indigo-900/30 px-4 py-2 rounded-xl text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-2 border border-indigo-100 dark:border-indigo-800">
             <span>Targeting Node: {comments.find(c => c.id === replyingTo)?.authorName || 'Unknown'}</span>
@@ -444,21 +457,33 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
               {showMentionList && (
                 <div className="absolute bottom-full left-0 mb-2 w-56 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 z-50">
                     <div className="px-3 py-1.5 bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
-                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 font-mono">Select_Node</span>
+                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 font-mono">
+                          {isSearching ? 'Scanning_Grid...' : 'Select_Node'}
+                        </span>
                     </div>
-                    {mentionResults.map(user => (
-                        <button
-                            key={user.id}
-                            onClick={() => selectMention(user)}
-                            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors text-left group"
-                        >
-                            <img src={user.avatarUrl} className="w-6 h-6 rounded-md object-cover" alt="" />
-                            <div className="min-w-0">
-                                <span className="text-[10px] font-bold text-slate-900 dark:text-white truncate block">{user.displayName}</span>
-                                <span className="text-[8px] font-mono text-slate-400 dark:text-slate-500 truncate block">@{user.username}</span>
-                            </div>
-                        </button>
-                    ))}
+                    {isSearching ? (
+                       <div className="p-3 text-center">
+                          <div className="w-3 h-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                       </div>
+                    ) : mentionResults.length > 0 ? (
+                        mentionResults.map(user => (
+                            <button
+                                key={user.id}
+                                onClick={() => selectMention(user)}
+                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors text-left group"
+                            >
+                                <img src={user.avatarUrl} className="w-6 h-6 rounded-md object-cover" alt="" />
+                                <div className="min-w-0">
+                                    <span className="text-[10px] font-bold text-slate-900 dark:text-white truncate block">{user.displayName}</span>
+                                    <span className="text-[8px] font-mono text-slate-400 dark:text-slate-500 truncate block">@{user.username}</span>
+                                </div>
+                            </button>
+                        ))
+                    ) : (
+                       <div className="px-3 py-2 text-[9px] text-slate-400 dark:text-slate-500 italic text-center">
+                          No matching nodes found.
+                       </div>
+                    )}
                 </div>
               )}
 
