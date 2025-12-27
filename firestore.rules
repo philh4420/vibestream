@@ -626,7 +626,7 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    match /citadel_os_update_logs_v2/{logId} {
+    match /citadel_os_of_vibe_update_logs_v2/{logId} {
       allow read, list: if true;
       allow write: if isAdmin();
     }
@@ -879,6 +879,64 @@ service cloud.firestore {
     }
     
     match /final_sentinel_lock_v99/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // -------------------------------------------------------------------------
+    // 2026+ EXPANSION NODES (STABLE_V8.8)
+    // -------------------------------------------------------------------------
+
+    match /settings/global_signal {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /resonance_ledger/{txId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+    }
+
+    match /ai_signal_cache/{cacheId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /marketplace_inventory/{itemId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /citadel_broadcast_history/{historyId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /node_reputation_index/{nodeId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /security_events_log_v2/{eventId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+    }
+
+    match /temporal_flux_logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /grid_performance_telemetry/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /admin_terminal_sessions/{sessionId} {
+      allow read, write: if isAdmin();
+    }
+    
+    match /final_node_integrity_seal/{id} {
       allow read: if true;
       allow write: if isAdmin();
     }

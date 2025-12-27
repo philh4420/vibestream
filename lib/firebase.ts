@@ -1,16 +1,12 @@
 
-// Fixed: Using namespaced import and destructuring to resolve "no exported member" errors in Firebase types
 import * as FirebaseApp from 'firebase/app';
-const { initializeApp } = FirebaseApp as any;
-// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
+const { initializeApp, getApps, getApp } = FirebaseApp as any;
 import * as Firestore from 'firebase/firestore';
 const { getFirestore } = Firestore as any;
-// Fixed: Using namespaced import for firebase/auth to resolve "no exported member" errors
 import * as FirebaseAuth from 'firebase/auth';
 const { getAuth } = FirebaseAuth as any;
 
 const getEnv = (key: string) => {
-  // Try both process.env and import.meta.env for maximum compatibility across bundlers
   // @ts-ignore
   return process.env[key] || import.meta.env?.[key] || '';
 };
@@ -24,13 +20,14 @@ const firebaseConfig = {
   appId: getEnv('VITE_FIREBASE_APP_ID')
 };
 
-// Log warning if API Key is missing to help debugging (won't show key)
-if (!firebaseConfig.apiKey) {
-  console.warn("Firebase API Key is missing. Check your environment variables.");
+let app;
+try {
+  const apps = getApps();
+  app = apps.length > 0 ? getApp() : initializeApp(firebaseConfig);
+} catch (e) {
+  app = initializeApp(firebaseConfig, 'LIB_FALLBACK');
 }
 
-// Fixed: Utilizing the initializeApp function extracted from the namespaced import
-const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export default app;

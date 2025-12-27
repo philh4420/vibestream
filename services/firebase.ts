@@ -12,6 +12,9 @@ import { CONFIG } from './config';
 
 let app;
 
+// Safety check for navigator presence before Firebase internal logic triggers
+const isBrowser = typeof window !== 'undefined' && typeof window.navigator !== 'undefined';
+
 try {
   const apps = getApps();
   if (apps.length > 0) {
@@ -20,22 +23,25 @@ try {
     app = initializeApp(CONFIG.FIREBASE);
   }
 } catch (error) {
-  console.error("Firebase Initialization Critical Error:", error);
+  console.error("VibeStream Protocol: Firebase Initialization Critical Error:", error);
   app = initializeApp(CONFIG.FIREBASE, 'FALLBACK');
 }
 
 // Initialize App Check with reCAPTCHA v3
-if (typeof window !== 'undefined') {
-  try {
-    // Ensure the site key is correctly set for reCAPTCHA v3
-    // Note: 401 errors for 'pat' indicate the domain is not whitelisted in the reCAPTCHA/Firebase console
-    initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider('6LcV_pMqAAAAANmY2pE6_jDq1Zf-E3p6mX_9L8uN'),
-      isTokenAutoRefreshEnabled: true
-    });
-  } catch (err) {
-    console.warn("App Check initialization failed:", err);
-  }
+if (isBrowser) {
+  // Use a slight delay to ensure the environment/navigator is fully ready
+  setTimeout(() => {
+    try {
+      if (app && window.navigator) {
+        initializeAppCheck(app, {
+          provider: new ReCaptchaV3Provider('6LcV_pMqAAAAANmY2pE6_jDq1Zf-E3p6mX_9L8uN'),
+          isTokenAutoRefreshEnabled: true
+        });
+      }
+    } catch (err) {
+      console.debug("VibeStream Alert: App Check initialization deferred or bypassed:", err);
+    }
+  }, 100);
 }
 
 export const db = getFirestore(app);
