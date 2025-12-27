@@ -1,5 +1,5 @@
-
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { auth, db } from './services/firebase';
 import * as FirebaseAuth from 'firebase/auth';
 const { onAuthStateChanged, signOut } = FirebaseAuth as any;
 import * as Firestore from 'firebase/firestore';
@@ -8,940 +8,429 @@ const {
   onSnapshot, 
   collection, 
   query, 
+  where, 
   orderBy, 
   limit, 
-  where, 
-  writeBatch, 
-  serverTimestamp, 
-  arrayRemove, 
+  updateDoc, 
   arrayUnion, 
-  getDoc,
-  updateDoc,
-  deleteDoc,
-  addDoc,
+  arrayRemove,
   increment,
-  setDoc
-} = Firestore as any; 
-import { auth, db } from './services/firebase';
+  setDoc,
+  serverTimestamp,
+  writeBatch
+} = Firestore as any;
 import { 
-  User, 
   AppRoute, 
+  User, 
   AppNotification, 
-  Post, 
-  Gathering, 
-  ToastMessage, 
+  SystemSettings, 
+  Region, 
   WeatherInfo, 
-  LiveStream, 
-  CallSession,
-  SystemSettings,
-  GlobalSignal
+  Post, 
+  LiveStream,
+  Gathering,
+  ToastMessage
 } from './types';
-import { SIGNAL_COLORS } from './constants';
-
-// Components
-import { LandingPage } from './components/landing/LandingPage';
 import { Layout } from './components/layout/Layout';
+import { LandingPage } from './components/landing/LandingPage';
 import { FeedPage } from './components/feed/FeedPage';
 import { ExplorePage } from './components/explore/ExplorePage';
 import { MessagesPage } from './components/messages/MessagesPage';
-import { NotificationsPage } from './components/notifications/NotificationsPage';
 import { ProfilePage } from './components/profile/ProfilePage';
 import { AdminPanel } from './components/admin/AdminPanel';
-import { PrivacyPage } from './components/legal/PrivacyPage';
-import { TermsPage } from './components/legal/TermsPage';
-import { CookiesPage } from './components/legal/CookiesPage';
-import { MeshPage } from './components/mesh/MeshPage';
+import { GatheringsPage } from './components/gatherings/GatheringsPage';
+import { SingleGatheringView } from './components/gatherings/SingleGatheringView';
 import { ClustersPage } from './components/clusters/ClustersPage';
 import { StreamGridPage } from './components/streams/StreamGridPage';
 import { TemporalPage } from './components/temporal/TemporalPage';
 import { DataVaultPage } from './components/vault/DataVaultPage';
 import { VerifiedNodesPage } from './components/explore/VerifiedNodesPage';
-import { GatheringsPage } from './components/gatherings/GatheringsPage';
-import { SingleGatheringView } from './components/gatherings/SingleGatheringView';
-import { SinglePostView } from './components/feed/SinglePostView';
-import { Toast } from './components/ui/Toast';
-import { LiveBroadcastOverlay } from './components/streams/LiveBroadcastOverlay';
-import { LiveWatcherOverlay } from './components/streams/LiveWatcherOverlay';
-import { NeuralLinkOverlay } from './components/messages/NeuralLinkOverlay';
 import { SimulationsPage } from './components/simulations/SimulationsPage';
 import { ResiliencePage } from './components/resilience/ResiliencePage';
-import { SettingsOverlay } from './components/settings/SettingsOverlay';
 import { SupportPage } from './components/support/SupportPage';
 import { ResonanceMarketplace } from './components/marketplace/ResonanceMarketplace';
+import { SinglePostView } from './components/feed/SinglePostView';
+import { SettingsOverlay } from './components/settings/SettingsOverlay';
+import { LiveBroadcastOverlay } from './components/streams/LiveBroadcastOverlay';
+import { LiveWatcherOverlay } from './components/streams/LiveWatcherOverlay';
 import { SignalTrail } from './components/ui/SignalTrail';
-import { GlobalSignalPulse } from './components/ui/GlobalSignalPulse';
-
-// Services
 import { fetchWeather } from './services/weather';
+import { uploadToCloudinary } from './services/cloudinary';
+import { NeuralLinkOverlay } from './components/messages/NeuralLinkOverlay';
 
-const MaintenanceScreen = () => (
-  <div className="fixed inset-0 z-[9999] bg-[#030712] flex flex-col items-center justify-center overflow-hidden font-sans selection:bg-rose-500 selection:text-white">
-    <div className="relative z-10 flex flex-col items-center text-center p-8 w-full max-w-6xl">
-      <h1 className="text-6xl md:text-8xl lg:text-9xl font-black text-white italic tracking-tighter leading-none mb-8 drop-shadow-2xl select-none mix-blend-screen">
-        SYSTEM<span className="text-rose-600 inline-block px-2">_</span>LOCKDOWN
-      </h1>
-      <p className="text-[10px] md:text-xs font-black text-rose-400 uppercase tracking-[0.3em] font-mono">MAINTENANCE PROTOCOLS ACTIVE</p>
-    </div>
-  </div>
-);
-
-const FeatureDisabledScreen = ({ featureName }: { featureName: string }) => (
-  <div className="flex flex-col items-center justify-center w-full min-h-[70vh] p-6 animate-in zoom-in-95 duration-700 relative overflow-hidden rounded-[3.5rem] bg-[#FFFCF5] dark:bg-slate-900 border dark:border-slate-800">
-    <div className="relative z-10 flex flex-col items-center text-center max-w-2xl mx-auto">
-      <h2 className="text-5xl md:text-7xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-6 leading-none">
-        ACCESS<span className="text-slate-300 dark:text-slate-700">_</span>DENIED
-      </h2>
-      <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 px-8 py-6 rounded-[2rem] shadow-sm mb-10 max-w-lg">
-        <p className="text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
-          The <span className="text-slate-900 dark:text-white font-black bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-600 uppercase mx-1 tracking-wider">{featureName}</span> protocol has been strategically disabled by grid administration.
-        </p>
-      </div>
-    </div>
-  </div>
-);
-
-const SuspendedScreen = ({ onLogout, userData }: { onLogout: () => void, userData: User | null }) => (
-    <div className="fixed inset-0 z-[9999] bg-[#050101] flex flex-col items-center justify-center overflow-hidden font-sans selection:bg-rose-500 selection:text-white">
-      <div className="relative z-10 flex flex-col items-center text-center p-8 max-w-2xl w-full">
-        <h1 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter italic mb-6 leading-none">
-          Node<span className="text-rose-600">_</span>Suspended
-        </h1>
-        <button onClick={onLogout} className="flex-1 py-4 bg-white text-black rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-200 transition-all active:scale-95 shadow-xl">Terminate_Session</button>
-      </div>
-    </div>
-);
-
-// --- PRISM INJECTOR COMPONENT ---
-const PrismInjector = ({ colorId }: { colorId: string | undefined }) => {
-  useEffect(() => {
-    if (!colorId || colorId === 'default') {
-      document.documentElement.removeAttribute('style');
-      return;
-    }
-
-    const signalConfig = SIGNAL_COLORS.find(c => c.id === colorId);
-    if (signalConfig) {
-      const { shades } = signalConfig;
-      const root = document.documentElement;
-      
-      // Inject CSS Variables to override globals
-      root.style.setProperty('--p-50', shades[50]);
-      root.style.setProperty('--p-100', shades[100]);
-      root.style.setProperty('--p-500', shades[500]);
-      root.style.setProperty('--p-600', shades[600]);
-      root.style.setProperty('--p-900', shades[900]);
-    }
-
-    return () => {
-      document.documentElement.removeAttribute('style');
-    };
-  }, [colorId]);
-
-  return null;
-};
-
-export default function App() {
+const App: React.FC = () => {
+  // Auth State
   const [user, setUser] = useState<any>(null);
   const [userData, setUserData] = useState<User | null>(null);
-  const [targetClusterId, setTargetClusterId] = useState<string | null>(null);
-  
-  const [activeRoute, setActiveRoute] = useState<AppRoute>(() => {
-    try {
-      const saved = localStorage.getItem('vibestream_active_route') as AppRoute;
-      if (saved === AppRoute.SINGLE_POST || saved === AppRoute.SINGLE_GATHERING || saved === AppRoute.PUBLIC_PROFILE) {
-        return AppRoute.FEED;
-      }
-      return saved || AppRoute.FEED;
-    } catch {
-      return AppRoute.FEED;
-    }
-  });
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
-  const [loading, setLoading] = useState(true);
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [weather, setWeather] = useState<WeatherInfo | null>(null);
-  const [systemSettings, setSystemSettings] = useState<SystemSettings>({
-    maintenanceMode: false,
-    registrationDisabled: false,
-    minTrustTier: 'Gamma',
-    lastUpdatedBy: 'SYSTEM',
-    updatedAt: new Date().toISOString(),
-    featureFlags: {}
-  });
-
-  // Global Data
+  // App State
+  const [activeRoute, setActiveRoute] = useState<AppRoute>(AppRoute.FEED);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
-  const [globalPosts, setGlobalPosts] = useState<Post[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [systemSettings, setSystemSettings] = useState<SystemSettings | null>(null);
+  const [weather, setWeather] = useState<WeatherInfo | null>(null);
+  const [region, setRegion] = useState<Region>('en-GB');
   
-  // Blocking State
-  const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
-  
-  // Selection States
-  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
-  const [selectedGathering, setSelectedGathering] = useState<Gathering | null>(null);
-  const [selectedUserProfile, setSelectedUserProfile] = useState<User | null>(null);
-  
-  // Streaming & Calling
-  const [activeStreamId, setActiveStreamId] = useState<string | null>(null);
-  const [watchingStream, setWatchingStream] = useState<LiveStream | null>(null);
-  const [activeCall, setActiveCall] = useState<CallSession | null>(null);
-
-  const [rsvpProcessing, setRsvpProcessing] = useState<Set<string>>(new Set());
+  // UI Modal State
+  const [viewingPost, setViewingPost] = useState<Post | null>(null);
+  const [viewingProfile, setViewingProfile] = useState<User | null>(null);
+  const [viewingGathering, setViewingGathering] = useState<Gathering | null>(null);
+  const [activeLobbyGathering, setActiveLobbyGathering] = useState<Gathering | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [activeStream, setActiveStream] = useState<LiveStream | null>(null);
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
+  const [activeStreamId, setActiveStreamId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isNeuralLinkOpen, setIsNeuralLinkOpen] = useState(false);
 
-  // Global Signal State
-  const [activeGlobalSignal, setActiveGlobalSignal] = useState<GlobalSignal | null>(null);
-  const [dismissedSignalIds, setDismissedSignalIds] = useState<Set<string>>(new Set());
+  // Derived State
+  const blockedIds = useMemo(() => new Set(userData?.settings?.safety?.hiddenWords || []), [userData]);
 
-  // Sound Refs
-  const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
-  const latestNotifIdRef = useRef<string | null>(null);
-
-  // Initialize Sound
+  // Auth Listener
   useEffect(() => {
-    // FIX: Using a guaranteed stable asset to resolve the 404 error
-    notificationSoundRef.current = new Audio('https://www.soundjay.com/buttons/sounds/button-16.mp3');
-    notificationSoundRef.current.volume = 0.35;
-  }, []);
-
-  // --- THEME ENGINE ---
-  useEffect(() => {
-    const applyTheme = () => {
-      const theme = userData?.settings?.appearance?.theme || 'system';
-      const root = document.documentElement;
-      
-      if (theme === 'dark') {
-        root.classList.add('dark');
-      } else if (theme === 'light') {
-        root.classList.remove('dark');
-      } else {
-        // System preference
-        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (systemDark) {
-          root.classList.add('dark');
-        } else {
-          root.classList.remove('dark');
-        }
-      }
-    };
-
-    // Apply immediately
-    applyTheme();
-
-    // Listen for system changes if using system preference
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handler = () => {
-      if (userData?.settings?.appearance?.theme === 'system' || !userData?.settings?.appearance?.theme) {
-        applyTheme();
-      }
-    };
-    
-    mediaQuery.addEventListener('change', handler);
-    return () => mediaQuery.removeEventListener('change', handler);
-  }, [userData?.settings?.appearance?.theme]);
-
-  useEffect(() => {
-    if (activeRoute !== AppRoute.SINGLE_POST && activeRoute !== AppRoute.SINGLE_GATHERING && activeRoute !== AppRoute.PUBLIC_PROFILE) {
-      localStorage.setItem('vibestream_active_route', activeRoute);
-    }
-  }, [activeRoute]);
-
-  const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
-    const id = Math.random().toString(36).substr(2, 9);
-    setToasts(prev => [...prev, { id, message, type }]);
-  };
-
-  // Auth & User Sync
-  useEffect(() => {
-    const safetyTimer = setTimeout(() => {
-        setLoading((current) => {
-            if (current) {
-                console.warn("VibeStream Protocol: Auth handshake timed out. Forcing entry.");
-                return false;
-            }
-            return current;
-        });
-    }, 5000);
-
-    const unsubscribe = onAuthStateChanged(auth, async (authUser: any) => {
-      clearTimeout(safetyTimer);
-      
-      if (authUser) {
-        setUser(authUser);
-        const userRef = doc(db, 'users', authUser.uid);
-
-        getDoc(userRef).then(async (snap: any) => {
-            if (snap.exists()) {
-                const data = snap.data();
-                if (data.presenceStatus === 'Offline') {
-                    const nextStatus = data.lastActiveStatus || 'Online';
-                    await updateDoc(userRef, { presenceStatus: nextStatus });
-                }
-            }
-        }).catch((e: any) => console.debug("Presence restoration skipped:", e));
-
-        const unsubUser = onSnapshot(userRef, (docSnap: any) => {
-          if (docSnap.exists()) {
-            const data = docSnap.data() as User;
-            setUserData({ ...data, id: docSnap.id });
-            if (data.location) {
-              fetchWeather({ query: data.location })
-                .then(setWeather)
-                .catch(err => console.warn("Atmospheric sync deferred:", err));
-            }
-            setLoading(false); 
-          }
-        });
-
-        const notifQuery = query(collection(db, 'notifications'), where('toUserId', '==', authUser.uid), orderBy('timestamp', 'desc'), limit(50));
-        const unsubNotif = onSnapshot(notifQuery, (snap: any) => {
-          const newNotifs = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as AppNotification));
-          
-          if (newNotifs.length > 0) {
-             const latest = newNotifs[0];
-             if (latestNotifIdRef.current && latest.id !== latestNotifIdRef.current && !latest.isRead) {
-                 notificationSoundRef.current?.play().catch(() => {});
-             }
-             latestNotifIdRef.current = latest.id;
-          }
-          setNotifications(newNotifs);
-        });
-
-        // Block Lists Listeners
-        const blockedRef = collection(db, 'users', authUser.uid, 'blocked');
-        const blockedByRef = collection(db, 'users', authUser.uid, 'blockedBy');
-        
-        const unsubBlocked = onSnapshot(blockedRef, (snap: any) => {
-            setBlockedIds(prev => {
-               const newSet = new Set(prev);
-               snap.docs.forEach((d: any) => newSet.add(d.id));
-               return newSet;
-            });
-        });
-
-        const unsubBlockedBy = onSnapshot(blockedByRef, (snap: any) => {
-            setBlockedIds(prev => {
-                const newSet = new Set(prev);
-                snap.docs.forEach((d: any) => newSet.add(d.id));
-                return newSet;
-            });
-        });
-
-        const callQuery = query(collection(db, 'calls'), where('receiverId', '==', authUser.uid), where('status', '==', 'ringing'), limit(1));
-        const unsubCalls = onSnapshot(callQuery, (snap: any) => {
-          if (!snap.empty) {
-            setActiveCall({ id: snap.docs[0].id, ...snap.docs[0].data() } as CallSession);
-          }
-        });
-
-        return () => {
-          unsubUser();
-          unsubNotif();
-          unsubCalls();
-          unsubBlocked();
-          unsubBlockedBy();
-        };
-      } else {
-        setUser(null);
+    return onAuthStateChanged(auth, (u: any) => {
+      setUser(u);
+      setIsAuthLoading(false);
+      if (!u) {
         setUserData(null);
-        setBlockedIds(new Set());
-        setLoading(false);
+        setActiveRoute(AppRoute.FEED);
       }
     });
-
-    return () => {
-        clearTimeout(safetyTimer);
-        unsubscribe();
-    }
   }, []);
 
-  // Global Data Sync
+  // User Data & System Settings Listener
   useEffect(() => {
-    const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (docSnap: any) => {
-      if (docSnap.exists()) {
-        setSystemSettings(prev => ({ ...prev, ...docSnap.data() }));
-      }
+    if (!user || !db) return;
+    
+    const unsubUser = onSnapshot(doc(db, 'users', user.uid), (snap: any) => {
+      if (snap.exists()) setUserData({ id: snap.id, ...snap.data() } as User);
     });
 
-    // Global Signal Override Listener
-    const unsubGlobalSignal = onSnapshot(doc(db, 'settings', 'global_signal'), (snap: any) => {
-       if (snap.exists()) {
-          const data = snap.data();
-          if (data.active) {
-             setActiveGlobalSignal({ id: snap.id, ...data } as GlobalSignal);
-          } else {
-             setActiveGlobalSignal(null);
-          }
-       }
+    const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (snap: any) => {
+      if (snap.exists()) setSystemSettings(snap.data() as SystemSettings);
     });
 
-    const unsubUsers = onSnapshot(query(collection(db, 'users'), limit(100)), (snap: any) => {
+    return () => { unsubUser(); unsubSettings(); };
+  }, [user]);
+
+  // Global Data Fetchers
+  useEffect(() => {
+    if (!user || !db) return;
+
+    const qPosts = query(collection(db, 'posts'), orderBy('timestamp', 'desc'), limit(100));
+    const unsubPosts = onSnapshot(qPosts, (snap: any) => {
+      setPosts(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Post)));
+    });
+
+    const qUsers = query(collection(db, 'users'), limit(100));
+    const unsubUsers = onSnapshot(qUsers, (snap: any) => {
       setAllUsers(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as User)));
     });
 
-    const unsubPosts = onSnapshot(query(collection(db, 'posts'), orderBy('timestamp', 'desc'), limit(50)), (snap: any) => {
-      setGlobalPosts(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Post)));
+    const qNotifs = query(collection(db, 'notifications'), where('toUserId', '==', user.uid), orderBy('timestamp', 'desc'), limit(50));
+    const unsubNotifs = onSnapshot(qNotifs, (snap: any) => {
+      setNotifications(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as AppNotification)));
     });
 
-    return () => { unsubSettings(); unsubUsers(); unsubPosts(); unsubGlobalSignal(); };
+    return () => { unsubPosts(); unsubUsers(); unsubNotifs(); };
+  }, [user]);
+
+  // Weather Sync
+  useEffect(() => {
+    const updateAtmos = async () => {
+      const w = await fetchWeather({ query: userData?.location || 'London' });
+      setWeather(w);
+    };
+    updateAtmos();
+    const interval = setInterval(updateAtmos, 600000); // 10 mins
+    return () => clearInterval(interval);
+  }, [userData?.location]);
+
+  // Toast System Handler (dispatched via custom events in components)
+  const addToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    const id = Math.random().toString(36).substring(2, 9);
+    window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: message, type } }));
   }, []);
 
-  const removeToast = (id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  };
+  // Global Event Listeners
+  useEffect(() => {
+    const handleViewPost = (e: any) => setViewingPost(e.detail.post);
+    const handleNavigate = (e: any) => setActiveRoute(e.detail.route);
+    
+    window.addEventListener('vibe-view-post', handleViewPost);
+    window.addEventListener('vibe-navigate', handleNavigate);
+    
+    return () => {
+      window.removeEventListener('vibe-view-post', handleViewPost);
+      window.removeEventListener('vibe-navigate', handleNavigate);
+    };
+  }, []);
 
+  // Global Signal Handlers
   const handleLogout = async () => {
-    if (userData?.id) {
-        const restoreState = (userData.presenceStatus === 'Offline' || !userData.presenceStatus) 
-            ? 'Online' 
-            : userData.presenceStatus;
-            
-        await updateDoc(doc(db, 'users', userData.id), { 
-            presenceStatus: 'Offline',
-            lastActiveStatus: restoreState
-        });
-    }
     await signOut(auth);
-    setUser(null);
     setUserData(null);
-    setActiveRoute(AppRoute.FEED);
-    setIsSettingsOpen(false);
+    setUser(null);
   };
 
-  const handleBlockUser = async (targetId: string) => {
-    if (!db || !userData?.id || targetId === userData.id) return;
+  const handleLike = async (postId: string, frequency?: string) => {
+    if (!user || !db) return;
+    const postRef = doc(db, 'posts', postId);
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+
+    const isLiked = post.likedBy?.includes(user.uid);
     try {
-        const batch = writeBatch(db);
-        const myId = userData.id;
-        
-        const myBlockedRef = doc(db, 'users', myId, 'blocked', targetId);
-        batch.set(myBlockedRef, { blockedAt: serverTimestamp(), blockedBy: myId });
-        
-        const theirBlockedByRef = doc(db, 'users', targetId, 'blockedBy', myId);
-        batch.set(theirBlockedByRef, { blockedAt: serverTimestamp(), blockerId: myId });
-
-        const myFollowingRef = doc(db, 'users', myId, 'following', targetId);
-        const theirFollowersRef = doc(db, 'users', targetId, 'followers', myId);
-        batch.delete(myFollowingRef);
-        batch.delete(theirFollowersRef);
-        
-        const myFollowersRef = doc(db, 'users', myId, 'followers', targetId);
-        const theirFollowingRef = doc(db, 'users', targetId, 'following', myId);
-        batch.delete(myFollowersRef);
-        batch.delete(theirFollowingRef);
-
-        batch.update(doc(db, 'users', myId), { following: increment(-1), followers: increment(-1) });
-        batch.update(doc(db, 'users', targetId), { followers: increment(-1), following: increment(-1) });
-        
-        await batch.commit();
-        setBlockedIds(prev => new Set(prev).add(targetId));
-        addToast("Node Blocked. Two-Way Signal Severed.", "success");
-    } catch (e) {
-        addToast("Block Protocol Failed", "error");
-    }
-  };
-
-  const handleUnblockUser = async (targetId: string) => {
-    if (!db || !userData?.id) return;
-    const myId = userData.id;
-    try {
-        const batch = writeBatch(db);
-        const myBlockedRef = doc(db, 'users', myId, 'blocked', targetId);
-        batch.delete(myBlockedRef);
-        const theirBlockedByRef = doc(db, 'users', targetId, 'blockedBy', myId);
-        batch.delete(theirBlockedByRef);
-        await batch.commit();
-        setBlockedIds(prev => { const n = new Set(prev); n.delete(targetId); return n; });
-        addToast("Node Unblocked. Signal Path Cleared.", "info");
-    } catch (e) {
-        addToast("Unblock Protocol Failed", "error");
-    }
-  };
-
-  const handleMarkAllRead = async () => {
-    const unread = notifications.filter(n => !n.isRead);
-    if (unread.length === 0) return;
-
-    try {
-      const batch = writeBatch(db);
-      unread.forEach(n => {
-        batch.update(doc(db, 'notifications', n.id), { isRead: true });
+      await updateDoc(postRef, {
+        likes: increment(isLiked ? -1 : 1),
+        likedBy: isLiked ? arrayRemove(user.uid) : arrayUnion(user.uid)
       });
-      await batch.commit();
-      addToast("Signals Synchronised", "success");
-    } catch (e) {
-      addToast("Sync Protocol Failed", "error");
-    }
-  };
-
-  const handleDeleteNotification = async (id: string) => {
-    try {
-      await deleteDoc(doc(db, 'notifications', id));
-      addToast("Signal Purged", "info");
-    } catch (e) {
-      addToast("Purge Failed", "error");
-    }
-  };
-
-  const handleLike = async (postId: string, frequency: string = 'pulse') => {
-    if (!userData || !db) return;
-    try {
-        const postRef = doc(db, 'posts', postId);
-        let postAuthorId = globalPosts.find(p => p.id === postId)?.authorId;
-        
-        if (!postAuthorId) {
-            const snap = await getDoc(postRef);
-            if (snap.exists()) postAuthorId = snap.data().authorId;
-        }
-
-        const post = globalPosts.find(p => p.id === postId);
-        const isLiked = post?.likedBy?.includes(userData.id);
-
-        if (isLiked) {
-            await updateDoc(postRef, {
-                likes: increment(-1),
-                likedBy: arrayRemove(userData.id)
-            });
-        } else {
-            await updateDoc(postRef, {
-                likes: increment(1),
-                likedBy: arrayUnion(userData.id),
-                [`reactions.${frequency}`]: increment(1)
-            });
-
-            if (postAuthorId && postAuthorId !== userData.id) {
-                await addDoc(collection(db, 'notifications'), {
-                    type: 'like',
-                    fromUserId: userData.id,
-                    fromUserName: userData.displayName,
-                    fromUserAvatar: userData.avatarUrl,
-                    toUserId: postAuthorId,
-                    targetId: postId,
-                    text: 'pulsed your signal',
-                    pulseFrequency: frequency,
-                    isRead: false,
-                    timestamp: serverTimestamp()
-                });
-            }
-        }
-    } catch (e) {
-        console.error("Like interaction failed", e);
-    }
+      
+      if (!isLiked && post.authorId !== user.uid) {
+        await setDoc(doc(collection(db, 'notifications')), {
+          type: 'like',
+          fromUserId: user.uid,
+          fromUserName: userData?.displayName,
+          fromUserAvatar: userData?.avatarUrl,
+          toUserId: post.authorId,
+          targetId: postId,
+          text: 'pulsed your signal',
+          isRead: false,
+          timestamp: serverTimestamp(),
+          pulseFrequency: frequency || 'pulse'
+        });
+      }
+    } catch (e) { addToast("Sync error", "error"); }
   };
 
   const handleBookmark = async (postId: string) => {
-    if (!userData || !db) return;
+    if (!user || !db) return;
+    const postRef = doc(db, 'posts', postId);
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+
+    const isBookmarked = post.bookmarkedBy?.includes(user.uid);
     try {
-        const postRef = doc(db, 'posts', postId);
-        const post = globalPosts.find(p => p.id === postId);
-        const isBookmarked = post?.bookmarkedBy?.includes(userData.id);
-
-        if (isBookmarked) {
-            await updateDoc(postRef, { bookmarkedBy: arrayRemove(userData.id) });
-            addToast("Removed from Data Vault", "info");
-        } else {
-            await updateDoc(postRef, { bookmarkedBy: arrayUnion(userData.id) });
-            addToast("Encrypted to Data Vault", "success");
-        }
-    } catch (e) {
-        addToast("Vault Protocol Failed", "error");
-    }
+      await updateDoc(postRef, {
+        bookmarkedBy: isBookmarked ? arrayRemove(user.uid) : arrayUnion(user.uid)
+      });
+      addToast(isBookmarked ? "Removed from vault" : "Saved to vault", "success");
+    } catch (e) { addToast("Vault error", "error"); }
   };
 
-  const handleRSVP = async (gatheringId: string, currentStatus: boolean) => {
-    if (!userData || !db) return;
+  const handleRSVP = async (gatheringId: string, currentRSVP: boolean) => {
+    if (!user || !db) return;
+    const gatheringRef = doc(db, 'gatherings', gatheringId);
     try {
-        const gRef = doc(db, 'gatherings', gatheringId);
-        const gSnap = await getDoc(gRef);
-        if (!gSnap.exists()) return;
-        const gData = gSnap.data() as Gathering;
-
-        if (currentStatus) {
-            await updateDoc(gRef, {
-                attendees: arrayRemove(userData.id),
-                waitlist: arrayRemove(userData.id)
-            });
-            addToast("Withdrawn from Gathering", "info");
-        } else {
-            await updateDoc(gRef, {
-                attendees: arrayUnion(userData.id)
-            });
-            addToast("RSVP Confirmed", "success");
-
-            if (gData.organizerId !== userData.id) {
-                await addDoc(collection(db, 'notifications'), {
-                    type: 'gathering_rsvp',
-                    fromUserId: userData.id,
-                    fromUserName: userData.displayName,
-                    fromUserAvatar: userData.avatarUrl,
-                    toUserId: gData.organizerId,
-                    targetId: gatheringId,
-                    text: `is attending your gathering: "${gData.title}"`,
-                    isRead: false,
-                    timestamp: serverTimestamp(),
-                    pulseFrequency: 'intensity'
-                });
-            }
-        }
-    } catch (e) {
-        addToast("RSVP Protocol Failed", "error");
-    }
+      await updateDoc(gatheringRef, {
+        attendees: currentRSVP ? arrayRemove(user.uid) : arrayUnion(user.uid)
+      });
+      addToast(currentRSVP ? "Withdrawn from gathering" : "Presence confirmed", "success");
+    } catch (e) { addToast("RSVP error", "error"); }
   };
 
-  const handleOpenLobby = async (gathering: Gathering) => {
-    if (!userData || !db) return;
-    const chatId = gathering.linkedChatId;
-    if (!chatId) {
-        addToast("Lobby Protocol Missing", "error");
-        return;
-    }
-
-    try {
-        const chatRef = doc(db, 'chats', chatId);
-        await setDoc(chatRef, {
-            participants: arrayUnion(userData.id),
-            participantData: {
-                [userData.id]: {
-                    displayName: userData.displayName,
-                    avatarUrl: userData.avatarUrl
-                }
-            },
-            isEventLobby: true, 
-            clusterName: `LOBBY: ${gathering.title}`,
-            clusterAvatar: gathering.coverUrl
-        }, { merge: true });
-
-        setTargetClusterId(chatId);
-        setActiveRoute(AppRoute.CLUSTERS);
-
-        const recipients = gathering.attendees.filter(id => id !== userData.id);
-        const batch = writeBatch(db);
-        
-        recipients.forEach(attId => {
-            const notifRef = doc(collection(db, 'notifications'));
-            batch.set(notifRef, {
-                type: 'system',
-                fromUserId: userData.id,
-                fromUserName: userData.displayName,
-                fromUserAvatar: userData.avatarUrl,
-                toUserId: attId,
-                targetId: chatId,
-                text: `entered the Neural Lobby for "${gathering.title}"`,
-                isRead: false,
-                timestamp: serverTimestamp(),
-                pulseFrequency: 'velocity'
-            });
-        });
-
-        await batch.commit();
-        addToast("Handshake Confirmed: Neural Lobby Synced", "success");
-
-    } catch (e) {
-        console.error("Lobby Join Error:", e);
-        addToast("Lobby Access Failed: Insufficient Clearance", "error");
-    }
-  };
-
-  const isFeatureEnabled = (route: AppRoute) => {
-    if (userData?.role === 'admin') return true;
-    return systemSettings.featureFlags?.[route] !== false;
-  };
-
-  const filteredGlobalPosts = globalPosts.filter(p => !blockedIds.has(p.authorId));
-  const filteredUsers = allUsers.filter(u => !blockedIds.has(u.id));
-
-  const activeSignalColor = (activeRoute === AppRoute.PUBLIC_PROFILE && selectedUserProfile?.cosmetics?.signalColor) 
-    ? selectedUserProfile.cosmetics.signalColor 
-    : undefined;
-
-  if (loading) return <div className="fixed inset-0 bg-slate-900 flex items-center justify-center text-white">Initializing_Grid...</div>;
-  if (!user) return <LandingPage onEnter={() => {}} systemSettings={systemSettings} />;
-
-  if (systemSettings.maintenanceMode && userData?.role !== 'admin') {
-    return <MaintenanceScreen />;
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
+        <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-8" />
+        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em] font-mono animate-pulse">Initializing_Grid_Handshake...</p>
+      </div>
+    );
   }
 
-  if (userData?.isSuspended) {
-    return <SuspendedScreen onLogout={handleLogout} userData={userData} />;
+  if (!user) {
+    return <LandingPage onEnter={() => setActiveRoute(AppRoute.FEED)} systemSettings={systemSettings || { maintenanceMode: false, registrationDisabled: false, minTrustTier: 'Gamma', featureFlags: {}, lastUpdatedBy: '', updatedAt: '', featureFlags: {} } as any} />;
   }
 
   return (
-    <>
+    <div className="h-full w-full relative">
       <SignalTrail activeTrail={userData?.cosmetics?.activeTrail} />
-      <PrismInjector colorId={activeSignalColor} />
       
-      {activeGlobalSignal && !dismissedSignalIds.has(activeGlobalSignal.id) && (
-          <GlobalSignalPulse 
-            signal={activeGlobalSignal} 
-            onDismiss={() => setDismissedSignalIds(prev => new Set(prev).add(activeGlobalSignal.id))} 
-          />
-      )}
-
-      <Layout
+      <Layout 
         activeRoute={activeRoute}
         onNavigate={setActiveRoute}
-        onOpenCreate={() => addToast("Composer Ready", "info")}
+        onOpenCreate={() => setActiveRoute(AppRoute.FEED)}
         onLogout={handleLogout}
         userRole={userData?.role}
         userData={userData}
-        notifications={notifications.filter(n => !blockedIds.has(n.fromUserId))}
-        onMarkRead={handleMarkAllRead}
-        onDeleteNotification={handleDeleteNotification}
-        currentRegion="en-GB"
-        onRegionChange={() => {}}
-        onSearch={() => {}}
+        notifications={notifications}
+        onMarkRead={async () => {
+          const batch = writeBatch(db);
+          notifications.filter(n => !n.isRead).forEach(n => batch.update(doc(db, 'notifications', n.id), { isRead: true }));
+          await batch.commit();
+        }}
+        onDeleteNotification={async (id) => await updateDoc(doc(db, 'notifications', id), { isRead: true })} 
+        currentRegion={region}
+        onRegionChange={setRegion}
+        onSearch={(q) => { setSearchQuery(q); setActiveRoute(AppRoute.EXPLORE); }}
         weather={weather}
-        systemSettings={systemSettings}
+        systemSettings={systemSettings || undefined}
         onOpenSettings={() => setIsSettingsOpen(true)}
         blockedIds={blockedIds}
       >
-        <div className={`transition-all duration-500 ${activeGlobalSignal && !dismissedSignalIds.has(activeGlobalSignal.id) ? 'pt-9' : ''}`}>
-            {activeRoute === AppRoute.FEED && isFeatureEnabled(AppRoute.FEED) && (
-                <FeedPage 
-                posts={filteredGlobalPosts} 
-                userData={userData}
-                locale="en-GB"
-                onLike={handleLike}
-                onBookmark={handleBookmark}
-                onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
-                onOpenCreate={() => {}}
-                onTransmitStory={() => {}}
-                onGoLive={() => setActiveStreamId(`stream_${user.uid}`)}
-                onJoinStream={setWatchingStream}
-                blockedIds={blockedIds}
-                />
-            )}
-
-            {activeRoute === AppRoute.EXPLORE && isFeatureEnabled(AppRoute.EXPLORE) && (
-                <ExplorePage 
-                posts={filteredGlobalPosts}
-                users={filteredUsers}
-                onLike={handleLike}
-                onBookmark={handleBookmark}
-                onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
-                onViewProfile={(u) => { setSelectedUserProfile(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }}
-                locale="en-GB"
-                />
-            )}
-
-            {activeRoute === AppRoute.MESSAGES && userData && isFeatureEnabled(AppRoute.MESSAGES) && (
-                <MessagesPage 
-                currentUser={userData}
-                locale="en-GB"
-                addToast={addToast}
-                weather={weather}
-                allUsers={filteredUsers}
-                blockedIds={blockedIds}
-                />
-            )}
-
-            {activeRoute === AppRoute.NOTIFICATIONS && isFeatureEnabled(AppRoute.NOTIFICATIONS) && (
-                <NotificationsPage 
-                notifications={notifications.filter(n => !blockedIds.has(n.fromUserId))}
-                onDelete={handleDeleteNotification}
-                onMarkRead={handleMarkAllRead}
-                addToast={addToast}
-                locale="en-GB"
-                userData={userData}
-                />
-            )}
-
-            {activeRoute === AppRoute.PROFILE && userData && isFeatureEnabled(AppRoute.PROFILE) && (
-                <ProfilePage 
-                userData={userData}
-                onUpdateProfile={() => {}}
-                addToast={addToast}
-                locale="en-GB"
-                sessionStartTime={Date.now()}
-                onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
-                onViewProfile={(u) => { setSelectedUserProfile(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }}
-                onOpenSettings={() => setIsSettingsOpen(true)}
-                onLike={handleLike}
-                onBookmark={handleBookmark}
-                blockedIds={blockedIds}
-                />
-            )}
-
-            {activeRoute === AppRoute.PUBLIC_PROFILE && selectedUserProfile && (
-            <ProfilePage 
-                userData={selectedUserProfile}
-                onUpdateProfile={() => {}}
-                addToast={addToast}
-                locale="en-GB"
-                sessionStartTime={Date.now()}
-                onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
-                onViewProfile={(u) => { setSelectedUserProfile(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }}
-                onLike={handleLike}
-                onBookmark={handleBookmark}
-                blockedIds={blockedIds}
-                isBlocked={blockedIds.has(selectedUserProfile.id)}
-                onBlock={() => handleBlockUser(selectedUserProfile.id)}
-                onUnblock={() => handleUnblockUser(selectedUserProfile.id)}
-            />
-            )}
-
-            {activeRoute === AppRoute.ADMIN && userData?.role === 'admin' && (
-                <AdminPanel 
-                addToast={addToast}
-                locale="en-GB"
-                systemSettings={systemSettings}
-                userData={userData}
-                />
-            )}
-
-            {activeRoute === AppRoute.PRIVACY && <PrivacyPage />}
-            {activeRoute === AppRoute.TERMS && <TermsPage />}
-            {activeRoute === AppRoute.COOKIES && <CookiesPage />}
-
-            {activeRoute === AppRoute.MESH && userData && isFeatureEnabled(AppRoute.MESH) && (
-                <MeshPage 
-                currentUser={userData} 
-                locale="en-GB" 
-                addToast={addToast}
-                onViewProfile={(u) => { setSelectedUserProfile(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }}
-                blockedIds={blockedIds}
-                />
-            )}
-
-            {activeRoute === AppRoute.CLUSTERS && userData && isFeatureEnabled(AppRoute.CLUSTERS) && (
-                <ClustersPage 
-                currentUser={userData} 
-                locale="en-GB" 
-                addToast={addToast}
-                onOpenChat={() => {}}
-                allUsers={filteredUsers}
-                weather={weather}
-                initialClusterId={targetClusterId}
-                />
-            )}
-
-            {activeRoute === AppRoute.STREAM_GRID && isFeatureEnabled(AppRoute.STREAM_GRID) && (
-                <StreamGridPage 
-                locale="en-GB"
-                onJoinStream={setWatchingStream}
-                onGoLive={() => setActiveStreamId(`stream_${user.uid}`)}
-                userData={userData}
-                onTransmit={() => {}}
-                />
-            )}
-
-            {activeRoute === AppRoute.TEMPORAL && isFeatureEnabled(AppRoute.TEMPORAL) && (
-                <TemporalPage currentUser={userData} locale="en-GB" addToast={addToast} />
-            )}
-
-            {activeRoute === AppRoute.SAVED && userData && isFeatureEnabled(AppRoute.SAVED) && (
-                <DataVaultPage 
-                currentUser={userData} 
-                locale="en-GB" 
-                addToast={addToast}
-                onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
-                />
-            )}
-
-            {activeRoute === AppRoute.VERIFIED_NODES && isFeatureEnabled(AppRoute.VERIFIED_NODES) && (
-                <VerifiedNodesPage 
-                users={filteredUsers} 
-                onViewProfile={(u) => { setSelectedUserProfile(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }} 
-                />
-            )}
-
-            {activeRoute === AppRoute.GATHERINGS && userData && isFeatureEnabled(AppRoute.GATHERINGS) && (
-                <GatheringsPage 
-                currentUser={userData}
-                locale="en-GB"
-                addToast={addToast}
-                allUsers={filteredUsers}
-                onOpenLobby={handleOpenLobby}
-                onViewGathering={(g) => { setSelectedGathering(g); setActiveRoute(AppRoute.SINGLE_GATHERING); }}
-                onRSVP={handleRSVP}
-                />
-            )}
-
-            {activeRoute === AppRoute.SINGLE_GATHERING && selectedGathering && userData && (
-                <SingleGatheringView 
-                gathering={selectedGathering}
-                currentUser={userData}
-                allUsers={filteredUsers}
-                locale="en-GB"
-                onBack={() => setActiveRoute(AppRoute.GATHERINGS)}
-                onDelete={() => {}}
-                onRSVP={handleRSVP}
-                onOpenLobby={handleOpenLobby}
-                />
-            )}
-
-            {activeRoute === AppRoute.SIMULATIONS && isFeatureEnabled(AppRoute.SIMULATIONS) && (
-                <SimulationsPage />
-            )}
-
-            {activeRoute === AppRoute.RESILIENCE && userData && isFeatureEnabled(AppRoute.RESILIENCE) && (
-                <ResiliencePage userData={userData} addToast={addToast} />
-            )}
-
-            {activeRoute === AppRoute.SUPPORT && userData && isFeatureEnabled(AppRoute.SUPPORT) && (
-                <SupportPage currentUser={userData} locale="en-GB" addToast={addToast} />
-            )}
-
-            {activeRoute === AppRoute.SINGLE_POST && selectedPost && (
-                <SinglePostView 
-                post={selectedPost} 
-                userData={userData} 
-                locale="en-GB" 
-                onClose={() => setActiveRoute(AppRoute.FEED)}
-                onLike={handleLike}
-                onBookmark={handleBookmark}
-                addToast={addToast}
-                blockedIds={blockedIds}
-                />
-            )}
-
-            {activeRoute === AppRoute.MARKETPLACE && userData && (
-                <ResonanceMarketplace userData={userData} addToast={addToast} />
-            )}
-
-            {!isFeatureEnabled(activeRoute) && activeRoute !== AppRoute.ADMIN && (
-            <FeatureDisabledScreen featureName={activeRoute} />
-            )}
-        </div>
+        {activeRoute === AppRoute.FEED && (
+          <FeedPage 
+            posts={posts} 
+            userData={userData} 
+            onLike={handleLike} 
+            onBookmark={handleBookmark} 
+            onViewPost={setViewingPost}
+            onOpenCreate={() => {}} 
+            onTransmitStory={async (file) => {
+              const url = await uploadToCloudinary(file);
+              await setDoc(doc(collection(db, 'stories')), {
+                authorId: user.uid,
+                authorName: userData?.displayName,
+                authorAvatar: userData?.avatarUrl,
+                coverUrl: url,
+                timestamp: serverTimestamp(),
+                type: file.type.startsWith('video/') ? 'video' : 'image'
+              });
+              addToast("Temporal Fragment Broadcasted", "success");
+            }}
+            onGoLive={() => { setIsBroadcasting(true); setActiveStreamId(`stream_${Math.random().toString(36).substring(2, 11)}`); }}
+            onJoinStream={setActiveStream}
+            locale={region}
+            blockedIds={blockedIds}
+          />
+        )}
+        {activeRoute === AppRoute.EXPLORE && (
+          <ExplorePage 
+            posts={posts} users={allUsers} onLike={handleLike} onBookmark={handleBookmark} 
+            onViewPost={setViewingPost} onViewProfile={setViewingProfile} locale={region} 
+            searchQuery={searchQuery} onClearSearch={() => setSearchQuery('')}
+          />
+        )}
+        {activeRoute === AppRoute.MESSAGES && (
+          <MessagesPage currentUser={userData!} locale={region} addToast={addToast} weather={weather} allUsers={allUsers} blockedIds={blockedIds} />
+        )}
+        {activeRoute === AppRoute.PROFILE && (
+          <ProfilePage 
+            userData={userData!} onUpdateProfile={() => {}} addToast={addToast} locale={region} 
+            sessionStartTime={Date.now()} onViewPost={setViewingPost} onViewProfile={setViewingProfile} 
+            onOpenSettings={() => setIsSettingsOpen(true)} onLike={handleLike} onBookmark={handleBookmark}
+            blockedIds={blockedIds}
+          />
+        )}
+        {activeRoute === AppRoute.ADMIN && (
+          <AdminPanel addToast={addToast} locale={region} systemSettings={systemSettings!} userData={userData} />
+        )}
+        {activeRoute === AppRoute.GATHERINGS && (
+          <GatheringsPage 
+            currentUser={userData!} locale={region} addToast={addToast} allUsers={allUsers}
+            onOpenLobby={setActiveLobbyGathering} onViewGathering={setViewingGathering} onRSVP={handleRSVP}
+          />
+        )}
+        {activeRoute === AppRoute.CLUSTERS && (
+          <ClustersPage currentUser={userData!} locale={region} addToast={addToast} onOpenChat={() => {}} allUsers={allUsers} weather={weather} />
+        )}
+        {activeRoute === AppRoute.STREAM_GRID && (
+          <StreamGridPage 
+            locale={region} onJoinStream={setActiveStream} onGoLive={() => setIsBroadcasting(true)} 
+            userData={userData} onTransmit={() => {}} 
+          />
+        )}
+        {activeRoute === AppRoute.TEMPORAL && (
+          <TemporalPage currentUser={userData} locale={region} addToast={addToast} />
+        )}
+        {activeRoute === AppRoute.SAVED && (
+          <DataVaultPage currentUser={userData!} locale={region} addToast={addToast} onViewPost={setViewingPost} />
+        )}
+        {activeRoute === AppRoute.VERIFIED_NODES && (
+          <VerifiedNodesPage users={allUsers} onViewProfile={setViewingProfile} />
+        )}
+        {activeRoute === AppRoute.SIMULATIONS && <SimulationsPage />}
+        {activeRoute === AppRoute.RESILIENCE && <ResiliencePage userData={userData!} addToast={addToast} />}
+        {activeRoute === AppRoute.SUPPORT && <SupportPage currentUser={userData!} locale={region} addToast={addToast} />}
+        {activeRoute === AppRoute.MARKETPLACE && <ResonanceMarketplace userData={userData!} addToast={addToast} />}
       </Layout>
 
-      {toasts.map(t => <div key={t.id} className="fixed top-24 right-6 z-[3000]"><Toast toast={t} onClose={removeToast} /></div>)}
-      
-      {activeStreamId && userData && (
-        <LiveBroadcastOverlay 
-          userData={userData} 
-          onStart={() => {}} 
-          onEnd={() => setActiveStreamId(null)}
-          activeStreamId={activeStreamId}
-        />
+      {/* Global Overlays */}
+      {viewingPost && (
+        <div className="fixed inset-0 z-[1100] bg-white dark:bg-[#020617] overflow-y-auto no-scrollbar scroll-viewport">
+          <SinglePostView 
+            post={viewingPost} userData={userData} locale={region} 
+            onClose={() => setViewingPost(null)} onLike={handleLike} onBookmark={handleBookmark} 
+            addToast={addToast} blockedIds={blockedIds}
+          />
+        </div>
       )}
 
-      {watchingStream && (
-        <LiveWatcherOverlay 
-          stream={watchingStream} 
-          onLeave={() => setWatchingStream(null)} 
-        />
+      {viewingProfile && (
+        <div className="fixed inset-0 z-[1100] bg-white dark:bg-[#020617] overflow-y-auto no-scrollbar scroll-viewport">
+          <ProfilePage 
+            userData={viewingProfile} onUpdateProfile={() => {}} addToast={addToast} locale={region} 
+            sessionStartTime={Date.now()} onViewPost={setViewingPost} onViewProfile={setViewingProfile} 
+            onLike={handleLike} onBookmark={handleBookmark} blockedIds={blockedIds}
+          />
+          <button 
+            onClick={() => setViewingProfile(null)}
+            className="fixed top-6 right-6 z-[1200] p-4 bg-slate-950 dark:bg-white text-white dark:text-slate-900 rounded-full shadow-2xl active:scale-90"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth={3} /></svg>
+          </button>
+        </div>
       )}
 
-      {activeCall && userData && (
-        <NeuralLinkOverlay 
-          session={activeCall} 
-          userData={userData} 
-          onEnd={() => setActiveCall(null)} 
-        />
+      {viewingGathering && (
+        <div className="fixed inset-0 z-[1100] bg-white dark:bg-[#020617] overflow-y-auto no-scrollbar scroll-viewport p-6">
+          <SingleGatheringView 
+            gathering={viewingGathering} currentUser={userData!} allUsers={allUsers} locale={region}
+            onBack={() => setViewingGathering(null)} onDelete={() => {}} onRSVP={handleRSVP} onOpenLobby={setActiveLobbyGathering}
+          />
+        </div>
       )}
 
-      {isSettingsOpen && userData && (
+      {activeLobbyGathering && (
+        <div className="fixed inset-0 z-[2500] bg-white dark:bg-slate-900 flex flex-col">
+            <ClustersPage 
+                currentUser={userData!} locale={region} addToast={addToast} 
+                onOpenChat={() => {}} allUsers={allUsers} weather={weather} 
+                initialClusterId={activeLobbyGathering.linkedChatId}
+            />
+            <button 
+                onClick={() => setActiveLobbyGathering(null)}
+                className="fixed top-4 right-4 z-[2600] p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl"
+            >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth={3} /></svg>
+            </button>
+        </div>
+      )}
+
+      {isSettingsOpen && (
         <SettingsOverlay 
-          userData={userData} 
-          onClose={() => setIsSettingsOpen(false)} 
-          onLogout={handleLogout}
-          addToast={addToast}
-          blockedIds={Array.from(blockedIds)}
-          onUnblock={handleUnblockUser}
+            userData={userData!} onClose={() => setIsSettingsOpen(false)} 
+            onLogout={handleLogout} addToast={addToast} 
         />
       )}
-    </>
+
+      {isBroadcasting && activeStreamId && (
+        <LiveBroadcastOverlay 
+            userData={userData!} onStart={() => {}} onEnd={() => { setIsBroadcasting(false); setActiveStreamId(null); }} 
+            activeStreamId={activeStreamId}
+        />
+      )}
+
+      {activeStream && (
+        <LiveWatcherOverlay stream={activeStream} onLeave={() => setActiveStream(null)} />
+      )}
+
+      {/* Neural Link Hub (Gemini Assistant) */}
+      <button 
+        onClick={() => setIsNeuralLinkOpen(true)}
+        className="fixed bottom-24 right-6 md:bottom-10 md:right-10 z-[1000] w-16 h-16 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-[2rem] shadow-[0_0_40px_rgba(79,70,229,0.4)] flex items-center justify-center text-white active:scale-90 transition-all hover:scale-110 group border-2 border-white/20"
+      >
+        <div className="absolute inset-0 bg-indigo-500 rounded-[2rem] animate-ping opacity-20 group-hover:opacity-40" />
+        <span className="text-2xl relative z-10">🧠</span>
+      </button>
+
+      {isNeuralLinkOpen && (
+        <NeuralLinkOverlay userData={userData!} onClose={() => setIsNeuralLinkOpen(false)} />
+      )}
+    </div>
   );
-}
+};
+
+export default App;
