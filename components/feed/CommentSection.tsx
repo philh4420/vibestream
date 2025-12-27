@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { db } from '../../services/firebase';
@@ -15,7 +14,8 @@ const {
   increment,
   doc,
   where,
-  getDocs
+  getDocs,
+  writeBatch
 } = Firestore as any;
 import { Comment, User } from '../../types';
 import { EmojiPicker } from '../ui/EmojiPicker';
@@ -216,7 +216,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
       });
 
       // --- NOTIFICATIONS ---
-      const batch = Firestore.writeBatch(db);
+      const batch = writeBatch(db);
 
       // 1. Notify Post Author (if not self)
       if (userData.id !== postAuthorId) {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { db, auth } from '../../services/firebase';
@@ -15,7 +14,8 @@ const {
   orderBy, 
   limit,
   increment,
-  getDocs
+  getDocs,
+  writeBatch
 } = Firestore as any;
 import { User } from '../../types';
 import { ICONS } from '../../constants';
@@ -122,7 +122,7 @@ export const LiveBroadcastOverlay: React.FC<LiveBroadcastOverlayProps> = ({
         const followersSnap = await getDocs(followersRef);
         
         if (!followersSnap.empty) {
-            const batch = Firestore.writeBatch(db);
+            const batch = writeBatch(db);
             followersSnap.docs.forEach((followerDoc: any) => {
                 const notifRef = doc(collection(db, 'notifications'));
                 batch.set(notifRef, {

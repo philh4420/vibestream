@@ -10,7 +10,8 @@ const {
   serverTimestamp,
   doc,
   writeBatch,
-  getDocs
+  getDocs,
+  where
 } = Firestore as any;
 import { User, Gathering, Region } from '../../types';
 import { ICONS } from '../../constants';
@@ -43,29 +44,39 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
   useEffect(() => {
     if (!db) return;
     
-    // Updated Query: Fetch ALL gatherings sorted by date.
-    // Filtering is moved client-side to prevent issues with timezone offsets, 
-    // future dates being hidden by strict server filters, or missing indexes.
+    // Server-side filtering to reduce payload size and prevent QUIC/Network errors.
+    // Fetches gatherings starting from 24 hours ago into the future (e.g. 2026).
+    const yesterday = new Date();
+    yesterday.setHours(yesterday.getHours() - 24);
+    const timeThreshold = yesterday.toISOString();
+
     const q = query(
       collection(db, 'gatherings'),
+      where('date', '>=', timeThreshold),
       orderBy('date', 'asc')
     );
 
     const unsub = onSnapshot(q, (snap: any) => {
-      const allGatherings = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Gathering));
-      
-      // Client-side filter: Only show gatherings that haven't ended more than 24 hours ago
-      // This keeps the list clean but ensures "today" and "future" events are always visible.
-      const yesterday = new Date();
-      yesterday.setHours(yesterday.getHours() - 24);
-      
-      const relevantGatherings = allGatherings.filter(g => {
-          const gDate = new Date(g.date);
-          return gDate >= yesterday;
-      });
-
-      setGatherings(relevantGatherings);
+      const fetchedGatherings = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Gathering));
+      setGatherings(fetchedGatherings);
       setIsLoading(false);
+    }, (error: any) => {
+      console.error("Gatherings Sync Error:", error);
+      // Fallback: If filtered query fails (e.g. missing index), try client-side filtering as backup
+      // This helps robustly handle the 'QUIC' error if it was index-related
+      if (error.code === 'failed-precondition' || error.message.includes('index')) {
+         console.warn("Index missing, falling back to client-side filtering.");
+         const fallbackQ = query(collection(db, 'gatherings'), orderBy('date', 'asc'));
+         onSnapshot(fallbackQ, (fallbackSnap: any) => {
+            const allDocs = fallbackSnap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Gathering));
+            const relevant = allDocs.filter((g: Gathering) => new Date(g.date) >= yesterday);
+            setGatherings(relevant);
+            setIsLoading(false);
+         });
+      } else {
+         setIsLoading(false);
+         addToast("Connection unstable. Retrying...", "error");
+      }
     });
 
     return () => unsub();
