@@ -27,12 +27,14 @@ try {
 // Initialize App Check with reCAPTCHA v3
 if (typeof window !== 'undefined') {
   try {
+    // Ensure the site key is correctly set for reCAPTCHA v3
+    // Note: 401 errors for 'pat' indicate the domain is not whitelisted in the reCAPTCHA/Firebase console
     initializeAppCheck(app, {
       provider: new ReCaptchaV3Provider('6LcV_pMqAAAAANmY2pE6_jDq1Zf-E3p6mX_9L8uN'),
       isTokenAutoRefreshEnabled: true
     });
   } catch (err) {
-    console.warn("App Check initialization skipped or failed. Verify your v3 site key and domain whitelist.", err);
+    console.warn("App Check initialization failed:", err);
   }
 }
 

@@ -2,6 +2,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { NeuralInsight } from "../types";
 
+// Always use new GoogleGenAI({ apiKey: process.env.API_KEY })
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const generateNeuralInsight = async (content: string): Promise<NeuralInsight> => {
