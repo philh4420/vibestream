@@ -1,6 +1,8 @@
 
+
 import * as FirebaseApp from 'firebase/app';
 const { initializeApp, getApps, getApp } = FirebaseApp as any;
+// Using namespace imports to resolve modular SDK export issues
 import * as Firestore from 'firebase/firestore';
 const { getFirestore } = Firestore as any;
 import * as FirebaseAuth from 'firebase/auth';

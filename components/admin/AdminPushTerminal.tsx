@@ -1,7 +1,9 @@
 
+
 import React, { useState } from 'react';
 import { db } from '../../services/firebase';
-import * as Firestore from 'firestore';
+// Corrected firestore import path to use firebase/firestore
+import * as Firestore from 'firebase/firestore';
 const { doc, setDoc, serverTimestamp } = Firestore as any;
 import { ICONS } from '../../constants';
 import { GoogleGenAI } from '@google/genai';
