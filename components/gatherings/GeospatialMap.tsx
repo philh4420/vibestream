@@ -13,7 +13,7 @@ const MapStabilizer = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       map.invalidateSize();
-    }, 200);
+    }, 300);
     return () => clearTimeout(timer);
   }, [map]);
   return null;
@@ -23,7 +23,7 @@ const MapStabilizer = () => {
 const MapController = ({ center }: { center: [number, number] }) => {
   const map = useMap();
   useEffect(() => {
-    map.flyTo(center, 14, { duration: 1.5 });
+    map.flyTo(center, 15, { duration: 2, easeLinearity: 0.25 });
   }, [center, map]);
   return null;
 };
@@ -39,39 +39,65 @@ export const GeospatialMap: React.FC<GeospatialMapProps> = ({ gathering, organiz
   // Default Target: Central London (Fallback)
   const [position, setPosition] = useState<[number, number]>([51.505, -0.09]);
   const [isGeocoding, setIsGeocoding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCoordinates = async () => {
-      // Prioritize specific address, fall back to general location name
-      const query = gathering.address || gathering.location;
-      if (!query) return;
+      const primaryQuery = gathering.address?.trim();
+      const secondaryQuery = gathering.location?.trim();
+      
+      if (!primaryQuery && !secondaryQuery) return;
       
       setIsGeocoding(true);
-      try {
-        // Use Open-Meteo Geocoding API (CORS Friendly, Free)
-        const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=en&format=json`);
-        const data = await response.json();
-        
-        if (data && data.results && data.results.length > 0) {
-          const lat = data.results[0].latitude;
-          const lon = data.results[0].longitude;
-          setPosition([lat, lon]);
-        } else {
-            console.warn("Geocoding: No results found for", query);
-            // Fallback strategy if address fails: try just the location name
-            if (gathering.address && gathering.location) {
-                const retryResponse = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(gathering.location)}&count=1&language=en&format=json`);
-                const retryData = await retryResponse.json();
-                if (retryData && retryData.results && retryData.results.length > 0) {
-                    setPosition([retryData.results[0].latitude, retryData.results[0].longitude]);
-                }
-            }
-        }
-      } catch (error) {
-        console.error("Geocoding Error:", error);
-      } finally {
-        setIsGeocoding(false);
+      setError(null);
+
+      const performSearch = async (queryStr: string) => {
+          try {
+              // Using Nominatim (OpenStreetMap) - much better for street level precision than OpenMeteo
+              const response = await fetch(
+                  `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryStr)}&limit=1&addressdetails=1`,
+                  {
+                      headers: {
+                          'Accept-Language': 'en-GB,en;q=0.9',
+                      }
+                  }
+              );
+              const data = await response.json();
+              if (data && data.length > 0) {
+                  return [parseFloat(data[0].lat), parseFloat(data[0].lon)] as [number, number];
+              }
+              return null;
+          } catch (err) {
+              console.error("Geocoding fetch error:", err);
+              return null;
+          }
+      };
+
+      // TACTICAL SEARCH SEQUENCE
+      // 1. Try Full Physical Address (Most precise)
+      let coords = primaryQuery ? await performSearch(primaryQuery) : null;
+
+      // 2. If address fails, try location name
+      if (!coords && secondaryQuery) {
+          coords = await performSearch(secondaryQuery);
       }
+
+      // 3. Last Ditch: Try to extract and search just the postcode if it's UK format
+      if (!coords && primaryQuery) {
+          const postcodeMatch = primaryQuery.match(/[A-Z]{1,2}[0-9][A-Z0-9]? [0-9][ABD-HJLNP-UW-Z]{2}/i);
+          if (postcodeMatch) {
+              coords = await performSearch(postcodeMatch[0]);
+          }
+      }
+
+      if (coords) {
+          setPosition(coords);
+      } else {
+          setError("COORDS_UNRESOLVED");
+          console.warn("Geospatial: All geocoding tiers failed for query.");
+      }
+      
+      setIsGeocoding(false);
     };
 
     fetchCoordinates();
@@ -112,11 +138,11 @@ export const GeospatialMap: React.FC<GeospatialMapProps> = ({ gathering, organiz
       {/* 1. MAP LAYER */}
       <MapContainer 
         center={position} 
-        zoom={14} 
+        zoom={15} 
         scrollWheelZoom={false} 
         className="w-full h-full z-0 outline-none bg-slate-950"
         zoomControl={false}
-        dragging={true} // Allow interaction
+        dragging={true}
       >
         <MapStabilizer />
         <MapController center={position} />
@@ -152,9 +178,6 @@ export const GeospatialMap: React.FC<GeospatialMapProps> = ({ gathering, organiz
       <div className="absolute inset-0 pointer-events-none z-[10] opacity-10" 
            style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
       
-      {/* Vignette */}
-      <div className="absolute inset-0 pointer-events-none z-[10] bg-radial-gradient from-transparent to-slate-950/80" />
-
       {/* Top Left: Status */}
       <div className="absolute top-6 left-6 z-[20] flex items-center gap-3">
         <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl px-4 py-2 flex items-center gap-3 shadow-lg">
@@ -163,16 +186,16 @@ export const GeospatialMap: React.FC<GeospatialMapProps> = ({ gathering, organiz
               <div className={`relative w-2 h-2 rounded-full ${isGeocoding ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
            </div>
            <span className="text-[9px] font-black text-white uppercase tracking-[0.25em] font-mono">
-             {isGeocoding ? 'SCANNING_COORDS...' : 'LIVE_SAT_FEED'}
+             {isGeocoding ? 'SCANNING_GRID...' : error ? 'COORDS_UNRESOLVED' : 'LIVE_SAT_FEED'}
            </span>
         </div>
       </div>
 
       {/* Bottom Left: Coordinates */}
       <div className="absolute bottom-6 left-6 z-[20] hidden md:block">
-         <div className="flex flex-col gap-1">
-            <p className="text-[8px] font-mono text-slate-500 font-bold uppercase tracking-widest">LAT: {position[0].toFixed(4)}° N</p>
-            <p className="text-[8px] font-mono text-slate-500 font-bold uppercase tracking-widest">LNG: {position[1].toFixed(4)}° W</p>
+         <div className="flex flex-col gap-1 bg-black/40 backdrop-blur-md px-3 py-2 rounded-xl border border-white/5">
+            <p className="text-[8px] font-mono text-slate-300 font-bold uppercase tracking-widest">LAT: {position[0].toFixed(4)}° N</p>
+            <p className="text-[8px] font-mono text-slate-300 font-bold uppercase tracking-widest">LNG: {position[1].toFixed(4)}° W</p>
          </div>
       </div>
 
@@ -221,12 +244,6 @@ export const GeospatialMap: React.FC<GeospatialMapProps> = ({ gathering, organiz
         }
         .leaflet-popup-tip {
             background: rgba(15, 23, 42, 0.9);
-        }
-        
-        /* Fade In Animation */
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .leaflet-fade-anim .leaflet-tile, .leaflet-zoom-anim .leaflet-zoom-animated {
-            will-change: transform, opacity;
         }
       `}} />
     </div>
