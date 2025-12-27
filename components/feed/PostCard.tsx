@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Post, User } from '../../types';
 import { ICONS, PULSE_FREQUENCIES } from '../../constants';
@@ -7,7 +6,6 @@ import * as Firestore from 'firebase/firestore';
 const { deleteDoc, doc, updateDoc, increment, addDoc, serverTimestamp, collection } = Firestore as any;
 import { CommentSection } from './CommentSection';
 import { DeleteConfirmationModal } from '../ui/DeleteConfirmationModal';
-import { NeuralInsightDrawer } from './NeuralInsightDrawer';
 
 interface PostCardProps {
   post: Post;
@@ -37,7 +35,6 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [showOptions, setShowOptions] = useState(false);
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [showComments, setShowComments] = useState(false);
-  const [showAIInsight, setShowAIInsight] = useState(false);
   
   const [isPulseMenuOpen, setIsPulseMenuOpen] = useState(false);
   const [rippleEffect, setRippleEffect] = useState<{ x: number, y: number, color: string } | null>(null);
@@ -257,14 +254,6 @@ export const PostCard: React.FC<PostCardProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <button 
-              onClick={(e) => { e.stopPropagation(); setShowAIInsight(true); }}
-              className="w-10 h-10 flex items-center justify-center rounded-2xl bg-cyan-50 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 border border-cyan-100 dark:border-cyan-800 hover:bg-cyan-100 dark:hover:bg-cyan-800 transition-all active:scale-90 shadow-sm"
-              title="Neural Insight"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.456-2.454L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" /></svg>
-            </button>
-
             <div className="relative" ref={optionsRef} onClick={(e) => e.stopPropagation()}>
               <button 
                 onClick={() => setShowOptions(!showOptions)}
@@ -449,10 +438,6 @@ export const PostCard: React.FC<PostCardProps> = ({
           </div>
         )}
       </div>
-
-      {showAIInsight && (
-        <NeuralInsightDrawer post={post} onClose={() => setShowAIInsight(false)} />
-      )}
 
       <DeleteConfirmationModal 
         isOpen={showDeleteModal}

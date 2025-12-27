@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import * as FirebaseAuth from 'firebase/auth';
 const { onAuthStateChanged, signOut } = FirebaseAuth as any;
@@ -872,22 +871,6 @@ export default function App() {
 
         {activeRoute === AppRoute.MARKETPLACE && userData && (
             <ResonanceMarketplace userData={userData} addToast={addToast} />
-        )}
-
-        {activeRoute === AppRoute.AI_HUB && (
-           <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 bg-slate-900/50 rounded-[3rem] border border-cyan-500/20 shadow-heavy animate-in fade-in zoom-in-95 duration-700">
-              <div className="w-24 h-24 bg-cyan-500/10 rounded-full flex items-center justify-center mb-8 border border-cyan-500/30">
-                 <div className="w-12 h-12 bg-cyan-500 rounded-full animate-ping opacity-20" />
-              </div>
-              <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter mb-4">Neural_AI_Hub</h2>
-              <p className="text-slate-400 font-medium text-center max-w-md leading-relaxed">
-                Central processing node for grid intelligence. Autonomous moderation and predictive modeling modules are currently initializing.
-              </p>
-              <div className="mt-10 p-4 bg-white/5 rounded-2xl border border-white/10 flex items-center gap-4">
-                 <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest font-mono">Core_Status:</span>
-                 <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest font-mono">STABLE</span>
-              </div>
-           </div>
         )}
 
         {!isFeatureEnabled(activeRoute) && activeRoute !== AppRoute.ADMIN && (
