@@ -9,6 +9,7 @@ const {
   onSnapshot, 
   orderBy,
   doc,
+  getDoc,
   setDoc,
   serverTimestamp
 } = Firestore as any;
@@ -33,18 +34,31 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeClusterId, setActiveClusterId] = useState<string | null>(null);
+  const [manualClusterData, setManualClusterData] = useState<Chat | null>(null);
 
   // Deep Link Logic: Handle incoming initialClusterId (e.g. from Neural Lobby button)
   useEffect(() => {
     if (initialClusterId) {
         setActiveClusterId(initialClusterId);
+        
+        // FIX: Manual fetch to bypass snapshot latency
+        const fetchLobby = async () => {
+            try {
+                const snap = await getDoc(doc(db, 'chats', initialClusterId));
+                if (snap.exists()) {
+                    setManualClusterData({ id: snap.id, ...snap.data() } as Chat);
+                }
+            } catch (e) {
+                console.error("Deep Link fetch failed:", e);
+            }
+        };
+        fetchLobby();
     }
   }, [initialClusterId]);
 
   useEffect(() => {
     if (!db || !currentUser.id) return;
     
-    // Fetch chats where isCluster is true and user is participant
     const q = query(
       collection(db, 'chats'), 
       where('isCluster', '==', true),
@@ -60,9 +74,10 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
     return () => unsub();
   }, [currentUser.id]);
 
-  const activeClusterData = clusters.find(c => c.id === activeClusterId);
+  // Priority data source: synced list or manual fetch (for new joins)
+  const activeClusterData = clusters.find(c => c.id === activeClusterId) || 
+                          (manualClusterData?.id === activeClusterId ? manualClusterData : null);
 
-  // If a cluster is active, show the specialized cluster chat interface
   if (activeClusterId && activeClusterData) {
     return (
       <div className="mx-2 md:mx-6 lg:mx-8 xl:mx-10 h-[calc(100vh-var(--header-h)-var(--bottom-nav-h)-2rem)] md:h-[calc(100vh-var(--header-h)-3rem)] bg-[#fcfcfd] dark:bg-slate-900 rounded-[2.5rem] md:rounded-[3.5rem] overflow-hidden shadow-heavy relative border border-slate-100 dark:border-slate-800 animate-in fade-in duration-500 max-w-[1920px] 2xl:mx-auto">

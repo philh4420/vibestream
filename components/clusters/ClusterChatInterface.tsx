@@ -254,9 +254,9 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3.5}><path d="M15 19l-7-7 7-7" /></svg>
           </button>
           <div className="flex items-center gap-4 cursor-pointer" onClick={() => setShowMembers(!showMembers)}>
-            <img src={chatData.clusterAvatar} className="w-12 h-12 rounded-[1.2rem] object-cover border shadow-sm" alt="" />
+            <img src={chatData.clusterAvatar || `https://api.dicebear.com/7.x/initials/svg?seed=${chatData.clusterName}`} className="w-12 h-12 rounded-[1.2rem] object-cover border shadow-sm" alt="" />
             <div>
-              <h3 className="font-black text-xl uppercase tracking-tighter italic leading-none text-slate-900 dark:text-white">{chatData.clusterName}</h3>
+              <h3 className="font-black text-xl uppercase tracking-tighter italic leading-none text-slate-900 dark:text-white">{chatData.clusterName || 'Neural Lobby'}</h3>
               <p className="text-[9px] font-black uppercase tracking-widest font-mono text-indigo-500 mt-1">{(chatData.participants || []).length} Nodes Online</p>
             </div>
           </div>

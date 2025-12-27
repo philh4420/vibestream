@@ -194,8 +194,9 @@ export default function App() {
 
   // Initialize Sound
   useEffect(() => {
-    notificationSoundRef.current = new Audio('https://actions.google.com/sounds/v1/navigation/arrival_message_success.ogg');
-    notificationSoundRef.current.volume = 0.5;
+    // FIX: Using a reliable GStatic URL to prevent 404
+    notificationSoundRef.current = new Audio('https://www.gstatic.com/dynamite/sounds/new_message_0e3a670308d28a301d36d4f6c4493392.ogg');
+    notificationSoundRef.current.volume = 0.4;
   }, []);
 
   // --- THEME ENGINE ---
@@ -594,9 +595,8 @@ export default function App() {
     try {
         const chatRef = doc(db, 'chats', chatId);
         
-        // Atomic Upsert: Create or Update in one go.
-        // We set isEventLobby to true to ensure it's accessible.
-        // We add the user to participants.
+        // Atomic Upsert: Join Lobby
+        // FIX: Ensure correct nested path for participant data
         await setDoc(chatRef, {
             participants: arrayUnion(userData.id),
             participantData: {
@@ -605,7 +605,7 @@ export default function App() {
                     avatarUrl: userData.avatarUrl
                 }
             },
-            isEventLobby: true, // Ensure flag
+            isEventLobby: true, 
             clusterName: `LOBBY: ${gathering.title}`,
             clusterAvatar: gathering.coverUrl
         }, { merge: true });
@@ -614,7 +614,7 @@ export default function App() {
         setTargetClusterId(chatId);
         setActiveRoute(AppRoute.CLUSTERS);
 
-        // NOTIFICATIONS (Optional - sending to all attendees)
+        // NOTIFICATIONS
         const recipients = gathering.attendees.filter(id => id !== userData.id);
         const batch = writeBatch(db);
         
