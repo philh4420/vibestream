@@ -237,7 +237,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
   const filteredTrending = trendingPosts.filter(p => !blockedIds?.has(p.authorId)).slice(0, 5);
 
   return (
-    <aside className="hidden lg:flex flex-col w-[320px] xl:w-[380px] shrink-0 bg-slate-50/50 dark:bg-slate-900/50 border-l border-precision h-full overflow-hidden transition-colors duration-300">
+    <aside className="hidden lg:flex flex-col w-[280px] xl:w-[320px] shrink-0 bg-slate-50/50 dark:bg-slate-900/50 border-l border-precision h-full overflow-hidden transition-colors duration-300">
       
       <div className="flex-1 overflow-y-auto custom-scrollbar px-6 space-y-8 py-8">
         
@@ -444,7 +444,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
         {/* 4. FOOTER MINI INFO */}
         <div className="px-2 pt-6 border-t border-slate-100 dark:border-slate-800">
            <div className="flex items-center justify-center gap-4 text-[8px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-widest font-mono">
-             <span>VIBE_OS 2.6</span>
+             <span>VIBE_OS 2.6.4</span>
              <span>•</span>
              <span>UK_LON</span>
              <span>•</span>
