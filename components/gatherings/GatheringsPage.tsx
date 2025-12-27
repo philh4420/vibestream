@@ -8,9 +8,7 @@ const {
   orderBy, 
   onSnapshot, 
   serverTimestamp,
-  updateDoc,
   doc,
-  where,
   writeBatch,
   getDocs
 } = Firestore as any;
@@ -45,19 +43,28 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
   useEffect(() => {
     if (!db) return;
     
-    // Fetch gatherings from the beginning of today (local time) to ensure active events are shown
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-    const queryDate = startOfDay.toISOString();
-
+    // Updated Query: Fetch ALL gatherings sorted by date.
+    // Filtering is moved client-side to prevent issues with timezone offsets, 
+    // future dates being hidden by strict server filters, or missing indexes.
     const q = query(
       collection(db, 'gatherings'),
-      where('date', '>=', queryDate),
       orderBy('date', 'asc')
     );
 
     const unsub = onSnapshot(q, (snap: any) => {
-      setGatherings(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Gathering)));
+      const allGatherings = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Gathering));
+      
+      // Client-side filter: Only show gatherings that haven't ended more than 24 hours ago
+      // This keeps the list clean but ensures "today" and "future" events are always visible.
+      const yesterday = new Date();
+      yesterday.setHours(yesterday.getHours() - 24);
+      
+      const relevantGatherings = allGatherings.filter(g => {
+          const gDate = new Date(g.date);
+          return gDate >= yesterday;
+      });
+
+      setGatherings(relevantGatherings);
       setIsLoading(false);
     });
 
@@ -402,7 +409,7 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
               </div>
               <h3 className="text-2xl font-black uppercase tracking-widest italic text-slate-900 dark:text-white">No_Signals</h3>
               <p className="text-[10px] font-black uppercase tracking-[0.3em] font-mono mt-3 text-slate-400 dark:text-slate-500 max-w-xs leading-relaxed">
-                No gatherings detected in this frequency band. Initialize one to start the sync.
+                No gatherings detected. Initialize one to start the sync.
               </p>
            </div>
          )}
