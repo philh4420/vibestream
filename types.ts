@@ -7,6 +7,15 @@ export type PresenceStatus = 'Online' | 'Focus' | 'Invisible' | 'Away' | 'In-Tra
 
 export type SignalAudience = 'global' | 'mesh' | 'private';
 
+export interface GlobalSignal {
+  id: string;
+  text: string;
+  type: 'persistent' | 'transient';
+  severity: 'info' | 'warning' | 'critical';
+  active: boolean;
+  timestamp: any;
+}
+
 export interface WeatherInfo {
   temp: number;
   feelsLike: number;

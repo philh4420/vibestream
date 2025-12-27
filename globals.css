@@ -422,6 +422,32 @@ html.reduced-motion *::after {
   filter: grayscale(100%) contrast(1.5) brightness(0.9);
 }
 
+/* --- Global Signal Pulse (Admin Push) --- */
+
+@keyframes glitch-in {
+  0% { transform: translateY(-100%) skewX(0deg); opacity: 0; }
+  70% { transform: translateY(0%) skewX(5deg); opacity: 1; }
+  85% { transform: translateY(0%) skewX(-5deg); }
+  100% { transform: translateY(0%) skewX(0deg); opacity: 1; }
+}
+
+@keyframes marquee-scroll {
+  from { transform: translateX(100%); }
+  to { transform: translateX(-100%); }
+}
+
+.citadel-push-ticker {
+  animation: glitch-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.citadel-push-text {
+  animation: marquee-scroll 25s linear infinite;
+}
+
+.citadel-push-text:hover {
+  animation-play-state: paused;
+}
+
 /* 5. RESPONSIVE CALIBRATION */
 @media (max-width: 480px) {
   :root {

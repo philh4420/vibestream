@@ -23,6 +23,7 @@ import { AdminProtocols } from './AdminProtocols';
 import { AdminKernel } from './AdminKernel';
 import { AdminHeader } from './AdminHeader';
 import { AdminSupport } from './AdminSupport';
+import { AdminPushTerminal } from './AdminPushTerminal';
 
 interface AdminPanelProps {
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
@@ -32,7 +33,7 @@ interface AdminPanelProps {
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale, systemSettings, userData }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'content' | 'features' | 'support' | 'system'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'content' | 'features' | 'support' | 'system' | 'push'>('overview');
   const [nodes, setNodes] = useState<User[]>([]);
   const [signals, setSignals] = useState<Post[]>([]);
   const [metrics, setMetrics] = useState({ users: 0, posts: 0, uptime: '99.99%' });
@@ -123,6 +124,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale, system
         return <AdminSupport addToast={addToast} />;
       case 'system':
         return <AdminKernel systemSettings={systemSettings} addToast={addToast} />;
+      case 'push':
+        return <AdminPushTerminal addToast={addToast} />;
       default:
         return null;
     }

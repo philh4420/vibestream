@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import * as FirebaseAuth from 'firebase/auth';
 const { onAuthStateChanged, signOut } = FirebaseAuth as any;
@@ -32,7 +33,8 @@ import {
   WeatherInfo, 
   LiveStream, 
   CallSession,
-  SystemSettings
+  SystemSettings,
+  GlobalSignal
 } from './types';
 import { SIGNAL_COLORS } from './constants';
 
@@ -67,6 +69,7 @@ import { SettingsOverlay } from './components/settings/SettingsOverlay';
 import { SupportPage } from './components/support/SupportPage';
 import { ResonanceMarketplace } from './components/marketplace/ResonanceMarketplace';
 import { SignalTrail } from './components/ui/SignalTrail';
+import { GlobalSignalPulse } from './components/ui/GlobalSignalPulse';
 
 // Services
 import { fetchWeather } from './services/weather';
@@ -186,6 +189,10 @@ export default function App() {
 
   const [rsvpProcessing, setRsvpProcessing] = useState<Set<string>>(new Set());
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Global Signal State
+  const [activeGlobalSignal, setActiveGlobalSignal] = useState<GlobalSignal | null>(null);
+  const [dismissedSignalIds, setDismissedSignalIds] = useState<Set<string>>(new Set());
 
   // Sound Refs
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
@@ -357,6 +364,18 @@ export default function App() {
       }
     });
 
+    // Global Signal Override Listener
+    const unsubGlobalSignal = onSnapshot(doc(db, 'settings', 'global_signal'), (snap: any) => {
+       if (snap.exists()) {
+          const data = snap.data();
+          if (data.active) {
+             setActiveGlobalSignal({ id: snap.id, ...data } as GlobalSignal);
+          } else {
+             setActiveGlobalSignal(null);
+          }
+       }
+    });
+
     const unsubUsers = onSnapshot(query(collection(db, 'users'), limit(100)), (snap: any) => {
       setAllUsers(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as User)));
     });
@@ -365,7 +384,7 @@ export default function App() {
       setGlobalPosts(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Post)));
     });
 
-    return () => { unsubSettings(); unsubUsers(); unsubPosts(); };
+    return () => { unsubSettings(); unsubUsers(); unsubPosts(); unsubGlobalSignal(); };
   }, []);
 
   const removeToast = (id: string) => {
@@ -652,6 +671,13 @@ export default function App() {
       <SignalTrail activeTrail={userData?.cosmetics?.activeTrail} />
       <PrismInjector colorId={activeSignalColor} />
       
+      {activeGlobalSignal && !dismissedSignalIds.has(activeGlobalSignal.id) && (
+          <GlobalSignalPulse 
+            signal={activeGlobalSignal} 
+            onDismiss={() => setDismissedSignalIds(prev => new Set(prev).add(activeGlobalSignal.id))} 
+          />
+      )}
+
       <Layout
         activeRoute={activeRoute}
         onNavigate={setActiveRoute}
@@ -670,213 +696,214 @@ export default function App() {
         onOpenSettings={() => setIsSettingsOpen(true)}
         blockedIds={blockedIds}
       >
-        {activeRoute === AppRoute.FEED && isFeatureEnabled(AppRoute.FEED) && (
-            <FeedPage 
-              posts={filteredGlobalPosts} 
-              userData={userData}
-              locale="en-GB"
-              onLike={handleLike}
-              onBookmark={handleBookmark}
-              onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
-              onOpenCreate={() => {}}
-              onTransmitStory={() => {}}
-              onGoLive={() => setActiveStreamId(`stream_${user.uid}`)}
-              onJoinStream={setWatchingStream}
-              blockedIds={blockedIds}
-            />
-        )}
+        <div className={`transition-all duration-500 ${activeGlobalSignal && !dismissedSignalIds.has(activeGlobalSignal.id) ? 'pt-9' : ''}`}>
+            {activeRoute === AppRoute.FEED && isFeatureEnabled(AppRoute.FEED) && (
+                <FeedPage 
+                posts={filteredGlobalPosts} 
+                userData={userData}
+                locale="en-GB"
+                onLike={handleLike}
+                onBookmark={handleBookmark}
+                onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
+                onOpenCreate={() => {}}
+                onTransmitStory={() => {}}
+                onGoLive={() => setActiveStreamId(`stream_${user.uid}`)}
+                onJoinStream={setWatchingStream}
+                blockedIds={blockedIds}
+                />
+            )}
 
-        {activeRoute === AppRoute.EXPLORE && isFeatureEnabled(AppRoute.EXPLORE) && (
-            <ExplorePage 
-              posts={filteredGlobalPosts}
-              users={filteredUsers}
-              onLike={handleLike}
-              onBookmark={handleBookmark}
-              onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
-              onViewProfile={(u) => { setSelectedUserProfile(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }}
-              locale="en-GB"
-            />
-        )}
+            {activeRoute === AppRoute.EXPLORE && isFeatureEnabled(AppRoute.EXPLORE) && (
+                <ExplorePage 
+                posts={filteredGlobalPosts}
+                users={filteredUsers}
+                onLike={handleLike}
+                onBookmark={handleBookmark}
+                onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
+                onViewProfile={(u) => { setSelectedUserProfile(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }}
+                locale="en-GB"
+                />
+            )}
 
-        {activeRoute === AppRoute.MESSAGES && userData && isFeatureEnabled(AppRoute.MESSAGES) && (
-            <MessagesPage 
-              currentUser={userData}
-              locale="en-GB"
-              addToast={addToast}
-              weather={weather}
-              allUsers={filteredUsers}
-              blockedIds={blockedIds}
-            />
-        )}
+            {activeRoute === AppRoute.MESSAGES && userData && isFeatureEnabled(AppRoute.MESSAGES) && (
+                <MessagesPage 
+                currentUser={userData}
+                locale="en-GB"
+                addToast={addToast}
+                weather={weather}
+                allUsers={filteredUsers}
+                blockedIds={blockedIds}
+                />
+            )}
 
-        {activeRoute === AppRoute.NOTIFICATIONS && isFeatureEnabled(AppRoute.NOTIFICATIONS) && (
-            <NotificationsPage 
-              notifications={notifications.filter(n => !blockedIds.has(n.fromUserId))}
-              onDelete={handleDeleteNotification}
-              onMarkRead={handleMarkAllRead}
-              addToast={addToast}
-              locale="en-GB"
-              userData={userData}
-            />
-        )}
+            {activeRoute === AppRoute.NOTIFICATIONS && isFeatureEnabled(AppRoute.NOTIFICATIONS) && (
+                <NotificationsPage 
+                notifications={notifications.filter(n => !blockedIds.has(n.fromUserId))}
+                onDelete={handleDeleteNotification}
+                onMarkRead={handleMarkAllRead}
+                addToast={addToast}
+                locale="en-GB"
+                userData={userData}
+                />
+            )}
 
-        {activeRoute === AppRoute.PROFILE && userData && isFeatureEnabled(AppRoute.PROFILE) && (
+            {activeRoute === AppRoute.PROFILE && userData && isFeatureEnabled(AppRoute.PROFILE) && (
+                <ProfilePage 
+                userData={userData}
+                onUpdateProfile={() => {}}
+                addToast={addToast}
+                locale="en-GB"
+                sessionStartTime={Date.now()}
+                onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
+                onViewProfile={(u) => { setSelectedUserProfile(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }}
+                onOpenSettings={() => setIsSettingsOpen(true)}
+                onLike={handleLike}
+                onBookmark={handleBookmark}
+                blockedIds={blockedIds}
+                />
+            )}
+
+            {activeRoute === AppRoute.PUBLIC_PROFILE && selectedUserProfile && (
             <ProfilePage 
-              userData={userData}
-              onUpdateProfile={() => {}}
-              addToast={addToast}
-              locale="en-GB"
-              sessionStartTime={Date.now()}
-              onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
-              onViewProfile={(u) => { setSelectedUserProfile(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }}
-              onOpenSettings={() => setIsSettingsOpen(true)}
-              onLike={handleLike}
-              onBookmark={handleBookmark}
-              blockedIds={blockedIds}
+                userData={selectedUserProfile}
+                onUpdateProfile={() => {}}
+                addToast={addToast}
+                locale="en-GB"
+                sessionStartTime={Date.now()}
+                onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
+                onViewProfile={(u) => { setSelectedUserProfile(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }}
+                onLike={handleLike}
+                onBookmark={handleBookmark}
+                blockedIds={blockedIds}
+                isBlocked={blockedIds.has(selectedUserProfile.id)}
+                onBlock={() => handleBlockUser(selectedUserProfile.id)}
+                onUnblock={() => handleUnblockUser(selectedUserProfile.id)}
             />
-        )}
+            )}
 
-        {activeRoute === AppRoute.PUBLIC_PROFILE && selectedUserProfile && (
-           <ProfilePage 
-             userData={selectedUserProfile}
-             onUpdateProfile={() => {}}
-             addToast={addToast}
-             locale="en-GB"
-             sessionStartTime={Date.now()}
-             onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
-             onViewProfile={(u) => { setSelectedUserProfile(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }}
-             onLike={handleLike}
-             onBookmark={handleBookmark}
-             blockedIds={blockedIds}
-             isBlocked={blockedIds.has(selectedUserProfile.id)}
-             onBlock={() => handleBlockUser(selectedUserProfile.id)}
-             onUnblock={() => handleUnblockUser(selectedUserProfile.id)}
-           />
-        )}
+            {activeRoute === AppRoute.ADMIN && userData?.role === 'admin' && (
+                <AdminPanel 
+                addToast={addToast}
+                locale="en-GB"
+                systemSettings={systemSettings}
+                userData={userData}
+                />
+            )}
 
-        {activeRoute === AppRoute.ADMIN && userData?.role === 'admin' && (
-            <AdminPanel 
-              addToast={addToast}
-              locale="en-GB"
-              systemSettings={systemSettings}
-              userData={userData}
-            />
-        )}
+            {activeRoute === AppRoute.PRIVACY && <PrivacyPage />}
+            {activeRoute === AppRoute.TERMS && <TermsPage />}
+            {activeRoute === AppRoute.COOKIES && <CookiesPage />}
 
-        {activeRoute === AppRoute.PRIVACY && <PrivacyPage />}
-        {activeRoute === AppRoute.TERMS && <TermsPage />}
-        {activeRoute === AppRoute.COOKIES && <CookiesPage />}
+            {activeRoute === AppRoute.MESH && userData && isFeatureEnabled(AppRoute.MESH) && (
+                <MeshPage 
+                currentUser={userData} 
+                locale="en-GB" 
+                addToast={addToast}
+                onViewProfile={(u) => { setSelectedUserProfile(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }}
+                blockedIds={blockedIds}
+                />
+            )}
 
-        {activeRoute === AppRoute.MESH && userData && isFeatureEnabled(AppRoute.MESH) && (
-            <MeshPage 
-              currentUser={userData} 
-              locale="en-GB" 
-              addToast={addToast}
-              onViewProfile={(u) => { setSelectedUserProfile(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }}
-              blockedIds={blockedIds}
-            />
-        )}
+            {activeRoute === AppRoute.CLUSTERS && userData && isFeatureEnabled(AppRoute.CLUSTERS) && (
+                <ClustersPage 
+                currentUser={userData} 
+                locale="en-GB" 
+                addToast={addToast}
+                onOpenChat={() => {}}
+                allUsers={filteredUsers}
+                weather={weather}
+                initialClusterId={targetClusterId}
+                />
+            )}
 
-        {activeRoute === AppRoute.CLUSTERS && userData && isFeatureEnabled(AppRoute.CLUSTERS) && (
-            <ClustersPage 
-              currentUser={userData} 
-              locale="en-GB" 
-              addToast={addToast}
-              onOpenChat={() => {}}
-              allUsers={filteredUsers}
-              weather={weather}
-              initialClusterId={targetClusterId}
-            />
-        )}
+            {activeRoute === AppRoute.STREAM_GRID && isFeatureEnabled(AppRoute.STREAM_GRID) && (
+                <StreamGridPage 
+                locale="en-GB"
+                onJoinStream={setWatchingStream}
+                onGoLive={() => setActiveStreamId(`stream_${user.uid}`)}
+                userData={userData}
+                onTransmit={() => {}}
+                />
+            )}
 
-        {activeRoute === AppRoute.STREAM_GRID && isFeatureEnabled(AppRoute.STREAM_GRID) && (
-            <StreamGridPage 
-              locale="en-GB"
-              onJoinStream={setWatchingStream}
-              onGoLive={() => setActiveStreamId(`stream_${user.uid}`)}
-              userData={userData}
-              onTransmit={() => {}}
-            />
-        )}
+            {activeRoute === AppRoute.TEMPORAL && isFeatureEnabled(AppRoute.TEMPORAL) && (
+                <TemporalPage currentUser={userData} locale="en-GB" addToast={addToast} />
+            )}
 
-        {activeRoute === AppRoute.TEMPORAL && isFeatureEnabled(AppRoute.TEMPORAL) && (
-            <TemporalPage currentUser={userData} locale="en-GB" addToast={addToast} />
-        )}
+            {activeRoute === AppRoute.SAVED && userData && isFeatureEnabled(AppRoute.SAVED) && (
+                <DataVaultPage 
+                currentUser={userData} 
+                locale="en-GB" 
+                addToast={addToast}
+                onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
+                />
+            )}
 
-        {activeRoute === AppRoute.SAVED && userData && isFeatureEnabled(AppRoute.SAVED) && (
-            <DataVaultPage 
-              currentUser={userData} 
-              locale="en-GB" 
-              addToast={addToast}
-              onViewPost={(post) => { setSelectedPost(post); setActiveRoute(AppRoute.SINGLE_POST); }}
-            />
-        )}
+            {activeRoute === AppRoute.VERIFIED_NODES && isFeatureEnabled(AppRoute.VERIFIED_NODES) && (
+                <VerifiedNodesPage 
+                users={filteredUsers} 
+                onViewProfile={(u) => { setSelectedUserProfile(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }} 
+                />
+            )}
 
-        {activeRoute === AppRoute.VERIFIED_NODES && isFeatureEnabled(AppRoute.VERIFIED_NODES) && (
-            <VerifiedNodesPage 
-              users={filteredUsers} 
-              onViewProfile={(u) => { setSelectedUserProfile(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }} 
-            />
-        )}
+            {activeRoute === AppRoute.GATHERINGS && userData && isFeatureEnabled(AppRoute.GATHERINGS) && (
+                <GatheringsPage 
+                currentUser={userData}
+                locale="en-GB"
+                addToast={addToast}
+                allUsers={filteredUsers}
+                onOpenLobby={handleOpenLobby}
+                onViewGathering={(g) => { setSelectedGathering(g); setActiveRoute(AppRoute.SINGLE_GATHERING); }}
+                onRSVP={handleRSVP}
+                />
+            )}
 
-        {activeRoute === AppRoute.GATHERINGS && userData && isFeatureEnabled(AppRoute.GATHERINGS) && (
-            <GatheringsPage 
-              currentUser={userData}
-              locale="en-GB"
-              addToast={addToast}
-              allUsers={filteredUsers}
-              onOpenLobby={handleOpenLobby}
-              onViewGathering={(g) => { setSelectedGathering(g); setActiveRoute(AppRoute.SINGLE_GATHERING); }}
-              onRSVP={handleRSVP}
-            />
-        )}
+            {activeRoute === AppRoute.SINGLE_GATHERING && selectedGathering && userData && (
+                <SingleGatheringView 
+                gathering={selectedGathering}
+                currentUser={userData}
+                allUsers={filteredUsers}
+                locale="en-GB"
+                onBack={() => setActiveRoute(AppRoute.GATHERINGS)}
+                onDelete={() => {}}
+                onRSVP={handleRSVP}
+                onOpenLobby={handleOpenLobby}
+                />
+            )}
 
-        {activeRoute === AppRoute.SINGLE_GATHERING && selectedGathering && userData && (
-            <SingleGatheringView 
-              gathering={selectedGathering}
-              currentUser={userData}
-              allUsers={filteredUsers}
-              locale="en-GB"
-              onBack={() => setActiveRoute(AppRoute.GATHERINGS)}
-              onDelete={() => {}}
-              onRSVP={handleRSVP}
-              onOpenLobby={handleOpenLobby}
-            />
-        )}
+            {activeRoute === AppRoute.SIMULATIONS && isFeatureEnabled(AppRoute.SIMULATIONS) && (
+                <SimulationsPage />
+            )}
 
-        {activeRoute === AppRoute.SIMULATIONS && isFeatureEnabled(AppRoute.SIMULATIONS) && (
-            <SimulationsPage />
-        )}
+            {activeRoute === AppRoute.RESILIENCE && userData && isFeatureEnabled(AppRoute.RESILIENCE) && (
+                <ResiliencePage userData={userData} addToast={addToast} />
+            )}
 
-        {activeRoute === AppRoute.RESILIENCE && userData && isFeatureEnabled(AppRoute.RESILIENCE) && (
-            <ResiliencePage userData={userData} addToast={addToast} />
-        )}
+            {activeRoute === AppRoute.SUPPORT && userData && isFeatureEnabled(AppRoute.SUPPORT) && (
+                <SupportPage currentUser={userData} locale="en-GB" addToast={addToast} />
+            )}
 
-        {activeRoute === AppRoute.SUPPORT && userData && isFeatureEnabled(AppRoute.SUPPORT) && (
-            <SupportPage currentUser={userData} locale="en-GB" addToast={addToast} />
-        )}
+            {activeRoute === AppRoute.SINGLE_POST && selectedPost && (
+                <SinglePostView 
+                post={selectedPost} 
+                userData={userData} 
+                locale="en-GB" 
+                onClose={() => setActiveRoute(AppRoute.FEED)}
+                onLike={handleLike}
+                onBookmark={handleBookmark}
+                addToast={addToast}
+                blockedIds={blockedIds}
+                />
+            )}
 
-        {activeRoute === AppRoute.SINGLE_POST && selectedPost && (
-            <SinglePostView 
-              post={selectedPost} 
-              userData={userData} 
-              locale="en-GB" 
-              onClose={() => setActiveRoute(AppRoute.FEED)}
-              onLike={handleLike}
-              onBookmark={handleBookmark}
-              addToast={addToast}
-              blockedIds={blockedIds}
-            />
-        )}
+            {activeRoute === AppRoute.MARKETPLACE && userData && (
+                <ResonanceMarketplace userData={userData} addToast={addToast} />
+            )}
 
-        {activeRoute === AppRoute.MARKETPLACE && userData && (
-            <ResonanceMarketplace userData={userData} addToast={addToast} />
-        )}
-
-        {!isFeatureEnabled(activeRoute) && activeRoute !== AppRoute.ADMIN && (
-           <FeatureDisabledScreen featureName={activeRoute} />
-        )}
-
+            {!isFeatureEnabled(activeRoute) && activeRoute !== AppRoute.ADMIN && (
+            <FeatureDisabledScreen featureName={activeRoute} />
+            )}
+        </div>
       </Layout>
 
       {toasts.map(t => <div key={t.id} className="fixed top-24 right-6 z-[3000]"><Toast toast={t} onClose={removeToast} /></div>)}
