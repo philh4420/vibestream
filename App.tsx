@@ -194,9 +194,9 @@ export default function App() {
 
   // Initialize Sound
   useEffect(() => {
-    // FIX: Using a reliable GStatic URL to prevent 404
-    notificationSoundRef.current = new Audio('https://www.gstatic.com/dynamite/sounds/new_message_0e3a670308d28a301d36d4f6c4493392.ogg');
-    notificationSoundRef.current.volume = 0.4;
+    // FIX: Using a guaranteed stable Google Actions CDN URL to prevent 404
+    notificationSoundRef.current = new Audio('https://actions.google.com/sounds/v1/notifications/pizzicato_high.ogg');
+    notificationSoundRef.current.volume = 0.35;
   }, []);
 
   // --- THEME ENGINE ---
