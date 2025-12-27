@@ -75,7 +75,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
           setIsVerified(true);
           return 100;
         }
-        return prev + 2; // Speed of fill
+        return prev + 2; 
       });
     }, 16);
   };
@@ -151,7 +151,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Quick local check
     if (systemSettings.registrationDisabled) {
       addToast('Registration Protocols Disabled: New node creation restricted.', 'error');
       return;
@@ -171,7 +170,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
     setErrorDetails(null);
 
     try {
-      // SECURITY PROTOCOL: Fresh Server Check for Registration Lock
       const settingsSnap = await getDocFromServer(doc(db, 'settings', 'global'));
       
       if (settingsSnap.exists() && settingsSnap.data().registrationDisabled) {
@@ -207,7 +205,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
         console.warn('Role assignment check skipped, defaulting to member');
       }
 
-      // GENERATE USERNAME FROM NAME (Fallback to email if name is all symbols)
       const nameBase = fullName.toLowerCase().replace(/[^a-z0-9]/g, '');
       const emailBase = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
       const username = nameBase.length > 0 ? nameBase : emailBase;
@@ -235,7 +232,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
         socialLinks: []
       });
 
-      // WELCOME SEQUENCE: Inject System Notification
       await addDoc(collection(db, 'notifications'), {
         type: 'system',
         fromUserId: 'SYSTEM',
@@ -279,7 +275,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
     }
   };
 
-  // --- TERMS ACCEPTANCE LOGIC ---
   const handleAcceptTerms = () => {
     setAcceptedTerms(true);
     setAuthMode('register');
@@ -288,7 +283,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
     addToast("Protocols Accepted", "success");
   };
 
-  // RENDER CONTENT FOR LEGAL PAGES
   const renderLegalContent = () => {
     const commonClasses = "max-w-4xl mx-auto pt-24 pb-12 px-6 min-h-screen text-slate-900 dark:text-white";
     const BackButton = () => (
@@ -302,7 +296,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
     );
 
     if (currentView === 'privacy') return <div className={commonClasses}><BackButton /><PrivacyPage /></div>;
-    // Pass handleAcceptTerms so the button appears and works
     if (currentView === 'terms') return <div className={commonClasses}><BackButton /><TermsPage onAccept={handleAcceptTerms} /></div>;
     if (currentView === 'cookies') return <div className={commonClasses}><BackButton /><CookiesPage /></div>;
     return null;
@@ -316,7 +309,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
     );
   }
 
-  // --- MAIN RENDER ---
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col font-sans relative overflow-hidden selection:bg-indigo-500 selection:text-white transition-colors duration-500">
       
@@ -395,7 +387,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
                   >
                     <div className={`transition-all duration-300 ${verificationProgress > 0 ? 'scale-110 text-indigo-600 dark:text-indigo-400' : 'text-slate-300 dark:text-slate-600'}`}>
                       <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M7.864 4.243A7.5 7.5 0 0119.5 10.5c0 2.92-.556 5.709-1.568 8.268M5.742 6.364A7.465 7.465 0 004.5 10.5a7.464 7.464 0 01-1.15 3.993m1.989 3.559A11.209 11.209 0 008.25 10.5a3.75 3.75 0 117.5 0c0 .527-.021 1.049-.064 1.565M12 10.5a14.94 14.94 0 01-3.6 9.75m6.633-4.596a18.666 18.666 0 01-2.485 5.33" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7.864 4.243A7.5 7.5 0 0119.5 10.5c0 2.92-.556 5.709-1.568 8.268M5.742 6.364A7.465 7.465 0 004.5 10.5a7.464 7.464 0 01-1.15 3.993m1.989 3.559A11.209 11.209 0 008.25 10.5a3.75 3.75 0 1 1 7.5 0c0 .527-.021 1.049-.064 1.565M12 10.5a14.94 14.94 0 01-3.6 9.75m6.633-4.596a18.666 18.666 0 01-2.485 5.33" />
                       </svg>
                     </div>
                   </button>
@@ -473,7 +465,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
                           setPassword('');
                           setAcceptedTerms(false);
                         }}
-                        className={`text-[10px] font-black uppercase tracking-widest transition-colors ${systemSettings.registrationDisabled ? 'text-slate-400 dark:text-slate-600 cursor-not-allowed hover:text-slate-500 dark:hover:text-slate-500' : 'text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300'}`}
+                        className={`text-[10px] font-black uppercase tracking-widest transition-colors ${systemSettings.registrationDisabled ? 'text-slate-400 dark:text-slate-600 cursor-not-allowed hover:text-slate-50 dark:hover:text-slate-500' : 'text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300'}`}
                       >
                         Create_Node
                       </button>
@@ -522,7 +514,111 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, systemSetting
           </div>
         </div>
       </main>
-      {/* Rest of component remains same... */}
+
+      {/* REGISTER MODAL */}
+      {showRegisterModal && authMode === 'register' && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowRegisterModal(false)}></div>
+          <div className="relative bg-white dark:bg-slate-900 w-full max-w-xl rounded-[3.5rem] p-10 shadow-2xl border border-white/20 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="shrink-0 flex justify-between items-start mb-8">
+               <div>
+                 <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic leading-none">Node_Creation</h2>
+                 <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] font-mono mt-2">Initialize Your Neural ID</p>
+               </div>
+               <button onClick={() => setShowRegisterModal(false)} className="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-2xl transition-all"><svg className="w-6 h-6 text-slate-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg></button>
+            </div>
+
+            <form onSubmit={handleRegister} className="flex-1 overflow-y-auto no-scrollbar space-y-6 px-1">
+               <div className="space-y-4">
+                  <div className="space-y-1">
+                     <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono ml-2">Public_Display_Name</label>
+                     <input 
+                       type="text" value={fullName} onChange={e => setFullName(e.target.value)} 
+                       placeholder="e.g. Alex Rivera" required
+                       className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white dark:focus:bg-slate-700 transition-all text-slate-900 dark:text-white"
+                     />
+                  </div>
+
+                  <div className="space-y-1">
+                     <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono ml-2">Neural_ID (Email)</label>
+                     <input 
+                       type="email" value={email} onChange={e => setEmail(e.target.value)} 
+                       placeholder="node@vibestream.io" required
+                       className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white dark:focus:bg-slate-700 transition-all text-slate-900 dark:text-white"
+                     />
+                  </div>
+
+                  <div className="space-y-1">
+                     <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono ml-2">Access_Key (Password)</label>
+                     <input 
+                       type="password" value={password} onChange={e => setPassword(e.target.value)} 
+                       placeholder="••••••••" required
+                       className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white dark:focus:bg-slate-700 transition-all text-slate-900 dark:text-white"
+                     />
+                  </div>
+
+                  <div className="space-y-1 relative">
+                     <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono ml-2">Geospatial_Node</label>
+                     <input 
+                       type="text" value={location} onChange={handleLocationSearch} 
+                       placeholder="London, UK..." required
+                       className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white dark:focus:bg-slate-700 transition-all text-slate-900 dark:text-white"
+                     />
+                     {showSuggestions && locationSuggestions.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl z-50 overflow-hidden overflow-y-auto max-h-48">
+                           {locationSuggestions.map((loc, idx) => (
+                              <button key={idx} type="button" onClick={() => selectLocation(loc)} className="w-full px-4 py-3 text-left text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-700 border-b border-slate-50 dark:border-slate-700 last:border-0 text-slate-700 dark:text-slate-300">
+                                 {loc.display_name}
+                              </button>
+                           ))}
+                        </div>
+                     )}
+                  </div>
+
+                  <div className="pt-4">
+                     <button 
+                       type="button" 
+                       onClick={() => { setCurrentView('terms'); setShowRegisterModal(false); }}
+                       className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${acceptedTerms ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 text-indigo-600' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 text-slate-400 hover:border-indigo-100'}`}
+                     >
+                        <div className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors ${acceptedTerms ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-200'}`}>
+                           {acceptedTerms && <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={4}><path d="M5 13l4 4L19 7" /></svg>}
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-widest">Accept Terms of Uplink</span>
+                     </button>
+                  </div>
+               </div>
+
+               {errorDetails && <div className="text-rose-500 text-[10px] font-black uppercase tracking-widest text-center py-3 bg-rose-50 rounded-xl border border-rose-100">{errorDetails.message}</div>}
+
+               <div className="pt-6 border-t border-slate-50 dark:border-slate-800">
+                  <button 
+                    type="submit" 
+                    disabled={isProcessing || !acceptedTerms}
+                    className="w-full py-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[1.8rem] font-black text-xs uppercase tracking-[0.4em] shadow-xl hover:bg-indigo-600 dark:hover:bg-indigo-400 dark:hover:text-white transition-all active:scale-95 disabled:opacity-30 flex items-center justify-center gap-3"
+                  >
+                    {isProcessing ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <ICONS.Verified />}
+                    INITIALIZE_SYNC
+                  </button>
+               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* FOOTER */}
+      <footer className="p-8 text-center relative z-10">
+         <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 mb-4">
+            <button onClick={() => setCurrentView('privacy')} className="text-[10px] font-black text-slate-400 hover:text-indigo-500 uppercase tracking-widest transition-colors">Privacy_Protocol</button>
+            <button onClick={() => setCurrentView('terms')} className="text-[10px] font-black text-slate-400 hover:text-indigo-500 uppercase tracking-widest transition-colors">Terms_of_Uplink</button>
+            <button onClick={() => setCurrentView('cookies')} className="text-[10px] font-black text-slate-400 hover:text-indigo-500 uppercase tracking-widest transition-colors">Data_Fragments</button>
+         </div>
+         <p className="text-[9px] font-bold text-slate-300 dark:text-slate-700 uppercase tracking-[0.5em] font-mono">
+           VibeStream Grid • UK_Central • Node_v2.6.4
+         </p>
+      </footer>
+
+      {toasts.map(t => <div key={t.id} className="fixed top-12 right-6 z-[2000]"><Toast toast={t} onClose={removeToast} /></div>)}
     </div>
   );
 };
