@@ -583,10 +583,64 @@ export default function App() {
     }
   };
 
-  const handleOpenLobby = (id: string) => {
-    setTargetClusterId(id);
-    setActiveRoute(AppRoute.CLUSTERS);
-    addToast("Connecting to Neural Lobby...", "info");
+  const handleOpenLobby = async (gathering: Gathering) => {
+    if (!userData || !db) return;
+    const chatId = gathering.linkedChatId;
+    if (!chatId) {
+        addToast("Lobby Protocol Missing", "error");
+        return;
+    }
+
+    try {
+        const chatRef = doc(db, 'chats', chatId);
+        const chatSnap = await getDoc(chatRef);
+        
+        if (chatSnap.exists()) {
+            const chatData = chatSnap.data();
+            const isParticipant = chatData.participants.includes(userData.id);
+
+            if (!isParticipant) {
+                // Join Protocol: Add current user to participants
+                const batch = writeBatch(db);
+                batch.update(chatRef, {
+                    participants: arrayUnion(userData.id),
+                    [`participantData.${userData.id}`]: {
+                        displayName: userData.displayName,
+                        avatarUrl: userData.avatarUrl
+                    }
+                });
+
+                // Notify all other RSVP'd attendees that a node has entered the lobby
+                const recipients = gathering.attendees.filter(id => id !== userData.id);
+                recipients.forEach(attId => {
+                    const notifRef = doc(collection(db, 'notifications'));
+                    batch.set(notifRef, {
+                        type: 'system',
+                        fromUserId: userData.id,
+                        fromUserName: userData.displayName,
+                        fromUserAvatar: userData.avatarUrl,
+                        toUserId: attId,
+                        targetId: chatId,
+                        text: `entered the Neural Lobby for "${gathering.title}"`,
+                        isRead: false,
+                        timestamp: serverTimestamp(),
+                        pulseFrequency: 'velocity'
+                    });
+                });
+
+                await batch.commit();
+                addToast("Handshake Confirmed: Neural Lobby Synced", "success");
+            }
+
+            setTargetClusterId(chatId);
+            setActiveRoute(AppRoute.CLUSTERS);
+        } else {
+            addToast("Neural Lobby Offline", "error");
+        }
+    } catch (e) {
+        console.error("Lobby Join Error:", e);
+        addToast("Lobby Access Failed", "error");
+    }
   };
 
   const isFeatureEnabled = (route: AppRoute) => {

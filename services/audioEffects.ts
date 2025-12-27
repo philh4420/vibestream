@@ -2,9 +2,12 @@
 import { AudioFilterType } from '../types';
 
 export const createAudioContext = () => {
-  // @ts-ignore
-  const Ctx = window.AudioContext || window.webkitAudioContext;
-  return new Ctx();
+  /* Fixed: Casting to any to handle cross-browser prefixed constructors without TypeScript errors */
+  const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
+  if (!AudioContextClass) {
+    throw new Error("AudioContext not supported in this interface.");
+  }
+  return new AudioContextClass();
 };
 
 export const applyAudioFilter = (

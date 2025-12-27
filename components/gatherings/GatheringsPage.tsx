@@ -21,7 +21,8 @@ interface GatheringsPageProps {
   locale: Region;
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
   allUsers: User[];
-  onOpenLobby: (clusterId: string) => void;
+  /* Fixed: onOpenLobby now expects a Gathering object to match the signature in App.tsx */
+  onOpenLobby: (gathering: Gathering) => void;
   onViewGathering: (gathering: Gathering) => void;
   onRSVP: (gatheringId: string, isAttendingOrWaitlisted: boolean) => void;
 }
@@ -310,7 +311,8 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
 
                           <div className="flex items-center gap-2">
                               {isAttending && gathering.linkedChatId && (
-                                  <button onClick={(e) => { e.stopPropagation(); onOpenLobby(gathering.linkedChatId!); }} className="px-4 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">LOBBY</button>
+                                  /* Fixed: Now passing the gathering object to onOpenLobby */
+                                  <button onClick={(e) => { e.stopPropagation(); onOpenLobby(gathering); }} className="px-4 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">LOBBY</button>
                               )}
                               {!isOrganizer ? (
                                 <button onClick={(e) => { e.stopPropagation(); onRSVP(gathering.id, isAttending || isWaitlisted); }} className={`px-5 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest shadow-lg ${isAttending ? 'bg-slate-100 dark:bg-slate-800 text-slate-500' : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'}`}>{isAttending ? 'WITHDRAW' : 'RSVP'}</button>
