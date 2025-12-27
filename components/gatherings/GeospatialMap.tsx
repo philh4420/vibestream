@@ -42,22 +42,12 @@ export const GeospatialMap: React.FC<GeospatialMapProps> = ({ gathering, organiz
 
   useEffect(() => {
     const fetchCoordinates = async () => {
-      if (!gathering.location) return;
+      // Prioritize specific address, fall back to general location name
+      const query = gathering.address || gathering.location;
+      if (!query) return;
       
       setIsGeocoding(true);
       try {
-        // CLEANUP: Extract likely city name if address is complex (simple heuristic)
-        // This helps Open-Meteo which prefers City names over full street addresses
-        let query = gathering.location;
-        if (query.includes(',')) {
-            // If "Street, City, Country", try to grab "City" or "City, Country"
-            const parts = query.split(',').map(s => s.trim());
-            if (parts.length >= 2) {
-                // Heuristic: Last 2 parts often contain City/Country
-                query = parts.slice(-2).join(' ');
-            }
-        }
-
         // Use Open-Meteo Geocoding API (CORS Friendly, Free)
         const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=en&format=json`);
         const data = await response.json();
@@ -68,6 +58,14 @@ export const GeospatialMap: React.FC<GeospatialMapProps> = ({ gathering, organiz
           setPosition([lat, lon]);
         } else {
             console.warn("Geocoding: No results found for", query);
+            // Fallback strategy if address fails: try just the location name
+            if (gathering.address && gathering.location) {
+                const retryResponse = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(gathering.location)}&count=1&language=en&format=json`);
+                const retryData = await retryResponse.json();
+                if (retryData && retryData.results && retryData.results.length > 0) {
+                    setPosition([retryData.results[0].latitude, retryData.results[0].longitude]);
+                }
+            }
         }
       } catch (error) {
         console.error("Geocoding Error:", error);
@@ -77,7 +75,7 @@ export const GeospatialMap: React.FC<GeospatialMapProps> = ({ gathering, organiz
     };
 
     fetchCoordinates();
-  }, [gathering.location]);
+  }, [gathering.location, gathering.address]);
   
   // High-Fidelity Custom Marker
   const techMarkerIcon = L.divIcon({
@@ -142,7 +140,7 @@ export const GeospatialMap: React.FC<GeospatialMapProps> = ({ gathering, organiz
                     </div>
                 </div>
                 <p className="font-black text-xs text-white uppercase tracking-tight mb-0.5">{gathering.title}</p>
-                <p className="text-[9px] font-mono text-slate-400 truncate">{gathering.location}</p>
+                <p className="text-[9px] font-mono text-slate-400 truncate">{gathering.address || gathering.location}</p>
             </div>
           </Popup>
         </Marker>
@@ -181,7 +179,7 @@ export const GeospatialMap: React.FC<GeospatialMapProps> = ({ gathering, organiz
       {/* Bottom Right: Action */}
       <div className="absolute bottom-6 right-6 z-[20]">
          <a 
-           href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(gathering.location)}`} 
+           href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(gathering.address || gathering.location)}`} 
            target="_blank" 
            rel="noopener noreferrer"
            className="flex items-center gap-3 px-6 py-3 bg-white text-slate-950 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:shadow-[0_0_30px_rgba(255,255,255,0.4)] hover:bg-indigo-50 transition-all group"

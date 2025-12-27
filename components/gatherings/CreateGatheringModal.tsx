@@ -15,14 +15,20 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
   const [formData, setFormData] = useState(() => {
     if (initialData) {
       const d = new Date(initialData.date);
-      // Format time as HH:MM safely
+      const e = initialData.endDate ? new Date(initialData.endDate) : new Date(d.getTime() + 2 * 60 * 60 * 1000); // Default +2 hours
+      
       const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      const endTimeStr = `${String(e.getHours()).padStart(2, '0')}:${String(e.getMinutes()).padStart(2, '0')}`;
+
       return {
         title: initialData.title,
         description: initialData.description,
         date: d.toISOString().split('T')[0],
         time: timeStr,
-        location: initialData.location,
+        endTime: endTimeStr,
+        location: initialData.location, // Venue Name
+        address: initialData.address || '', // Physical Address
+        linkUrl: initialData.linkUrl || '', // Virtual Link
         type: initialData.type,
         category: initialData.category,
         coverUrl: initialData.coverUrl,
@@ -35,7 +41,10 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
       description: '',
       date: '',
       time: '',
+      endTime: '',
       location: '',
+      address: '',
+      linkUrl: '',
       type: 'physical' as 'physical' | 'virtual',
       category: 'Social' as 'Social' | 'Tech' | 'Gaming' | 'Nightlife' | 'Workshop',
       coverUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=2000',
@@ -64,12 +73,31 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
 
   const handleSubmit = () => {
     if (!formData.title || !formData.date || !formData.time) return;
-    // Combine date and time into ISO string, adding seconds for precision/robustness
-    const combinedDate = new Date(`${formData.date}T${formData.time}:00`);
+    
+    // Combine date and time into ISO string
+    const startDateTime = new Date(`${formData.date}T${formData.time}:00`);
+    
+    // Calculate End Date Time
+    let endDateTime;
+    if (formData.endTime) {
+        endDateTime = new Date(`${formData.date}T${formData.endTime}:00`);
+        // Handle overnight events (if end time is before start time, assume next day)
+        if (endDateTime < startDateTime) {
+            endDateTime.setDate(endDateTime.getDate() + 1);
+        }
+    } else {
+        // Default 2 hours if not specified
+        endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
+    }
+
     onConfirm({
       ...formData,
       maxAttendees: formData.maxAttendees > 0 ? parseInt(formData.maxAttendees as any) : null,
-      date: combinedDate.toISOString()
+      date: startDateTime.toISOString(),
+      endDate: endDateTime.toISOString(),
+      // Ensure specific fields are cleaned based on type
+      address: formData.type === 'physical' ? formData.address : null,
+      linkUrl: formData.type === 'virtual' ? formData.linkUrl : null
     }, updateSeries);
   };
 
@@ -86,7 +114,7 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
         <div className="flex justify-between items-start mb-8 shrink-0">
            <div>
              <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic leading-none">{isEditing ? 'Update_Protocol' : 'Initiate_Gathering'}</h2>
-             <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] font-mono mt-2">Protocol Layer v4.0</p>
+             <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] font-mono mt-2">Protocol Layer v4.2</p>
            </div>
            <button onClick={onClose} className="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-2xl transition-all active:scale-90"><svg className="w-6 h-6 text-slate-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
         </div>
@@ -179,13 +207,47 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
                  </div>
               </div>
 
-              <div className="space-y-2">
-                 <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono ml-2">Coordinates / URL</label>
-                 <input 
-                   type="text" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})}
-                   placeholder={formData.type === 'physical' ? "London, UK..." : "https://meet.google.com/..."}
-                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white dark:focus:bg-slate-700 transition-all text-slate-900 dark:text-white"
-                 />
+              {/* Location Fields based on Type */}
+              <div className="space-y-4">
+                 {formData.type === 'physical' ? (
+                    <>
+                        <div className="space-y-2">
+                            <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono ml-2">Venue Name</label>
+                            <input 
+                            type="text" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})}
+                            placeholder="e.g. Cyber Cafe, Central Park..."
+                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white dark:focus:bg-slate-700 transition-all text-slate-900 dark:text-white"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono ml-2">Geospatial Address</label>
+                            <input 
+                            type="text" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})}
+                            placeholder="Full Street Address for Map Sync..."
+                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white dark:focus:bg-slate-700 transition-all text-slate-900 dark:text-white"
+                            />
+                        </div>
+                    </>
+                 ) : (
+                    <>
+                        <div className="space-y-2">
+                            <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono ml-2">Platform Name</label>
+                            <input 
+                            type="text" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})}
+                            placeholder="e.g. Zoom, Google Meet, VRChat..."
+                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white dark:focus:bg-slate-700 transition-all text-slate-900 dark:text-white"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono ml-2">Uplink URL</label>
+                            <input 
+                            type="url" value={formData.linkUrl} onChange={e => setFormData({...formData, linkUrl: e.target.value})}
+                            placeholder="https://..."
+                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white dark:focus:bg-slate-700 transition-all text-slate-900 dark:text-white"
+                            />
+                        </div>
+                    </>
+                 )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -197,9 +259,16 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
                     />
                  </div>
                  <div className="space-y-2">
-                    <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono ml-2">Temporal_Tick</label>
+                    <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono ml-2">Start Time</label>
                     <input 
                       type="time" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white dark:focus:bg-slate-700 transition-all text-slate-900 dark:text-white"
+                    />
+                 </div>
+                 <div className="col-span-2 space-y-2">
+                    <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono ml-2">End Time (Optional)</label>
+                    <input 
+                      type="time" value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})}
                       className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white dark:focus:bg-slate-700 transition-all text-slate-900 dark:text-white"
                     />
                  </div>

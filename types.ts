@@ -237,8 +237,11 @@ export interface Gathering {
   organizerAvatar: string;
   title: string;
   description: string;
-  date: string; // ISO String
-  location: string;
+  date: string; // ISO String Start Date
+  endDate?: string; // ISO String End Date
+  location: string; // Display Location Name (Venue Name or Platform)
+  address?: string; // Physical Address for Map
+  linkUrl?: string; // Virtual Meeting Link
   type: 'physical' | 'virtual';
   category: 'Social' | 'Tech' | 'Gaming' | 'Nightlife' | 'Workshop';
   coverUrl: string;

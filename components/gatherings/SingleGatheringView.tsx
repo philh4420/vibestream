@@ -84,6 +84,8 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
   }, [currentUser.id]);
 
   const dateObj = new Date(liveGathering.date);
+  const endDateObj = liveGathering.endDate ? new Date(liveGathering.endDate) : null;
+  
   const isOrganizer = liveGathering.organizerId === currentUser.id;
   const isAttending = liveGathering.attendees.includes(currentUser.id);
   const isWaitlisted = liveGathering.waitlist?.includes(currentUser.id);
@@ -97,17 +99,10 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
     .map(id => allUsers.find(u => u.id === id))
     .filter(Boolean) as User[];
 
-  const mutualNodes = attendeesList.filter(u => myFollowing.has(u.id) && u.id !== currentUser.id);
-  const globalNodes = attendeesList.filter(u => !myFollowing.has(u.id) && u.id !== currentUser.id);
-  // Add self to global nodes if attending, to ensure count matches
-  if (isAttending) {
-      const me = allUsers.find(u => u.id === currentUser.id);
-      if (me) globalNodes.unshift(me);
-  }
-
   // Format Date and Time
   const dateStr = dateObj.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const timeStr = dateObj.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+  const endTimeStr = endDateObj ? endDateObj.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) : null;
 
   const handleUpdate = async (data: any, updateSeries = false) => {
     if (!db) return;
@@ -131,6 +126,17 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
                 // Calculate new date for this specific instance based on the delta
                 const currentInstanceDate = new Date(g.date).getTime();
                 const shiftedDate = new Date(currentInstanceDate + timeDelta).toISOString();
+                
+                // Shift end date if it exists
+                let shiftedEndDate = null;
+                if (g.endDate) {
+                    const currentInstanceEndDate = new Date(g.endDate).getTime();
+                    shiftedEndDate = new Date(currentInstanceEndDate + timeDelta).toISOString();
+                } else if (data.endDate) {
+                    // If no existing end date but updating to have one, use the duration from the update payload
+                    const updateDuration = new Date(data.endDate).getTime() - new Date(data.date).getTime();
+                    shiftedEndDate = new Date(new Date(shiftedDate).getTime() + updateDuration).toISOString();
+                }
 
                 // Smart Title Update: Preserve session numbering if present
                 let newTitle = data.title;
@@ -144,11 +150,14 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
                     title: newTitle,
                     description: data.description,
                     location: data.location,
+                    address: data.address,
+                    linkUrl: data.linkUrl,
                     coverUrl: data.coverUrl,
                     category: data.category,
                     type: data.type,
                     maxAttendees: data.maxAttendees, // Sync capacity
-                    date: shiftedDate // Apply time shift
+                    date: shiftedDate, // Apply time shift
+                    endDate: shiftedEndDate
                 });
             });
             
@@ -200,7 +209,6 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
             const snap = await getDocs(q);
             snap.docs.forEach((d: any) => batch.delete(d.ref));
             
-            // Notify attendees of series cancellation (simplified: notify current attendees)
             attendeesToNotify.forEach(uid => {
                 batch.set(doc(collection(db, 'notifications')), {
                     type: 'system',
@@ -220,7 +228,6 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
         } else {
             await deleteDoc(doc(db, 'gatherings', liveGathering.id));
             
-            // Notify attendees of single cancellation
             if (attendeesToNotify.length > 0) {
                const notifBatch = writeBatch(db);
                attendeesToNotify.forEach(uid => {
@@ -290,14 +297,17 @@ export const SingleGatheringView: React.FC<SingleGatheringViewProps> = ({
 
   const handleSyncToCalendar = (type: 'google' | 'ics') => {
     const startDate = new Date(liveGathering.date);
-    const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000); 
+    const endDate = liveGathering.endDate 
+        ? new Date(liveGathering.endDate) 
+        : new Date(startDate.getTime() + 2 * 60 * 60 * 1000); 
+        
     const formatDate = (date: Date) => date.toISOString().replace(/-|:|\.\d\d\d/g, "");
     const title = liveGathering.title;
     const desc = `${liveGathering.description}\n\nProtocol ID: ${liveGathering.id}`;
-    const loc = liveGathering.location;
+    const loc = liveGathering.type === 'physical' ? (liveGathering.address || liveGathering.location) : (liveGathering.linkUrl || liveGathering.location);
 
     if (type === 'google') {
-        const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${formatDate(startDate)}/${formatDate(endDate)}&details=${encodeURIComponent(desc)}&location=${encodeURIComponent(loc)}`;
+        const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${formatDate(startDate)}/${formatDate(endDate)}&details=${encodeURIComponent(desc)}&location=${encodeURIComponent(loc || '')}`;
         window.open(url, '_blank');
     } else {
         const icsContent = `BEGIN:VCALENDAR
@@ -404,7 +414,7 @@ END:VCALENDAR`;
                {liveGathering.title}
             </h1>
             <p className="text-white/80 font-mono text-xs uppercase tracking-widest flex items-center gap-2">
-               <ICONS.Temporal /> {dateStr} @ {timeStr}
+               <ICONS.Temporal /> {dateStr} @ {timeStr} {endTimeStr ? `- ${endTimeStr}` : ''}
             </p>
          </div>
       </div>
@@ -443,26 +453,55 @@ END:VCALENDAR`;
                </p>
             </div>
 
-            {/* GEOSPATIAL PROJECTION (Only for Physical) */}
-            {liveGathering.type === 'physical' ? (
-                <div className="space-y-4">
-                    <div className="flex items-center gap-2 px-2">
-                        <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"/>
-                        <span className="text-[9px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest font-mono">Geospatial_Projection</span>
-                    </div>
-                    <GeospatialMap gathering={liveGathering} organizerAvatar={liveGathering.organizerAvatar} />
+            {/* LOCATION / ACCESS MODULE */}
+            <div className="space-y-4">
+                <div className="flex items-center gap-2 px-2">
+                    <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"/>
+                    <span className="text-[9px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest font-mono">
+                        {liveGathering.type === 'physical' ? 'Geospatial_Projection' : 'Virtual_Uplink'}
+                    </span>
                 </div>
-            ) : (
-                <div className="bg-purple-50/50 dark:bg-purple-900/20 rounded-[2.5rem] p-8 border border-purple-100 dark:border-purple-800 flex items-center justify-center min-h-[200px]">
-                    <div className="text-center">
-                        <div className="w-16 h-16 bg-white dark:bg-purple-900 rounded-2xl flex items-center justify-center mx-auto mb-4 text-purple-500 dark:text-purple-300 shadow-sm">
-                            <ICONS.Globe />
+
+                {liveGathering.type === 'physical' ? (
+                    <div className="space-y-4">
+                        <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+                            <div>
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Target_Venue</p>
+                                <p className="text-lg font-black text-slate-900 dark:text-white">{liveGathering.location}</p>
+                                <p className="text-xs font-mono text-slate-500 dark:text-slate-400 mt-1">{liveGathering.address || 'Address Restricted'}</p>
+                            </div>
                         </div>
-                        <h3 className="text-lg font-black text-purple-900 dark:text-purple-300 uppercase tracking-widest italic">VIRTUAL_NODE</h3>
-                        <p className="text-[10px] font-mono text-purple-400 dark:text-purple-500 uppercase mt-2">Location: Neural Cloud</p>
+                        <GeospatialMap gathering={liveGathering} organizerAvatar={liveGathering.organizerAvatar} />
                     </div>
-                </div>
-            )}
+                ) : (
+                    <div className="bg-purple-50/50 dark:bg-purple-900/20 rounded-[2.5rem] p-8 border border-purple-100 dark:border-purple-800 flex flex-col items-center justify-center min-h-[240px] text-center space-y-6">
+                        <div>
+                            <div className="w-16 h-16 bg-white dark:bg-purple-900 rounded-2xl flex items-center justify-center mx-auto mb-4 text-purple-500 dark:text-purple-300 shadow-sm">
+                                <ICONS.Globe />
+                            </div>
+                            <h3 className="text-lg font-black text-purple-900 dark:text-purple-300 uppercase tracking-widest italic">{liveGathering.location || 'VIRTUAL NODE'}</h3>
+                            <p className="text-[10px] font-mono text-purple-400 dark:text-purple-500 uppercase mt-2">Remote Access Protocol</p>
+                        </div>
+                        
+                        {liveGathering.linkUrl && isAttending && (
+                            <a 
+                                href={liveGathering.linkUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="px-8 py-4 bg-purple-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-purple-700 transition-all shadow-xl active:scale-95 flex items-center gap-3"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                LAUNCH_UPLINK
+                            </a>
+                        )}
+                        {liveGathering.type === 'virtual' && !isAttending && (
+                            <p className="text-[9px] font-black text-purple-400 uppercase tracking-widest bg-purple-100 dark:bg-purple-900/50 px-4 py-2 rounded-xl">
+                                RSVP to Access Meeting Link
+                            </p>
+                        )}
+                    </div>
+                )}
+            </div>
 
             {/* Host Card */}
             <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 flex items-center gap-5 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all">
@@ -597,12 +636,14 @@ END:VCALENDAR`;
             
                <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
                   <div className="flex flex-col gap-3">
+                     
+                     {/* NEURAL LOBBY BUTTON */}
                      {isAttending && liveGathering.linkedChatId && (
                          <button 
                            onClick={() => onOpenLobby(liveGathering.linkedChatId!)}
-                           className="w-full py-4 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-black text-[10px] uppercase tracking-[0.2em] hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all border border-indigo-200 dark:border-indigo-800"
+                           className="w-full py-4 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-black text-[10px] uppercase tracking-[0.2em] hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all border border-indigo-200 dark:border-indigo-800 flex items-center justify-center gap-2"
                          >
-                            ACCESS_NEURAL_LOBBY
+                            <ICONS.Messages /> ACCESS_NEURAL_LOBBY
                          </button>
                      )}
 
