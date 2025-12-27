@@ -10,6 +10,7 @@ import { uploadToCloudinary } from '../../services/cloudinary';
 import { EmojiPicker } from '../ui/EmojiPicker';
 import { GiphyPicker } from '../ui/GiphyPicker';
 import { GiphyGif } from '../../services/giphy';
+import { polishSignal, generateVisionFragment } from '../../services/ai';
 
 interface CreateSignalBoxProps {
   userData: User | null;
@@ -21,6 +22,10 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
   const [content, setContent] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
+  
+  // AI States
+  const [isRefining, setIsRefining] = useState(false);
+  const [isDreaming, setIsDreaming] = useState(false);
   
   // Attachments
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -45,45 +50,10 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
     setIsExpanded(true);
   };
 
-  // --- MENTION LOGIC ---
-  useEffect(() => {
-    if (mentionQuery === null) {
-      setMentionResults([]);
-      setShowMentionList(false);
-      return;
-    }
-
-    const searchUsers = async () => {
-      setIsSearching(true);
-      setShowMentionList(true); // Show dropdown immediately in loading state
-      
-      try {
-        const q = query(
-          collection(db, 'users'),
-          where('username', '>=', mentionQuery.toLowerCase()),
-          where('username', '<=', mentionQuery.toLowerCase() + '\uf8ff'),
-          limit(5)
-        );
-        
-        const snap = await getDocs(q);
-        const users = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as User));
-        setMentionResults(users);
-      } catch (e) {
-        console.error("Mention search failed", e);
-      } finally {
-        setIsSearching(false);
-      }
-    };
-
-    const timer = setTimeout(searchUsers, 300);
-    return () => clearTimeout(timer);
-  }, [mentionQuery]);
-
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     setContent(val);
 
-    // Detect @
     const cursor = e.target.selectionStart;
     const textBeforeCursor = val.slice(0, cursor);
     const lastWord = textBeforeCursor.split(/\s/).pop();
@@ -102,40 +72,98 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
     }
   };
 
+  // --- PICKER HANDLERS ---
+  // Fixed: Added handleEmojiSelect to insert emoji at current cursor position
+  const handleEmojiSelect = (emoji: string) => {
+    const input = textareaRef.current;
+    if (!input) {
+      setContent(prev => prev + emoji);
+      return;
+    }
+    const start = input.selectionStart || 0;
+    const end = input.selectionEnd || 0;
+    const text = input.value;
+    const before = text.substring(0, start);
+    const after = text.substring(end, text.length);
+    setContent(before + emoji + after);
+    setTimeout(() => {
+      input.focus();
+      input.setSelectionRange(start + emoji.length, start + emoji.length);
+    }, 0);
+  };
+
+  // Fixed: Added handleGifSelect to set GIF and clear other media
+  const handleGifSelect = (gif: GiphyGif) => {
+    setSelectedGif(gif);
+    setSelectedFiles([]);
+    setMediaPreviews([]);
+    setShowGifPicker(false);
+    setIsExpanded(true);
+  };
+
+  // AI Functionality
+  const handleRefine = async () => {
+    if (!content.trim() || isRefining) return;
+    setIsRefining(true);
+    try {
+      const polished = await polishSignal(content);
+      setContent(polished);
+      window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Signal Frequency Refined", type: 'success' } }));
+    } catch (e) {
+      window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Refinement Failed", type: 'error' } }));
+    } finally {
+      setIsRefining(false);
+    }
+  };
+
+  const handleDream = async () => {
+    const prompt = content.trim() || "A futuristic digital signal floating in a neural void";
+    if (isDreaming) return;
+    setIsDreaming(true);
+    window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Dreaming Vision Fragment...", type: 'info' } }));
+
+    try {
+      const base64 = await generateVisionFragment(prompt);
+      if (base64) {
+        // Convert base64 to file for Cloudinary upload to keep pipeline consistent
+        const res = await fetch(base64);
+        const blob = await res.blob();
+        const file = new File([blob], "ai_vision.png", { type: "image/png" });
+        
+        setSelectedFiles(prev => [...prev, file]);
+        setMediaPreviews(prev => [...prev, base64]);
+        setIsExpanded(true);
+        window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Vision Fragment Realized", type: 'success' } }));
+      }
+    } catch (e) {
+      window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Dream Synthesis Failed", type: 'error' } }));
+    } finally {
+      setIsDreaming(false);
+    }
+  };
+
   const selectMention = (user: User) => {
     const cursor = textareaRef.current?.selectionStart || 0;
     const textBefore = content.slice(0, cursor);
     const textAfter = content.slice(cursor);
     const lastWordIndex = textBefore.lastIndexOf('@');
     
-    // Check if we found the @ index correctly
     if (lastWordIndex !== -1) {
         const newContent = content.slice(0, lastWordIndex) + `@${user.username} ` + textAfter;
         setContent(newContent);
         setMentionedUserCache(prev => [...prev, user]);
     }
-    
     setMentionQuery(null);
     setShowMentionList(false);
-    
-    // Reset focus
-    setTimeout(() => {
-        textareaRef.current?.focus();
-    }, 10);
+    setTimeout(() => textareaRef.current?.focus(), 10);
   };
-
-  // --- END MENTION LOGIC ---
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const newFiles = Array.from(e.target.files);
       setSelectedFiles(prev => [...prev, ...newFiles]);
-      
-      // Generate previews
       const newPreviews = newFiles.map(file => URL.createObjectURL(file));
       setMediaPreviews(prev => [...prev, ...newPreviews]);
-      
-      // Clear GIF if regular media is selected
       setSelectedGif(null);
       setIsExpanded(true);
     }
@@ -149,22 +177,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
     });
   };
 
-  const removeGif = () => {
-    setSelectedGif(null);
-  };
-
-  const handleGifSelect = (gif: GiphyGif) => {
-    setSelectedGif(gif);
-    setShowGifPicker(false);
-    setSelectedFiles([]);
-    setMediaPreviews([]);
-    setIsExpanded(true);
-  };
-
-  const handleEmojiSelect = (emoji: string) => {
-    setContent(prev => prev + emoji);
-  };
-
   const handlePost = async () => {
     if ((!content.trim() && selectedFiles.length === 0 && !selectedGif) || !userData || !db) return;
 
@@ -172,12 +184,9 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
     const mediaItems: { type: 'image' | 'video'; url: string }[] = [];
 
     try {
-      // 1. Upload Files
       if (selectedFiles.length > 0) {
-        window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: `Uploading ${selectedFiles.length} artifacts...`, type: 'info' } }));
         const uploadPromises = selectedFiles.map(file => uploadToCloudinary(file));
         const urls = await Promise.all(uploadPromises);
-        
         urls.forEach((url, index) => {
           mediaItems.push({
             type: selectedFiles[index].type.startsWith('video/') ? 'video' : 'image',
@@ -186,15 +195,10 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         });
       }
 
-      // 2. Handle GIF
       if (selectedGif) {
-        mediaItems.push({
-          type: 'image',
-          url: selectedGif.images.original.url
-        });
+        mediaItems.push({ type: 'image', url: selectedGif.images.original.url });
       }
 
-      // 3. Create Post
       const postRef = await addDoc(collection(db, 'posts'), {
         authorId: userData.id,
         authorName: userData.displayName,
@@ -210,7 +214,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         likedBy: []
       });
 
-      // 4. Process Mentions
       const finalContent = content.trim();
       const mentionsToNotify = mentionedUserCache.filter(u => finalContent.includes(`@${u.username}`));
       const uniqueMentions = Array.from(new Set(mentionsToNotify.map(u => u.id)))
@@ -233,7 +236,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         }
       }
 
-      // 5. Reset
       setContent('');
       setSelectedFiles([]);
       setMediaPreviews([]);
@@ -242,14 +244,9 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
       setShowEmojiPicker(false);
       setShowGifPicker(false);
       setMentionedUserCache([]);
-      setMentionQuery(null);
-      setShowMentionList(false);
-      
       window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Signal Broadcasted Successfully", type: 'success' } }));
-
     } catch (error) {
-      console.error(error);
-      window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Broadcast Failed: Uplink Error", type: 'error' } }));
+      window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Broadcast Failed", type: 'error' } }));
     } finally {
       setIsPosting(false);
     }
@@ -265,7 +262,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
   return (
     <div className={`bg-white dark:bg-slate-900 border-precision rounded-[3rem] p-6 md:p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)] hover:shadow-[0_30px_60px_-12px_rgba(0,0,0,0.08)] transition-all duration-500 group relative z-40 ${isExpanded ? 'ring-2 ring-indigo-500/20' : ''}`}>
       
-      {/* Top Input Area */}
       <div className="flex gap-6 relative">
         <div className="relative shrink-0">
           <img 
@@ -287,7 +283,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
             rows={1}
           />
 
-          {/* MENTION DROPDOWN */}
           {showMentionList && (
             <div className="absolute top-full left-0 z-50 w-64 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl mt-2 overflow-hidden animate-in fade-in slide-in-from-top-2">
                 <div className="px-3 py-2 bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
@@ -295,18 +290,11 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
                       {isSearching ? 'Scanning_Grid...' : 'Neural_Lookup'}
                     </span>
                 </div>
-                
                 {isSearching ? (
-                   <div className="p-4 text-center">
-                      <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                   </div>
+                   <div className="p-4 text-center"><div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" /></div>
                 ) : mentionResults.length > 0 ? (
                    mentionResults.map(user => (
-                    <button
-                        key={user.id}
-                        onClick={() => selectMention(user)}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors text-left group"
-                    >
+                    <button key={user.id} onClick={() => selectMention(user)} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors text-left group">
                         <img src={user.avatarUrl} className="w-8 h-8 rounded-lg object-cover" alt="" />
                         <div className="min-w-0">
                             <div className="flex items-center gap-1">
@@ -318,39 +306,29 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
                     </button>
                    ))
                 ) : (
-                   <div className="px-4 py-3 text-[10px] text-slate-400 dark:text-slate-500 italic text-center">
-                      No matching nodes found.
-                   </div>
+                   <div className="px-4 py-3 text-[10px] text-slate-400 dark:text-slate-500 italic text-center">No matching nodes.</div>
                 )}
             </div>
           )}
         </div>
       </div>
 
-      {/* Media Previews */}
       {(mediaPreviews.length > 0 || selectedGif) && (
         <div className="mt-6 mb-4 pl-[calc(4rem+1.5rem)]">
           <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
             {mediaPreviews.map((url, idx) => (
               <div key={idx} className="relative shrink-0 group/media">
                 <img src={url} className="h-32 w-32 object-cover rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm" alt="Preview" />
-                <button 
-                  onClick={() => removeMedia(idx)}
-                  className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600 transition-all opacity-0 group-hover/media:opacity-100"
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+                <button onClick={() => removeMedia(idx)} className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600 transition-all opacity-0 group-hover/media:opacity-100">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
             ))}
             {selectedGif && (
-              <div className="relative shrink-0 group/media">
+              <div key="gif-preview" className="relative shrink-0 group/media">
                 <img src={selectedGif.images.fixed_height.url} className="h-32 w-auto object-cover rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm" alt="GIF" />
-                <div className="absolute bottom-2 left-2 bg-black/50 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">GIF</div>
-                <button 
-                  onClick={removeGif}
-                  className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600 transition-all opacity-0 group-hover/media:opacity-100"
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+                <button onClick={() => setSelectedGif(null)} className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600 transition-all opacity-0 group-hover/media:opacity-100">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
             )}
@@ -358,66 +336,56 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         </div>
       )}
 
-      {/* Action Toolbar (Visible on Expand) */}
       {isExpanded && (
         <div className="mt-4 pl-[calc(4rem+1.5rem)] flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-4 animate-in fade-in slide-in-from-top-2 duration-300">
           
           <div className="flex items-center gap-1">
-            {/* Media Upload */}
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              className="p-2.5 rounded-xl hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-              title="Upload Media"
-            >
+            <button onClick={() => fileInputRef.current?.click()} className="p-2.5 rounded-xl hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" title="Upload Media">
               <div className="scale-90"><ICONS.Create /></div>
             </button>
             
-            {/* GIF Picker */}
-            <button 
-              onClick={() => { setShowGifPicker(!showGifPicker); setShowEmojiPicker(false); }}
-              className={`p-2.5 rounded-xl transition-colors ${showGifPicker ? 'bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400' : 'hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400'}`}
-              title="Add GIF"
-            >
+            <button onClick={() => { setShowGifPicker(!showGifPicker); setShowEmojiPicker(false); }} className={`p-2.5 rounded-xl transition-colors ${showGifPicker ? 'bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400' : 'hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600'}`} title="Add GIF">
               <span className="text-[10px] font-black font-mono">GIF</span>
             </button>
 
-            {/* Emoji Picker */}
-            <button 
-              onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowGifPicker(false); }}
-              className={`p-2.5 rounded-xl transition-colors ${showEmojiPicker ? 'bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400' : 'hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400'}`}
-              title="Add Emoji"
-            >
+            <button onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowGifPicker(false); }} className={`p-2.5 rounded-xl transition-colors ${showEmojiPicker ? 'bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400' : 'hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400'}`} title="Add Emoji">
               <span className="text-xl leading-none">😊</span>
+            </button>
+
+            {/* AI TOOLS */}
+            <div className="w-px h-6 bg-slate-100 dark:bg-slate-800 mx-2" />
+            
+            <button 
+              onClick={handleRefine}
+              disabled={!content.trim() || isRefining}
+              className={`p-2.5 rounded-xl transition-all ${isRefining ? 'bg-indigo-600 text-white animate-pulse' : 'text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-600'} active:scale-90 disabled:opacity-30`}
+              title="Refine Signal (AI)"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" /></svg>
+            </button>
+
+            <button 
+              onClick={handleDream}
+              disabled={isDreaming}
+              className={`p-2.5 rounded-xl transition-all ${isDreaming ? 'bg-purple-600 text-white animate-pulse' : 'text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600'} active:scale-90 disabled:opacity-30`}
+              title="Generate Vision Fragment (AI)"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09ZM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456Z" /></svg>
             </button>
           </div>
 
           <div className="flex items-center gap-4">
-             {content.length > 280 && (
-                <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest font-mono">Deep_Signal</span>
-             )}
-             
              <button 
                 onClick={handlePost}
                 disabled={isPosting || (!content.trim() && selectedFiles.length === 0 && !selectedGif)}
-                className="px-8 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[1.2rem] font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-indigo-600 dark:hover:bg-indigo-400 dark:hover:text-white transition-all active:scale-95 disabled:opacity-50 disabled:scale-100 flex items-center gap-2"
+                className="px-8 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[1.2rem] font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-indigo-600 dark:hover:bg-indigo-400 dark:hover:text-white transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
              >
-                {isPosting ? (
-                  <>
-                    <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    SENDING...
-                  </>
-                ) : (
-                  <>
-                    BROADCAST
-                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                  </>
-                )}
+                {isPosting ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>BROADCAST <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" /></>}
              </button>
           </div>
         </div>
       )}
 
-      {/* FIXED PICKERS VIA PORTAL */}
       {(showEmojiPicker || showGifPicker) && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="absolute inset-0 bg-transparent" onClick={() => { setShowEmojiPicker(false); setShowGifPicker(false); }} />
@@ -429,15 +397,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         document.body
       )}
 
-      {/* Hidden File Input */}
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        className="hidden" 
-        multiple 
-        accept="image/*,video/*" 
-        onChange={handleFileSelect} 
-      />
+      <input type="file" ref={fileInputRef} className="hidden" multiple accept="image/*,video/*" onChange={handleFileSelect} />
     </div>
   );
 };

@@ -8,9 +8,7 @@ import { NeuralInsight } from "../types";
  */
 export const generateNeuralInsight = async (content: string): Promise<NeuralInsight> => {
   try {
-    // Obtain the key directly from the required environment variable
     const apiKey = process.env.API_KEY;
-
     if (!apiKey || apiKey === 'undefined') {
       throw new Error("API_KEY_NOT_SYNCHRONIZED");
     }
@@ -55,17 +53,61 @@ export const generateNeuralInsight = async (content: string): Promise<NeuralInsi
     return JSON.parse(text) as NeuralInsight;
   } catch (error: any) {
     console.error("Neural Analysis Failed:", error);
-    
-    // Check for specific "Requested entity was not found" error to help reset state
-    if (error.message?.includes("Requested entity was not found")) {
-        console.warn("Grid Authority: API Key entity mismatch. Check project configuration.");
-    }
-
     return {
       vibe: "Static Detected",
       keywords: ["Error", "Bypass", "Overflow"],
       impact: "low",
       summary: "The neural uplink encountered a decryption error. Signal quality compromised."
     };
+  }
+};
+
+/**
+ * Polish Signal: Refines draft text to be more engaging and futuristic.
+ */
+export const polishSignal = async (content: string): Promise<string> => {
+  try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: `Refine this social media post to be more high-quality, engaging, and have a futuristic '2026 digital' aesthetic. Maintain the original meaning but improve the impact. Content: "${content}"`,
+      config: {
+        systemInstruction: "You are a professional social media engineer. Rewrite the input to be punchy, clear, and impactful for a high-tech audience. No hashtags unless already present."
+      }
+    });
+    return response.text || content;
+  } catch (error) {
+    console.error("Signal Polish Failed:", error);
+    return content;
+  }
+};
+
+/**
+ * Generate Vision Fragment: Creates a base64 image from a text prompt.
+ */
+export const generateVisionFragment = async (prompt: string): Promise<string | null> => {
+  try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: {
+        parts: [{ text: `Generate a high-fidelity visual fragment illustrating: ${prompt}. Aesthetic: Futuristic, cyberpunk, 2026 social media style.` }]
+      },
+      config: {
+        imageConfig: {
+          aspectRatio: "16:9"
+        }
+      }
+    });
+
+    for (const part of response.candidates[0].content.parts) {
+      if (part.inlineData) {
+        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error("Vision Generation Failed:", error);
+    return null;
   }
 };

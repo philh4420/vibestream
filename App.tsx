@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { auth, db } from './services/firebase';
 import * as FirebaseAuth from 'firebase/auth';
@@ -57,6 +58,7 @@ import { SignalTrail } from './components/ui/SignalTrail';
 import { fetchWeather } from './services/weather';
 import { uploadToCloudinary } from './services/cloudinary';
 import { NeuralLinkOverlay } from './components/messages/NeuralLinkOverlay';
+import { NeuralInsightDrawer } from './components/feed/NeuralInsightDrawer';
 
 const App: React.FC = () => {
   // Auth State
@@ -84,6 +86,7 @@ const App: React.FC = () => {
   const [activeStreamId, setActiveStreamId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isNeuralLinkOpen, setIsNeuralLinkOpen] = useState(false);
+  const [analyzingPost, setAnalyzingPost] = useState<Post | null>(null);
 
   // Derived State
   const blockedIds = useMemo(() => new Set(userData?.settings?.safety?.hiddenWords || []), [userData]);
@@ -148,9 +151,8 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [userData?.location]);
 
-  // Toast System Handler (dispatched via custom events in components)
+  // Toast System Handler
   const addToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
-    const id = Math.random().toString(36).substring(2, 9);
     window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: message, type } }));
   }, []);
 
@@ -158,13 +160,16 @@ const App: React.FC = () => {
   useEffect(() => {
     const handleViewPost = (e: any) => setViewingPost(e.detail.post);
     const handleNavigate = (e: any) => setActiveRoute(e.detail.route);
+    const handleAnalyze = (e: any) => setAnalyzingPost(e.detail.post);
     
     window.addEventListener('vibe-view-post', handleViewPost);
     window.addEventListener('vibe-navigate', handleNavigate);
+    window.addEventListener('vibe-analyze-post', handleAnalyze);
     
     return () => {
       window.removeEventListener('vibe-view-post', handleViewPost);
       window.removeEventListener('vibe-navigate', handleNavigate);
+      window.removeEventListener('vibe-analyze-post', handleAnalyze);
     };
   }, []);
 
@@ -241,12 +246,13 @@ const App: React.FC = () => {
   }
 
   if (!user) {
-    return <LandingPage onEnter={() => setActiveRoute(AppRoute.FEED)} systemSettings={systemSettings || { maintenanceMode: false, registrationDisabled: false, minTrustTier: 'Gamma', featureFlags: {}, lastUpdatedBy: '', updatedAt: '', featureFlags: {} } as any} />;
+    // Fixed: Removed duplicate featureFlags key in the fallback object literal
+    return <LandingPage onEnter={() => setActiveRoute(AppRoute.FEED)} systemSettings={systemSettings || { maintenanceMode: false, registrationDisabled: false, minTrustTier: 'Gamma', featureFlags: {}, lastUpdatedBy: '', updatedAt: '' } as any} />;
   }
 
   return (
     <div className="h-full w-full relative">
-      <SignalTrail activeTrail={userData?.cosmetics?.activeTrail} />
+      <SignalTrail userData={userData} />
       
       <Layout 
         activeRoute={activeRoute}
@@ -428,6 +434,10 @@ const App: React.FC = () => {
 
       {isNeuralLinkOpen && (
         <NeuralLinkOverlay userData={userData!} onClose={() => setIsNeuralLinkOpen(false)} />
+      )}
+
+      {analyzingPost && (
+        <NeuralInsightDrawer post={analyzingPost} onClose={() => setAnalyzingPost(null)} />
       )}
     </div>
   );
