@@ -34,6 +34,7 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
   const [loading, setLoading] = useState(true);
   const [activeClusterId, setActiveClusterId] = useState<string | null>(null);
 
+  // Deep Link Logic: Handle incoming initialClusterId (e.g. from Neural Lobby button)
   useEffect(() => {
     if (initialClusterId) {
         setActiveClusterId(initialClusterId);

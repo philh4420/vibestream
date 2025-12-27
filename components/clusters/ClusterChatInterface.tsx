@@ -62,7 +62,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const isAdmin = chatData.clusterAdmin === currentUser.id;
+  const isAdmin = chatData?.clusterAdmin === currentUser?.id;
 
   // --- Real-time Messages ---
   useEffect(() => {
@@ -103,7 +103,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
         senderId: currentUser.id,
         text: msgText,
         timestamp: serverTimestamp(),
-        isRead: false // Clusters logic might differ for read receipts, simple implementation here
+        isRead: false 
       };
 
       if (mediaItems.length > 0) {
@@ -118,9 +118,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
         lastMessageTimestamp: serverTimestamp() 
       });
 
-      // Simple Cluster Notification (Notify all except sender)
-      // Note: For large clusters, this might need cloud functions to avoid client-side heavy lifting
-      if (chatData.participants.length < 20) {
+      if (chatData?.participants?.length < 20) {
           const recipients = chatData.participants.filter(pId => pId !== currentUser.id);
           const notificationText = msgText 
             ? `in ${chatData.clusterName}: "${msgText.substring(0, 30)}..."`
@@ -128,7 +126,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
 
           for (const recipientId of recipients) {
              addDoc(collection(db, 'notifications'), {
-               type: 'cluster_invite', // Using existing type mapping or 'message'
+               type: 'cluster_invite', 
                fromUserId: currentUser.id,
                fromUserName: currentUser.displayName,
                fromUserAvatar: currentUser.avatarUrl,
@@ -245,6 +243,8 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
     inputRef.current?.focus();
   };
 
+  if (!chatData) return <div className="p-20 text-center opacity-40 uppercase font-black font-mono tracking-[0.3em]">Synching_Lobby...</div>;
+
   return (
     <div className="flex flex-col h-full bg-[#fdfdfe] dark:bg-slate-900 relative">
       {/* HEADER */}
@@ -257,7 +257,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
             <img src={chatData.clusterAvatar} className="w-12 h-12 rounded-[1.2rem] object-cover border shadow-sm" alt="" />
             <div>
               <h3 className="font-black text-xl uppercase tracking-tighter italic leading-none text-slate-900 dark:text-white">{chatData.clusterName}</h3>
-              <p className="text-[9px] font-black uppercase tracking-widest font-mono text-indigo-500 mt-1">{chatData.participants.length} Nodes Online</p>
+              <p className="text-[9px] font-black uppercase tracking-widest font-mono text-indigo-500 mt-1">{(chatData.participants || []).length} Nodes Online</p>
             </div>
           </div>
         </div>
@@ -272,14 +272,14 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
       </div>
 
       <div className="flex flex-1 overflow-hidden relative">
-        {/* MEMBERS SIDEBAR (Overlay on Mobile, Sidebar on Desktop) */}
+        {/* MEMBERS SIDEBAR */}
         {showMembers && (
             <div className="absolute inset-y-0 right-0 w-72 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-l border-slate-100 dark:border-slate-800 z-30 p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4 font-mono">Cluster_Nodes</h4>
                <div className="space-y-3">
-                  {chatData.participants.map(pId => {
-                      const user = chatData.participantData[pId] || allUsers.find(u => u.id === pId);
-                      const isMe = pId === currentUser.id;
+                  {(chatData.participants || []).map(pId => {
+                      const user = chatData.participantData?.[pId] || allUsers.find(u => u.id === pId);
+                      const isMe = pId === currentUser?.id;
                       const isUserAdmin = chatData.clusterAdmin === pId;
 
                       return (
@@ -306,7 +306,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
         {/* MESSAGE STREAM */}
         <div className="flex-1 overflow-y-auto no-scrollbar scroll-container px-4 md:px-8 pt-6 pb-32 space-y-6">
             {messages.map((msg, idx) => {
-                const isMe = msg.senderId === currentUser.id;
+                const isMe = msg.senderId === currentUser?.id;
                 const isSystem = msg.senderId === 'SYSTEM';
                 const showAvatar = idx === 0 || messages[idx-1]?.senderId !== msg.senderId;
                 
@@ -320,7 +320,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
                     );
                 }
 
-                const sender = chatData.participantData[msg.senderId] || allUsers.find(u => u.id === msg.senderId);
+                const sender = chatData.participantData?.[msg.senderId] || allUsers.find(u => u.id === msg.senderId);
 
                 return (
                     <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} group/msg animate-in fade-in slide-in-from-bottom-2 duration-300`}>

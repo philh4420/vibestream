@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import * as FirebaseAuth from 'firebase/auth';
 const { onAuthStateChanged, signOut } = FirebaseAuth as any;
@@ -140,6 +141,7 @@ const PrismInjector = ({ colorId }: { colorId: string | undefined }) => {
 export default function App() {
   const [user, setUser] = useState<any>(null);
   const [userData, setUserData] = useState<User | null>(null);
+  const [targetClusterId, setTargetClusterId] = useState<string | null>(null);
   
   const [activeRoute, setActiveRoute] = useState<AppRoute>(() => {
     try {
@@ -581,6 +583,12 @@ export default function App() {
     }
   };
 
+  const handleOpenLobby = (id: string) => {
+    setTargetClusterId(id);
+    setActiveRoute(AppRoute.CLUSTERS);
+    addToast("Connecting to Neural Lobby...", "info");
+  };
+
   const isFeatureEnabled = (route: AppRoute) => {
     if (userData?.role === 'admin') return true;
     return systemSettings.featureFlags?.[route] !== false;
@@ -746,6 +754,7 @@ export default function App() {
               onOpenChat={() => {}}
               allUsers={filteredUsers}
               weather={weather}
+              initialClusterId={targetClusterId}
             />
         )}
 
@@ -785,7 +794,7 @@ export default function App() {
               locale="en-GB"
               addToast={addToast}
               allUsers={filteredUsers}
-              onOpenLobby={(id) => { console.log('Open Lobby', id); }}
+              onOpenLobby={handleOpenLobby}
               onViewGathering={(g) => { setSelectedGathering(g); setActiveRoute(AppRoute.SINGLE_GATHERING); }}
               onRSVP={handleRSVP}
             />
@@ -800,7 +809,7 @@ export default function App() {
               onBack={() => setActiveRoute(AppRoute.GATHERINGS)}
               onDelete={() => {}}
               onRSVP={handleRSVP}
-              onOpenLobby={(id) => { console.log('Open Lobby', id); }}
+              onOpenLobby={handleOpenLobby}
             />
         )}
 
