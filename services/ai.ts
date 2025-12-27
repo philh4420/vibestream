@@ -2,11 +2,21 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { NeuralInsight } from "../types";
 
-// Always use new GoogleGenAI({ apiKey: process.env.API_KEY })
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
+/**
+ * VibeStream Neural Analysis Engine
+ * Strictly uses process.env.API_KEY as per core requirements.
+ */
 export const generateNeuralInsight = async (content: string): Promise<NeuralInsight> => {
   try {
+    // Obtain the key directly from the required environment variable
+    const apiKey = process.env.API_KEY;
+
+    if (!apiKey || apiKey === 'undefined') {
+      throw new Error("API_KEY_NOT_SYNCHRONIZED");
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+    
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Perform a high-level neural analysis on the following social media broadcast: "${content}"`,
@@ -43,8 +53,14 @@ export const generateNeuralInsight = async (content: string): Promise<NeuralInsi
     const text = response.text;
     if (!text) throw new Error("EMPTY_SIGNAL_RESPONSE");
     return JSON.parse(text) as NeuralInsight;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Neural Analysis Failed:", error);
+    
+    // Check for specific "Requested entity was not found" error to help reset state
+    if (error.message?.includes("Requested entity was not found")) {
+        console.warn("Grid Authority: API Key entity mismatch. Check project configuration.");
+    }
+
     return {
       vibe: "Static Detected",
       keywords: ["Error", "Bypass", "Overflow"],
