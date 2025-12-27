@@ -45,11 +45,14 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
   useEffect(() => {
     if (!db) return;
     
-    const now = new Date().toISOString();
-    // Fetch upcoming gatherings
+    // Fetch gatherings from the beginning of today (local time) to ensure active events are shown
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const queryDate = startOfDay.toISOString();
+
     const q = query(
       collection(db, 'gatherings'),
-      where('date', '>=', now),
+      where('date', '>=', queryDate),
       orderBy('date', 'asc')
     );
 
@@ -351,7 +354,7 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
                                );
                              })}
                              {gathering.attendees.length > 4 && (
-                               <div className="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-[8px] font-black shadow-sm">
+                               <div className="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-[8px] font-black z-10 shadow-md">
                                  +{gathering.attendees.length - 4}
                                </div>
                              )}

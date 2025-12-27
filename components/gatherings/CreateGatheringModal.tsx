@@ -64,8 +64,8 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
 
   const handleSubmit = () => {
     if (!formData.title || !formData.date || !formData.time) return;
-    // Combine date and time into ISO string
-    const combinedDate = new Date(`${formData.date}T${formData.time}`);
+    // Combine date and time into ISO string, adding seconds for precision/robustness
+    const combinedDate = new Date(`${formData.date}T${formData.time}:00`);
     onConfirm({
       ...formData,
       maxAttendees: formData.maxAttendees > 0 ? parseInt(formData.maxAttendees as any) : null,
