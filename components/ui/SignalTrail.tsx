@@ -14,14 +14,29 @@ export const SignalTrail: React.FC<SignalTrailProps> = ({ activeTrail }) => {
     if (!activeTrail || !trailContainer.current) return;
 
     const handleMove = (e: MouseEvent | TouchEvent) => {
-      const x = (e as MouseEvent).clientX || (e as TouchEvent).touches[0].clientX;
-      const y = (e as MouseEvent).clientY || (e as TouchEvent).touches[0].clientY;
+      let clientX: number;
+      let clientY: number;
+
+      // Safely distinguish between TouchEvent and MouseEvent
+      if ('touches' in e) {
+        // It's a TouchEvent
+        if (e.touches.length > 0) {
+          clientX = e.touches[0].clientX;
+          clientY = e.touches[0].clientY;
+        } else {
+          return; // No touch points available
+        }
+      } else {
+        // It's a MouseEvent
+        clientX = (e as MouseEvent).clientX;
+        clientY = (e as MouseEvent).clientY;
+      }
 
       // Throttle creation distance
-      const dist = Math.hypot(x - lastPos.current.x, y - lastPos.current.y);
+      const dist = Math.hypot(clientX - lastPos.current.x, clientY - lastPos.current.y);
       if (dist > 15) { 
-        createParticle(x, y);
-        lastPos.current = { x, y };
+        createParticle(clientX, clientY);
+        lastPos.current = { x: clientX, y: clientY };
       }
     };
 
