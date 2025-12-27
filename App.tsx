@@ -594,65 +594,48 @@ export default function App() {
     try {
         const chatRef = doc(db, 'chats', chatId);
         
-        // Attempt to read to check current state
-        // We use a try-catch block specifically for the read to handle permission errors gracefully
-        let currentParticipants: string[] = [];
-        
-        try {
-            const chatSnap = await getDoc(chatRef);
-            if (chatSnap.exists()) {
-                currentParticipants = chatSnap.data().participants || [];
-            }
-        } catch (readError) {
-            // Ignore read errors, proceed to attempt join via write-only
-            console.warn("Lobby read restricted, attempting blind join sequence.");
-        }
-
-        const isParticipant = currentParticipants.includes(userData.id);
-
-        if (!isParticipant) {
-            // Join Protocol: Add current user to participants
-            const batch = writeBatch(db);
-            
-            // Use set with merge to handle both "create if missing" and "update if exists"
-            // Note: If permission to read was denied but doc exists, we need to hope 'isEventLobby' is true on server
-            batch.set(chatRef, {
-                participants: arrayUnion(userData.id),
-                [`participantData.${userData.id}`]: {
+        // Atomic Upsert: Create or Update in one go.
+        // We set isEventLobby to true to ensure it's accessible.
+        // We add the user to participants.
+        await setDoc(chatRef, {
+            participants: arrayUnion(userData.id),
+            participantData: {
+                [userData.id]: {
                     displayName: userData.displayName,
                     avatarUrl: userData.avatarUrl
-                },
-                isEventLobby: true, // Ensure this flag is present/maintained
-                clusterName: `LOBBY: ${gathering.title}`, // Ensure name is synced
-                clusterAvatar: gathering.coverUrl // Ensure avatar is synced
-            }, { merge: true });
+                }
+            },
+            isEventLobby: true, // Ensure flag
+            clusterName: `LOBBY: ${gathering.title}`,
+            clusterAvatar: gathering.coverUrl
+        }, { merge: true });
 
-            // Notify all other RSVP'd attendees that a node has entered the lobby
-            // We use gathering.attendees from the passed object as the source of truth for notifications
-            const recipients = gathering.attendees.filter(id => id !== userData.id);
-            
-            recipients.forEach(attId => {
-                const notifRef = doc(collection(db, 'notifications'));
-                batch.set(notifRef, {
-                    type: 'system',
-                    fromUserId: userData.id,
-                    fromUserName: userData.displayName,
-                    fromUserAvatar: userData.avatarUrl,
-                    toUserId: attId,
-                    targetId: chatId,
-                    text: `entered the Neural Lobby for "${gathering.title}"`,
-                    isRead: false,
-                    timestamp: serverTimestamp(),
-                    pulseFrequency: 'velocity'
-                });
-            });
-
-            await batch.commit();
-            addToast("Handshake Confirmed: Neural Lobby Synced", "success");
-        }
-
+        // NAVIGATION
         setTargetClusterId(chatId);
         setActiveRoute(AppRoute.CLUSTERS);
+
+        // NOTIFICATIONS (Optional - sending to all attendees)
+        const recipients = gathering.attendees.filter(id => id !== userData.id);
+        const batch = writeBatch(db);
+        
+        recipients.forEach(attId => {
+            const notifRef = doc(collection(db, 'notifications'));
+            batch.set(notifRef, {
+                type: 'system',
+                fromUserId: userData.id,
+                fromUserName: userData.displayName,
+                fromUserAvatar: userData.avatarUrl,
+                toUserId: attId,
+                targetId: chatId,
+                text: `entered the Neural Lobby for "${gathering.title}"`,
+                isRead: false,
+                timestamp: serverTimestamp(),
+                pulseFrequency: 'velocity'
+            });
+        });
+
+        await batch.commit();
+        addToast("Handshake Confirmed: Neural Lobby Synced", "success");
 
     } catch (e) {
         console.error("Lobby Join Error:", e);

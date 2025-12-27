@@ -640,6 +640,7 @@ END:VCALENDAR`;
                      {/* NEURAL LOBBY BUTTON */}
                      {isAttending && liveGathering.linkedChatId && (
                          <button 
+                           /* Ensure full gathering object is passed to satisfy robust join logic */
                            onClick={() => onOpenLobby(liveGathering)}
                            className="w-full py-4 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-black text-[10px] uppercase tracking-[0.2em] hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all border border-indigo-200 dark:border-indigo-800 flex items-center justify-center gap-2"
                          >

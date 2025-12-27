@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -208,22 +209,23 @@ service cloud.firestore {
     // -------------------------------------------------------------------------
 
     match /chats/{chatId} {
-      // Allow reading if node is participant OR if it is an Event Lobby (Gathering Lobby)
+      // Allow reading if node is participant OR if it is an Event Lobby (isEventLobby == true)
       allow read, list: if isAuthenticated() && (
         resource.data.participants.hasAny([request.auth.uid]) || 
-        (resource.data.keys().hasAny(['isEventLobby']) && resource.data.isEventLobby == true)
+        (resource.data.isEventLobby == true)
       );
       
       // Allow creation if user includes themselves
       allow create: if isAuthenticated() && request.resource.data.participants.hasAny([request.auth.uid]);
       
-      // Robust Update Rule for Joining Lobbies
+      // Trust-on-Demand Update Rule:
+      // Allows users to join public lobbies by writing themselves into the participants array
       allow update: if isAuthenticated() && (
-        // Case 1: User is already a participant in the existing doc
+        // Case 1: User is already a participant
         resource.data.participants.hasAny([request.auth.uid]) ||
-        // Case 2: It is an Event Lobby, and the NEW data includes the user (Joining)
+        // Case 2: It is an Event Lobby AND user is adding themselves
         (
-          (resource.data.keys().hasAny(['isEventLobby']) && resource.data.isEventLobby == true) && 
+          resource.data.isEventLobby == true && 
           request.resource.data.participants.hasAny([request.auth.uid])
         ) ||
         // Case 3: Admin Override

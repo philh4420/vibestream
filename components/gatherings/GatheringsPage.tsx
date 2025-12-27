@@ -128,6 +128,7 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
 
         batch.set(newGatheringRef, gatheringPayload);
 
+        // Lobby Initialization
         batch.set(newChatRef, {
             participants: [currentUser.id],
             participantData: {
@@ -136,7 +137,7 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
             lastMessage: 'Neural Lobby initialized.',
             lastMessageTimestamp: serverTimestamp(),
             isCluster: true,
-            isEventLobby: true,
+            isEventLobby: true, // Required for public access via rules
             clusterName: `LOBBY: ${gatheringPayload.title}`,
             clusterAvatar: data.coverUrl,
             clusterAdmin: currentUser.id
