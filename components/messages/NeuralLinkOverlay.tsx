@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../../services/firebase';
-// Fixed: Using namespaced import for firebase/firestore to resolve "no exported member" errors
 import * as Firestore from 'firebase/firestore';
 const { 
   doc, 
@@ -43,7 +42,6 @@ export const NeuralLinkOverlay: React.FC<NeuralLinkOverlayProps> = ({ session, u
   const ringSoundRef = useRef<HTMLAudioElement | null>(null);
   const ringbackSoundRef = useRef<HTMLAudioElement | null>(null);
 
-  // Missed Call Tracking Refs
   const wasConnectedRef = useRef(false);
   const notificationSentRef = useRef(false);
 
@@ -51,9 +49,8 @@ export const NeuralLinkOverlay: React.FC<NeuralLinkOverlayProps> = ({ session, u
   const targetAvatar = isCaller ? session.receiverAvatar : session.callerAvatar;
   const targetName = isCaller ? session.receiverName : session.callerName;
 
-  // Notification Trigger
   const sendMissedCallNotification = async (reason: string) => {
-    if (!isCaller) return; // Only the caller logs the missed call for the receiver
+    if (!isCaller) return;
     
     try {
       await addDoc(collection(db, 'notifications'), {
@@ -73,12 +70,11 @@ export const NeuralLinkOverlay: React.FC<NeuralLinkOverlayProps> = ({ session, u
     }
   };
 
-  // 1. Initial Setup & Hardware
   useEffect(() => {
-    // 2026 High-Fidelity Tones (Different for Voice vs Video)
-    const voiceTone = 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg';
-    const videoTone = 'https://actions.google.com/sounds/v1/notifications/pizzicato_high.ogg';
-    const ringbackTone = 'https://actions.google.com/sounds/v1/foley/wind_chimes_short.ogg';
+    // FIX: Using stable sound sources to prevent 404
+    const voiceTone = 'https://www.soundjay.com/buttons/sounds/button-3.mp3';
+    const videoTone = 'https://www.soundjay.com/buttons/sounds/button-16.mp3';
+    const ringbackTone = 'https://www.soundjay.com/communication/sounds/dial-tone-1.mp3';
 
     ringSoundRef.current = new Audio(session.type === 'voice' ? voiceTone : videoTone);
     ringSoundRef.current.loop = true;
@@ -116,7 +112,6 @@ export const NeuralLinkOverlay: React.FC<NeuralLinkOverlayProps> = ({ session, u
       setCallStatus(data.status);
       
       if (data.status === 'rejected' || data.status === 'ended') {
-        // Missed Call Protocol: If we are the caller, never connected, and haven't logged it yet.
         if (isCaller && !wasConnectedRef.current && !notificationSentRef.current) {
            notificationSentRef.current = true;
            sendMissedCallNotification(data.status);
@@ -128,7 +123,6 @@ export const NeuralLinkOverlay: React.FC<NeuralLinkOverlayProps> = ({ session, u
     return () => { unsub(); cleanup(); };
   }, []);
 
-  // 2. WebRTC Handshake Sequence
   const initiateCallerHandshake = async (stream: MediaStream) => {
     const pc = new RTCPeerConnection(rtcConfig);
     pcRef.current = pc;
@@ -165,8 +159,6 @@ export const NeuralLinkOverlay: React.FC<NeuralLinkOverlayProps> = ({ session, u
 
   const handleAccept = async () => {
     if (!db || !localStreamRef.current) return;
-    
-    // Stop ringing on interaction
     ringSoundRef.current?.pause();
 
     const pc = new RTCPeerConnection(rtcConfig);
@@ -180,7 +172,7 @@ export const NeuralLinkOverlay: React.FC<NeuralLinkOverlayProps> = ({ session, u
     pc.ontrack = (e) => {
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = e.streams[0];
-        remoteVideoRef.current.play().catch(err => console.warn("Auto-play blocked by browser. User interaction required."));
+        remoteVideoRef.current.play().catch(err => console.warn("Auto-play blocked"));
       }
     };
 
@@ -203,7 +195,6 @@ export const NeuralLinkOverlay: React.FC<NeuralLinkOverlayProps> = ({ session, u
     }
   };
 
-  // 3. Status Listeners
   useEffect(() => {
     if (callStatus === 'ringing') {
       if (isCaller) ringbackSoundRef.current?.play().catch(() => {});
@@ -232,7 +223,6 @@ export const NeuralLinkOverlay: React.FC<NeuralLinkOverlayProps> = ({ session, u
 
   const handleTerminate = async () => {
     if (!db) return;
-    // Note: If we are terminating before connection, logic in snapshot listener will handle 'Missed Call' notification
     try { await updateDoc(doc(db, 'calls', session.id), { status: 'ended' }); } finally { cleanup(); }
   };
 
@@ -246,11 +236,7 @@ export const NeuralLinkOverlay: React.FC<NeuralLinkOverlayProps> = ({ session, u
 
   return (
     <div className="fixed inset-0 z-[5000] bg-slate-950/80 backdrop-blur-3xl flex items-center justify-center p-6 selection:bg-indigo-500 font-sans">
-      
-      {/* 1. PROFESSIONAL POD (Compact Design) */}
       <div className={`relative bg-slate-900 border border-white/10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] transition-all duration-700 overflow-hidden flex flex-col items-center ${isConnected ? 'w-full max-w-5xl h-[80dvh] rounded-[4rem]' : 'w-full max-w-sm rounded-[3rem] py-12 px-8'}`}>
-        
-        {/* Background Atmosphere */}
         {isConnected && (
           <div className="absolute inset-0 z-0">
              {session.type === 'video' ? (
@@ -268,12 +254,9 @@ export const NeuralLinkOverlay: React.FC<NeuralLinkOverlayProps> = ({ session, u
           </div>
         )}
 
-        {/* Remote Stream Playback (Hidden but must exist for audio) */}
-        <video ref={remoteVideoRef} autoPlay playsInline className={isConnected && session.type === 'video' ? "hidden" : "hidden"} />
+        <video ref={remoteVideoRef} autoPlay playsInline className="hidden" />
 
         <div className="relative z-10 flex flex-col items-center w-full h-full">
-           
-           {/* Header Section */}
            <div className={`flex flex-col items-center text-center transition-all duration-700 ${isConnected ? 'mt-12' : ''}`}>
               <div className="relative mb-6">
                 <div className={`absolute inset-0 rounded-full blur-3xl opacity-30 transition-colors ${isConnected ? 'bg-emerald-500' : 'bg-indigo-500'}`} />
@@ -301,17 +284,15 @@ export const NeuralLinkOverlay: React.FC<NeuralLinkOverlayProps> = ({ session, u
               </div>
            </div>
 
-           {/* Mobile-Centric Control Deck (Safe Area Integrated) */}
            <div className={`mt-auto w-full max-w-lg transition-all duration-500 px-6 ${isConnected ? 'pb-10' : 'pt-6'}`}>
               <div className="bg-white/10 backdrop-blur-3xl border border-white/10 p-3 md:p-5 rounded-[2.8rem] flex items-center justify-around gap-4 shadow-2xl">
-                 
                  {!isConnected && !isCaller ? (
                    <>
                      <button onClick={handleTerminate} className="flex-1 h-14 md:h-20 bg-rose-600/20 text-rose-500 rounded-[2rem] flex items-center justify-center hover:bg-rose-600 hover:text-white transition-all active:scale-90">
-                        <svg className="w-7 h-7 rotate-[135deg]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                        <svg className="w-7 h-7 rotate-[135deg]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={4}><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
                      </button>
                      <button onClick={handleAccept} className="flex-[2] h-14 md:h-20 bg-emerald-600 text-white rounded-[2rem] flex items-center justify-center gap-3 shadow-xl hover:bg-emerald-500 transition-all active:scale-95 animate-pulse">
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
                         <span className="font-black text-xs uppercase tracking-widest italic">Sync</span>
                      </button>
                    </>
@@ -319,30 +300,23 @@ export const NeuralLinkOverlay: React.FC<NeuralLinkOverlayProps> = ({ session, u
                    <>
                      <button onClick={() => setIsMuted(!isMuted)} className={`w-14 h-14 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all active:scale-90 border-2 ${isMuted ? 'bg-white text-slate-900 border-white' : 'bg-white/5 text-white border-white/10'}`}>
                         {isMuted ? (
-                          <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" /></svg>
+                          <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" /></svg>
                         ) : (
-                          <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" /></svg>
+                          <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" /></svg>
                         )}
                      </button>
-                     
                      <button onClick={handleTerminate} className="flex-1 h-14 md:h-20 bg-rose-600 text-white rounded-[2rem] flex items-center justify-center gap-3 shadow-xl hover:bg-rose-500 transition-all active:scale-95 group">
-                        <svg className="w-8 h-8 rotate-[135deg]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                        <svg className="w-8 h-8 rotate-[135deg]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={4}><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
                      </button>
-
                      <button disabled={session.type === 'voice'} onClick={() => setIsVideoOff(!isVideoOff)} className={`w-14 h-14 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all active:scale-90 border-2 ${session.type === 'voice' ? 'opacity-5 grayscale' : (isVideoOff ? 'bg-white text-slate-900 border-white' : 'bg-white/5 text-white border-white/10')}`}>
-                        <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M15.75 10.5l4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25z" /></svg>
+                        <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M15.75 10.5l4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25z" /></svg>
                      </button>
                    </>
                  )}
               </div>
-              <div className="mt-5 flex justify-center pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-                 <p className="text-[8px] font-black text-white/20 uppercase tracking-[0.5em] font-mono italic">GB_NOD_26_SECURE_SYNC</p>
-              </div>
            </div>
-
         </div>
 
-        {/* 2. LOCAL PIP MIRROR */}
         {isConnected && session.type === 'video' && (
           <div className="absolute top-10 right-10 w-28 md:w-48 aspect-[3/4] rounded-[2.5rem] overflow-hidden border border-white/20 shadow-2xl z-50">
              <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover mirror opacity-90" />
@@ -351,7 +325,6 @@ export const NeuralLinkOverlay: React.FC<NeuralLinkOverlayProps> = ({ session, u
              </div>
           </div>
         )}
-
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `

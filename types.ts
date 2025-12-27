@@ -148,6 +148,13 @@ export interface Comment {
   }[];
 }
 
+export interface NeuralInsight {
+  vibe: string;
+  keywords: string[];
+  impact: 'low' | 'moderate' | 'high' | 'critical';
+  summary: string;
+}
+
 export interface Post {
   id: string;
   authorId: string;
@@ -323,7 +330,8 @@ export enum AppRoute {
   RESILIENCE = 'resilience',
   SINGLE_POST = 'single_post',
   SUPPORT = 'support',
-  MARKETPLACE = 'marketplace'
+  MARKETPLACE = 'marketplace',
+  AI_HUB = 'ai_hub'
 }
 
 export interface ToastMessage {

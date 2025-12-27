@@ -194,8 +194,8 @@ export default function App() {
 
   // Initialize Sound
   useEffect(() => {
-    // FIX: Using a guaranteed stable Google Actions CDN URL to prevent 404
-    notificationSoundRef.current = new Audio('https://actions.google.com/sounds/v1/notifications/pizzicato_high.ogg');
+    // FIX: Using a guaranteed stable asset to resolve the 404 error
+    notificationSoundRef.current = new Audio('https://www.soundjay.com/buttons/sounds/button-16.mp3');
     notificationSoundRef.current.volume = 0.35;
   }, []);
 
@@ -265,8 +265,6 @@ export default function App() {
         setUser(authUser);
         const userRef = doc(db, 'users', authUser.uid);
 
-        // VibeStream 2026: Auto-restore presence on login
-        // Checks if user is stuck in 'Offline' state from last session and restores their preferred state
         getDoc(userRef).then(async (snap: any) => {
             if (snap.exists()) {
                 const data = snap.data();
@@ -296,7 +294,6 @@ export default function App() {
           
           if (newNotifs.length > 0) {
              const latest = newNotifs[0];
-             // Play sound if new unread notification arrives (and it's not the initial load or duplicate)
              if (latestNotifIdRef.current && latest.id !== latestNotifIdRef.current && !latest.isRead) {
                  notificationSoundRef.current?.play().catch(() => {});
              }
@@ -312,7 +309,6 @@ export default function App() {
         const unsubBlocked = onSnapshot(blockedRef, (snap: any) => {
             setBlockedIds(prev => {
                const newSet = new Set(prev);
-               // Refresh from source
                snap.docs.forEach((d: any) => newSet.add(d.id));
                return newSet;
             });
@@ -379,7 +375,6 @@ export default function App() {
 
   const handleLogout = async () => {
     if (userData?.id) {
-        // Save current status to allow restoration on next login
         const restoreState = (userData.presenceStatus === 'Offline' || !userData.presenceStatus) 
             ? 'Online' 
             : userData.presenceStatus;
@@ -446,7 +441,6 @@ export default function App() {
     }
   };
 
-  // --- NOTIFICATION HANDLERS ---
   const handleMarkAllRead = async () => {
     const unread = notifications.filter(n => !n.isRead);
     if (unread.length === 0) return;
@@ -472,13 +466,10 @@ export default function App() {
     }
   };
 
-  // --- GLOBAL INTERACTIONS ---
-
   const handleLike = async (postId: string, frequency: string = 'pulse') => {
     if (!userData || !db) return;
     try {
         const postRef = doc(db, 'posts', postId);
-        // Find post author from global data if available, otherwise fetch
         let postAuthorId = globalPosts.find(p => p.id === postId)?.authorId;
         
         if (!postAuthorId) {
@@ -501,7 +492,6 @@ export default function App() {
                 [`reactions.${frequency}`]: increment(1)
             });
 
-            // Send Notification
             if (postAuthorId && postAuthorId !== userData.id) {
                 await addDoc(collection(db, 'notifications'), {
                     type: 'like',
@@ -527,7 +517,6 @@ export default function App() {
     try {
         const postRef = doc(db, 'posts', postId);
         const post = globalPosts.find(p => p.id === postId);
-        // Check if bookmarked in local state or optimistic update
         const isBookmarked = post?.bookmarkedBy?.includes(userData.id);
 
         if (isBookmarked) {
@@ -551,14 +540,12 @@ export default function App() {
         const gData = gSnap.data() as Gathering;
 
         if (currentStatus) {
-            // Leaving (attendee or waitlist)
             await updateDoc(gRef, {
                 attendees: arrayRemove(userData.id),
                 waitlist: arrayRemove(userData.id)
             });
             addToast("Withdrawn from Gathering", "info");
         } else {
-            // Joining
             await updateDoc(gRef, {
                 attendees: arrayUnion(userData.id)
             });
@@ -594,9 +581,6 @@ export default function App() {
 
     try {
         const chatRef = doc(db, 'chats', chatId);
-        
-        // Atomic Upsert: Join Lobby
-        // FIX: Ensure correct nested path for participant data
         await setDoc(chatRef, {
             participants: arrayUnion(userData.id),
             participantData: {
@@ -610,11 +594,9 @@ export default function App() {
             clusterAvatar: gathering.coverUrl
         }, { merge: true });
 
-        // NAVIGATION
         setTargetClusterId(chatId);
         setActiveRoute(AppRoute.CLUSTERS);
 
-        // NOTIFICATIONS
         const recipients = gathering.attendees.filter(id => id !== userData.id);
         const batch = writeBatch(db);
         
@@ -648,11 +630,9 @@ export default function App() {
     return systemSettings.featureFlags?.[route] !== false;
   };
 
-  // Filter global content
   const filteredGlobalPosts = globalPosts.filter(p => !blockedIds.has(p.authorId));
   const filteredUsers = allUsers.filter(u => !blockedIds.has(u.id));
 
-  // Determine Signal Color for Prism Effect
   const activeSignalColor = (activeRoute === AppRoute.PUBLIC_PROFILE && selectedUserProfile?.cosmetics?.signalColor) 
     ? selectedUserProfile.cosmetics.signalColor 
     : undefined;
@@ -660,12 +640,10 @@ export default function App() {
   if (loading) return <div className="fixed inset-0 bg-slate-900 flex items-center justify-center text-white">Initializing_Grid...</div>;
   if (!user) return <LandingPage onEnter={() => {}} systemSettings={systemSettings} />;
 
-  // Maintenance Check (Admin Bypass)
   if (systemSettings.maintenanceMode && userData?.role !== 'admin') {
     return <MaintenanceScreen />;
   }
 
-  // Suspension Check
   if (userData?.isSuspended) {
     return <SuspendedScreen onLogout={handleLogout} userData={userData} />;
   }
@@ -896,13 +874,28 @@ export default function App() {
             <ResonanceMarketplace userData={userData} addToast={addToast} />
         )}
 
+        {activeRoute === AppRoute.AI_HUB && (
+           <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 bg-slate-900/50 rounded-[3rem] border border-cyan-500/20 shadow-heavy animate-in fade-in zoom-in-95 duration-700">
+              <div className="w-24 h-24 bg-cyan-500/10 rounded-full flex items-center justify-center mb-8 border border-cyan-500/30">
+                 <div className="w-12 h-12 bg-cyan-500 rounded-full animate-ping opacity-20" />
+              </div>
+              <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter mb-4">Neural_AI_Hub</h2>
+              <p className="text-slate-400 font-medium text-center max-w-md leading-relaxed">
+                Central processing node for grid intelligence. Autonomous moderation and predictive modeling modules are currently initializing.
+              </p>
+              <div className="mt-10 p-4 bg-white/5 rounded-2xl border border-white/10 flex items-center gap-4">
+                 <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest font-mono">Core_Status:</span>
+                 <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest font-mono">STABLE</span>
+              </div>
+           </div>
+        )}
+
         {!isFeatureEnabled(activeRoute) && activeRoute !== AppRoute.ADMIN && (
            <FeatureDisabledScreen featureName={activeRoute} />
         )}
 
       </Layout>
 
-      {/* Overlays */}
       {toasts.map(t => <div key={t.id} className="fixed top-24 right-6 z-[3000]"><Toast toast={t} onClose={removeToast} /></div>)}
       
       {activeStreamId && userData && (
