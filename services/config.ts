@@ -20,9 +20,9 @@ const getEnv = (key: string): string => {
 export const CONFIG = {
   FIREBASE: {
     apiKey: getEnv('VITE_FIREBASE_API_KEY'),
-    authDomain: getEnv('VITE_FIREBASE_AUTH_DOMAIN'),
-    projectId: getEnv('VITE_FIREBASE_PROJECT_ID'),
-    storageBucket: getEnv('VITE_FIREBASE_STORAGE_BUCKET'),
+    authDomain: getEnv('VITE_FIREBASE_AUTH_DOMAIN') || 'aether-1-f0425.firebaseapp.com',
+    projectId: getEnv('VITE_FIREBASE_PROJECT_ID') || 'aether-1-f0425',
+    storageBucket: getEnv('VITE_FIREBASE_STORAGE_BUCKET') || 'aether-1-f0425.firebasestorage.app',
     messagingSenderId: getEnv('VITE_FIREBASE_MESSAGING_SENDER_ID'),
     appId: getEnv('VITE_FIREBASE_APP_ID'),
   },

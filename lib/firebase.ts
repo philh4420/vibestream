@@ -1,5 +1,4 @@
 
-
 import * as FirebaseApp from 'firebase/app';
 const { initializeApp, getApps, getApp } = FirebaseApp as any;
 // Using namespace imports to resolve modular SDK export issues
@@ -10,14 +9,17 @@ const { getAuth } = FirebaseAuth as any;
 
 const getEnv = (key: string) => {
   // @ts-ignore
-  return process.env[key] || import.meta.env?.[key] || '';
+  const processVal = typeof process !== 'undefined' ? process.env[key] : undefined;
+  // @ts-ignore
+  const viteVal = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env[key] : undefined;
+  return (processVal || viteVal || '').trim();
 };
 
 const firebaseConfig = {
   apiKey: getEnv('VITE_FIREBASE_API_KEY'),
-  authDomain: getEnv('VITE_FIREBASE_AUTH_DOMAIN'),
-  projectId: getEnv('VITE_FIREBASE_PROJECT_ID'),
-  storageBucket: getEnv('VITE_FIREBASE_STORAGE_BUCKET'),
+  authDomain: getEnv('VITE_FIREBASE_AUTH_DOMAIN') || 'aether-1-f0425.firebaseapp.com',
+  projectId: getEnv('VITE_FIREBASE_PROJECT_ID') || 'aether-1-f0425',
+  storageBucket: getEnv('VITE_FIREBASE_STORAGE_BUCKET') || 'aether-1-f0425.firebasestorage.app',
   messagingSenderId: getEnv('VITE_FIREBASE_MESSAGING_SENDER_ID'),
   appId: getEnv('VITE_FIREBASE_APP_ID')
 };
