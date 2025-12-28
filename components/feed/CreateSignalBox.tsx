@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { User } from '../../types';
@@ -10,7 +9,6 @@ import { uploadToCloudinary } from '../../services/cloudinary';
 import { EmojiPicker } from '../ui/EmojiPicker';
 import { GiphyPicker } from '../ui/GiphyPicker';
 import { GiphyGif } from '../../services/giphy';
-import { polishSignal, generateVisionFragment } from '../../services/ai';
 
 interface CreateSignalBoxProps {
   userData: User | null;
@@ -22,10 +20,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
   const [content, setContent] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
-  
-  // AI States
-  const [isRefining, setIsRefining] = useState(false);
-  const [isDreaming, setIsDreaming] = useState(false);
   
   // Attachments
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -72,8 +66,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
     }
   };
 
-  // --- PICKER HANDLERS ---
-  // Fixed: Added handleEmojiSelect to insert emoji at current cursor position
   const handleEmojiSelect = (emoji: string) => {
     const input = textareaRef.current;
     if (!input) {
@@ -92,54 +84,12 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
     }, 0);
   };
 
-  // Fixed: Added handleGifSelect to set GIF and clear other media
   const handleGifSelect = (gif: GiphyGif) => {
     setSelectedGif(gif);
     setSelectedFiles([]);
     setMediaPreviews([]);
     setShowGifPicker(false);
     setIsExpanded(true);
-  };
-
-  // AI Functionality
-  const handleRefine = async () => {
-    if (!content.trim() || isRefining) return;
-    setIsRefining(true);
-    try {
-      const polished = await polishSignal(content);
-      setContent(polished);
-      window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Signal Frequency Refined", type: 'success' } }));
-    } catch (e) {
-      window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Refinement Failed", type: 'error' } }));
-    } finally {
-      setIsRefining(false);
-    }
-  };
-
-  const handleDream = async () => {
-    const prompt = content.trim() || "A futuristic digital signal floating in a neural void";
-    if (isDreaming) return;
-    setIsDreaming(true);
-    window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Dreaming Vision Fragment...", type: 'info' } }));
-
-    try {
-      const base64 = await generateVisionFragment(prompt);
-      if (base64) {
-        // Convert base64 to file for Cloudinary upload to keep pipeline consistent
-        const res = await fetch(base64);
-        const blob = await res.blob();
-        const file = new File([blob], "ai_vision.png", { type: "image/png" });
-        
-        setSelectedFiles(prev => [...prev, file]);
-        setMediaPreviews(prev => [...prev, base64]);
-        setIsExpanded(true);
-        window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Vision Fragment Realized", type: 'success' } }));
-      }
-    } catch (e) {
-      window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Dream Synthesis Failed", type: 'error' } }));
-    } finally {
-      setIsDreaming(false);
-    }
   };
 
   const selectMention = (user: User) => {
@@ -350,27 +300,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
 
             <button onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowGifPicker(false); }} className={`p-2.5 rounded-xl transition-colors ${showEmojiPicker ? 'bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400' : 'hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400'}`} title="Add Emoji">
               <span className="text-xl leading-none">😊</span>
-            </button>
-
-            {/* AI TOOLS */}
-            <div className="w-px h-6 bg-slate-100 dark:bg-slate-800 mx-2" />
-            
-            <button 
-              onClick={handleRefine}
-              disabled={!content.trim() || isRefining}
-              className={`p-2.5 rounded-xl transition-all ${isRefining ? 'bg-indigo-600 text-white animate-pulse' : 'text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-600'} active:scale-90 disabled:opacity-30`}
-              title="Refine Signal (AI)"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" /></svg>
-            </button>
-
-            <button 
-              onClick={handleDream}
-              disabled={isDreaming}
-              className={`p-2.5 rounded-xl transition-all ${isDreaming ? 'bg-purple-600 text-white animate-pulse' : 'text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600'} active:scale-90 disabled:opacity-30`}
-              title="Generate Vision Fragment (AI)"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09ZM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456Z" /></svg>
             </button>
           </div>
 

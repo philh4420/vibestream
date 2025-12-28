@@ -1,12 +1,8 @@
-
-
 import React, { useState } from 'react';
 import { db } from '../../services/firebase';
-// Corrected firestore import path to use firebase/firestore
 import * as Firestore from 'firebase/firestore';
 const { doc, setDoc, serverTimestamp } = Firestore as any;
 import { ICONS } from '../../constants';
-import { GoogleGenAI } from '@google/genai';
 
 interface AdminPushTerminalProps {
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
@@ -16,28 +12,7 @@ export const AdminPushTerminal: React.FC<AdminPushTerminalProps> = ({ addToast }
   const [text, setText] = useState('');
   const [severity, setSeverity] = useState<'info' | 'warning' | 'critical'>('info');
   const [type, setType] = useState<'persistent' | 'transient'>('transient');
-  const [isEnhancing, setIsEnhancing] = useState(false);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
-
-  const enhanceSignal = async () => {
-    if (!text.trim()) return;
-    setIsEnhancing(true);
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: `Rewrite the following social media broadcast to sound extremely futuristic, technical, and cyberpunk. Keep it short (under 100 chars). Input: "${text}"`,
-      });
-      if (response.text) {
-        setText(response.text.replace(/["']/g, '').trim());
-        addToast("Signal Refined by Citadel AI", "success");
-      }
-    } catch (e) {
-      addToast("AI Handshake Failed", "error");
-    } finally {
-      setIsEnhancing(false);
-    }
-  };
 
   const handleBroadcast = async () => {
     if (!text.trim() || !db) return;
@@ -95,13 +70,6 @@ export const AdminPushTerminal: React.FC<AdminPushTerminalProps> = ({ addToast }
                         placeholder="Type high-priority system signal..."
                         className="w-full bg-white/5 border border-white/10 rounded-[2rem] p-8 text-xl font-black italic text-white placeholder:text-white/10 focus:bg-white/10 focus:border-rose-500/50 transition-all outline-none resize-none h-48"
                     />
-                    <button 
-                        onClick={enhanceSignal}
-                        disabled={isEnhancing || !text.trim()}
-                        className="absolute bottom-4 right-4 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg disabled:opacity-30"
-                    >
-                        {isEnhancing ? 'SCANNING...' : 'AI_ENHANCE'} <ICONS.Resilience />
-                    </button>
                   </div>
                </div>
 

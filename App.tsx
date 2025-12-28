@@ -57,8 +57,6 @@ import { LiveWatcherOverlay } from './components/streams/LiveWatcherOverlay';
 import { SignalTrail } from './components/ui/SignalTrail';
 import { fetchWeather } from './services/weather';
 import { uploadToCloudinary } from './services/cloudinary';
-import { NeuralLinkOverlay } from './components/messages/NeuralLinkOverlay';
-import { NeuralInsightDrawer } from './components/feed/NeuralInsightDrawer';
 
 const App: React.FC = () => {
   // Auth State
@@ -85,8 +83,6 @@ const App: React.FC = () => {
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [activeStreamId, setActiveStreamId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isNeuralLinkOpen, setIsNeuralLinkOpen] = useState(false);
-  const [analyzingPost, setAnalyzingPost] = useState<Post | null>(null);
 
   // Derived State
   const blockedIds = useMemo(() => new Set(userData?.settings?.safety?.hiddenWords || []), [userData]);
@@ -117,6 +113,43 @@ const App: React.FC = () => {
 
     return () => { unsubUser(); unsubSettings(); };
   }, [user]);
+
+  // Theme & Accessibility Master Sync
+  useEffect(() => {
+    const appearance = userData?.settings?.appearance;
+    if (!appearance) return;
+
+    const root = window.document.documentElement;
+    
+    // 1. Theme Logic (System/Light/Dark)
+    const applyTheme = (isDark: boolean) => {
+      if (isDark) root.classList.add('dark');
+      else root.classList.remove('dark');
+    };
+
+    if (appearance.theme === 'dark') {
+      applyTheme(true);
+    } else if (appearance.theme === 'light') {
+      applyTheme(false);
+    } else {
+      // System Default
+      const mql = window.matchMedia('(prefers-color-scheme: dark)');
+      applyTheme(mql.matches);
+      
+      const listener = (e: MediaQueryListEvent) => applyTheme(e.matches);
+      mql.addEventListener('change', listener);
+      return () => mql.removeEventListener('change', listener);
+    }
+
+    // 2. High Contrast logic
+    if (appearance.highContrast) root.classList.add('high-contrast');
+    else root.classList.remove('high-contrast');
+
+    // 3. Reduced Motion logic
+    if (appearance.reducedMotion) root.classList.add('reduced-motion');
+    else root.classList.remove('reduced-motion');
+
+  }, [userData?.settings?.appearance]);
 
   // Global Data Fetchers
   useEffect(() => {
@@ -160,16 +193,13 @@ const App: React.FC = () => {
   useEffect(() => {
     const handleViewPost = (e: any) => setViewingPost(e.detail.post);
     const handleNavigate = (e: any) => setActiveRoute(e.detail.route);
-    const handleAnalyze = (e: any) => setAnalyzingPost(e.detail.post);
     
     window.addEventListener('vibe-view-post', handleViewPost);
     window.addEventListener('vibe-navigate', handleNavigate);
-    window.addEventListener('vibe-analyze-post', handleAnalyze);
     
     return () => {
       window.removeEventListener('vibe-view-post', handleViewPost);
       window.removeEventListener('vibe-navigate', handleNavigate);
-      window.removeEventListener('vibe-analyze-post', handleAnalyze);
     };
   }, []);
 
@@ -246,13 +276,12 @@ const App: React.FC = () => {
   }
 
   if (!user) {
-    // Fixed: Removed duplicate featureFlags key in the fallback object literal
     return <LandingPage onEnter={() => setActiveRoute(AppRoute.FEED)} systemSettings={systemSettings || { maintenanceMode: false, registrationDisabled: false, minTrustTier: 'Gamma', featureFlags: {}, lastUpdatedBy: '', updatedAt: '' } as any} />;
   }
 
   return (
     <div className="h-full w-full relative">
-      <SignalTrail userData={userData} />
+      <SignalTrail activeTrail={userData?.cosmetics?.activeTrail} />
       
       <Layout 
         activeRoute={activeRoute}
@@ -421,23 +450,6 @@ const App: React.FC = () => {
 
       {activeStream && (
         <LiveWatcherOverlay stream={activeStream} onLeave={() => setActiveStream(null)} />
-      )}
-
-      {/* Neural Link Hub (Gemini Assistant) */}
-      <button 
-        onClick={() => setIsNeuralLinkOpen(true)}
-        className="fixed bottom-24 right-6 md:bottom-10 md:right-10 z-[1000] w-16 h-16 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-[2rem] shadow-[0_0_40px_rgba(79,70,229,0.4)] flex items-center justify-center text-white active:scale-90 transition-all hover:scale-110 group border-2 border-white/20"
-      >
-        <div className="absolute inset-0 bg-indigo-500 rounded-[2rem] animate-ping opacity-20 group-hover:opacity-40" />
-        <span className="text-2xl relative z-10">🧠</span>
-      </button>
-
-      {isNeuralLinkOpen && (
-        <NeuralLinkOverlay userData={userData!} onClose={() => setIsNeuralLinkOpen(false)} />
-      )}
-
-      {analyzingPost && (
-        <NeuralInsightDrawer post={analyzingPost} onClose={() => setAnalyzingPost(null)} />
       )}
     </div>
   );

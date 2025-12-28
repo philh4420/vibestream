@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Post, User } from '../../types';
 import { ICONS, PULSE_FREQUENCIES } from '../../constants';
@@ -74,11 +73,6 @@ export const PostCard: React.FC<PostCardProps> = ({
     const dateStr = now.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
     return `${dateStr}, ${post.createdAt}`; 
   }, [post.timestamp, post.createdAt, locale]);
-
-  const handleShowInsight = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    window.dispatchEvent(new CustomEvent('vibe-analyze-post', { detail: { post } }));
-  };
 
   const initiateDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -259,15 +253,6 @@ export const PostCard: React.FC<PostCardProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {/* AI Insight Trigger */}
-            <button 
-              onClick={handleShowInsight}
-              className="w-10 h-10 flex items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all active:scale-90 shadow-sm"
-              title="Analyze Signal"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M12 18v-3m0 0l2-2m-2 2l-2-2m2 12a9 9 0 110-18 9 9 0 010 18z" /></svg>
-            </button>
-
             <div className="relative" ref={optionsRef} onClick={(e) => e.stopPropagation()}>
               <button 
                 onClick={() => setShowOptions(!showOptions)}

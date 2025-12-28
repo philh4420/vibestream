@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ICONS } from '../../constants';
 
@@ -31,23 +30,23 @@ export const ResilienceShield: React.FC<ResilienceShieldProps> = ({ isFocusShiel
 
        <div className="bg-slate-50 dark:bg-slate-900/50 rounded-[3rem] p-10 border border-slate-200/60 dark:border-slate-800 flex flex-col justify-between">
           <div>
-             <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-6">Sentiment_Mesh</h3>
+             <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-6">Signal_Integrity</h3>
              <div className="space-y-4">
                 <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 flex items-center justify-between shadow-sm">
-                   <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest font-mono">Feed_Temperature</span>
-                   <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest font-mono">Positive</span>
+                   <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest font-mono">Feed_Calibration</span>
+                   <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest font-mono">Nominal</span>
                 </div>
                 <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 flex items-center justify-between shadow-sm">
-                   <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest font-mono">Static_Filter</span>
+                   <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest font-mono">Atmospheric_Sync</span>
                    <div className="w-10 h-5 bg-indigo-600 dark:bg-indigo-500 rounded-full relative cursor-pointer">
                       <div className="w-3 h-3 bg-white rounded-full absolute top-1 right-1 shadow-sm" />
                    </div>
                 </div>
              </div>
           </div>
-          <div className="mt-8 p-4 bg-indigo-50/50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800 text-center">
-             <p className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.2em] font-mono">AI_ANALYSIS</p>
-             <p className="text-xs font-bold text-indigo-900 dark:text-indigo-200 mt-2 italic">"Your incoming stream is 85% harmonic. Low toxicity detected."</p>
+          <div className="mt-8 p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 text-center">
+             <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] font-mono">SYSTEM_DIAGNOSTICS</p>
+             <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-2 italic">Monitoring neural throughput across local grid segments.</p>
           </div>
        </div>
 
