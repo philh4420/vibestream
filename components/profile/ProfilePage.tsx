@@ -62,7 +62,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   onUnblock,
   blockedIds
 }) => {
-  const [activeTab, setActiveTab] = useState<string>('broadcasting');
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    const saved = localStorage.getItem('vibe_profile_tab');
+    return saved || 'broadcasting';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('vibe_profile_tab', activeTab);
+  }, [activeTab]);
+
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [showBlockModal, setShowBlockModal] = useState(false);
@@ -125,7 +133,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         batch.update(doc(db, 'users', currentUser.uid), { following: increment(1) });
         batch.update(doc(db, 'users', userData.id), { followers: increment(1) });
         
-        // Notification
         const notifRef = doc(collection(db, 'notifications'));
         batch.set(notifRef, {
           type: 'follow',

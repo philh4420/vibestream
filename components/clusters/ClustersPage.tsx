@@ -33,7 +33,15 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
   const [clusters, setClusters] = useState<Chat[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeClusterId, setActiveClusterId] = useState<string | null>(null);
+  const [activeClusterId, setActiveClusterId] = useState<string | null>(() => {
+    return initialClusterId || localStorage.getItem('vibe_clusters_active_id');
+  });
+
+  useEffect(() => {
+    if (activeClusterId) localStorage.setItem('vibe_clusters_active_id', activeClusterId);
+    else localStorage.removeItem('vibe_clusters_active_id');
+  }, [activeClusterId]);
+
   const [manualClusterData, setManualClusterData] = useState<Chat | null>(null);
 
   // Deep Link Logic: Handle incoming initialClusterId (e.g. from Neural Lobby button)
@@ -41,7 +49,6 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
     if (initialClusterId) {
         setActiveClusterId(initialClusterId);
         
-        // FIX: Manual fetch to bypass snapshot latency
         const fetchLobby = async () => {
             try {
                 const snap = await getDoc(doc(db, 'chats', initialClusterId));
@@ -74,7 +81,6 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
     return () => unsub();
   }, [currentUser.id]);
 
-  // Priority data source: synced list or manual fetch (for new joins)
   const activeClusterData = clusters.find(c => c.id === activeClusterId) || 
                           (manualClusterData?.id === activeClusterId ? manualClusterData : null);
 
@@ -126,7 +132,7 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
               </div>
               <button 
                 onClick={() => setIsModalOpen(true)}
-                className="flex-1 md:flex-none px-8 py-4 bg-white text-slate-950 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:shadow-[0_0_50px_rgba(255,255,255,0.4)] hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 group/btn"
+                className="flex-1 md:flex-none px-8 py-4 bg-white text-slate-950 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:shadow-[0_0_50px_rgba(255,255,255,0.3)] hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 group/btn"
               >
                 <div className="group-hover/btn:rotate-90 transition-transform duration-500"><ICONS.Create /></div>
                 INITIALIZE_CORE
@@ -150,7 +156,6 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
                onClick={() => setActiveClusterId(cluster.id)}
                className="group bg-white/70 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-100 dark:border-slate-800 rounded-[3rem] p-8 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] hover:border-indigo-200 dark:hover:border-indigo-900 transition-all duration-500 cursor-pointer relative overflow-hidden flex flex-col min-h-[340px] hover:-translate-y-1"
              >
-                {/* Active Indicator & Avatar */}
                 <div className="flex justify-between items-start mb-12 relative z-10">
                    <div className="relative">
                       <div className="w-20 h-20 rounded-[2rem] bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 p-1 shadow-sm group-hover:scale-110 transition-transform duration-500">
@@ -166,7 +171,6 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
                    </div>
                 </div>
 
-                {/* Info Block */}
                 <div className="flex-1 relative z-10">
                    <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter leading-none mb-4 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2">
                      {cluster.clusterName}
@@ -179,7 +183,6 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
                    </div>
                 </div>
 
-                {/* Footer Stats */}
                 <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between relative z-10">
                    <div className="flex -space-x-3 pl-1">
                       {cluster.participants.slice(0, 4).map((pId, i) => (
@@ -203,7 +206,6 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
                    </div>
                 </div>
 
-                {/* Hover Gradient */}
                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/0 via-indigo-50/0 to-indigo-50/30 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none duration-500" />
              </div>
            ))}
@@ -250,7 +252,7 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
                   });
                   addToast("Cluster Fusion Complete", "success");
                   setIsModalOpen(false);
-                  setActiveClusterId(clusterId); // Open chat immediately
+                  setActiveClusterId(clusterId);
                 } catch(e) { addToast("Fusion Failed", "error"); }
              };
              create();

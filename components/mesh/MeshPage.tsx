@@ -27,13 +27,20 @@ interface MeshPageProps {
 }
 
 export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToast, onViewProfile, blockedIds }) => {
-  const [activeTab, setActiveTab] = useState<'following' | 'followers' | 'discover'>('following');
+  const [activeTab, setActiveTab] = useState<'following' | 'followers' | 'discover'>(() => {
+    const saved = localStorage.getItem('vibe_mesh_tab');
+    return (saved as any) || 'following';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('vibe_mesh_tab', activeTab);
+  }, [activeTab]);
+
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [processingIds, setProcessingIds] = useState<string[]>([]);
   
-  // Track who the current user follows
   const [myFollowingIds, setMyFollowingIds] = useState<Set<string>>(new Set());
 
   // Initial Data Fetch
@@ -92,10 +99,10 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
     };
 
     fetchGraphData();
-  }, [activeTab, currentUser.id, blockedIds]); // Re-fetch if block list updates (e.g. user blocks someone)
+  }, [activeTab, currentUser.id, blockedIds]);
 
   const handleToggleFollow = async (e: React.MouseEvent, targetUser: User) => {
-    e.stopPropagation(); // Prevents clicking the card when clicking the button
+    e.stopPropagation();
     if (!db || !currentUser.id) return;
     
     const isFollowing = myFollowingIds.has(targetUser.id);
@@ -156,7 +163,6 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
       }
     } catch (e) {
       addToast("Handshake Protocol Failed", "error");
-      // Revert optimistic update
       if (action === 'follow') {
         setMyFollowingIds(prev => { const s = new Set(prev); s.delete(targetUser.id); return s; });
       } else {
@@ -273,7 +279,6 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
                    className="group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] p-5 hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] dark:hover:shadow-black/20 hover:border-indigo-100 dark:hover:border-indigo-900 transition-all duration-300 relative flex flex-col overflow-hidden cursor-pointer"
                    style={{ animationDelay: `${idx * 50}ms` }}
                  >
-                    {/* Decorative Top Line */}
                     <div className={`absolute top-0 left-0 right-0 h-1 ${user.presenceStatus === 'Online' && showActivity ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-800'} opacity-0 group-hover:opacity-100 transition-opacity`} />
 
                     <div className="flex items-start justify-between mb-4 relative z-10">
@@ -281,7 +286,7 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
                           <div className="relative">
                              <img src={user.avatarUrl} className="w-16 h-16 rounded-[1.5rem] object-cover border-2 border-slate-50 dark:border-slate-800 shadow-sm group-hover:scale-105 transition-transform duration-500" alt="" />
                              {user.verifiedHuman && (
-                               <div className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-800 text-indigo-500 dark:text-indigo-400 p-0.5 rounded-full border border-slate-50 dark:border-slate-700 shadow-sm">
+                               <div className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-900 p-0.5 rounded-full border border-slate-50 dark:border-slate-700 shadow-sm">
                                   <ICONS.Verified />
                                </div>
                              )}
@@ -329,7 +334,7 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
              })}
            </div>
          ) : (
-           <div className="py-32 flex flex-col items-center justify-center text-center opacity-40 bg-slate-50/50 dark:bg-slate-800/50 rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-slate-700">
+           <div className="py-32 flex flex-col items-center justify-center text-center opacity-40 bg-slate-50/50 dark:bg-slate-800/50 rounded-[4rem] border-2 border-dashed border-slate-200 dark:border-slate-700">
               <div className="w-20 h-20 bg-white dark:bg-slate-900 rounded-3xl flex items-center justify-center mb-6 text-slate-300 dark:text-slate-600 shadow-sm border border-slate-100 dark:border-slate-800">
                  <ICONS.Search />
               </div>

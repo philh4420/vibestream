@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
@@ -25,12 +26,18 @@ export const DataVaultPage: React.FC<DataVaultPageProps> = ({ currentUser, local
   const [savedPosts, setSavedPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'visuals' | 'text'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'visuals' | 'text'>(() => {
+    const saved = localStorage.getItem('vibe_vault_filter');
+    return (saved as any) || 'all';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('vibe_vault_filter', activeFilter);
+  }, [activeFilter]);
 
   useEffect(() => {
     if (!db || !currentUser.id) return;
 
-    // Listen for posts bookmarked by the current user
     const q = query(
       collection(db, 'posts'),
       where('bookmarkedBy', 'array-contains', currentUser.id),
@@ -126,7 +133,6 @@ export const DataVaultPage: React.FC<DataVaultPageProps> = ({ currentUser, local
       <div className="relative z-30 mb-8 px-2 md:px-0">
          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-white/60 dark:border-slate-700 p-2 rounded-[2.5rem] shadow-[0_20px_60px_-20px_rgba(0,0,0,0.1)] flex flex-col md:flex-row items-center justify-between gap-3">
             
-            {/* Filter Tabs */}
             <div className="flex bg-slate-100/80 dark:bg-slate-800/50 p-1 rounded-[2rem] w-full md:w-auto">
                {[
                  { id: 'all', label: 'All Data' },
@@ -147,7 +153,6 @@ export const DataVaultPage: React.FC<DataVaultPageProps> = ({ currentUser, local
                ))}
             </div>
 
-            {/* Secure Search */}
             <div className="relative w-full md:w-96 group">
                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-cyan-600 dark:group-focus-within:text-cyan-400 transition-colors scale-90">
                  <ICONS.Search />
@@ -163,7 +168,6 @@ export const DataVaultPage: React.FC<DataVaultPageProps> = ({ currentUser, local
          </div>
       </div>
 
-      {/* 3. ARTIFACT GRID */}
       <div className="min-h-[400px]">
          {loading ? (
            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
@@ -180,7 +184,6 @@ export const DataVaultPage: React.FC<DataVaultPageProps> = ({ currentUser, local
                  className="group bg-white dark:bg-slate-900 rounded-[2.5rem] p-4 border border-slate-100 dark:border-slate-800 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.15)] dark:hover:shadow-black/30 hover:border-cyan-200 dark:hover:border-cyan-900 transition-all duration-500 cursor-pointer relative flex flex-col h-full overflow-hidden hover:-translate-y-1"
                  style={{ animationDelay: `${idx * 50}ms` }}
                >
-                  {/* Visual Header */}
                   <div className="relative aspect-[4/3] rounded-[2rem] overflow-hidden bg-slate-100 dark:bg-slate-800 mb-4 border border-slate-50 dark:border-slate-700">
                      {post.media && post.media.length > 0 ? (
                        <>
@@ -198,7 +201,6 @@ export const DataVaultPage: React.FC<DataVaultPageProps> = ({ currentUser, local
                        </div>
                      )}
                      
-                     {/* Hover Overlay */}
                      <div className="absolute inset-0 bg-cyan-900/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center duration-300">
                         <span className="px-5 py-2 border border-white/30 rounded-xl text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-white hover:text-cyan-900 transition-colors">
                           Access_Data
@@ -206,7 +208,6 @@ export const DataVaultPage: React.FC<DataVaultPageProps> = ({ currentUser, local
                      </div>
                   </div>
 
-                  {/* Content Info */}
                   <div className="px-2 flex-1 flex flex-col">
                      <div className="flex items-center gap-2 mb-2">
                         <img src={post.authorAvatar} className="w-5 h-5 rounded-lg object-cover bg-slate-100 dark:bg-slate-800" alt="" />
@@ -231,7 +232,7 @@ export const DataVaultPage: React.FC<DataVaultPageProps> = ({ currentUser, local
            </div>
          ) : (
            <div className="py-40 flex flex-col items-center justify-center text-center opacity-50 bg-slate-50/50 dark:bg-slate-800/50 rounded-[4rem] border-2 border-dashed border-slate-200 dark:border-slate-700">
-              <div className="w-24 h-24 bg-white dark:bg-slate-900 rounded-[2.5rem] flex items-center justify-center mb-8 text-slate-300 dark:text-slate-600 shadow-sm border border-slate-100 dark:border-slate-800">
+              <div className="w-24 h-24 bg-white dark:bg-slate-900 rounded-[2.5rem] flex items-center justify-center mb-8 text-slate-300 shadow-sm border border-slate-100 dark:border-slate-800">
                  <ICONS.Saved />
               </div>
               <h3 className="text-2xl font-black uppercase tracking-widest italic text-slate-900 dark:text-white">Vault_Empty</h3>

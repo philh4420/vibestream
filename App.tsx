@@ -70,14 +70,31 @@ const App: React.FC = () => {
   const [userData, setUserData] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
-  // App State
-  const [activeRoute, setActiveRoute] = useState<AppRoute>(AppRoute.FEED);
+  // App State - PERSISTED
+  const [activeRoute, setActiveRoute] = useState<AppRoute>(() => {
+    const saved = localStorage.getItem('vibe_active_route');
+    return (saved as AppRoute) || AppRoute.FEED;
+  });
+
+  // Persist route changes
+  useEffect(() => {
+    localStorage.setItem('vibe_active_route', activeRoute);
+  }, [activeRoute]);
+
   const [posts, setPosts] = useState<Post[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [systemSettings, setSystemSettings] = useState<SystemSettings | null>(null);
   const [weather, setWeather] = useState<WeatherInfo | null>(null);
-  const [region, setRegion] = useState<Region>('en-GB');
+  const [region, setRegion] = useState<Region>(() => {
+    const saved = localStorage.getItem('vibe_region');
+    return (saved as Region) || 'en-GB';
+  });
+  
+  // Persist region changes
+  useEffect(() => {
+    localStorage.setItem('vibe_region', region);
+  }, [region]);
   
   // UI Modal State
   const [viewingPost, setViewingPost] = useState<Post | null>(null);
@@ -100,6 +117,7 @@ const App: React.FC = () => {
       setIsAuthLoading(false);
       if (!u) {
         setUserData(null);
+        // Only reset if logged out
         setActiveRoute(AppRoute.FEED);
       }
     });
@@ -214,6 +232,7 @@ const App: React.FC = () => {
     await signOut(auth);
     setUserData(null);
     setUser(null);
+    localStorage.removeItem('vibe_active_route');
   };
 
   const handleLike = async (postId: string, frequency?: string) => {
@@ -472,10 +491,12 @@ const App: React.FC = () => {
       )}
 
       {isSettingsOpen && (
-        <SettingsOverlay 
-            userData={userData!} onClose={() => setIsSettingsOpen(false)} 
-            onLogout={handleLogout} addToast={addToast} 
-        />
+        <div className="fixed inset-0 z-[2700]">
+           <SettingsOverlay 
+              userData={userData!} onClose={() => setIsSettingsOpen(false)} 
+              onLogout={handleLogout} addToast={addToast} 
+           />
+        </div>
       )}
 
       {isBroadcasting && activeStreamId && (

@@ -14,7 +14,15 @@ interface TemporalPageProps {
 }
 
 export const TemporalPage: React.FC<TemporalPageProps> = ({ currentUser, locale, addToast }) => {
-  const [activeMode, setActiveMode] = useState<'FLUX' | 'STASIS'>('FLUX');
+  const [activeMode, setActiveMode] = useState<'FLUX' | 'STASIS'>(() => {
+    const saved = localStorage.getItem('vibe_temporal_mode');
+    return (saved as any) || 'FLUX';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('vibe_temporal_mode', activeMode);
+  }, [activeMode]);
+
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStoryIndex, setSelectedStoryIndex] = useState<number | null>(null);
@@ -26,8 +34,6 @@ export const TemporalPage: React.FC<TemporalPageProps> = ({ currentUser, locale,
     const now = new Date();
     const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    // FLUX: Stories from last 24h
-    // STASIS: Older stories (Simulation of archive)
     const storyQ = activeMode === 'FLUX' 
       ? query(collection(db, 'stories'), where('timestamp', '>=', yesterday), orderBy('timestamp', 'desc'), limit(50))
       : query(collection(db, 'stories'), where('timestamp', '<', yesterday), orderBy('timestamp', 'desc'), limit(20));
@@ -94,7 +100,6 @@ export const TemporalPage: React.FC<TemporalPageProps> = ({ currentUser, locale,
         </div>
       </div>
 
-      {/* 2. Content Matrix */}
       <div className="flex-1 px-4 md:px-6">
          {loading ? (
            <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
@@ -165,7 +170,6 @@ export const TemporalPage: React.FC<TemporalPageProps> = ({ currentUser, locale,
          )}
       </div>
 
-      {/* 3. Immersive Viewer Overlay */}
       {selectedStoryIndex !== null && currentUser && (
         <TemporalViewer 
           stories={stories}

@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { AppNotification, Region, User } from '../../types';
 import { PULSE_FREQUENCIES, ICONS } from '../../constants';
 import { db } from '../../services/firebase';
@@ -27,7 +27,15 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
   userData
 }) => {
   const [isSyncing, setIsSyncing] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<SignalFilter>('all');
+  const [activeFilter, setActiveFilter] = useState<SignalFilter>(() => {
+    const saved = localStorage.getItem('vibe_notifications_filter');
+    return (saved as any) || 'all';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('vibe_notifications_filter', activeFilter);
+  }, [activeFilter]);
+
   const [showPurgeModal, setShowPurgeModal] = useState(false);
 
   // Group notifications by date sections
@@ -60,7 +68,6 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
       }
 
       const d = n.timestamp?.toDate ? n.timestamp.toDate() : new Date();
-      // Reset time for comparison
       const checkDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
       if (checkDate.getTime() === today.getTime()) {
@@ -219,12 +226,10 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                            : 'bg-[#fcfcfd] dark:bg-slate-950/30 border-transparent hover:bg-white dark:hover:bg-slate-900 hover:border-slate-100 dark:hover:border-slate-800'
                        }`}
                      >
-                       {/* Unread Bar */}
                        {!isRead && (
                          <div className="absolute left-0 top-6 bottom-6 w-1 bg-indigo-500 rounded-r-full shadow-[0_0_10px_rgba(79,70,229,0.6)]" />
                        )}
 
-                       {/* Avatar & Type */}
                        <div className="relative shrink-0 mt-1 ml-2">
                           <img src={notif.fromUserAvatar} className="w-10 h-10 rounded-xl object-cover border border-slate-100 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 shadow-sm" alt="" />
                           <div className="absolute -bottom-2 -right-2">
@@ -232,7 +237,6 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                           </div>
                        </div>
 
-                       {/* Text Content */}
                        <div className="flex-1 min-w-0 pt-0.5 pl-2">
                           <div className="flex flex-wrap items-baseline gap-x-1.5 mb-1">
                              <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase italic tracking-tight">{notif.fromUserName}</h4>
@@ -244,13 +248,12 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                           </p>
                        </div>
 
-                       {/* Action */}
                        <div className="shrink-0 self-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <button 
                             onClick={(e) => { e.stopPropagation(); onDelete(notif.id); }}
                             className="p-2 text-slate-300 hover:text-rose-500 transition-colors"
                           >
-                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M6 18L18 6M6 6l12 12" /></svg>
                           </button>
                        </div>
                      </div>
@@ -272,7 +275,6 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
          )}
       </div>
 
-      {/* Purge Modal */}
       <DeleteConfirmationModal 
         isOpen={showPurgeModal}
         title="PURGE_SIGNAL_LOG"

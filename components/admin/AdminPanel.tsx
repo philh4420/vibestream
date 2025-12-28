@@ -33,7 +33,15 @@ interface AdminPanelProps {
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale, systemSettings, userData }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'content' | 'features' | 'support' | 'system' | 'push'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'content' | 'features' | 'support' | 'system' | 'push'>(() => {
+    const saved = localStorage.getItem('vibe_admin_tab');
+    return (saved as any) || 'overview';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('vibe_admin_tab', activeTab);
+  }, [activeTab]);
+
   const [nodes, setNodes] = useState<User[]>([]);
   const [signals, setSignals] = useState<Post[]>([]);
   const [metrics, setMetrics] = useState({ users: 0, posts: 0, uptime: '99.99%' });
@@ -63,7 +71,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale, system
   const handleToggleFeature = async (route: AppRoute, val: boolean) => {
     const updatedFlags = { ...(systemSettings.featureFlags || {}), [route]: val };
     try {
-      // Use setDoc with merge: true to handle case where document doesn't exist yet
       await setDoc(doc(db, 'settings', 'global'), { featureFlags: updatedFlags }, { merge: true });
       addToast(`${route.toUpperCase()} Protocol modified`, 'success');
     } catch (e) { 

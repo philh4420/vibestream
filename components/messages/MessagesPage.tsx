@@ -19,8 +19,16 @@ interface MessagesPageProps {
 
 export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale, addToast, weather, allUsers = [], blockedIds }) => {
   const [chats, setChats] = useState<Chat[]>([]);
-  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
-  const [view, setView] = useState<'list' | 'chat'>('list');
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(() => {
+    return localStorage.getItem('vibe_messages_active_id');
+  });
+
+  useEffect(() => {
+    if (selectedChatId) localStorage.setItem('vibe_messages_active_id', selectedChatId);
+    else localStorage.removeItem('vibe_messages_active_id');
+  }, [selectedChatId]);
+
+  const [view, setView] = useState<'list' | 'chat'>(selectedChatId ? 'chat' : 'list');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
@@ -31,9 +39,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
       const fetchedChats = snap.docs
         .map((d: any) => ({ id: d.id, ...d.data() } as Chat))
         .filter((c: Chat) => {
-            // Filter non-cluster chats (1-to-1)
             if (c.isCluster) return false;
-            // Block Check: Hide chat if other participant is blocked
             const otherId = c.participants.find(id => id !== currentUser.id);
             return otherId && !blockedIds?.has(otherId);
         });

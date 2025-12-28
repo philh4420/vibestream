@@ -18,7 +18,15 @@ interface ResiliencePageProps {
 }
 
 export const ResiliencePage: React.FC<ResiliencePageProps> = ({ userData, addToast }) => {
-  const [activeTab, setActiveTab] = useState<'monitor' | 'shield' | 'breath'>('monitor');
+  const [activeTab, setActiveTab] = useState<'monitor' | 'shield' | 'breath'>(() => {
+    const saved = localStorage.getItem('vibe_resilience_tab');
+    return (saved as any) || 'monitor';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('vibe_resilience_tab', activeTab);
+  }, [activeTab]);
+
   const [vitalityScore, setVitalityScore] = useState(85);
   const [isFocusShieldActive, setIsFocusShieldActive] = useState(false);
 
