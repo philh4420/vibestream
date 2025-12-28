@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { User } from '../../types';
 import { db } from '../../services/firebase';
@@ -40,7 +41,7 @@ export const ResilienceMonitor: React.FC<ResilienceMonitorProps> = ({ userData }
             const uSnap = await getDocs(userPostsQuery);
             setCreationCount(uSnap.size);
         } catch (e) {
-            console.error("Hygiene sync error", e);
+            console.error("Signal sync error", e);
         }
     };
 
@@ -56,17 +57,17 @@ export const ResilienceMonitor: React.FC<ResilienceMonitorProps> = ({ userData }
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in slide-in-from-bottom-4 duration-500">
            
-       {/* Browser Footprint Card */}
+       {/* Signal Footprint Card */}
        <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-8 shadow-sm border border-slate-100 dark:border-slate-800 col-span-1 lg:col-span-2">
           <div className="flex items-center justify-between mb-8">
-             <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">Usage_Hygiene</h3>
-             <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] font-mono">Web Profile</span>
+             <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">Signal_Hygiene</h3>
+             <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] font-mono">Grid Interaction Profile</span>
           </div>
           <div className="space-y-6">
              <div>
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-2">
-                   <span className="text-indigo-600 dark:text-indigo-400">Signal Contribution</span>
-                   <span className="text-slate-400 dark:text-slate-500">{creationCount} Posts ({creationPct}%)</span>
+                   <span className="text-indigo-600 dark:text-indigo-400">Contribution Depth</span>
+                   <span className="text-slate-400 dark:text-slate-500">{creationCount} Transmissions ({creationPct}%)</span>
                 </div>
                 <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                    <div className="h-full bg-indigo-600 dark:bg-indigo-500 rounded-full transition-all duration-1000" style={{ width: `${Math.max(5, creationPct)}%` }} />
@@ -74,18 +75,18 @@ export const ResilienceMonitor: React.FC<ResilienceMonitorProps> = ({ userData }
              </div>
              <div>
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-2">
-                   <span className="text-rose-500 dark:text-rose-400">Information Intake</span>
-                   <span className="text-slate-400 dark:text-slate-500">{consumptionPotential} Nodes ({consumptionPct}%)</span>
+                   <span className="text-emerald-500 dark:text-emerald-400">Information Intake</span>
+                   <span className="text-slate-400 dark:text-slate-500">{consumptionPotential} Followed Nodes ({consumptionPct}%)</span>
                 </div>
                 <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                   <div className="h-full bg-rose-500 rounded-full transition-all duration-1000" style={{ width: `${Math.max(5, consumptionPct)}%` }} />
+                   <div className="h-full bg-emerald-500 rounded-full transition-all duration-1000" style={{ width: `${Math.max(5, consumptionPct)}%` }} />
                 </div>
              </div>
           </div>
           <p className="mt-8 text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
              {creationPct < 10 
-                ? "Your information intake is high. Consider contributing to the grid to maintain your creative resonance."
-                : "Your digital contribution ratio is healthy. Browsing integrity verified."}
+                ? "Your information intake ratio is high. Consider contributing to the grid to maintain your creative resonance."
+                : "Your digital contribution ratio is balanced. Grid integrity verified."}
           </p>
        </div>
 
@@ -94,7 +95,7 @@ export const ResilienceMonitor: React.FC<ResilienceMonitorProps> = ({ userData }
           <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 blur-[60px] rounded-full" />
           <div>
              <h3 className="text-xl font-black uppercase italic tracking-tighter text-white">Grid_Velocity</h3>
-             <p className="text-[9px] font-mono text-slate-400 uppercase tracking-widest mt-1">Platform-Wide Rate (1h)</p>
+             <p className="text-[9px] font-mono text-slate-400 uppercase tracking-widest mt-1">Platform Signal Rate (1h)</p>
           </div>
           
           <div className="py-8 flex justify-center relative">
@@ -107,7 +108,7 @@ export const ResilienceMonitor: React.FC<ResilienceMonitorProps> = ({ userData }
              </div>
              <div className="absolute bottom-8 text-center">
                 <span className="text-3xl font-black tracking-tighter">{Math.round(velocity)}</span>
-                <span className="text-[8px] block font-mono text-slate-400">Signals/Hr</span>
+                <span className="block text-[8px] font-black font-mono text-slate-400">SIG_PKT/HR</span>
              </div>
           </div>
 
