@@ -329,8 +329,8 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
 
     return (
       <div className="w-full">
-        {editable && <Toolbar />}
         <Slate editor={editor} initialValue={value} onChange={handleChange}>
+          {editable && <Toolbar />}
           <Editable
             renderElement={renderElement}
             renderLeaf={renderLeaf}
