@@ -2,7 +2,6 @@
 import React, { useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 
 interface RichTextEditorProps {
@@ -95,10 +94,6 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Link.configure({
-        openOnClick: false,
-        autolink: true,
-      }),
       Placeholder.configure({
         placeholder: placeholder || 'Write something...',
       }),
