@@ -58,6 +58,8 @@ export const Layout: React.FC<LayoutProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const isMessageView = activeRoute === AppRoute.MESSAGES;
+
   return (
     <div className="flex flex-col h-full w-full bg-slate-50 dark:bg-slate-950 overflow-hidden fixed inset-0">
       <Header 
@@ -77,7 +79,7 @@ export const Layout: React.FC<LayoutProps> = ({
 
       <div className="flex-1 flex overflow-hidden relative h-full">
         
-        {/* Dynamic Left Navigation System - High Z-Index to stay above center overlays */}
+        {/* Dynamic Left Navigation System */}
         <div className="relative z-[100] h-full">
           <LeftSidebar 
             activeRoute={activeRoute}
@@ -89,37 +91,38 @@ export const Layout: React.FC<LayoutProps> = ({
           />
         </div>
 
-        {/* Main Content Viewport with Global Atmosphere */}
+        {/* Main Content Viewport */}
         <main className="flex-1 relative overflow-hidden flex flex-col min-w-0 z-10">
           <AtmosphericBackground weather={weather}>
-            {/* Expanded Padding and Width for wide-format dashboard */}
-            <div className="flex-1 scroll-viewport px-4 md:px-6 lg:px-8 xl:px-12 py-6 relative z-10 pt-[calc(var(--header-h)+1rem)]" style={{ paddingLeft: 'max(1rem, var(--sal))', paddingRight: 'max(1rem, var(--sar))' }}>
-              <div className="w-full h-full pb-[calc(var(--bottom-nav-h)+4rem)] md:pb-24 relative">
+            <div className={`flex-1 scroll-viewport relative z-10 pt-[calc(var(--header-h)+1rem)] ${isMessageView ? 'px-0 md:px-6 py-0' : 'px-4 md:px-6 lg:px-8 xl:px-12 py-6'}`} style={{ paddingLeft: isMessageView ? '0' : 'max(1rem, var(--sal))', paddingRight: isMessageView ? '0' : 'max(1rem, var(--sar))' }}>
+              <div className={`w-full h-full relative ${isMessageView ? 'pb-[calc(var(--bottom-nav-h))] md:pb-0' : 'pb-[calc(var(--bottom-nav-h)+4rem)] md:pb-24'}`}>
                 {children}
               </div>
             </div>
           </AtmosphericBackground>
         </main>
 
-        {/* Refined Right Sidebar - High Z-Index to stay above center overlays */}
-        <div className="relative z-[100] h-full">
-          <RightSidebar 
-            userData={userData} 
-            weather={weather} 
-            onNavigate={onNavigate} 
-            blockedIds={blockedIds}
-          />
-        </div>
+        {/* Right Sidebar - Hidden on Messages view to give more space for chat */}
+        {!isMessageView && (
+          <div className="relative z-[100] h-full hidden xl:block">
+            <RightSidebar 
+              userData={userData} 
+              weather={weather} 
+              onNavigate={onNavigate} 
+              blockedIds={blockedIds}
+            />
+          </div>
+        )}
       </div>
 
       {/* Portrait Mobile Tab Bar */}
-      <nav className={`${orientation === 'landscape' ? 'hidden' : 'md:hidden'} fixed bottom-0 left-0 right-0 glass-panel border-t border-precision z-[150] shadow-[0_-10px_40px_rgba(0,0,0,0.05)] bg-white/90 dark:bg-slate-900/90`} style={{ height: 'var(--bottom-nav-h)', paddingBottom: 'var(--sab)' }}>
+      <nav className={`${orientation === 'landscape' ? 'hidden' : 'md:hidden'} fixed bottom-0 left-0 right-0 glass-panel border-t border-precision z-[150] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl`} style={{ height: 'var(--bottom-nav-h)', paddingBottom: 'var(--sab)' }}>
         <div className="flex items-center justify-around h-full px-2">
-          <button onClick={() => onNavigate(AppRoute.FEED)} className={`p-3 rounded-xl transition-all tap-feedback relative ${activeRoute === AppRoute.FEED ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400 shadow-inner' : 'text-slate-400'}`}>
+          <button onClick={() => onNavigate(AppRoute.FEED)} className={`p-3 rounded-xl transition-all tap-feedback relative ${activeRoute === AppRoute.FEED ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-slate-400'}`}>
             <ICONS.Home />
           </button>
 
-          <button onClick={() => onNavigate(AppRoute.STREAM_GRID)} className={`p-3 rounded-xl transition-all tap-feedback relative ${activeRoute === AppRoute.STREAM_GRID ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400 shadow-inner' : 'text-slate-400'}`}>
+          <button onClick={() => onNavigate(AppRoute.STREAM_GRID)} className={`p-3 rounded-xl transition-all tap-feedback relative ${activeRoute === AppRoute.STREAM_GRID ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-slate-400'}`}>
             <ICONS.Streams />
             <div className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />
           </button>
@@ -135,8 +138,8 @@ export const Layout: React.FC<LayoutProps> = ({
             </button>
           </div>
 
-          <button onClick={() => onNavigate(AppRoute.CLUSTERS)} className={`p-3 rounded-xl transition-all tap-feedback relative ${activeRoute === AppRoute.CLUSTERS ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400 shadow-inner' : 'text-slate-400'}`}>
-            <ICONS.Clusters />
+          <button onClick={() => onNavigate(AppRoute.MESSAGES)} className={`p-3 rounded-xl transition-all tap-feedback relative ${activeRoute === AppRoute.MESSAGES ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400 shadow-inner' : 'text-slate-400'}`}>
+            <ICONS.Messages />
           </button>
 
           <button onClick={() => onNavigate(AppRoute.PROFILE)} className={`p-3 rounded-xl transition-all tap-feedback ${activeRoute === AppRoute.PROFILE ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400 shadow-inner' : 'text-slate-400'}`}>
@@ -157,8 +160,8 @@ export const Layout: React.FC<LayoutProps> = ({
               <button onClick={() => onNavigate(AppRoute.STREAM_GRID)} className={`p-3 rounded-xl transition-all tap-feedback ${activeRoute === AppRoute.STREAM_GRID ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-400'}`}>
                 <ICONS.Streams />
               </button>
-              <button onClick={() => onNavigate(AppRoute.CLUSTERS)} className={`p-3 rounded-xl transition-all tap-feedback ${activeRoute === AppRoute.CLUSTERS ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-400'}`}>
-                <ICONS.Clusters />
+              <button onClick={() => onNavigate(AppRoute.MESSAGES)} className={`p-3 rounded-xl transition-all tap-feedback ${activeRoute === AppRoute.MESSAGES ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-400'}`}>
+                <ICONS.Messages />
               </button>
               <button onClick={() => onNavigate(AppRoute.PROFILE)} className={`p-3 rounded-xl transition-all tap-feedback ${activeRoute === AppRoute.PROFILE ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-400'}`}>
                 <ICONS.Profile />
