@@ -55,6 +55,7 @@ import { SettingsOverlay } from './components/settings/SettingsOverlay';
 import { LiveBroadcastOverlay } from './components/streams/LiveBroadcastOverlay';
 import { LiveWatcherOverlay } from './components/streams/LiveWatcherOverlay';
 import { SignalTrail } from './components/ui/SignalTrail';
+import { MeshPage } from './components/mesh/MeshPage';
 import { fetchWeather } from './services/weather';
 import { uploadToCloudinary } from './services/cloudinary';
 
@@ -352,6 +353,15 @@ const App: React.FC = () => {
         )}
         {activeRoute === AppRoute.ADMIN && (
           <AdminPanel addToast={addToast} locale={region} systemSettings={systemSettings!} userData={userData} />
+        )}
+        {activeRoute === AppRoute.MESH && (
+          <MeshPage 
+            currentUser={userData!} 
+            locale={region} 
+            addToast={addToast} 
+            onViewProfile={setViewingProfile}
+            blockedIds={blockedIds}
+          />
         )}
         {activeRoute === AppRoute.GATHERINGS && (
           <GatheringsPage 
