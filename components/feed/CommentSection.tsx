@@ -74,7 +74,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
     if (!db) return;
     const q = query(collection(db, 'posts', postId, 'comments'), orderBy('timestamp', 'asc'), limit(100));
     return onSnapshot(q, (snap: any) => {
-      // Filter out blocked comments locally since we can't easily query exclusion in Firestore with complex order/limits easily without composite indexes
+      // Filter out blocked comments locally
       const allComments = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Comment));
       setComments(allComments);
     });
@@ -147,10 +147,16 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
     const textAfter = newComment.slice(cursor);
     const lastWordIndex = textBefore.lastIndexOf('@');
     
-    const newContent = newComment.slice(0, lastWordIndex) + `@${user.username} ` + textAfter;
+    if (lastWordIndex !== -1) {
+        const newContent = newComment.slice(0, lastWordIndex) + `@${user.username} ` + textAfter;
+        setNewComment(newContent);
+        // Robust cache update: Avoid duplicates
+        setMentionedUserCache(prev => {
+            if (prev.some(u => u.id === user.id)) return prev;
+            return [...prev, user];
+        });
+    }
     
-    setNewComment(newContent);
-    setMentionedUserCache(prev => [...prev, user]);
     setMentionQuery(null);
     setShowMentionList(false);
     
