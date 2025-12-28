@@ -26,6 +26,9 @@ export const CONFIG = {
     messagingSenderId: getEnv('VITE_FIREBASE_MESSAGING_SENDER_ID'),
     appId: getEnv('VITE_FIREBASE_APP_ID'),
   },
+  APP_CHECK: {
+    reCaptchaSiteKey: getEnv('VITE_RECAPTCHA_SITE_KEY') || '6LcNv90qAAAAALm_18p0906zM8M9_n5N0n2_M8M9', // Example key format
+  },
   CLOUDINARY: {
     cloudName: getEnv('VITE_CLOUDINARY_CLOUD_NAME'),
     uploadPreset: getEnv('VITE_CLOUDINARY_UPLOAD_PRESET') || 'ml_default',

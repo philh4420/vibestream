@@ -1,14 +1,13 @@
 
-
 import * as FirebaseApp from 'firebase/app';
 const { initializeApp, getApps, getApp } = FirebaseApp as any;
+import * as FirebaseAppCheck from 'firebase/app-check';
+const { initializeAppCheck, ReCaptchaV3Provider } = FirebaseAppCheck as any;
 // Using namespace imports to resolve modular SDK export issues
 import * as Firestore from 'firebase/firestore';
 const { getFirestore } = Firestore as any;
 import * as FirebaseAuth from 'firebase/auth';
 const { getAuth } = FirebaseAuth as any;
-import * as FirebaseAppCheck from 'firebase/app-check';
-const { initializeAppCheck, ReCaptchaV3Provider } = FirebaseAppCheck as any;
 
 import { CONFIG } from './config';
 
@@ -30,21 +29,18 @@ try {
   app = initializeApp(CONFIG.FIREBASE, 'FALLBACK');
 }
 
-// Initialize App Check with reCAPTCHA v3
-if (isBrowser) {
-  // Use a slight delay to ensure the browser environment is fully ready for background tasks
-  setTimeout(() => {
-    try {
-      if (app && window.navigator) {
-        initializeAppCheck(app, {
-          provider: new ReCaptchaV3Provider('6LcV_pMqAAAAANmY2pE6_jDq1Zf-E3p6mX_9L8uN'),
-          isTokenAutoRefreshEnabled: true
-        });
-      }
-    } catch (err) {
-      console.debug("VibeStream Alert: App Check initialization deferred:", err);
-    }
-  }, 200);
+// App Check Implementation
+if (isBrowser && CONFIG.APP_CHECK.reCaptchaSiteKey) {
+  try {
+    // Only initialize if not already initialized in this app instance
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(CONFIG.APP_CHECK.reCaptchaSiteKey),
+      isTokenAutoRefreshEnabled: true
+    });
+    console.debug("VibeStream Protocol: App Check Synchronized.");
+  } catch (err) {
+    console.warn("VibeStream Protocol: App Check Handshake Skipped/Failed", err);
+  }
 }
 
 export const db = getFirestore(app);
