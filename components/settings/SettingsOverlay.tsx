@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { User, UserSettings } from '../../types';
 import { db } from '../../services/firebase';
@@ -119,17 +120,23 @@ export const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ userData, onCl
   const TabButton = ({ id, label, icon: Icon }: { id: SettingTab, label: string, icon: any }) => (
     <button
       onClick={() => setActiveTab(id)}
-      className={`flex items-center gap-4 px-5 py-4 rounded-[1.2rem] transition-all duration-300 group w-full ${
-        activeTab === id 
-          ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl shadow-slate-900/10 dark:shadow-none scale-[1.02]' 
-          : 'bg-transparent text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-      }`}
+      className={`
+        relative group flex items-center justify-center md:justify-start gap-1.5 md:gap-4 px-3 md:px-5 py-3 md:py-4 rounded-[1.2rem] transition-all duration-300 shrink-0
+        ${
+          activeTab === id 
+            ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl shadow-slate-900/10 dark:shadow-none scale-[1.02]' 
+            : 'bg-transparent text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+        }
+        flex-col md:flex-row min-w-[4.5rem] md:min-w-0 md:w-full
+      `}
     >
-      <div className={`transition-transform duration-300 ${activeTab === id ? 'scale-110 text-white dark:text-slate-900' : 'group-hover:scale-110'}`}>
+      <div className={`text-lg md:text-base transition-transform duration-300 ${activeTab === id ? 'scale-110 text-white dark:text-slate-900' : 'group-hover:scale-110'}`}>
         <Icon />
       </div>
-      <span className="text-[10px] font-black uppercase tracking-[0.2em] font-mono whitespace-nowrap">{label}</span>
-      {activeTab === id && <div className="ml-auto w-1.5 h-1.5 bg-emerald-400 dark:bg-emerald-600 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse" />}
+      <span className="text-[9px] md:text-[10px] font-black uppercase tracking-wider md:tracking-[0.2em] font-mono whitespace-nowrap">{label}</span>
+      {activeTab === id && (
+        <div className="absolute top-2 right-2 md:static md:ml-auto w-1.5 h-1.5 bg-emerald-400 dark:bg-emerald-600 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse" />
+      )}
     </button>
   );
 
@@ -139,8 +146,19 @@ export const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ userData, onCl
       
       <div className="relative bg-[#fcfcfd] dark:bg-slate-900 w-full max-w-6xl h-full md:h-[90vh] md:rounded-[3.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-500 border border-white/20 dark:border-slate-800">
         
-        {/* Navigation Sidebar */}
-        <div className="w-full md:w-72 lg:w-80 bg-slate-50/80 dark:bg-slate-950/80 border-b md:border-b-0 md:border-r border-slate-200/60 dark:border-slate-800 p-4 md:p-8 flex flex-row md:flex-col gap-2 shrink-0 overflow-x-auto md:overflow-y-auto no-scrollbar relative z-20">
+        {/* Mobile Header (Visible only on small screens) - Moved to Top of Flow */}
+        <div className="md:hidden p-4 pb-0 flex justify-between items-center bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-md z-30 shrink-0">
+             <div>
+                <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">Settings</h2>
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] font-mono">Config_Mode</p>
+             </div>
+             <button onClick={onClose} className="p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M6 18L18 6M6 6l12 12" /></svg>
+             </button>
+        </div>
+
+        {/* Navigation Sidebar / Topbar */}
+        <div className="w-full md:w-72 lg:w-80 bg-slate-50/80 dark:bg-slate-950/80 border-b md:border-b-0 md:border-r border-slate-200/60 dark:border-slate-800 p-2 md:p-8 flex flex-row md:flex-col gap-2 shrink-0 overflow-x-auto md:overflow-y-auto no-scrollbar relative z-20 items-center md:items-stretch">
           <div className="hidden md:block mb-8 px-2">
             <h2 className="text-2xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">Command_Deck</h2>
             <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] font-mono mt-2">Neural Config v3.0</p>
@@ -149,7 +167,7 @@ export const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ userData, onCl
           <TabButton id="account" label="Identity" icon={ICONS.Profile} />
           <TabButton id="privacy" label="Privacy" icon={ICONS.Verified} />
           <TabButton id="notifications" label="Signals" icon={ICONS.Bell} />
-          <TabButton id="appearance" label="Interface" icon={ICONS.Create} />
+          <TabButton id="appearance" label="Visuals" icon={ICONS.Create} />
           <TabButton id="safety" label="Safety" icon={ICONS.Resilience} />
           <TabButton id="data" label="Data" icon={ICONS.Saved} />
           
@@ -167,15 +185,10 @@ export const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ userData, onCl
         {/* Content Viewport */}
         <div className="flex-1 flex flex-col min-w-0 bg-[#fcfcfd] dark:bg-slate-900 relative z-10">
           
-          {/* Mobile Header (Visible only on small screens) */}
-          <div className="md:hidden p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-md relative z-20">
-             <div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase italic tracking-tight">{activeTab}</h3>
-                <p className="text-[9px] font-mono text-slate-400 uppercase tracking-widest">Config_Mode</p>
-             </div>
-             <button onClick={onClose} className="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700">
-                <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
-             </button>
+          {/* Internal Title (Mobile Context Awareness) */}
+          <div className="md:hidden px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm sticky top-0 z-10">
+             <span className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 font-mono block mb-1">Active_Protocol</span>
+             <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tight">{activeTab}</h3>
           </div>
 
           <div className="flex-1 overflow-y-auto p-6 md:p-12 pb-32 md:pb-12 space-y-10 scroll-container relative">
@@ -210,24 +223,24 @@ export const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ userData, onCl
             )}
           </div>
           
-          {/* Scroll Hint Mask - Only visible when content is long */}
+          {/* Scroll Hint Mask */}
           <div className="absolute bottom-[88px] md:bottom-[96px] left-0 right-0 h-12 bg-gradient-to-t from-[#fcfcfd] dark:from-slate-900 to-transparent pointer-events-none z-10 opacity-80" />
 
           {/* Persistent Footer */}
-          <div className="p-6 md:p-8 border-t border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl flex justify-end gap-4 shrink-0 absolute bottom-0 left-0 right-0 z-20 md:relative">
+          <div className="p-6 md:p-8 border-t border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl flex justify-between md:justify-end gap-4 shrink-0 absolute bottom-0 left-0 right-0 z-20 md:relative">
              <button 
                onClick={onClose}
-               className="px-8 py-4 rounded-[1.5rem] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-95"
+               className="flex-1 md:flex-none px-8 py-4 rounded-[1.5rem] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-95"
              >
                Discard
              </button>
              <button 
                onClick={saveSettings}
                disabled={isSaving}
-               className="px-10 py-4 rounded-[1.5rem] bg-indigo-600 text-white font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-200/50 dark:shadow-none hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
+               className="flex-1 md:flex-none px-10 py-4 rounded-[1.5rem] bg-indigo-600 text-white font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-200/50 dark:shadow-none hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
              >
                {isSaving && <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-               COMMIT_CHANGES
+               COMMIT
              </button>
           </div>
         </div>
