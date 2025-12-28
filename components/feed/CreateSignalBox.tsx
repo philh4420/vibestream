@@ -41,6 +41,40 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Search Users Effect
+  useEffect(() => {
+    if (mentionQuery === null) {
+      setMentionResults([]);
+      setShowMentionList(false);
+      return;
+    }
+
+    const searchUsers = async () => {
+      setIsSearching(true);
+      setShowMentionList(true);
+
+      try {
+        const q = query(
+          collection(db, 'users'),
+          where('username', '>=', mentionQuery.toLowerCase()),
+          where('username', '<=', mentionQuery.toLowerCase() + '\uf8ff'),
+          limit(5)
+        );
+        
+        const snap = await getDocs(q);
+        const users = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as User));
+        setMentionResults(users);
+      } catch (e) {
+        console.error("Mention search error", e);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const timer = setTimeout(searchUsers, 300);
+    return () => clearTimeout(timer);
+  }, [mentionQuery]);
+
   const handleFocus = () => {
     setIsExpanded(true);
   };
@@ -69,7 +103,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
 
   const renderHighlightedContent = (text: string) => {
     // Regex to split by mentions (@username) and hashtags (#tag)
-    // Simple alphanumeric + underscore match
     const parts = text.split(/((?:@|#)[a-zA-Z0-9_]+)/g);
     return parts.map((part, i) => {
         if (part.startsWith('@')) {
@@ -112,16 +145,26 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
     const cursor = textareaRef.current?.selectionStart || 0;
     const textBefore = content.slice(0, cursor);
     const textAfter = content.slice(cursor);
-    const lastWordIndex = textBefore.lastIndexOf('@');
     
-    if (lastWordIndex !== -1) {
-        const newContent = content.slice(0, lastWordIndex) + `@${user.username} ` + textAfter;
+    // Find the last occurrence of '@' before cursor
+    const lastWordStart = textBefore.lastIndexOf('@');
+    
+    if (lastWordStart !== -1) {
+        const newContent = content.slice(0, lastWordStart) + `@${user.username} ` + textAfter;
         setContent(newContent);
-        setMentionedUserCache(prev => [...prev, user]);
+        setMentionedUserCache(prev => {
+            if (prev.some(u => u.id === user.id)) return prev;
+            return [...prev, user];
+        });
     }
     setMentionQuery(null);
     setShowMentionList(false);
-    setTimeout(() => textareaRef.current?.focus(), 10);
+    
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+      }
+    }, 10);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -181,6 +224,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
       });
 
       const finalContent = content.trim();
+      // Notify mentioned users
       const mentionsToNotify = mentionedUserCache.filter(u => finalContent.includes(`@${u.username}`));
       const uniqueMentions = Array.from(new Set(mentionsToNotify.map(u => u.id)))
         .map(id => mentionsToNotify.find(u => u.id === id));
