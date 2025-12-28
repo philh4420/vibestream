@@ -67,6 +67,21 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
     }
   };
 
+  const renderHighlightedContent = (text: string) => {
+    // Regex to split by mentions (@username) and hashtags (#tag)
+    // Simple alphanumeric + underscore match
+    const parts = text.split(/((?:@|#)[a-zA-Z0-9_]+)/g);
+    return parts.map((part, i) => {
+        if (part.startsWith('@')) {
+            return <span key={i} className="text-indigo-600 dark:text-indigo-400 font-bold">{part}</span>;
+        }
+        if (part.startsWith('#')) {
+            return <span key={i} className="text-rose-500 dark:text-rose-400 font-bold">{part}</span>;
+        }
+        return <span key={i}>{part}</span>;
+    });
+  };
+
   const handleEmojiSelect = (emoji: string) => {
     const input = textareaRef.current;
     if (!input) {
@@ -224,16 +239,31 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         </div>
         
         <div className="flex-1 pt-1 relative">
-          <textarea
-            ref={textareaRef}
-            value={content}
-            onChange={handleInput}
-            onFocus={handleFocus}
-            placeholder={`Initiate a new signal, ${userData?.displayName.split(' ')[0]}...`}
-            className="w-full bg-transparent border-none text-slate-900 dark:text-white font-medium text-lg placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-0 resize-none overflow-hidden min-h-[60px]"
-            rows={1}
-            aria-label="Create Post Content"
-          />
+          <div className="relative w-full min-h-[60px]">
+              {/* Highlight Rendering Layer */}
+              <div 
+                className="absolute inset-0 w-full h-full text-lg font-medium whitespace-pre-wrap break-words pointer-events-none text-slate-900 dark:text-white"
+                aria-hidden="true"
+                style={{ overflowWrap: 'break-word' }}
+              >
+                 {renderHighlightedContent(content)}
+                 {/* Ensure trailing newline is rendered */}
+                 {content.endsWith('\n') && <br />}
+              </div>
+
+              {/* Input Layer */}
+              <textarea
+                ref={textareaRef}
+                value={content}
+                onChange={handleInput}
+                onFocus={handleFocus}
+                placeholder={`Initiate a new signal, ${userData?.displayName.split(' ')[0]}...`}
+                className={`w-full bg-transparent border-none text-lg font-medium focus:ring-0 resize-none overflow-hidden min-h-[60px] relative z-10 placeholder:text-slate-400 dark:placeholder:text-slate-500 caret-indigo-600 dark:caret-white ${content ? 'text-transparent' : 'text-slate-900 dark:text-white'}`}
+                rows={1}
+                aria-label="Create Post Content"
+                style={{ overflowWrap: 'break-word' }}
+              />
+          </div>
 
           {showMentionList && (
             <div className="absolute top-full left-0 z-50 w-64 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl mt-2 overflow-hidden animate-in fade-in slide-in-from-top-2">

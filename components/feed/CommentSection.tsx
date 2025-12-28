@@ -367,10 +367,13 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
     const canEdit = userData && userData.id === comment.authorId;
     const isEditing = editingCommentId === comment.id;
     
-    // Highlight mentions in content (basic parsing)
-    const contentWithMentions = comment.content.split(/(@\w+)/g).map((part, i) => {
+    // Highlight mentions & tags in content
+    const contentWithRichText = comment.content.split(/((?:@|#)[a-zA-Z0-9_]+)/g).map((part, i) => {
         if (part.startsWith('@')) {
-            return <span key={i} className="text-indigo-600 dark:text-indigo-400 font-bold">{part}</span>;
+            return <span key={i} className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline cursor-pointer">{part}</span>;
+        }
+        if (part.startsWith('#')) {
+            return <span key={i} className="text-rose-500 dark:text-rose-400 font-bold hover:underline cursor-pointer">{part}</span>;
         }
         return part;
     });
@@ -416,7 +419,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
                 ) : (
                     <>
                         <p className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-relaxed whitespace-pre-wrap">
-                            {contentWithMentions}
+                            {contentWithRichText}
                         </p>
                         
                         {extractedUrl && (

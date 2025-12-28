@@ -78,6 +78,21 @@ export const PostCard: React.FC<PostCardProps> = ({
     }).filter(Boolean);
   }, [post.content]);
 
+  // Helper to render rich text (mentions/hashtags) inside chunks
+  const renderRichText = (text: string) => {
+    // Split by mentions (@user) or hashtags (#tag)
+    const parts = text.split(/((?:@|#)[a-zA-Z0-9_]+)/g);
+    return parts.map((part, i) => {
+        if (part.startsWith('@')) {
+            return <span key={i} className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline cursor-pointer">{part}</span>;
+        }
+        if (part.startsWith('#')) {
+            return <span key={i} className="text-rose-500 dark:text-rose-400 font-bold hover:underline cursor-pointer">{part}</span>;
+        }
+        return part;
+    });
+  };
+
   // Extract first URL for preview
   const extractedUrl = useMemo(() => {
     const urls = extractUrls(post.content);
@@ -379,7 +394,9 @@ export const PostCard: React.FC<PostCardProps> = ({
                     const reactions = post.inlineReactions?.[idx] || [];
                     return (
                         <span key={idx} className="relative group/chunk inline-block">
-                        <span className="hover:bg-indigo-50/80 dark:hover:bg-indigo-900/30 hover:text-indigo-900 dark:hover:text-indigo-200 rounded-lg transition-colors px-0.5 -mx-0.5 cursor-text">{chunk}</span>
+                        <span className="hover:bg-indigo-50/80 dark:hover:bg-indigo-900/30 hover:text-indigo-900 dark:hover:text-indigo-200 rounded-lg transition-colors px-0.5 -mx-0.5 cursor-text">
+                            {renderRichText(chunk)}
+                        </span>
                         <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex gap-1 opacity-0 group-hover/chunk:opacity-100 transition-all duration-300 z-10 pointer-events-none group-hover/chunk:pointer-events-auto scale-90 group-hover/chunk:scale-100 origin-bottom" onClick={(e) => e.stopPropagation()}>
                             <div className="bg-white dark:bg-slate-800 rounded-full p-1 shadow-xl border border-slate-100 dark:border-slate-700 flex gap-1">
                             {['🔥', '❤️', '💡', '🚀'].map(emoji => (
