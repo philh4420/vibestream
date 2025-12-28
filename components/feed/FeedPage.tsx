@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Post, User, Region, LiveStream } from '../../types';
 import { StoriesStrip } from './StoriesStrip';
@@ -38,7 +37,6 @@ export const FeedPage: React.FC<FeedPageProps> = ({
   const [activeProtocol, setActiveProtocol] = useState<'mesh' | 'pulse' | 'recent'>('mesh');
 
   const filteredPosts = useMemo(() => {
-    // Also filter here just in case parent didn't
     let result = posts.filter(p => !blockedIds?.has(p.authorId));
     switch (activeProtocol) {
       case 'pulse': return result.sort((a, b) => (b.likes || 0) - (a.likes || 0));
