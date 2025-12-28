@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { User, PresenceStatus } from '../../types';
 import { db } from '../../services/firebase';
@@ -22,52 +23,78 @@ export const ResiliencePage: React.FC<ResiliencePageProps> = ({ userData, addToa
     return (saved as any) || 'usage';
   });
 
+  // UI Limiters State
+  const [grayscaleMode, setGrayscaleMode] = useState(false);
+  const [mediaFog, setMediaFog] = useState(false);
+  const [reducedKinetic, setReducedKinetic] = useState(false);
+
   useEffect(() => {
     localStorage.setItem('vibe_resilience_tab', activeTab);
   }, [activeTab]);
 
+  // Apply Global UI Filters
+  useEffect(() => {
+    const root = document.documentElement;
+    if (grayscaleMode) root.style.filter = 'grayscale(100%)';
+    else root.style.filter = 'none';
+
+    if (mediaFog) document.body.classList.add('vibe-media-fog');
+    else document.body.classList.remove('vibe-media-fog');
+
+    if (reducedKinetic) root.classList.add('reduced-motion');
+    else root.classList.remove('reduced-motion');
+
+    return () => {
+      root.style.filter = 'none';
+      document.body.classList.remove('vibe-media-fog');
+      root.classList.remove('reduced-motion');
+    };
+  }, [grayscaleMode, mediaFog, reducedKinetic]);
+
   const [vitalityScore, setVitalityScore] = useState(85);
   const [isFocusShieldActive, setIsFocusShieldActive] = useState(false);
 
-  // Sync Focus Status from User Data
   useEffect(() => {
     setIsFocusShieldActive(['Deep Work', 'Focus', 'Invisible'].includes(userData.presenceStatus || ''));
   }, [userData.presenceStatus]);
 
-  // Calculate Vitality Score Logic (Web-Native Metrics)
   const calculateVitality = () => {
-    let score = 75;
-    // Positive Reinforcements
-    if (userData.verifiedHuman) score += 5;
+    let score = 70;
+    if (userData.verifiedHuman) score += 10;
     if (userData.resonance && userData.resonance > 1000) score += 5;
-    if (isFocusShieldActive) score += 5;
-    
-    // Balanced Interaction Check
-    const following = userData.following || 1;
-    const followers = userData.followers || 1;
-    const ratio = followers / following;
-    if (ratio > 0.5) score += 10; // Healthy social ratio
-    
+    if (isFocusShieldActive) score += 10;
+    if (grayscaleMode || mediaFog) score += 5;
     return Math.min(100, score);
   };
 
   useEffect(() => {
     setVitalityScore(calculateVitality());
-  }, [userData, isFocusShieldActive]);
+  }, [userData, isFocusShieldActive, grayscaleMode, mediaFog]);
 
-  // Shield Toggle Handler (In-Platform Focus)
   const toggleFocusShield = async () => {
     if (!db || !userData.id) return;
-    const newStatus: PresenceStatus = isFocusShieldActive ? 'Online' : 'Deep Work';
-    const newMsg = isFocusShieldActive ? 'Systems nominal.' : 'In-Platform Focus Active. Direct Messages Muted.';
+    const isActivating = !isFocusShieldActive;
+    const newStatus: PresenceStatus = isActivating ? 'Deep Work' : 'Online';
+    const newMsg = isActivating ? 'In-Platform Focus Active. Signals Muted.' : 'Systems nominal.';
     
     try {
       await updateDoc(doc(db, 'users', userData.id), {
         presenceStatus: newStatus,
         statusMessage: newMsg
       });
-      setIsFocusShieldActive(!isFocusShieldActive);
-      addToast(isFocusShieldActive ? "Focus Shield Disengaged" : "In-Platform Shield Active", "success");
+      setIsFocusShieldActive(isActivating);
+      
+      // Auto-enable limiters if activating shield
+      if (isActivating) {
+        setMediaFog(true);
+        setReducedKinetic(true);
+      } else {
+        setMediaFog(false);
+        setReducedKinetic(false);
+        setGrayscaleMode(false);
+      }
+
+      addToast(isActivating ? "Focus Shield Engaged: Media Suppressed" : "Focus Shield Disengaged", "success");
     } catch (e) {
       addToast("Shield Protocol Failed", "error");
     }
@@ -76,13 +103,10 @@ export const ResiliencePage: React.FC<ResiliencePageProps> = ({ userData, addToa
   return (
     <div className="w-full max-w-[1920px] mx-auto pb-24 animate-in fade-in duration-700 space-y-8 px-4 md:px-8">
       
-      {/* 1. Vitality Engine Header */}
       <ResilienceHero vitalityScore={vitalityScore} />
 
-      {/* 2. Navigation Pill */}
       <ResilienceNav activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      {/* 3. Module Content Swapper */}
       <div className="min-h-[500px]">
         {activeTab === 'usage' && <ResilienceMonitor userData={userData} />}
         
@@ -90,12 +114,34 @@ export const ResiliencePage: React.FC<ResiliencePageProps> = ({ userData, addToa
           <ResilienceShield 
             isFocusShieldActive={isFocusShieldActive} 
             toggleFocusShield={toggleFocusShield} 
+            limiters={{
+                grayscale: grayscaleMode,
+                fog: mediaFog,
+                kinetic: reducedKinetic
+            }}
+            onToggleLimiter={(type) => {
+                if (type === 'grayscale') setGrayscaleMode(!grayscaleMode);
+                if (type === 'fog') setMediaFog(!mediaFog);
+                if (type === 'kinetic') setReducedKinetic(!reducedKinetic);
+                addToast("Limiter Protocol Synchronized", "info");
+            }}
           />
         )}
         
         {activeTab === 'sync' && <ResilienceBreathing />}
       </div>
 
+      <style dangerouslySetInnerHTML={{ __html: `
+        .vibe-media-fog img, .vibe-media-fog video {
+          filter: blur(20px) grayscale(50%);
+          opacity: 0.3;
+          transition: all 0.5s ease;
+        }
+        .vibe-media-fog img:hover, .vibe-media-fog video:hover {
+          filter: blur(0px) grayscale(0%);
+          opacity: 1;
+        }
+      `}} />
     </div>
   );
 };
