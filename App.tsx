@@ -336,6 +336,7 @@ const App: React.FC = () => {
             posts={posts} users={allUsers} onLike={handleLike} onBookmark={handleBookmark} 
             onViewPost={setViewingPost} onViewProfile={setViewingProfile} locale={region} 
             searchQuery={searchQuery} onClearSearch={() => setSearchQuery('')}
+            userData={userData}
           />
         )}
         {activeRoute === AppRoute.MESSAGES && (
