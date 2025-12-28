@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { User, PollOption } from '../../types';
@@ -290,69 +289,73 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
   };
 
   return (
-    <div className={`bg-white dark:bg-slate-900 border-precision rounded-[3rem] p-6 md:p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)] hover:shadow-[0_30px_60px_-12px_rgba(0,0,0,0.08)] transition-all duration-500 group relative z-40 ${isExpanded ? 'ring-2 ring-indigo-500/20' : ''}`}>
-      <div className="flex gap-6 relative">
+    <div className={`bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.8rem] p-6 md:p-8 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.04)] hover:shadow-[0_35px_80px_-12px_rgba(0,0,0,0.1)] transition-all duration-500 group relative z-40 ${isExpanded ? 'ring-2 ring-indigo-500/10' : ''}`}>
+      <div className="flex gap-5 relative">
         <div className="relative shrink-0">
-          <div className={`w-12 h-12 md:w-16 md:h-16 rounded-[1.4rem] ${borderClass}`}>
+          <div className={`w-12 h-12 md:w-14 md:h-14 rounded-[1.4rem] ${borderClass}`}>
             <img 
               src={userData?.avatarUrl} 
-              className="w-full h-full rounded-[1.4rem] object-cover shadow-md ring-4 ring-slate-50 dark:ring-slate-800 bg-white dark:bg-slate-800" 
+              className="w-full h-full rounded-[1.4rem] object-cover shadow-sm ring-4 ring-slate-50 dark:ring-slate-800/60 bg-white dark:bg-slate-800" 
               alt="My Node" 
             />
           </div>
-          <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full animate-pulse shadow-sm" />
+          <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full shadow-sm" />
         </div>
-        <div className="flex-1 pt-1 relative">
+        <div className="flex-1 pt-1.5 relative">
           <RichTextEditor 
             ref={editorRef}
             content={content}
             onChange={handleEditorChange}
             onFocus={handleFocus}
-            placeholder={isPollMode ? "Ask the network..." : `Initiate a new signal, ${userData?.displayName.split(' ')[0]}...`}
+            placeholder={isPollMode ? "Formulate the consensus..." : `Broadcast a new signal, ${userData?.displayName.split(' ')[0]}...`}
+            className="text-slate-800 dark:text-slate-200"
+            minHeight="48px"
           />
           {showMentionList && (
-            <div className="absolute top-full left-0 z-50 w-64 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl mt-2 overflow-hidden animate-in fade-in slide-in-from-top-2">
-                <div className="px-3 py-2 bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 font-mono">
-                      {isSearching ? 'Scanning_Grid...' : 'Neural_Lookup'}
+            <div className="absolute top-full left-0 z-50 w-64 bg-white/95 dark:bg-slate-800/95 backdrop-blur-2xl border border-slate-200 dark:border-slate-700 rounded-[1.8rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.2)] mt-3 overflow-hidden animate-in fade-in slide-in-from-top-3">
+                <div className="px-4 py-2.5 bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800">
+                    <span className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-400 dark:text-slate-500 font-mono">
+                      {isSearching ? 'SCANNING_NODES...' : 'IDENTITY_LOOKUP'}
                     </span>
                 </div>
                 {isSearching ? (
-                   <div className="p-4 text-center"><div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" /></div>
+                   <div className="p-5 text-center"><div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" /></div>
                 ) : mentionResults.length > 0 ? (
-                   mentionResults.map(user => (
-                    <button key={user.id} onClick={() => selectMention(user)} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors text-left group">
-                        <img src={user.avatarUrl} className="w-8 h-8 rounded-lg object-cover" alt="" />
-                        <div className="min-w-0">
-                            <div className="flex items-center gap-1">
-                                <span className="text-xs font-bold text-slate-900 dark:text-white truncate">{user.displayName}</span>
-                                {user.verifiedHuman && <span className="text-indigo-500 text-[10px]"><ICONS.Verified /></span>}
+                   <div className="p-1.5">
+                     {mentionResults.map(user => (
+                        <button key={user.id} onClick={() => selectMention(user)} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-50 dark:hover:bg-slate-700 rounded-xl transition-colors text-left group">
+                            <img src={user.avatarUrl} className="w-8 h-8 rounded-lg object-cover border border-slate-100 dark:border-slate-800" alt="" />
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-xs font-black text-slate-900 dark:text-white truncate">@{user.username}</span>
+                                    {user.verifiedHuman && <span className="text-indigo-500 text-[10px]"><ICONS.Verified /></span>}
+                                </div>
+                                <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 truncate">{user.displayName}</span>
                             </div>
-                            <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 truncate">@{user.username}</span>
-                        </div>
-                    </button>
-                   ))
+                        </button>
+                      ))}
+                   </div>
                 ) : (
-                   <div className="px-4 py-3 text-[10px] text-slate-400 dark:text-slate-500 italic text-center">No matching nodes.</div>
+                   <div className="px-4 py-5 text-[10px] text-slate-400 dark:text-slate-500 italic text-center font-medium">Sector empty.</div>
                 )}
             </div>
           )}
         </div>
       </div>
       {isPollMode && (
-        <div className="mt-6 mb-2 pl-[calc(4rem+1.5rem)] pr-2 animate-in slide-in-from-top-4 duration-300">
+        <div className="mt-8 mb-4 pl-[calc(3.5rem+1.25rem)] pr-2 animate-in slide-in-from-top-4 duration-500">
            <div className="space-y-3">
               {pollOptions.map((opt, idx) => (
-                <div key={idx} className="flex gap-2">
+                <div key={idx} className="flex gap-2.5">
                    <input 
                      type="text" 
                      value={opt}
                      onChange={(e) => handlePollOptionChange(idx, e.target.value)}
-                     placeholder={`Option ${idx + 1}`}
-                     className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-400"
+                     placeholder={`Consensus Node ${idx + 1}`}
+                     className="flex-1 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 text-sm font-bold text-slate-900 dark:text-white focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-400 dark:focus:border-indigo-600 outline-none transition-all placeholder:text-slate-400/80"
                    />
                    {pollOptions.length > 2 && (
-                     <button onClick={() => removePollOption(idx)} className="p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all">
+                     <button onClick={() => removePollOption(idx)} className="p-4 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-2xl transition-all active:scale-90">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
                      </button>
                    )}
@@ -361,30 +364,33 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
               {pollOptions.length < 4 && (
                 <button 
                   onClick={addPollOption}
-                  className="text-[10px] font-black uppercase tracking-widest text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 transition-colors flex items-center gap-1 mt-2"
+                  className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 transition-colors flex items-center gap-2 mt-3 ml-2 group/add"
                 >
-                  <span className="text-lg leading-none">+</span> Add_Option
+                  <div className="w-5 h-5 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center group-hover/add:scale-110 transition-transform">
+                     <span className="text-lg leading-none">+</span>
+                  </div>
+                  Add_Consensus_Node
                 </button>
               )}
            </div>
         </div>
       )}
       {(mediaPreviews.length > 0 || selectedGif) && (
-        <div className="mt-6 mb-4 pl-[calc(4rem+1.5rem)]">
-          <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
+        <div className="mt-8 mb-4 pl-[calc(3.5rem+1.25rem)]">
+          <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
             {mediaPreviews.map((url, idx) => (
               <div key={idx} className="relative shrink-0 group/media">
-                <img src={url} className="h-32 w-32 object-cover rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm" alt="Preview" />
-                <button onClick={() => removeMedia(idx)} className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600 transition-all opacity-0 group-hover/media:opacity-100" aria-label="Remove media">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                <img src={url} className="h-36 w-36 object-cover rounded-[1.8rem] border border-slate-200 dark:border-slate-700 shadow-lg" alt="Preview" />
+                <button onClick={() => removeMedia(idx)} className="absolute -top-2 -right-2 bg-rose-600 text-white rounded-full p-2 shadow-xl hover:bg-rose-700 transition-all opacity-0 group-hover/media:opacity-100 scale-90" aria-label="Remove media">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3.5} d="M6 18L18 6M6 6l12 12" />
                 </button>
               </div>
             ))}
             {selectedGif && (
               <div key="gif-preview" className="relative shrink-0 group/media">
-                <img src={selectedGif.images.fixed_height.url} className="h-32 w-auto object-cover rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm" alt="GIF" />
-                <button onClick={() => setSelectedGif(null)} className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600 transition-all opacity-0 group-hover/media:opacity-100" aria-label="Remove GIF">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                <img src={selectedGif.images.fixed_height.url} className="h-36 w-auto object-cover rounded-[1.8rem] border border-slate-200 dark:border-slate-700 shadow-lg" alt="GIF" />
+                <button onClick={() => setSelectedGif(null)} className="absolute -top-2 -right-2 bg-rose-600 text-white rounded-full p-2 shadow-xl hover:bg-rose-700 transition-all opacity-0 group-hover/media:opacity-100 scale-90" aria-label="Remove GIF">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3.5} d="M6 18L18 6M6 6l12 12" />
                 </button>
               </div>
             )}
@@ -392,18 +398,18 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         </div>
       )}
       {isExpanded && (
-        <div className="mt-4 pl-[calc(4rem+1.5rem)] flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-4 animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="flex items-center gap-1">
-            <button onClick={() => fileInputRef.current?.click()} className="p-2.5 rounded-xl hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" title="Upload Media" aria-label="Attach media">
-              <div className="scale-90"><ICONS.Create /></div>
+        <div className="mt-6 pl-[calc(3.5rem+1.25rem)] flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-6 animate-in fade-in slide-in-from-top-3 duration-500">
+          <div className="flex items-center gap-2">
+            <button onClick={() => fileInputRef.current?.click()} className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-700 transition-all active:scale-90 border border-transparent hover:border-slate-100 dark:hover:border-slate-700 shadow-sm" title="Uplink Artifact" aria-label="Attach media">
+              <ICONS.Create />
             </button>
-            <button onClick={() => { setShowGifPicker(!showGifPicker); setShowEmojiPicker(false); }} className={`p-2.5 rounded-xl transition-colors ${showGifPicker ? 'bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400' : 'hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600'}`} title="Add GIF" aria-label="Add GIF">
+            <button onClick={() => { setShowGifPicker(!showGifPicker); setShowEmojiPicker(false); }} className={`p-3.5 rounded-2xl transition-all active:scale-90 border ${showGifPicker ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-700 border-transparent shadow-sm'}`} title="GIF Library" aria-label="Add GIF">
               <span className="text-[10px] font-black font-mono">GIF</span>
             </button>
-            <button onClick={togglePollMode} className={`p-2.5 rounded-xl transition-colors ${isPollMode ? 'bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400' : 'hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600'}`} title="Create Poll" aria-label="Create Poll">
+            <button onClick={togglePollMode} className={`p-3.5 rounded-2xl transition-all active:scale-90 border ${isPollMode ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-700 border-transparent shadow-sm'}`} title="Consensus Poll" aria-label="Create Poll">
               <ICONS.Poll />
             </button>
-            <button onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowGifPicker(false); }} className={`p-2.5 rounded-xl transition-colors ${showEmojiPicker ? 'bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400' : 'hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400'}`} title="Add Emoji" aria-label="Add Emoji">
+            <button onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowGifPicker(false); }} className={`p-3.5 rounded-2xl transition-all active:scale-90 border ${showEmojiPicker ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-white dark:hover:bg-slate-700 border-transparent shadow-sm'}`} title="Neural Glyph" aria-label="Add Emoji">
               <span className="text-xl leading-none">😊</span>
             </button>
           </div>
@@ -411,18 +417,18 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
              <button 
                 onClick={handlePost}
                 disabled={isPosting || ((!content || content === '<p></p>') && selectedFiles.length === 0 && !selectedGif && !isPollMode)}
-                className="px-8 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[1.2rem] font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-indigo-600 dark:hover:bg-indigo-400 dark:hover:text-white transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                className="px-10 py-4 bg-slate-950 dark:bg-white text-white dark:text-slate-950 rounded-[1.8rem] font-black text-[11px] uppercase tracking-[0.25em] shadow-[0_15px_40px_-10px_rgba(99,102,241,0.4)] hover:bg-indigo-600 dark:hover:bg-indigo-400 dark:hover:text-white transition-all active:scale-95 disabled:opacity-30 flex items-center gap-3 italic"
                 aria-label="Broadcast Signal"
              >
-                {isPosting ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>BROADCAST <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" /></>}
+                {isPosting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>BROADCAST <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_10px_#10b981]" /></>}
              </button>
           </div>
         </div>
       )}
       {(showEmojiPicker || showGifPicker) && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="absolute inset-0 bg-transparent" onClick={() => { setShowEmojiPicker(false); setShowGifPicker(false); }} />
-          <div className="relative animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-sm" onClick={() => { setShowEmojiPicker(false); setShowGifPicker(false); }} />
+          <div className="relative animate-in zoom-in-95 duration-500">
             {showEmojiPicker && <EmojiPicker onSelect={handleEmojiSelect} onClose={() => setShowEmojiPicker(false)} />}
             {showGifPicker && <GiphyPicker onSelect={handleGifSelect} onClose={() => setShowGifPicker(false)} />}
           </div>

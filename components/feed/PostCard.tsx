@@ -108,18 +108,12 @@ export const PostCard: React.FC<PostCardProps> = ({
     if (!db) return;
     setIsDeleting(true);
     try {
-      // If this post is a relay, decrement the original post's share count
       if (post.relaySource && post.relaySource.postId) {
         try {
           const originalPostRef = doc(db, 'posts', post.relaySource.postId);
-          await updateDoc(originalPostRef, {
-            shares: increment(-1)
-          });
-        } catch (e) {
-          console.warn("Original signal unreachable for counter update.");
-        }
+          await updateDoc(originalPostRef, { shares: increment(-1) });
+        } catch (e) { console.warn("Relay update bypass."); }
       }
-
       await deleteDoc(doc(db, 'posts', post.id));
       addToast("Signal Purged", "info");
     } catch (e) {
@@ -137,82 +131,81 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   return (
     <article 
-      className={`group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[3rem] transition-all duration-500 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)] mb-10 relative cursor-pointer overflow-hidden ${isPulse ? 'border-l-[6px] border-l-indigo-600' : ''} ${filterClass}`}
+      className={`group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] transition-all duration-500 hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.08)] mb-8 relative cursor-pointer overflow-hidden ${isPulse ? 'ring-1 ring-indigo-500/20' : ''} ${filterClass}`}
       onClick={() => !isEditing && onViewPost?.(post)}
     >
+      {/* Visual Identity Strip */}
+      <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-indigo-500/40 via-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
       {/* Relay Header */}
       {post.relaySource && (
-        <div className="px-9 pt-6 flex items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">
-           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M7.5 12l3 3m-3-3l-3 3" strokeWidth={3} /></svg>
-           Relayed_From {post.relaySource.authorName}
+        <div className="px-6 md:px-10 pt-5 flex items-center gap-2.5 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono">
+           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M7.5 12l3 3m-3-3l-3 3" /></svg>
+           <span className="opacity-80">Relayed_By</span> <span className="text-indigo-500 dark:text-indigo-400">{post.relaySource.authorName}</span>
         </div>
       )}
 
-      <div className="p-6 md:p-9">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            {/* Multi-Author Visual Cluster */}
+      <div className="p-6 md:p-10">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-5">
+            {/* Unified Author Presentation */}
             <div className="flex -space-x-4">
-                <div className={`relative shrink-0 w-14 h-14 rounded-[1.6rem] z-10 ${borderClass}`}>
-                    <img src={post.authorAvatar} alt="" className="w-full h-full rounded-[1.6rem] object-cover ring-4 ring-slate-50 dark:ring-slate-800 bg-white dark:bg-slate-800" />
+                <div className={`relative shrink-0 w-14 h-14 md:w-16 md:h-16 rounded-[1.6rem] z-10 ${borderClass}`}>
+                    <img src={post.authorAvatar} alt="" className="w-full h-full rounded-[1.6rem] object-cover ring-4 ring-white dark:ring-slate-900 shadow-lg bg-slate-100 dark:bg-slate-800" />
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-[3px] border-white dark:border-slate-900" />
                 </div>
                 {post.coAuthors?.slice(0, 2).map((ca, idx) => (
-                    <div key={idx} className="relative shrink-0 w-14 h-14 rounded-[1.6rem] z-0">
-                        <img src={ca.avatar} alt="" className="w-full h-full rounded-[1.6rem] object-cover ring-4 ring-slate-50 dark:ring-slate-800 bg-white dark:bg-slate-800 opacity-60" />
+                    <div key={idx} className="relative shrink-0 w-14 h-14 md:w-16 md:h-16 rounded-[1.6rem] z-0">
+                        <img src={ca.avatar} alt="" className="w-full h-full rounded-[1.6rem] object-cover ring-4 ring-white dark:ring-slate-900 opacity-40 grayscale group-hover:grayscale-0 transition-all duration-700" />
                     </div>
                 ))}
             </div>
             
             <div>
-                <div className="flex items-center gap-2">
-                    <h3 className="font-black text-slate-900 dark:text-white text-base uppercase italic tracking-tight">
+                <div className="flex items-center gap-2 mb-0.5">
+                    <h3 className="font-black text-slate-900 dark:text-white text-base md:text-lg uppercase italic tracking-tighter leading-none">
                         {post.authorName}
-                        {post.coAuthors && post.coAuthors.length > 0 && <span className="text-slate-400 font-bold ml-1 text-sm">+ {post.coAuthors.length}</span>}
+                        {post.coAuthors && post.coAuthors.length > 0 && <span className="text-slate-400 font-bold ml-1.5 text-sm">+ {post.coAuthors.length}</span>}
                     </h3>
-                    {post.location && (
-                        <div className="flex items-center gap-1 px-2 py-0.5 bg-slate-50 dark:bg-slate-800 rounded-md border border-slate-100 dark:border-slate-700">
-                           <div className="scale-50 text-indigo-500"><ICONS.Globe /></div>
-                           <span className="text-[7px] font-black text-slate-400 uppercase font-mono">{post.location}</span>
-                        </div>
-                    )}
+                    <div className="text-indigo-500 scale-75 drop-shadow-sm"><ICONS.Verified /></div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <p className="text-[8px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest font-mono">{post.createdAt}</p>
-                    {post.capturedStatus && (
-                        <span className="text-[9px] font-bold text-indigo-500 dark:text-indigo-400 italic">
-                            {post.capturedStatus.emoji} {post.capturedStatus.message}
-                        </span>
+                <div className="flex items-center gap-3">
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest font-mono">{post.createdAt}</p>
+                    {post.location && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700">
+                           <div className="scale-50 text-indigo-500"><ICONS.Globe /></div>
+                           <span className="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase font-mono tracking-wider">{post.location}</span>
+                        </div>
                     )}
                 </div>
             </div>
           </div>
 
-          {/* Options Menu */}
           <div className="relative" ref={optionsRef}>
             <button 
                 onClick={(e) => { e.stopPropagation(); setShowOptions(!showOptions); }}
-                className="p-3 text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
+                className="p-3 text-slate-300 dark:text-slate-600 hover:text-slate-900 dark:hover:text-white transition-all active:scale-90"
             >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" /></svg>
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" /></svg>
             </button>
             {showOptions && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-2xl z-50 p-2 overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[1.8rem] shadow-2xl z-50 p-2 overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
                     {isAuthor ? (
                         <>
-                            <button className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-all">Edit_Protocol</button>
-                            <button onClick={() => setShowDeleteModal(true)} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all">Purge_Signal</button>
+                            <button className="w-full text-left px-5 py-3.5 text-[10px] font-black uppercase tracking-[0.15em] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-2xl transition-all">Edit_Parameters</button>
+                            <button onClick={() => setShowDeleteModal(true)} className="w-full text-left px-5 py-3.5 text-[10px] font-black uppercase tracking-[0.15em] text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-2xl transition-all">Purge_Signal</button>
                         </>
                     ) : (
-                        <button className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all">Report_Anomaly</button>
+                        <button className="w-full text-left px-5 py-3.5 text-[10px] font-black uppercase tracking-[0.15em] text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-2xl transition-all">Report_Anomaly</button>
                     )}
-                    <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(window.location.href); addToast("Coordinate Copied", "success"); setShowOptions(false); }} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-all">Copy_Hash</button>
+                    <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(window.location.href); addToast("Coordinate Copied", "success"); setShowOptions(false); }} className="w-full text-left px-5 py-3.5 text-[10px] font-black uppercase tracking-[0.15em] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-2xl transition-all">Copy_Neural_Link</button>
                 </div>
             )}
           </div>
         </div>
 
-        <div className={`mb-8 ${isPulse ? 'text-center' : ''}`}>
-            <div className={`text-slate-800 dark:text-slate-200 leading-relaxed font-medium ${isPulse ? 'text-2xl md:text-3xl font-black italic uppercase' : 'text-base md:text-lg'}`}>
+        <div className={`mb-10 ${isPulse ? 'text-center' : ''}`}>
+            <div className={`text-slate-800 dark:text-slate-200 leading-relaxed font-medium ${isPulse ? 'text-3xl md:text-5xl font-black italic uppercase tracking-tighter' : 'text-lg md:text-xl'}`}>
                 {isHtml ? <div className="ProseMirror" dangerouslySetInnerHTML={{ __html: post.content }} /> : post.content}
             </div>
             {extractedUrl && <LinkPreview url={extractedUrl} />}
@@ -220,18 +213,23 @@ export const PostCard: React.FC<PostCardProps> = ({
         </div>
 
         {post.media?.length > 0 && (
-          <div className="relative rounded-[2.5rem] overflow-hidden mb-8 bg-slate-950 border border-slate-100 dark:border-slate-800 shadow-lg" onClick={e => e.stopPropagation()}>
-            <div className="flex transition-transform duration-500" style={{ transform: `translateX(-${currentMediaIndex * 100}%)` }}>
+          <div className="relative rounded-[3rem] overflow-hidden mb-10 bg-slate-950 border border-white/5 dark:border-white/10 shadow-2xl group/media" onClick={e => e.stopPropagation()}>
+            <div className="flex transition-transform duration-700 cubic-bezier(0.2, 1, 0.2, 1)" style={{ transform: `translateX(-${currentMediaIndex * 100}%)` }}>
               {post.media.map((item, idx) => (
-                <div key={idx} className="min-w-full aspect-[4/3] md:aspect-video relative">
-                  {item.type === 'image' ? <img src={item.url} className="w-full h-full object-cover" alt="" /> : <video src={item.url} className="w-full h-full object-cover" controls autoPlay={shouldAutoPlay} muted={shouldAutoPlay} />}
+                <div key={idx} className="min-w-full aspect-[16/10] md:aspect-video relative overflow-hidden">
+                  {item.type === 'image' ? (
+                      <img src={item.url} className="w-full h-full object-cover transition-transform duration-[4s] group-hover/media:scale-105" alt="" />
+                  ) : (
+                      <video src={item.url} className="w-full h-full object-cover" controls autoPlay={shouldAutoPlay} muted={shouldAutoPlay} />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40 pointer-events-none" />
                 </div>
               ))}
             </div>
             {post.media.length > 1 && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 bg-black/20 backdrop-blur-md px-3 py-2 rounded-full">
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 bg-black/40 backdrop-blur-xl px-4 py-2.5 rounded-full border border-white/10">
                     {post.media.map((_, idx) => (
-                        <button key={idx} onClick={(e) => { e.stopPropagation(); setCurrentMediaIndex(idx); }} className={`w-1.5 h-1.5 rounded-full transition-all ${idx === currentMediaIndex ? 'bg-white w-4' : 'bg-white/40 hover:bg-white/60'}`} />
+                        <button key={idx} onClick={(e) => { e.stopPropagation(); setCurrentMediaIndex(idx); }} className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentMediaIndex ? 'bg-white w-6' : 'bg-white/30 w-1.5 hover:bg-white/60'}`} />
                     ))}
                 </div>
             )}
@@ -239,26 +237,27 @@ export const PostCard: React.FC<PostCardProps> = ({
         )}
 
         <div className="flex items-center justify-between pt-2">
-          <div className="flex gap-4">
+          <div className="flex gap-3 md:gap-4">
             <div className="relative">
                 <button 
                     onMouseDown={handlePulseStart} 
                     onMouseUp={handlePulseEnd}
                     onClick={(e) => e.stopPropagation()}
-                    className={`flex items-center gap-3 h-12 px-6 rounded-2xl transition-all border ${post.isLiked ? 'bg-rose-50 dark:bg-rose-900/30 border-rose-100 text-rose-600' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-white dark:hover:bg-slate-700'}`}
+                    className={`flex items-center gap-3 h-14 px-7 rounded-[1.6rem] transition-all border group/btn ${post.isLiked ? 'bg-rose-50 dark:bg-rose-900/30 border-rose-100 dark:border-rose-900/50 text-rose-600' : 'bg-slate-50 dark:bg-slate-800/40 text-slate-400 border-transparent hover:bg-white dark:hover:bg-slate-800 hover:border-slate-200 dark:hover:border-slate-700 shadow-sm'}`}
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill={post.isLiked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>
-                    <span className="text-xs font-black">{post.likes}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill={post.isLiked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className={`w-5 h-5 transition-transform duration-300 ${post.isLiked ? 'scale-110' : 'group-hover/btn:scale-125'}`}><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>
+                    <span className="text-xs font-black font-mono tracking-wider">{post.likes}</span>
                 </button>
                 {isPulseMenuOpen && (
-                    <div className="absolute bottom-full left-0 mb-4 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-100 dark:border-slate-700 rounded-2xl p-2 flex gap-1 shadow-2xl animate-in slide-in-from-bottom-2 duration-200 z-50" onClick={e => e.stopPropagation()}>
+                    <div className="absolute bottom-full left-0 mb-5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-2xl border border-slate-100 dark:border-slate-700 rounded-[1.8rem] p-2.5 flex gap-1.5 shadow-[0_30px_60px_-10px_rgba(0,0,0,0.3)] animate-in slide-in-from-bottom-3 zoom-in-95 duration-200 z-[100]" onClick={e => e.stopPropagation()}>
                         {PULSE_FREQUENCIES.map(pf => (
                             <button 
                                 key={pf.id} onClick={(e) => { e.stopPropagation(); onLike(post.id, pf.id); setIsPulseMenuOpen(false); }}
-                                className="w-10 h-10 flex items-center justify-center text-lg hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-all active:scale-90"
+                                className="w-12 h-12 flex flex-col items-center justify-center hover:bg-indigo-50 dark:hover:bg-slate-700 rounded-2xl transition-all active:scale-90 group/freq"
                                 title={pf.label}
                             >
-                                {pf.emoji}
+                                <span className="text-xl group-hover/freq:scale-125 transition-transform">{pf.emoji}</span>
+                                <span className="text-[6px] font-black uppercase tracking-widest text-slate-400 mt-1 opacity-0 group-hover/freq:opacity-100 transition-opacity">{pf.label}</span>
                             </button>
                         ))}
                     </div>
@@ -267,30 +266,31 @@ export const PostCard: React.FC<PostCardProps> = ({
 
             <button 
                 onClick={(e) => { e.stopPropagation(); setShowComments(!showComments); }}
-                className={`flex items-center gap-3 h-12 px-6 rounded-2xl transition-all border ${showComments ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-white dark:hover:bg-slate-700'}`}
+                className={`flex items-center gap-3 h-14 px-7 rounded-[1.6rem] transition-all border group/btn ${showComments ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 border-indigo-100 dark:border-indigo-900/50' : 'bg-slate-50 dark:bg-slate-800/40 text-slate-400 border-transparent hover:bg-white dark:hover:bg-slate-800 hover:border-slate-200 dark:hover:border-slate-700 shadow-sm'}`}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 0 1-.923 1.785 0.596.596 0 0 0 .21.685 0.59.59 0 0 0 .44.03 6.041 6.041 0 0 0 2.986-1.334c.451.06.91.09 1.378.09Z" /></svg>
-              <span className="text-xs font-black">{post.comments}</span>
+              <svg className="w-5 h-5 group-hover/btn:scale-125 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 0 1-.923 1.785 0.596.596 0 0 0 .21.685 0.59.59 0 0 0 .44.03 6.041 6.041 0 0 0 2.986-1.334c.451.06.91.09 1.378.09Z" /></svg>
+              <span className="text-xs font-black font-mono tracking-wider">{post.comments}</span>
             </button>
 
             <button 
                 onClick={handleRelay}
-                className="flex items-center gap-3 h-12 px-6 rounded-2xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-600 transition-all border border-transparent hover:border-indigo-100"
+                className="flex items-center gap-3 h-14 px-7 rounded-[1.6rem] bg-slate-50 dark:bg-slate-800/40 text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 transition-all border border-transparent hover:border-indigo-100 dark:hover:border-indigo-900/50 group/btn"
             >
-               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M7.5 12l3 3m-3-3l-3 3" /></svg>
-               <span className="text-xs font-black">{post.shares}</span>
+               <svg className="w-5 h-5 group-hover/btn:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M7.5 12l3 3m-3-3l-3 3" /></svg>
+               <span className="text-xs font-black font-mono tracking-wider">{post.shares}</span>
             </button>
           </div>
+          
           <button 
             onClick={(e) => { e.stopPropagation(); onBookmark?.(post.id); }}
-            className={`w-12 h-12 flex items-center justify-center rounded-2xl transition-all ${isBookmarked ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-300 hover:text-slate-900 dark:hover:text-white'}`}
+            className={`w-14 h-14 flex items-center justify-center rounded-[1.6rem] transition-all active:scale-90 ${isBookmarked ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-900/50' : 'text-slate-300 dark:text-slate-600 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800'}`}
           >
             <ICONS.Saved />
           </button>
         </div>
 
         {showComments && (
-          <div onClick={(e) => e.stopPropagation()} className="animate-in fade-in slide-in-from-top-4">
+          <div onClick={(e) => e.stopPropagation()} className="animate-in fade-in slide-in-from-top-6 duration-500">
             <CommentSection postId={post.id} postAuthorId={post.authorId} userData={userData} addToast={addToast} locale={locale} blockedIds={blockedIds} />
           </div>
         )}
