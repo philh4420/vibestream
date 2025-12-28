@@ -33,41 +33,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
 
   const activeChat = chats.find(c => c.id === selectedChatId);
 
-  const startAIChat = async () => {
-    const aiId = 'VIBE_AI_NODE';
-    const chatId = `ai_${currentUser.id}`;
-    
-    // Check if AI chat exists
-    const existing = chats.find(c => c.id === chatId);
-    if (existing) {
-      setSelectedChatId(chatId);
-      setView('chat');
-      return;
-    }
-
-    try {
-      const participantData = {
-        [currentUser.id]: { displayName: currentUser.displayName, avatarUrl: currentUser.avatarUrl },
-        [aiId]: { displayName: 'VibeAI', avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=VibeAI&backgroundColor=0f172a' }
-      };
-
-      await setDoc(doc(db, 'chats', chatId), {
-        id: chatId,
-        participants: [currentUser.id, aiId],
-        participantData,
-        lastMessage: 'Neural link established. How can I assist your node today?',
-        lastMessageTimestamp: serverTimestamp(),
-        isCluster: false,
-        isAI: true
-      });
-
-      setSelectedChatId(chatId);
-      setView('chat');
-    } catch (e) {
-      addToast("AI Uplink Failed", "error");
-    }
-  };
-
   const filteredChats = chats.filter(chat => {
     const pId = chat.participants.find(id => id !== currentUser.id);
     const pData = chat.participantData[pId || ''];
@@ -85,21 +50,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_#10b981]" />
               </div>
            </div>
-
-           {/* Special AI Entry */}
-           <button 
-             onClick={startAIChat}
-             className="w-full group flex items-center gap-4 p-4 rounded-[1.8rem] bg-indigo-600 hover:bg-indigo-700 text-white transition-all shadow-xl shadow-indigo-200 dark:shadow-none active:scale-95"
-           >
-              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:scale-110 transition-transform">
-                 <ICONS.Admin />
-              </div>
-              <div className="text-left flex-1">
-                 <p className="font-black text-xs uppercase tracking-widest leading-none mb-1">VibeAI_Assistant</p>
-                 <p className="text-[10px] opacity-70 font-mono">Neural_Uplink_Ready</p>
-              </div>
-              <svg className="w-4 h-4 opacity-40 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M9 5l7 7-7 7" /></svg>
-           </button>
 
            <div className="relative group">
               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors"><ICONS.Search /></div>
@@ -184,13 +134,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
              <p className="text-[10px] font-black uppercase tracking-[0.4em] font-mono mt-3 text-slate-400 dark:text-slate-500 max-w-xs leading-loose">
                Select a node from the registry to initiate a secure encrypted synchronization protocol.
              </p>
-
-             <button 
-               onClick={startAIChat}
-               className="mt-12 px-8 py-4 bg-slate-950 dark:bg-white text-white dark:text-slate-900 rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-indigo-600 dark:hover:bg-indigo-400 dark:hover:text-white transition-all active:scale-95 flex items-center gap-3"
-             >
-                <ICONS.Admin /> SYNC_WITH_VIBE_AI
-             </button>
           </div>
         )}
       </div>

@@ -28,7 +28,6 @@ import { GiphyGif } from '../../services/giphy';
 import { extractUrls } from '../../lib/textUtils';
 import { LinkPreview } from '../ui/LinkPreview';
 import { RichTextEditor, RichTextEditorRef } from '../ui/RichTextEditor';
-import { generateAIResponse } from '../../services/gemini';
 
 interface DirectChatInterfaceProps {
   chatId: string;
@@ -43,7 +42,6 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [isAITyping, setIsAITyping] = useState(false);
   
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [isGiphyPickerOpen, setIsGiphyPickerOpen] = useState(false);
@@ -57,11 +55,9 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<RichTextEditorRef>(null);
 
-  const isAIChat = (chatData as any).isAI || chatId.startsWith('ai_');
-
   // Read Receipts Logic
   useEffect(() => {
-    if (!db || !chatId || !currentUser.id || isAIChat) return;
+    if (!db || !chatId || !currentUser.id) return;
     if (currentUser.settings?.privacy?.readReceipts === false) return;
 
     const markRead = async () => {
@@ -170,30 +166,25 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
         lastMessageTimestamp: serverTimestamp() 
       });
 
-      // VibeAI Logic
-      if (isAIChat) {
-        handleAIUplink(msgText);
-      } else {
-        // Notification Logic
-        const recipientId = chatData.participants.find(pId => pId !== currentUser.id);
-        if (recipientId) {
-            const notificationText = msgText 
-            ? `transmitted: "${msgText.substring(0, 30)}${msgText.length > 30 ? '...' : ''}"`
-            : (mediaItems.length > 0 ? "transmitted visual artifact" : "sent a signal");
+      // Notification Logic
+      const recipientId = chatData.participants.find(pId => pId !== currentUser.id);
+      if (recipientId) {
+          const notificationText = msgText 
+          ? `transmitted: "${msgText.substring(0, 30)}${msgText.length > 30 ? '...' : ''}"`
+          : (mediaItems.length > 0 ? "transmitted visual artifact" : "sent a signal");
 
-            addDoc(collection(db, 'notifications'), {
-                type: 'message',
-                fromUserId: currentUser.id,
-                fromUserName: currentUser.displayName,
-                fromUserAvatar: currentUser.avatarUrl,
-                toUserId: recipientId,
-                targetId: chatId,
-                text: notificationText,
-                isRead: false,
-                timestamp: serverTimestamp(),
-                pulseFrequency: 'velocity'
-            });
-        }
+          addDoc(collection(db, 'notifications'), {
+              type: 'message',
+              fromUserId: currentUser.id,
+              fromUserName: currentUser.displayName,
+              fromUserAvatar: currentUser.avatarUrl,
+              toUserId: recipientId,
+              targetId: chatId,
+              text: notificationText,
+              isRead: false,
+              timestamp: serverTimestamp(),
+              pulseFrequency: 'velocity'
+          });
       }
 
       setNewMessage('');
@@ -204,44 +195,6 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
     } finally { 
       setIsSending(false); 
     }
-  };
-
-  const handleAIUplink = async (userInput: string) => {
-    setIsAITyping(true);
-    
-    // Prepare history for Gemini
-    // Fix: Explicitly type the history array and cast roles to fix TS error
-    const history: { role: 'user' | 'model', parts: { text: string }[] }[] = messages.slice(-10).map(m => ({
-        role: (m.senderId === currentUser.id ? 'user' : 'model') as 'user' | 'model',
-        parts: [{ text: m.text.replace(/<[^>]*>?/gm, '') }] // Strip HTML for the API
-    }));
-
-    const response = await generateAIResponse(userInput, history);
-    
-    if (response) {
-        let finalOutput = response.text;
-        
-        // If there are sources, format them as small links at bottom
-        if (response.sources && response.sources.length > 0) {
-            const sourceLinks = response.sources.map((s: any) => 
-                `<a href="${s.uri}" target="_blank" class="text-indigo-400 underline decoration-indigo-400/30 text-[9px] block mt-1">Source: ${s.title}</a>`
-            ).join('');
-            finalOutput += `<div class="mt-4 pt-2 border-t border-white/10">${sourceLinks}</div>`;
-        }
-
-        await addDoc(collection(db, 'chats', chatId, 'messages'), {
-            senderId: 'VIBE_AI_NODE',
-            text: finalOutput,
-            timestamp: serverTimestamp(),
-            isRead: true
-        });
-
-        await updateDoc(doc(db, 'chats', chatId), { 
-            lastMessage: response.text.substring(0, 100), 
-            lastMessageTimestamp: serverTimestamp() 
-        });
-    }
-    setIsAITyping(false);
   };
 
   const handleExecuteTermination = async () => {
@@ -282,30 +235,23 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
             </button>
             
             <div className="flex items-center gap-4">
-              <div className={`relative shrink-0 w-11 h-11 md:w-12 md:h-12 rounded-[1.4rem] ${isAIChat ? 'bg-indigo-600 flex items-center justify-center' : borderClass}`}>
-                {isAIChat ? (
-                    <div className="text-white scale-125"><ICONS.Admin /></div>
-                ) : (
-                    <img src={otherParticipant?.avatarUrl} className="w-full h-full rounded-[1.4rem] object-cover border-2 border-white dark:border-slate-800 shadow-sm" alt="" />
-                )}
-                {!isAIChat && showActivity && targetUserFull?.presenceStatus && (
+              <div className={`relative shrink-0 w-11 h-11 md:w-12 md:h-12 rounded-[1.4rem] ${borderClass}`}>
+                <img src={otherParticipant?.avatarUrl} className="w-full h-full rounded-[1.4rem] object-cover border-2 border-white dark:border-slate-800 shadow-sm" alt="" />
+                {showActivity && targetUserFull?.presenceStatus && (
                     <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[2.5px] border-white dark:border-slate-800 ${PRESENCE_AURA[targetUserFull.presenceStatus] || 'bg-slate-300'}`} />
-                )}
-                {isAIChat && (
-                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[2.5px] border-white dark:border-slate-800 bg-emerald-500 shadow-sm" />
                 )}
               </div>
               <div>
-                <h3 className="font-black text-lg text-slate-900 dark:text-white uppercase tracking-tighter italic leading-none">{isAIChat ? 'VibeAI_Assistant' : otherParticipant?.displayName}</h3>
+                <h3 className="font-black text-lg text-slate-900 dark:text-white uppercase tracking-tighter italic leading-none">{otherParticipant?.displayName}</h3>
                 <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] font-mono mt-1">
-                    {isAIChat ? 'Neural_Sync_Online' : (showActivity ? (targetUserFull?.presenceStatus || 'Offline') : 'Offline')}
+                    {(showActivity ? (targetUserFull?.presenceStatus || 'Offline') : 'Offline')}
                 </p>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2 pr-1">
-             <button onClick={() => setTerminationTarget({ id: chatId, label: isAIChat ? 'VibeAI' : (otherParticipant?.displayName || 'Link') })} className="w-10 h-10 bg-slate-50 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-900/30 text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 rounded-2xl flex items-center justify-center transition-all active:scale-90 border border-slate-100 dark:border-slate-700">
+             <button onClick={() => setTerminationTarget({ id: chatId, label: (otherParticipant?.displayName || 'Link') })} className="w-10 h-10 bg-slate-50 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-900/30 text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 rounded-2xl flex items-center justify-center transition-all active:scale-90 border border-slate-100 dark:border-slate-700">
                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
              </button>
           </div>
@@ -316,11 +262,11 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full opacity-30 text-center scale-90">
             <div className="w-24 h-24 bg-indigo-900/10 dark:bg-indigo-500/10 rounded-[3rem] flex items-center justify-center mb-8 text-indigo-900 dark:text-indigo-400 scale-125">
-                {isAIChat ? <ICONS.Admin /> : <ICONS.Messages />}
+                <ICONS.Messages />
             </div>
             <h3 className="text-2xl font-black uppercase tracking-[0.2em] italic text-slate-900 dark:text-white">Bridge_Active</h3>
             <p className="text-[10px] font-mono mt-4 font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] leading-loose">
-                {isAIChat ? 'Awaiting_Neural_Query_Sequence...' : 'Point-to-Point_Handshake_Complete'}
+                Point-to-Point_Handshake_Complete
             </p>
           </div>
         )}
@@ -328,7 +274,6 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
         {messages.map((msg, idx) => {
           const isMe = msg.senderId === currentUser.id;
           const isSystem = msg.senderId === 'SYSTEM';
-          const isAI = msg.senderId === 'VibeAI' || msg.senderId === 'VIBE_AI_NODE';
           const showAvatar = idx === 0 || messages[idx-1]?.senderId !== msg.senderId;
           const extractedUrl = extractUrls(msg.text)[0];
           
@@ -346,14 +291,10 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
                 
                 {!isMe && showAvatar && (
                   <div className="flex items-center gap-3 mb-2 ml-2">
-                      <div className={`w-7 h-7 rounded-xl ${isAI ? 'bg-indigo-600 flex items-center justify-center' : ''}`}>
-                          {isAI ? (
-                              <div className="text-white scale-75"><ICONS.Admin /></div>
-                          ) : (
-                              <img src={otherParticipant?.avatarUrl} className="w-full h-full rounded-xl object-cover border border-slate-100 dark:border-slate-700 shadow-sm" alt="" />
-                          )}
+                      <div className="w-7 h-7 rounded-xl overflow-hidden">
+                          <img src={otherParticipant?.avatarUrl} className="w-full h-full object-cover border border-slate-100 dark:border-slate-700 shadow-sm" alt="" />
                       </div>
-                      <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono italic">{isAI ? 'VibeAI' : otherParticipant?.displayName}</span>
+                      <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono italic">{otherParticipant?.displayName}</span>
                   </div>
                 )}
 
@@ -362,9 +303,7 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
                     p-5 md:p-7 rounded-[2.2rem] text-sm md:text-base font-medium shadow-sm relative transition-all duration-500 group-hover/msg:shadow-2xl
                     ${isMe 
                       ? 'bg-slate-950 dark:bg-slate-700 text-white rounded-tr-sm shadow-xl shadow-slate-900/10' 
-                      : isAI
-                        ? 'bg-indigo-600 text-white rounded-tl-sm shadow-indigo-600/20'
-                        : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-sm border border-slate-100 dark:border-slate-700 shadow-lg shadow-slate-200/50'
+                      : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-sm border border-slate-100 dark:border-slate-700 shadow-lg shadow-slate-200/50'
                     }
                   `}
                 >
@@ -376,7 +315,7 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
                   
                   <div className="leading-relaxed font-bold ProseMirror" dangerouslySetInnerHTML={{ __html: msg.text }} />
                   
-                  {extractedUrl && !isAI && <div className="mt-5"><LinkPreview url={extractedUrl} compact={true} /></div>}
+                  {extractedUrl && <div className="mt-5"><LinkPreview url={extractedUrl} compact={true} /></div>}
                   
                   <div className={`text-[8px] font-black uppercase mt-3 font-mono tracking-widest opacity-40 flex items-center gap-1.5 ${isMe ? 'justify-end text-white' : 'justify-start text-slate-500 dark:text-slate-400'}`}>
                     {msg.timestamp?.toDate ? msg.timestamp.toDate().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'HANDSHAKE...'}
@@ -387,22 +326,6 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
             </div>
           );
         })}
-
-        {isAITyping && (
-            <div className="flex justify-start animate-in fade-in slide-in-from-left-4 duration-300">
-               <div className="flex flex-col items-start gap-2">
-                  <div className="flex items-center gap-3 ml-2">
-                      <div className="w-7 h-7 rounded-xl bg-indigo-600 flex items-center justify-center text-white scale-75"><ICONS.Admin /></div>
-                      <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest font-mono">AI_Generating...</span>
-                  </div>
-                  <div className="bg-indigo-50 dark:bg-indigo-900/20 p-5 rounded-[2.2rem] rounded-tl-sm flex gap-1.5 items-center">
-                      <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                      <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                      <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" />
-                  </div>
-               </div>
-            </div>
-        )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -458,7 +381,7 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
                     content={newMessage} 
                     onChange={setNewMessage}
                     onSubmit={handleSendMessage}
-                    placeholder={isAIChat ? "Ask VibeAI anything..." : "Transmit encrypted sequence..."}
+                    placeholder="Transmit encrypted sequence..."
                     className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-[2rem] px-2 py-1 text-slate-900 dark:text-white"
                     minHeight="auto"
                 />
