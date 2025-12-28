@@ -28,7 +28,7 @@ export const CONFIG = {
   },
   APP_CHECK: {
     // Use the provided site key, but allow environment override for production deployment
-    reCaptchaSiteKey: getEnv('VITE_RECAPTCHA_SITE_KEY') || '6LcNv90qAAAAALm_18p0906zM8M9_n5N0n2_M8M9',
+    reCaptchaSiteKey: getEnv('VITE_RECAPTCHA_SITE_KEY'),
   },
   CLOUDINARY: {
     cloudName: getEnv('VITE_CLOUDINARY_CLOUD_NAME'),
