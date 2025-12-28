@@ -23,14 +23,6 @@ export interface RichTextEditorRef {
 type CustomElement = { type: 'paragraph' | 'block-quote' | 'bulleted-list' | 'list-item' | 'code-block'; children: CustomText[] };
 type CustomText = { text: string; bold?: boolean; italic?: boolean; code?: boolean; underline?: boolean };
 
-declare module 'slate' {
-  interface CustomTypes {
-    Editor: BaseEditor & ReactEditor;
-    Element: CustomElement;
-    Text: CustomText;
-  }
-}
-
 // --- CONSTANTS & HOTKEYS ---
 
 const HOTKEYS: Record<string, string> = {
@@ -46,17 +38,18 @@ const LIST_TYPES = ['bulleted-list'];
 
 const serialize = (node: Descendant): string => {
   if (Text.isText(node)) {
-    let string = escapeHtml(node.text);
-    if (node.bold) string = `<strong>${string}</strong>`;
-    if (node.italic) string = `<em>${string}</em>`;
-    if (node.underline) string = `<u>${string}</u>`;
-    if (node.code) string = `<code>${string}</code>`;
+    const text = node as CustomText;
+    let string = escapeHtml(text.text);
+    if (text.bold) string = `<strong>${string}</strong>`;
+    if (text.italic) string = `<em>${string}</em>`;
+    if (text.underline) string = `<u>${string}</u>`;
+    if (text.code) string = `<code>${string}</code>`;
     return string;
   }
 
   const children = node.children.map(n => serialize(n)).join('');
 
-  switch (node.type) {
+  switch ((node as CustomElement).type) {
     case 'block-quote':
       return `<blockquote><p>${children}</p></blockquote>`;
     case 'bulleted-list':
@@ -95,15 +88,15 @@ const deserialize = (el: HTMLElement): Descendant | Descendant[] | null => {
     case 'BR':
       return { text: '\n' };
     case 'BLOCKQUOTE':
-      return { type: 'block-quote', children };
+      return { type: 'block-quote', children } as CustomElement;
     case 'UL':
-      return { type: 'bulleted-list', children };
+      return { type: 'bulleted-list', children } as CustomElement;
     case 'LI':
-      return { type: 'list-item', children };
+      return { type: 'list-item', children } as CustomElement;
     case 'PRE':
-      return { type: 'code-block', children };
+      return { type: 'code-block', children } as CustomElement;
     case 'P':
-      return { type: 'paragraph', children };
+      return { type: 'paragraph', children } as CustomElement;
     case 'A':
       return { text: nodeEl.textContent || '' }; // Simplify links to text for now
     case 'STRONG':
@@ -182,7 +175,7 @@ const isBlockActive = (editor: Editor, format: string) => {
   const [match] = Array.from(
     Editor.nodes(editor, {
       at: Editor.unhangRange(editor, selection),
-      match: n => !Editor.isEditor(n) && SlateElement.isElement(n) && n.type === format,
+      match: n => !Editor.isEditor(n) && SlateElement.isElement(n) && (n as CustomElement).type === format,
     })
   );
 
@@ -203,7 +196,7 @@ const toggleBlock = (editor: Editor, format: string) => {
     match: n =>
       !Editor.isEditor(n) &&
       SlateElement.isElement(n) &&
-      LIST_TYPES.includes(n.type),
+      LIST_TYPES.includes((n as CustomElement).type),
     split: true,
   });
 
@@ -266,7 +259,7 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
             });
             // Reset to empty paragraph to avoid Slate errors
             Transforms.removeNodes(editor, { at: [0] });
-            Transforms.insertNodes(editor, { type: 'paragraph', children: [{ text: '' }] }, { at: [0] });
+            Transforms.insertNodes(editor, { type: 'paragraph', children: [{ text: '' }] } as CustomElement, { at: [0] });
         }
     }));
 
