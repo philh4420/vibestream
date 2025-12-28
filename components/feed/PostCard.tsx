@@ -62,6 +62,32 @@ export const PostCard: React.FC<PostCardProps> = ({
     return urls.length > 0 ? urls[0] : null;
   }, [post.content]);
 
+  // RELATIVE TIME CALCULATION
+  const displayTime = useMemo(() => {
+    if (!post.timestamp) return { relative: post.createdAt, full: post.createdAt };
+    
+    const date = post.timestamp.toDate ? post.timestamp.toDate() : new Date(post.timestamp);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    let relative = '';
+    if (diffInSeconds < 60) relative = 'Just now';
+    else if (diffInSeconds < 3600) relative = `${Math.floor(diffInSeconds / 60)}m ago`;
+    else if (diffInSeconds < 86400) relative = `${Math.floor(diffInSeconds / 3600)}h ago`;
+    else if (diffInSeconds < 604800) relative = `${Math.floor(diffInSeconds / 86400)}d ago`;
+    else relative = date.toLocaleDateString(locale, { day: '2-digit', month: 'short' });
+
+    const full = date.toLocaleString(locale, { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric',
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+    
+    return { relative, full };
+  }, [post.timestamp, post.createdAt, locale]);
+
   const handlePulseStart = (e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
     pulseTimerRef.current = setTimeout(() => setIsPulseMenuOpen(true), 600);
@@ -169,8 +195,11 @@ export const PostCard: React.FC<PostCardProps> = ({
                     </h3>
                     <div className="text-indigo-500 scale-75 drop-shadow-sm"><ICONS.Verified /></div>
                 </div>
-                <div className="flex items-center gap-3">
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest font-mono">{post.createdAt}</p>
+                <div className="flex items-center gap-2">
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest font-mono" title={displayTime.full}>
+                        {displayTime.relative}
+                    </p>
+                    <span className="w-1 h-1 rounded-full bg-slate-200 dark:bg-slate-800" />
                     {post.location && (
                         <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700">
                            <div className="scale-50 text-indigo-500"><ICONS.Globe /></div>
