@@ -466,8 +466,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
                 {isSubmittingComment ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <svg className="w-4 h-4 rotate-90 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>}
               </button>
            </div>
-        </div>
-      </form>
+        </div>  
+      </div>
       
       <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} accept="image/*,video/*" />
 

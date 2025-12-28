@@ -25,6 +25,7 @@ import { GiphyPicker } from '../ui/GiphyPicker';
 import { DeleteConfirmationModal } from '../ui/DeleteConfirmationModal';
 import { uploadToCloudinary } from '../../services/cloudinary';
 import { GiphyGif } from '../../services/giphy';
+import { RichTextEditor, RichTextEditorRef } from '../ui/RichTextEditor';
 
 interface ChatInterfaceProps {
   chatId: string;
@@ -51,7 +52,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId, currentUse
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<RichTextEditorRef>(null);
 
   // Read Receipts Logic
   useEffect(() => {
@@ -117,12 +118,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId, currentUse
   };
 
   const insertEmoji = (emoji: string) => {
-    setNewMessage(prev => prev + emoji);
-    inputRef.current?.focus();
+    editorRef.current?.insertContent(emoji);
   };
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendMessage = async () => {
     if ((!newMessage.trim() && !selectedFile && !selectedGif) || !chatId || isSending) return;
     
     setIsSending(true);
@@ -187,6 +186,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId, currentUse
       }
 
       setNewMessage('');
+      editorRef.current?.clear();
       clearMedia();
     } catch (e) { 
       addToast("Transmission Interrupted", "error"); 
@@ -303,7 +303,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId, currentUse
                     </div>
                   ))}
 
-                  {msg.text}
+                  <div className="leading-relaxed" dangerouslySetInnerHTML={{ __html: msg.text }} />
+                  
                   <div className={`text-[7px] font-black uppercase mt-3 opacity-30 font-mono tracking-widest ${isMe ? 'text-right' : 'text-left'}`}>
                     {msg.timestamp?.toDate ? msg.timestamp.toDate().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'SYNCING...'}
                     {isMe && msg.isRead && <span className="text-emerald-400 ml-1">READ</span>}
@@ -342,7 +343,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId, currentUse
           </div>
         )}
 
-        <form onSubmit={handleSendMessage} className="flex gap-2 md:gap-4 max-w-5xl mx-auto items-end">
+        <div className="flex gap-2 md:gap-4 max-w-5xl mx-auto items-end">
           {/* Media Tools */}
           <div className="flex gap-1.5 md:gap-2 pb-1.5 shrink-0">
             <button 
@@ -369,17 +370,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId, currentUse
           </div>
 
           <div className="flex-1 relative">
-            <input 
-              ref={inputRef}
-              type="text" 
-              value={newMessage} 
-              onChange={(e) => setNewMessage(e.target.value)} 
-              placeholder={selectedFile ? "Add a caption..." : "Establish broadcast sequence..."} 
-              className="w-full bg-slate-100/80 border border-slate-200 rounded-[2.2rem] pl-6 pr-6 py-4 md:py-5 text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/5 focus:bg-white focus:border-indigo-500 transition-all outline-none italic placeholder:text-slate-400 shadow-inner" 
+            <RichTextEditor 
+                ref={editorRef}
+                content={newMessage} 
+                onChange={setNewMessage}
+                onSubmit={handleSendMessage}
+                placeholder={selectedFile ? "Add a caption..." : "Establish broadcast sequence..."}
+                className="w-full bg-slate-100/80 border border-slate-200 rounded-[2.2rem] px-6 py-3 text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/5 focus:bg-white focus:border-indigo-500 transition-all outline-none italic placeholder:text-slate-400 shadow-inner"
+                minHeight="50px"
             />
           </div>
           
           <button 
+            onClick={handleSendMessage}
             disabled={(!newMessage.trim() && !selectedFile && !selectedGif) || isSending} 
             className="h-[52px] md:h-[58px] px-6 md:px-8 bg-slate-950 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] hover:bg-black transition-all active:scale-95 disabled:opacity-30 italic shadow-xl group flex items-center justify-center shrink-0"
           >
@@ -389,7 +392,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId, currentUse
               <svg className="w-5 h-5 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
             )}
           </button>
-        </form>
+        </div>
       </div>
 
       {/* Hidden Pickers & Inputs */}

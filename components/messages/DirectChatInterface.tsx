@@ -355,7 +355,7 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
               </button>
             </div>
 
-            <div className="flex-1">
+            <div className="flex-1 relative">
                 <RichTextEditor 
                     ref={editorRef}
                     content={newMessage} 
