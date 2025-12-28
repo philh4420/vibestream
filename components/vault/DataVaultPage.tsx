@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
@@ -124,7 +123,7 @@ export const DataVaultPage: React.FC<DataVaultPageProps> = ({ currentUser, local
       </div>
 
       {/* 2. CONTROL INTERFACE */}
-      <div className="sticky top-[calc(var(--header-h)+1rem)] z-30 mb-8 px-2 md:px-0">
+      <div className="relative z-30 mb-8 px-2 md:px-0">
          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-white/60 dark:border-slate-700 p-2 rounded-[2.5rem] shadow-[0_20px_60px_-20px_rgba(0,0,0,0.1)] flex flex-col md:flex-row items-center justify-between gap-3">
             
             {/* Filter Tabs */}

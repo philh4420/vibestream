@@ -147,7 +147,7 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
       </div>
 
       {/* 2. Advanced Control Bar */}
-      <div className="sticky top-[calc(var(--header-h)+1rem)] z-30 mb-8 px-2 md:px-0">
+      <div className="relative z-30 mb-8 px-2 md:px-0">
          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/50 dark:border-white/10 rounded-[2rem] p-1.5 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.05)] flex flex-col md:flex-row gap-2">
             
             <div className="flex items-center justify-between w-full">

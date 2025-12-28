@@ -1,4 +1,3 @@
-
 import React, { useCallback, useMemo, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { createEditor, Descendant, Editor, Element as SlateElement, Transforms, Text } from 'slate';
 import { Slate, Editable, withReact, useSlate, ReactEditor } from 'slate-react';
@@ -166,7 +165,7 @@ const ToggleButton = ({ format, icon: Icon, title }: { format: string, icon: Rea
 
 const Toolbar = () => {
   return (
-    <div className="flex flex-wrap items-center gap-1 p-1.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800 rounded-2xl mb-4 shadow-sm sticky top-0 z-20">
+    <div className="flex flex-wrap items-center gap-1 p-1.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800 rounded-2xl mb-4 shadow-sm relative z-20">
       <ToggleButton format="heading-one" title="Heading 1" icon={<span className="font-black text-xs">H1</span>} />
       <ToggleButton format="heading-two" title="Heading 2" icon={<span className="font-bold text-xs">H2</span>} />
       

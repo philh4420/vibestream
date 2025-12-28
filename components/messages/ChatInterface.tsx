@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { db } from '../../services/firebase';
@@ -229,7 +228,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId, currentUse
   return (
     <div className="flex flex-col h-full bg-[#fdfdfe] relative animate-in fade-in duration-300">
       {/* IMMERSIVE HEADER */}
-      <div className="px-6 md:px-8 py-4 md:py-6 border-b flex items-center justify-between backdrop-blur-3xl sticky top-0 z-20 bg-white/70 border-slate-100/50">
+      <div className="px-6 md:px-8 py-4 md:py-6 border-b flex items-center justify-between backdrop-blur-3xl relative z-20 bg-white/70 border-slate-100/50">
         <div className="flex items-center gap-4 md:gap-5">
           <button onClick={onBack} className="p-2 md:p-3 text-slate-400 active:scale-90 transition-transform hover:bg-slate-100 rounded-xl"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3.5}><path d="M15 19l-7-7 7-7" /></svg></button>
           <div className="relative group">

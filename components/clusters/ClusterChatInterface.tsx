@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { db } from '../../services/firebase';
@@ -245,7 +244,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-[#fdfdfe] dark:bg-slate-900 relative">
-      <div className="px-6 py-4 border-b flex items-center justify-between backdrop-blur-3xl sticky top-0 z-20 bg-white/70 dark:bg-slate-900/70 border-slate-100 dark:border-slate-800">
+      <div className="px-6 py-4 border-b flex items-center justify-between backdrop-blur-3xl relative z-20 bg-white/70 dark:bg-slate-900/70 border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-4">
           <button onClick={onBack} className="p-2 text-slate-400 active:scale-90 transition-transform hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3.5}><path d="M15 19l-7-7 7-7" /></svg>

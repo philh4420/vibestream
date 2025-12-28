@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { db } from '../../services/firebase';
@@ -230,7 +229,7 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
 
   return (
     <div className="flex flex-col h-full relative animate-in fade-in duration-300">
-      <div className="absolute top-4 left-4 right-4 z-20">
+      <div className="relative mx-4 mt-4 z-20">
         <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/50 dark:border-slate-700 rounded-[2rem] p-3 shadow-sm flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button onClick={onBack} className="w-10 h-10 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-2xl flex items-center justify-center transition-all active:scale-90 border border-slate-100 dark:border-slate-700 shadow-sm">
@@ -267,7 +266,7 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar scroll-container px-4 md:px-8 pt-28 pb-32 space-y-6">
+      <div className="flex-1 overflow-y-auto no-scrollbar scroll-container px-4 md:px-8 pt-4 pb-32 space-y-6">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full opacity-30 text-center">
             <div className="w-20 h-20 bg-indigo-900/10 dark:bg-indigo-500/10 rounded-[2.5rem] flex items-center justify-center mb-6 text-indigo-900 dark:text-indigo-400 scale-110"><ICONS.Messages /></div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Gathering, User, Region } from '../../types';
 import { ICONS } from '../../constants';
@@ -338,7 +337,7 @@ END:VCALENDAR`;
     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24">
       
       {/* 1. NAVIGATION HEADER */}
-      <div className="flex items-center justify-between sticky top-0 z-30 py-2 -mt-2 mb-2 bg-[#fcfcfd]/90 dark:bg-slate-900/90 backdrop-blur-md">
+      <div className="flex items-center justify-between relative z-30 py-2 -mt-2 mb-2 bg-[#fcfcfd]/90 dark:bg-slate-900/90 backdrop-blur-md">
         <button 
           onClick={onBack}
           className="flex items-center gap-3 px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl transition-all active:scale-95 shadow-sm group"

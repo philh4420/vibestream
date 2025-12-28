@@ -1,4 +1,3 @@
-
 import React, { useEffect, useMemo } from 'react';
 import { Post, User, Region } from '../../types';
 import { ICONS } from '../../constants';
@@ -51,7 +50,7 @@ export const SinglePostView: React.FC<SinglePostViewProps> = ({
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-32 max-w-4xl mx-auto w-full">
-      <div className="flex items-center justify-between sticky top-0 z-30 py-4 -mt-6 px-2 bg-[#fcfcfd]/90 dark:bg-[#020617]/90 backdrop-blur-xl border-b border-transparent dark:border-slate-800/50 transition-colors">
+      <div className="flex items-center justify-between relative z-30 py-4 -mt-6 px-2 bg-[#fcfcfd]/90 dark:bg-[#020617]/90 backdrop-blur-xl border-b border-transparent dark:border-slate-800/50 transition-colors">
         <button 
           onClick={onClose}
           className="flex items-center gap-3 px-5 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl transition-all active:scale-95 shadow-sm group"

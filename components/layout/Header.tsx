@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { db, auth } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
@@ -252,7 +251,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header 
-      className="fixed top-0 left-0 right-0 z-[1000] glass-panel border-b border-slate-200/50 dark:border-slate-800/50 shadow-[0_4px_30px_rgba(0,0,0,0.03)] flex items-center transition-all duration-500 backdrop-blur-xl bg-white/70 dark:bg-slate-950/70 supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-slate-950/60" 
+      className="relative w-full z-[1000] glass-panel border-b border-slate-200/50 dark:border-slate-800/50 shadow-[0_4px_30px_rgba(0,0,0,0.03)] flex items-center transition-all duration-500 backdrop-blur-xl bg-white/70 dark:bg-slate-950/70 supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-slate-950/60" 
       style={{ 
         height: 'var(--header-h)',
         paddingLeft: 'max(1rem, var(--sal))',
@@ -455,28 +454,6 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
 
                   <div className="p-6 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
-                    {/* Mobile Nav Groups */}
-                    <div className="lg:hidden space-y-6">
-                      {navGroups.map(group => (
-                        <div key={group.title} className="space-y-2">
-                           <p className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.3em] font-mono ml-1">{group.title}</p>
-                           <div className="grid grid-cols-2 gap-2">
-                              {group.items.map(item => (
-                                <button 
-                                  key={item.label} 
-                                  onClick={() => { onNavigate(item.route); setIsSystemMenuOpen(false); }} 
-                                  className={`flex items-center gap-3 p-3 rounded-2xl transition-all ${activeRoute === item.route ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30'}`}
-                                >
-                                   <div className="scale-75"><item.icon /></div>
-                                   <span className="text-[10px] font-black uppercase tracking-wide truncate">{item.label}</span>
-                                   {item.badge && <span className="ml-auto text-[7px] font-black bg-rose-500 text-white px-1.5 py-0.5 rounded animate-pulse">{item.badge}</span>}
-                                </button>
-                              ))}
-                           </div>
-                        </div>
-                      ))}
-                    </div>
-                    
                     {/* Region Selector */}
                     <div className="space-y-3">
                       <p className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.3em] font-mono ml-1">Grid_Region</p>
