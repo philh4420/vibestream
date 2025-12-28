@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 interface DeleteConfirmationModalProps {
   isOpen: boolean;
@@ -18,11 +18,44 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
   onCancel,
   confirmText = "CONFIRM_PURGE"
 }) => {
+  const cancelButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Focus trap / auto-focus management
+  useEffect(() => {
+    if (isOpen) {
+      // Small timeout to allow render
+      setTimeout(() => {
+        cancelButtonRef.current?.focus();
+      }, 50);
+    }
+  }, [isOpen]);
+
+  // Handle Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onCancel();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onCancel]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[3000] flex items-center justify-center p-6 animate-in fade-in duration-300">
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={onCancel}></div>
+    <div 
+      className="fixed inset-0 z-[3000] flex items-center justify-center p-6 animate-in fade-in duration-300"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      aria-describedby="modal-description"
+    >
+      <div 
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" 
+        onClick={onCancel}
+        aria-hidden="true"
+      ></div>
       
       <div className="relative bg-white dark:bg-slate-900 w-full max-w-sm rounded-[3.5rem] p-10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] border border-slate-100 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-500">
         {/* Kinetic Warning Header */}
@@ -37,8 +70,8 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
           </div>
           
           <div>
-            <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic leading-none mb-3">{title}</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-bold leading-relaxed px-4 uppercase tracking-tight">
+            <h3 id="modal-title" className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic leading-none mb-3">{title}</h3>
+            <p id="modal-description" className="text-xs text-slate-500 dark:text-slate-400 font-bold leading-relaxed px-4 uppercase tracking-tight">
               {description}
             </p>
           </div>
@@ -47,14 +80,17 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
         <div className="flex flex-col gap-3">
           <button 
             onClick={(e) => { e.stopPropagation(); onConfirm(); }}
-            className="w-full py-6 bg-rose-600 text-white rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.4em] shadow-2xl shadow-rose-500/30 hover:bg-rose-700 transition-all active:scale-95 italic"
+            className="w-full py-6 bg-rose-600 text-white rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.4em] shadow-2xl shadow-rose-500/30 hover:bg-rose-700 transition-all active:scale-95 italic focus:ring-4 focus:ring-rose-500/30 outline-none"
+            aria-label={`Confirm ${confirmText}`}
           >
             {confirmText}
           </button>
           
           <button 
+            ref={cancelButtonRef}
             onClick={(e) => { e.stopPropagation(); onCancel(); }}
-            className="w-full py-5 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.4em] hover:bg-slate-100 dark:hover:bg-slate-700 transition-all active:scale-95 italic border border-slate-100 dark:border-slate-700"
+            className="w-full py-5 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.4em] hover:bg-slate-100 dark:hover:bg-slate-700 transition-all active:scale-95 italic border border-slate-100 dark:border-slate-700 focus:ring-4 focus:ring-slate-500/20 outline-none"
+            aria-label="Cancel action"
           >
             ABORT_ACTION
           </button>

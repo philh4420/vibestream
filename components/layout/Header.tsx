@@ -66,15 +66,18 @@ const getNotificationIcon = (type: string, pulseId?: string) => {
         case 'gathering_create': return <div className={`${iconClasses} bg-slate-900 dark:bg-white text-white dark:text-slate-900`}><ICONS.Gatherings /></div>;
         default: return <div className={`${iconClasses} bg-slate-700`}><ICONS.Bell /></div>;
     }
-};
+  };
 
 const NotificationItem = ({ notif, onDelete }: { notif: AppNotification; onDelete: (id: string) => void }) => {
   return (
-    <div className={`group relative flex items-start gap-3 p-3 rounded-[1.5rem] transition-all duration-300 cursor-pointer overflow-hidden active:scale-[0.98] border ${
+    <div 
+      className={`group relative flex items-start gap-3 p-3 rounded-[1.5rem] transition-all duration-300 cursor-pointer overflow-hidden active:scale-[0.98] border focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none ${
         !notif.isRead 
           ? 'bg-white dark:bg-slate-900 border-indigo-100 dark:border-indigo-900/50 shadow-md z-10' 
           : 'bg-transparent border-transparent hover:bg-slate-50 dark:hover:bg-slate-800/50'
       }`}
+      tabIndex={0}
+      role="listitem"
     >
       {/* Unread Indicator */}
       {!notif.isRead && (
@@ -100,7 +103,8 @@ const NotificationItem = ({ notif, onDelete }: { notif: AppNotification; onDelet
       
       <button 
         onClick={(e) => { e.stopPropagation(); onDelete(notif.id); }}
-        className="self-center p-2 text-slate-300 dark:text-slate-600 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all active:scale-90 opacity-0 group-hover:opacity-100"
+        className="self-center p-2 text-slate-300 dark:text-slate-600 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all active:scale-90 opacity-0 group-hover:opacity-100 focus:opacity-100"
+        aria-label="Delete notification"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" /></svg>
       </button>
@@ -254,13 +258,15 @@ export const Header: React.FC<HeaderProps> = ({
         paddingLeft: 'max(1rem, var(--sal))',
         paddingRight: 'max(1rem, var(--sar))'
       }}
+      role="banner"
     >
       <div className="flex items-center justify-between w-full max-w-[2560px] mx-auto h-full px-4 md:px-6 relative">
         
         <div className="flex items-center gap-4 md:gap-6 flex-1 min-w-0">
           <button 
-            className="w-10 h-10 md:w-11 md:h-11 bg-slate-950 dark:bg-white rounded-[1.2rem] flex items-center justify-center shadow-lg active:scale-95 transition-all shrink-0 hover:bg-indigo-600 dark:hover:bg-indigo-400 group relative overflow-hidden ring-2 ring-white dark:ring-slate-900"
+            className="w-10 h-10 md:w-11 md:h-11 bg-slate-950 dark:bg-white rounded-[1.2rem] flex items-center justify-center shadow-lg active:scale-95 transition-all shrink-0 hover:bg-indigo-600 dark:hover:bg-indigo-400 group relative overflow-hidden ring-2 ring-white dark:ring-slate-900 focus:ring-offset-2 focus:ring-indigo-500"
             onClick={() => onNavigate(AppRoute.FEED)}
+            aria-label="Go to Home Feed"
           >
             <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <span className="text-white dark:text-slate-950 font-black italic text-xl group-hover:scale-110 transition-transform relative z-10">V</span>
@@ -269,14 +275,16 @@ export const Header: React.FC<HeaderProps> = ({
           <form 
             onSubmit={handleSearchSubmit}
             className={`relative flex items-center transition-all duration-500 ${isSearchFocused ? 'w-full max-w-md z-50' : 'w-10 md:w-64'}`}
+            role="search"
           >
             <div className={`flex items-center gap-3 px-3.5 py-2.5 rounded-[1.2rem] transition-all duration-300 ${isSearchFocused ? 'bg-white dark:bg-slate-900 border-indigo-200 dark:border-indigo-800 shadow-xl ring-4 ring-indigo-50 dark:ring-indigo-900/20 w-full' : 'bg-slate-100/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent w-full cursor-pointer md:cursor-text'}`}>
-              <button type="submit" className={`shrink-0 transition-colors ${isSearchFocused ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`}>
+              <button type="submit" className={`shrink-0 transition-colors ${isSearchFocused ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`} aria-label="Search Grid">
                 <ICONS.Search />
               </button>
               <input 
                 type="text" 
                 placeholder="Scan grid nodes..." 
+                aria-label="Search query"
                 value={localSearch}
                 onChange={(e) => setLocalSearch(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
@@ -292,7 +300,8 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Resonance Points Display (Gamification) */}
           <button 
             onClick={() => onNavigate(AppRoute.MARKETPLACE)}
-            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 transition-all group"
+            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 transition-all group focus:ring-2 focus:ring-indigo-500"
+            aria-label="Open Marketplace"
           >
              <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center text-[10px] shadow-sm">
                 <ICONS.Marketplace />
@@ -306,7 +315,9 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="relative" ref={notifRef}>
             <button 
               onClick={() => setIsNotifOpen(!isNotifOpen)}
-              className={`w-10 h-10 md:w-11 md:h-11 rounded-[1.2rem] flex items-center justify-center transition-all relative touch-active border ${isNotifOpen ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900' : 'bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300'}`}
+              className={`w-10 h-10 md:w-11 md:h-11 rounded-[1.2rem] flex items-center justify-center transition-all relative touch-active border focus:ring-2 focus:ring-indigo-500 ${isNotifOpen ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900' : 'bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300'}`}
+              aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} new)` : ''}`}
+              aria-expanded={isNotifOpen}
             >
               <ICONS.Bell />
               {unreadCount > 0 && (
@@ -317,7 +328,11 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             {isNotifOpen && (
-              <div className="absolute right-0 md:right-[-80px] top-full mt-6 w-[min(92vw,420px)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.25)] border border-white/20 dark:border-white/10 ring-1 ring-slate-950/5 overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-4 duration-400 flex flex-col max-h-[85vh]">
+              <div 
+                className="absolute right-0 md:right-[-80px] top-full mt-6 w-[min(92vw,420px)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.25)] border border-white/20 dark:border-white/10 ring-1 ring-slate-950/5 overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-4 duration-400 flex flex-col max-h-[85vh]"
+                role="dialog"
+                aria-label="Notification Center"
+              >
                  <div className="p-6 pb-4 border-b border-slate-100/80 dark:border-slate-800/80 flex items-center justify-between bg-white/50 dark:bg-slate-900/50 sticky top-0 z-10 backdrop-blur-md">
                    <div>
                      <h3 className="text-lg font-black text-slate-950 dark:text-white tracking-tighter uppercase italic">Signal_Log</h3>
@@ -326,14 +341,14 @@ export const Header: React.FC<HeaderProps> = ({
                    {unreadCount > 0 && (
                      <button 
                        onClick={() => onMarkRead()}
-                       className="text-[9px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all border border-indigo-100 dark:border-indigo-900 shadow-sm"
+                       className="text-[9px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all border border-indigo-100 dark:border-indigo-900 shadow-sm focus:ring-2 focus:ring-indigo-500"
                      >
                        MARK_ALL_READ
                      </button>
                    )}
                  </div>
                  
-                 <div className="flex-1 overflow-y-auto no-scrollbar scroll-container bg-white/40 dark:bg-slate-900/40 p-4 space-y-6">
+                 <div className="flex-1 overflow-y-auto no-scrollbar scroll-container bg-white/40 dark:bg-slate-900/40 p-4 space-y-6" role="list">
                    {notifications.length > 0 ? (
                      <>
                         {/* UNREAD SECTION */}
@@ -368,7 +383,7 @@ export const Header: React.FC<HeaderProps> = ({
                  
                  {/* Footer Link */}
                  <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-center">
-                    <button onClick={() => { onNavigate(AppRoute.NOTIFICATIONS); setIsNotifOpen(false); }} className="text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest hover:underline">
+                    <button onClick={() => { onNavigate(AppRoute.NOTIFICATIONS); setIsNotifOpen(false); }} className="text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-lg px-2">
                         View_Full_History
                     </button>
                  </div>
@@ -380,13 +395,15 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="relative" ref={menuRef}>
             <button 
               onClick={() => { setIsSystemMenuOpen(!isSystemMenuOpen); setIsHubOpen(false); }}
-              className="flex items-center gap-3 p-1.5 pr-1.5 md:pr-5 rounded-[1.4rem] bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-300 active:scale-95 group"
+              className="flex items-center gap-3 p-1.5 pr-1.5 md:pr-5 rounded-[1.4rem] bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-300 active:scale-95 group focus:ring-2 focus:ring-indigo-500"
+              aria-label="User Menu"
+              aria-expanded={isSystemMenuOpen}
             >
               <div className="relative shrink-0">
                 <img 
                   src={userData?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${auth.currentUser?.uid}`} 
                   className={`w-8 h-8 md:w-9 md:h-9 rounded-[1rem] object-cover shadow-sm bg-slate-100 dark:bg-slate-800 ${userData?.cosmetics?.activeBorder ? `cosmetic-border-${userData.cosmetics.activeBorder}` : ''}`} 
-                  alt="User" 
+                  alt="" 
                 />
                 <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-[2px] border-white dark:border-slate-900 shadow-sm ${getStatusStyle(userData?.presenceStatus)}`} />
               </div>
@@ -406,13 +423,18 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             {isSystemMenuOpen && !isHubOpen && (
-              <div className="absolute right-0 top-full mt-4 w-[min(90vw,360px)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.25)] border border-white/20 dark:border-white/10 ring-1 ring-slate-950/5 overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-4 duration-400 flex flex-col max-h-[85vh]">
+              <div 
+                className="absolute right-0 top-full mt-4 w-[min(90vw,360px)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.25)] border border-white/20 dark:border-white/10 ring-1 ring-slate-950/5 overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-4 duration-400 flex flex-col max-h-[85vh]"
+                role="dialog"
+                aria-label="System Menu"
+              >
                   
                   {/* Status Hub Trigger */}
                   <div className="p-2 shrink-0">
                     <button 
                       onClick={() => { setIsHubOpen(true); setIsSystemMenuOpen(false); }}
-                      className="w-full p-4 bg-slate-50/80 dark:bg-slate-800/80 rounded-[2rem] hover:bg-white dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:border-indigo-100 dark:hover:border-indigo-900 hover:shadow-lg transition-all text-left group flex items-start gap-4"
+                      className="w-full p-4 bg-slate-50/80 dark:bg-slate-800/80 rounded-[2rem] hover:bg-white dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:border-indigo-100 dark:hover:border-indigo-900 hover:shadow-lg transition-all text-left group flex items-start gap-4 focus:ring-2 focus:ring-indigo-500"
+                      aria-label="Update Status"
                     >
                       <div className="w-14 h-14 bg-white dark:bg-slate-700 rounded-[1.4rem] flex items-center justify-center text-3xl shadow-sm border border-slate-100 dark:border-slate-600 shrink-0 group-hover:scale-110 transition-transform">
                          {userData?.statusEmoji || '⚡'}
@@ -496,7 +518,11 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Hub Dropdown (Replacing Modal) */}
             {isHubOpen && (
-              <div className="absolute right-0 top-full mt-4 w-[min(92vw,400px)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.25)] border border-white/20 dark:border-white/10 ring-1 ring-slate-950/5 overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-4 duration-400 flex flex-col max-h-[85vh]">
+              <div 
+                className="absolute right-0 top-full mt-4 w-[min(92vw,400px)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.25)] border border-white/20 dark:border-white/10 ring-1 ring-slate-950/5 overflow-hidden z-[100] animate-in zoom-in-95 slide-in-from-top-4 duration-400 flex flex-col max-h-[85vh]"
+                role="dialog"
+                aria-label="Status Configuration"
+              >
                   
                   <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-rose-500" />
                   
@@ -505,7 +531,11 @@ export const Header: React.FC<HeaderProps> = ({
                        <h2 className="text-xl font-black text-slate-950 dark:text-white tracking-tighter uppercase italic leading-none">Neural_State</h2>
                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] font-mono mt-1">Broadcast Config</p>
                      </div>
-                     <button onClick={() => { setIsHubOpen(false); setIsSystemMenuOpen(true); }} className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-all">
+                     <button 
+                        onClick={() => { setIsHubOpen(false); setIsSystemMenuOpen(true); }} 
+                        className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-all"
+                        aria-label="Close Status Menu"
+                     >
                        <svg className="w-5 h-5 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
                      </button>
                   </div>

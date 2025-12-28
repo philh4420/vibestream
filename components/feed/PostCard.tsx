@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Post, User } from '../../types';
 import { ICONS, PULSE_FREQUENCIES } from '../../constants';
@@ -109,15 +110,18 @@ export const PostCard: React.FC<PostCardProps> = ({
       clearTimeout(pulseTimerRef.current);
       if (!isPulseMenuOpen) {
         onLike(post.id);
-        triggerRipple(e, 'rose');
+        // Only trigger visual ripple if mouse event
+        if ('clientX' in e) {
+            triggerRipple(e as React.MouseEvent, 'rose');
+        }
       }
     }
   };
 
-  const triggerRipple = (e: any, color: string) => {
+  const triggerRipple = (e: React.MouseEvent, color: string) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
-    const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
     setRippleEffect({ x, y, color });
     setTimeout(() => setRippleEffect(null), 1000);
   };
@@ -211,8 +215,17 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   return (
     <article 
+      className={`group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[3rem] transition-all duration-500 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)] mb-10 relative cursor-pointer overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${isPulse ? 'border-l-[6px] border-l-indigo-600' : ''} ${filterClass}`}
       onClick={() => onViewPost?.(post)}
-      className={`group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[3rem] transition-all duration-500 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)] mb-10 relative cursor-pointer overflow-hidden ${isPulse ? 'border-l-[6px] border-l-indigo-600' : ''} ${filterClass}`}
+      onKeyDown={(e) => {
+        if ((e.key === 'Enter' || e.key === ' ') && onViewPost) {
+            e.preventDefault();
+            onViewPost(post);
+        }
+      }}
+      tabIndex={0}
+      role="article"
+      aria-label={`Post by ${post.authorName}`}
     >
       {post.relaySource && (
         <div className="px-8 py-3 bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3">
@@ -256,7 +269,9 @@ export const PostCard: React.FC<PostCardProps> = ({
             <div className="relative" ref={optionsRef} onClick={(e) => e.stopPropagation()}>
               <button 
                 onClick={() => setShowOptions(!showOptions)}
-                className={`w-10 h-10 flex items-center justify-center rounded-2xl transition-all active:scale-90 ${showOptions ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                className={`w-10 h-10 flex items-center justify-center rounded-2xl transition-all active:scale-90 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${showOptions ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                aria-label="Post Options"
+                aria-expanded={showOptions}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" /></svg>
               </button>
@@ -341,6 +356,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                     key={idx} 
                     onClick={(e) => { e.stopPropagation(); setCurrentMediaIndex(idx); }}
                     className={`w-2 h-2 rounded-full transition-all ${currentMediaIndex === idx ? 'bg-white scale-125' : 'bg-white/40 hover:bg-white/60'}`} 
+                    aria-label={`View media ${idx + 1}`}
                   />
                 ))}
               </div>
@@ -353,11 +369,12 @@ export const PostCard: React.FC<PostCardProps> = ({
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button 
                 onMouseDown={handlePulseStart} onMouseUp={handlePulseEnd} onTouchStart={handlePulseStart} onTouchEnd={handlePulseEnd} 
-                className={`flex items-center gap-3 h-12 md:h-14 px-5 md:px-6 rounded-2xl transition-all duration-300 group/btn border active:scale-95 ${
+                className={`flex items-center gap-3 h-12 md:h-14 px-5 md:px-6 rounded-2xl transition-all duration-300 group/btn border active:scale-95 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                   post.isLiked 
                     ? 'bg-rose-50 dark:bg-rose-900/30 border-rose-100 dark:border-rose-900 text-rose-600 dark:text-rose-400' 
                     : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-md'
                 }`}
+                aria-label={post.isLiked ? "Unlike post" : "Like post"}
               >
                 <div className={`transition-transform duration-500 ${post.isLiked ? 'scale-110' : 'group-hover/btn:scale-110'}`}>
                   <svg xmlns="http://www.w3.org/2000/svg" fill={post.isLiked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5 md:w-6 md:h-6"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>
@@ -382,6 +399,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                          onClick={(e) => selectFrequency(e, freq.id)} 
                          className="w-10 h-10 rounded-xl flex items-center justify-center text-xl hover:scale-110 transition-transform bg-slate-50 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 border border-transparent hover:border-slate-200 dark:hover:border-slate-600 shadow-sm"
                          title={freq.label}
+                         aria-label={`React with ${freq.label}`}
                        >
                          {freq.emoji}
                        </button>
@@ -393,11 +411,12 @@ export const PostCard: React.FC<PostCardProps> = ({
 
             <button 
               onClick={(e) => { e.stopPropagation(); setShowComments(!showComments); }}
-              className={`flex items-center gap-3 h-12 md:h-14 px-5 md:px-6 rounded-2xl transition-all duration-300 group/btn border active:scale-95 ${
+              className={`flex items-center gap-3 h-12 md:h-14 px-5 md:px-6 rounded-2xl transition-all duration-300 group/btn border active:scale-95 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                 showComments 
                   ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-100 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400' 
                   : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-md'
               }`}
+              aria-label={showComments ? "Hide comments" : "Show comments"}
             >
               <div className="group-hover/btn:scale-110 transition-transform duration-500">
                 <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 0 1-.923 1.785 0.596.596 0 0 0 .21.685 0.59.59 0 0 0 .44.03 6.041 6.041 0 0 0 2.986-1.334c.451.06.91.09 1.378.09Z" /></svg>
@@ -407,7 +426,8 @@ export const PostCard: React.FC<PostCardProps> = ({
 
             <button 
               onClick={handleRelay} 
-              className="flex items-center gap-3 h-12 md:h-14 px-5 md:px-6 rounded-2xl transition-all duration-300 group/btn border bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-md hover:text-indigo-600 dark:hover:text-indigo-400 active:scale-95"
+              className="flex items-center gap-3 h-12 md:h-14 px-5 md:px-6 rounded-2xl transition-all duration-300 group/btn border bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-md hover:text-indigo-600 dark:hover:text-indigo-400 active:scale-95 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              aria-label="Relay post"
             >
               <div className="group-hover/btn:rotate-180 transition-transform duration-700">
                 <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
@@ -418,7 +438,8 @@ export const PostCard: React.FC<PostCardProps> = ({
 
           <button 
             onClick={(e) => { e.stopPropagation(); onBookmark?.(post.id); }}
-            className={`h-12 w-12 md:h-14 md:w-14 flex items-center justify-center rounded-2xl transition-all duration-300 active:scale-90 border border-transparent ${isBookmarked ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 border-indigo-100 dark:border-indigo-900' : 'text-slate-300 dark:text-slate-600 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-100 dark:hover:border-slate-700'}`}
+            className={`h-12 w-12 md:h-14 md:w-14 flex items-center justify-center rounded-2xl transition-all duration-300 active:scale-90 border border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isBookmarked ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 border-indigo-100 dark:border-indigo-900' : 'text-slate-300 dark:text-slate-600 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-100 dark:hover:border-slate-700'}`}
+            aria-label={isBookmarked ? "Remove bookmark" : "Bookmark post"}
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill={isBookmarked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0-10.628a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5m0 10.628a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5" /></svg>
           </button>

@@ -71,6 +71,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
             ? 'bg-slate-900 text-white shadow-xl shadow-indigo-900/10 dark:bg-white dark:text-slate-950 dark:shadow-none' 
             : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
         } ${!enabled ? 'opacity-50 grayscale cursor-not-allowed' : 'cursor-pointer'}`}
+        aria-label={collapsed ? label : undefined}
       >
         {/* Active Indicator Glow */}
         {isActive && !collapsed && (
@@ -103,7 +104,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   };
 
   const ProtocolGroup = ({ title, children, collapsed }: { title: string, children: React.ReactNode, collapsed: boolean }) => (
-    <div className="space-y-1 w-full mt-6 first:mt-0">
+    <div className="space-y-1 w-full mt-6 first:mt-0" role="group" aria-label={title}>
       {!collapsed && (
         <div className="px-5 mb-3 flex items-center gap-2 opacity-50">
           <div className="w-1 h-1 rounded-full bg-slate-400 dark:bg-slate-600" />
@@ -130,6 +131,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
               ? 'aspect-square rounded-[1.5rem] border-transparent hover:border-slate-200 dark:hover:border-slate-700 hover:shadow-lg p-1' 
               : 'p-3 rounded-[1.8rem] bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-indigo-100 dark:hover:border-indigo-900 hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.06)] flex items-center gap-4 text-left'
           } ${activeRoute === AppRoute.PROFILE ? 'ring-2 ring-indigo-500/20 border-indigo-500/30' : ''}`}
+          aria-label="View Profile"
         >
           <div className={`relative shrink-0 transition-transform duration-500 ${collapsed ? 'w-full h-full' : 'w-12 h-12'} ${activeRoute === AppRoute.PROFILE ? 'scale-105' : 'group-hover:scale-105'}`}>
             <img 

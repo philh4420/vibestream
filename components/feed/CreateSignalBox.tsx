@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { User } from '../../types';
@@ -140,7 +141,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         urls.forEach((url, index) => {
           mediaItems.push({
             type: selectedFiles[index].type.startsWith('video/') ? 'video' : 'image',
-            url: url
+            url
           });
         });
       }
@@ -231,6 +232,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
             placeholder={`Initiate a new signal, ${userData?.displayName.split(' ')[0]}...`}
             className="w-full bg-transparent border-none text-slate-900 dark:text-white font-medium text-lg placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-0 resize-none overflow-hidden min-h-[60px]"
             rows={1}
+            aria-label="Create Post Content"
           />
 
           {showMentionList && (
@@ -269,7 +271,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
             {mediaPreviews.map((url, idx) => (
               <div key={idx} className="relative shrink-0 group/media">
                 <img src={url} className="h-32 w-32 object-cover rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm" alt="Preview" />
-                <button onClick={() => removeMedia(idx)} className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600 transition-all opacity-0 group-hover/media:opacity-100">
+                <button onClick={() => removeMedia(idx)} className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600 transition-all opacity-0 group-hover/media:opacity-100" aria-label="Remove media">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
@@ -277,7 +279,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
             {selectedGif && (
               <div key="gif-preview" className="relative shrink-0 group/media">
                 <img src={selectedGif.images.fixed_height.url} className="h-32 w-auto object-cover rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm" alt="GIF" />
-                <button onClick={() => setSelectedGif(null)} className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600 transition-all opacity-0 group-hover/media:opacity-100">
+                <button onClick={() => setSelectedGif(null)} className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600 transition-all opacity-0 group-hover/media:opacity-100" aria-label="Remove GIF">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
@@ -290,15 +292,15 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         <div className="mt-4 pl-[calc(4rem+1.5rem)] flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-4 animate-in fade-in slide-in-from-top-2 duration-300">
           
           <div className="flex items-center gap-1">
-            <button onClick={() => fileInputRef.current?.click()} className="p-2.5 rounded-xl hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" title="Upload Media">
+            <button onClick={() => fileInputRef.current?.click()} className="p-2.5 rounded-xl hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" title="Upload Media" aria-label="Attach media">
               <div className="scale-90"><ICONS.Create /></div>
             </button>
             
-            <button onClick={() => { setShowGifPicker(!showGifPicker); setShowEmojiPicker(false); }} className={`p-2.5 rounded-xl transition-colors ${showGifPicker ? 'bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400' : 'hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600'}`} title="Add GIF">
+            <button onClick={() => { setShowGifPicker(!showGifPicker); setShowEmojiPicker(false); }} className={`p-2.5 rounded-xl transition-colors ${showGifPicker ? 'bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400' : 'hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600'}`} title="Add GIF" aria-label="Add GIF">
               <span className="text-[10px] font-black font-mono">GIF</span>
             </button>
 
-            <button onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowGifPicker(false); }} className={`p-2.5 rounded-xl transition-colors ${showEmojiPicker ? 'bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400' : 'hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400'}`} title="Add Emoji">
+            <button onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowGifPicker(false); }} className={`p-2.5 rounded-xl transition-colors ${showEmojiPicker ? 'bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400' : 'hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400'}`} title="Add Emoji" aria-label="Add Emoji">
               <span className="text-xl leading-none">😊</span>
             </button>
           </div>
@@ -308,6 +310,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
                 onClick={handlePost}
                 disabled={isPosting || (!content.trim() && selectedFiles.length === 0 && !selectedGif)}
                 className="px-8 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[1.2rem] font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-indigo-600 dark:hover:bg-indigo-400 dark:hover:text-white transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                aria-label="Broadcast Signal"
              >
                 {isPosting ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>BROADCAST <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" /></>}
              </button>

@@ -113,7 +113,8 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
     };
   }, [userData?.id]);
 
-  const handleFollowToggle = async (targetUser: VibeUser) => {
+  const handleFollowToggle = async (e: React.MouseEvent, targetUser: VibeUser) => {
+    e.stopPropagation();
     if (!db || !auth.currentUser || processingIds.has(targetUser.id)) return;
     
     const currentUser = auth.currentUser;
@@ -161,7 +162,8 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
     }
   };
 
-  const handleMessage = async (targetUser: VibeUser) => {
+  const handleMessage = async (e: React.MouseEvent, targetUser: VibeUser) => {
+    e.stopPropagation();
     if (!db || !auth.currentUser) return;
     try {
       const q = query(
@@ -304,10 +306,10 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
             
             <div className="space-y-3">
               {filteredTrending.map((post, idx) => (
-                <div 
+                <button 
                   key={post.id} 
                   onClick={() => handleViewPost(post)}
-                  className={`group relative flex items-center gap-3 p-3 rounded-[1.5rem] border transition-all cursor-pointer ${
+                  className={`w-full group relative flex items-center gap-3 p-3 rounded-[1.5rem] border transition-all cursor-pointer text-left ${
                     idx === 0 
                       ? 'bg-gradient-to-br from-white to-indigo-50/30 dark:from-slate-800 dark:to-indigo-900/30 border-indigo-100 dark:border-slate-700 shadow-md' 
                       : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-100 dark:hover:border-indigo-900 hover:shadow-lg'
@@ -336,7 +338,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
                        <span className="text-[7px] font-black text-slate-300 dark:text-slate-600 font-mono">{post.likes}</span>
                     </div>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -408,12 +410,13 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0 pl-2">
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0 pl-2 focus-within:opacity-100 focus-within:translate-x-0">
                         <button 
-                          onClick={() => handleFollowToggle(node)}
+                          onClick={(e) => handleFollowToggle(e, node)}
                           disabled={isProcessing}
                           className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all shadow-sm ${isFollowing ? 'bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-400 dark:text-slate-300 hover:text-rose-500 dark:hover:text-rose-400 hover:border-rose-200 dark:hover:border-rose-800' : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-indigo-600 dark:hover:bg-indigo-400'}`}
                           title={isFollowing ? 'Unlink' : 'Link'}
+                          aria-label={isFollowing ? 'Unfollow' : 'Follow'}
                         >
                           {isProcessing ? (
                             <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -427,9 +430,10 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
                           )}
                         </button>
                         <button 
-                          onClick={() => handleMessage(node)}
+                          onClick={(e) => handleMessage(e, node)}
                           className="w-7 h-7 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-500 dark:hover:text-white rounded-lg flex items-center justify-center transition-all shadow-sm"
                           title="Message"
+                          aria-label={`Message ${node.displayName}`}
                         >
                           <ICONS.Messages />
                         </button>
