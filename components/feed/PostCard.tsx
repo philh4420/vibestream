@@ -46,6 +46,8 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   const shouldAutoPlay = userData?.settings?.appearance?.autoPlayVideo !== false;
 
+  const [relativeTime, setRelativeTime] = useState('');
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (optionsRef.current && !optionsRef.current.contains(event.target as Node)) {
@@ -62,31 +64,52 @@ export const PostCard: React.FC<PostCardProps> = ({
     return urls.length > 0 ? urls[0] : null;
   }, [post.content]);
 
-  // RELATIVE TIME CALCULATION
-  const displayTime = useMemo(() => {
-    if (!post.timestamp) return { relative: post.createdAt, full: post.createdAt };
-    
+  // FULL DATE & TIME CALCULATION (DD/MM/YYYY HH:MM)
+  const fullDateTime = useMemo(() => {
+    if (!post.timestamp) return post.createdAt;
     const date = post.timestamp.toDate ? post.timestamp.toDate() : new Date(post.timestamp);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    
-    let relative = '';
-    if (diffInSeconds < 60) relative = 'Just now';
-    else if (diffInSeconds < 3600) relative = `${Math.floor(diffInSeconds / 60)}m ago`;
-    else if (diffInSeconds < 86400) relative = `${Math.floor(diffInSeconds / 3600)}h ago`;
-    else if (diffInSeconds < 604800) relative = `${Math.floor(diffInSeconds / 86400)}d ago`;
-    else relative = date.toLocaleDateString(locale, { day: '2-digit', month: 'short' });
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  }, [post.timestamp, post.createdAt]);
 
-    const full = date.toLocaleString(locale, { 
-      day: '2-digit', 
-      month: 'short', 
-      year: 'numeric',
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
-    
-    return { relative, full };
-  }, [post.timestamp, post.createdAt, locale]);
+  // REAL-TIME RELATIVE TIME (Xd Xh Xm ago)
+  useEffect(() => {
+    const updateTime = () => {
+      if (!post.timestamp) {
+        setRelativeTime('');
+        return;
+      }
+      
+      const date = post.timestamp.toDate ? post.timestamp.toDate() : new Date(post.timestamp);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      
+      if (diffMs < 0) {
+        setRelativeTime('Just now');
+        return;
+      }
+
+      const diffSecs = Math.floor(diffMs / 1000);
+      const days = Math.floor(diffSecs / 86400);
+      const hours = Math.floor((diffSecs % 86400) / 3600);
+      const mins = Math.floor((diffSecs % 3600) / 60);
+
+      let str = '';
+      if (days > 0) str += `${days}d `;
+      if (hours > 0 || days > 0) str += `${hours}h `;
+      str += `${mins}m ago`;
+      
+      setRelativeTime(str);
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 30000); // Update every 30 seconds
+    return () => clearInterval(interval);
+  }, [post.timestamp]);
 
   const handlePulseStart = (e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
@@ -196,10 +219,9 @@ export const PostCard: React.FC<PostCardProps> = ({
                     <div className="text-indigo-500 scale-75 drop-shadow-sm"><ICONS.Verified /></div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest font-mono" title={displayTime.full}>
-                        {displayTime.relative}
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest font-mono">
+                        {fullDateTime} <span className="mx-1 text-slate-300 dark:text-slate-700 opacity-50">•</span> {relativeTime}
                     </p>
-                    <span className="w-1 h-1 rounded-full bg-slate-200 dark:bg-slate-800" />
                     {post.location && (
                         <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700">
                            <div className="scale-50 text-indigo-500"><ICONS.Globe /></div>

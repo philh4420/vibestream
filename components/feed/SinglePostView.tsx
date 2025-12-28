@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Post, User, Region } from '../../types';
 import { ICONS } from '../../constants';
 import { CommentSection } from './CommentSection';
@@ -26,38 +26,60 @@ export const SinglePostView: React.FC<SinglePostViewProps> = ({
   addToast,
   blockedIds
 }) => {
+  const [relativeTime, setRelativeTime] = useState('');
+
   useEffect(() => {
     const mainViewport = document.querySelector('.scroll-viewport');
     if (mainViewport) mainViewport.scrollTo({ top: 0, behavior: 'smooth' });
     else window.scrollTo(0, 0);
   }, [post.id]);
 
-  // RELATIVE TIME CALCULATION (Facebook Style)
-  const displayTime = useMemo(() => {
-    if (!post.timestamp) return { relative: post.createdAt, full: post.createdAt };
-    
+  // FULL DATE & TIME CALCULATION (DD/MM/YYYY HH:MM)
+  const fullDateTime = useMemo(() => {
+    if (!post.timestamp) return post.createdAt;
     const date = post.timestamp.toDate ? post.timestamp.toDate() : new Date(post.timestamp);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    
-    let relative = '';
-    if (diffInSeconds < 60) relative = 'Just now';
-    else if (diffInSeconds < 3600) relative = `${Math.floor(diffInSeconds / 60)}m ago`;
-    else if (diffInSeconds < 86400) relative = `${Math.floor(diffInSeconds / 3600)}h ago`;
-    else if (diffInSeconds < 604800) relative = `${Math.floor(diffInSeconds / 86400)}d ago`;
-    else relative = date.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  }, [post.timestamp, post.createdAt]);
 
-    const full = date.toLocaleString(locale, { 
-      day: '2-digit', 
-      month: 'short', 
-      year: 'numeric',
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: false
-    });
-    
-    return { relative, full };
-  }, [post.timestamp, post.createdAt, locale]);
+  // REAL-TIME RELATIVE TIME (Xd Xh Xm ago)
+  useEffect(() => {
+    const updateTime = () => {
+      if (!post.timestamp) {
+        setRelativeTime('');
+        return;
+      }
+      
+      const date = post.timestamp.toDate ? post.timestamp.toDate() : new Date(post.timestamp);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      
+      if (diffMs < 0) {
+        setRelativeTime('Just now');
+        return;
+      }
+
+      const diffSecs = Math.floor(diffMs / 1000);
+      const days = Math.floor(diffSecs / 86400);
+      const hours = Math.floor((diffSecs % 86400) / 3600);
+      const mins = Math.floor((diffSecs % 3600) / 60);
+
+      let str = '';
+      if (days > 0) str += `${days}d `;
+      if (hours > 0 || days > 0) str += `${hours}h `;
+      str += `${mins}m ago`;
+      
+      setRelativeTime(str);
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 30000); // Update every 30 seconds
+    return () => clearInterval(interval);
+  }, [post.timestamp]);
 
   const borderClass = post.authorCosmetics?.border ? `cosmetic-border-${post.authorCosmetics.border}` : '';
 
@@ -93,11 +115,8 @@ export const SinglePostView: React.FC<SinglePostViewProps> = ({
                 <h1 className="text-4xl md:text-5xl font-black text-slate-950 dark:text-white uppercase italic tracking-tighter leading-none mb-3">{post.authorName}</h1>
                 <div className="flex flex-wrap items-center gap-4">
                     <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest font-mono bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-lg">Broadcast_ID: {post.id.slice(0, 8)}</span>
-                    <span className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest font-mono" title={displayTime.full}>
-                        {displayTime.relative}
-                    </span>
-                    <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono opacity-50">
-                        ({displayTime.full})
+                    <span className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest font-mono">
+                        {fullDateTime} <span className="mx-1 text-slate-300 dark:text-slate-700 opacity-50">•</span> {relativeTime}
                     </span>
                 </div>
              </div>
