@@ -92,8 +92,8 @@ export const Layout: React.FC<LayoutProps> = ({
         {/* Main Content Viewport with Global Atmosphere */}
         <main className="flex-1 relative overflow-hidden flex flex-col min-w-0 z-10">
           <AtmosphericBackground weather={weather}>
-            {/* The scroll-viewport is the parent of all central content */}
-            <div className="flex-1 scroll-viewport px-4 md:px-6 lg:px-4 xl:px-10 py-6 relative z-10 pt-[calc(var(--header-h)+1rem)]" style={{ paddingLeft: 'max(1rem, var(--sal))', paddingRight: 'max(1rem, var(--sar))' }}>
+            {/* Expanded Padding and Width for wide-format dashboard */}
+            <div className="flex-1 scroll-viewport px-4 md:px-6 lg:px-8 xl:px-12 py-6 relative z-10 pt-[calc(var(--header-h)+1rem)]" style={{ paddingLeft: 'max(1rem, var(--sal))', paddingRight: 'max(1rem, var(--sar))' }}>
               <div className="w-full h-full pb-[calc(var(--bottom-nav-h)+4rem)] md:pb-24 relative">
                 {children}
               </div>

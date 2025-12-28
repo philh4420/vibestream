@@ -48,7 +48,7 @@ export const FeedPage: React.FC<FeedPageProps> = ({
   }, [posts, activeProtocol, blockedIds]);
 
   return (
-    <div className="relative min-h-screen pb-32 w-full max-w-2xl mx-auto">
+    <div className="relative min-h-screen pb-32 w-full max-w-5xl mx-auto">
       <section className="pt-2 pb-2 animate-in fade-in slide-in-from-top-4 duration-700">
         <StoriesStrip 
           userData={userData} 
