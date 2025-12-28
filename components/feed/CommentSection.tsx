@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { db } from '../../services/firebase';
@@ -122,11 +121,13 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
     tempDiv.innerHTML = html;
     const text = tempDiv.innerText || "";
     
-    const lastWord = text.split(/\s/).pop();
+    const words = text.split(/\s/);
+    const lastWord = words[words.length - 1];
+    
     if (lastWord && lastWord.startsWith('@')) {
-      const query = lastWord.slice(1);
-      if (query.length >= 1) {
-        setMentionQuery(query);
+      const queryStr = lastWord.slice(1);
+      if (queryStr.length >= 1) {
+        setMentionQuery(queryStr);
       } else {
         setMentionQuery(null);
         setShowMentionList(false);
@@ -175,7 +176,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
   };
 
   const handleSubmitComment = async () => {
-    if ((!newComment.trim() && !selectedFile && !selectedGif) || !db || !userData) return;
+    const isActuallyEmpty = !newComment.trim() || newComment === '<p></p>';
+    if ((isActuallyEmpty && !selectedFile && !selectedGif) || !db || !userData) return;
     
     setIsSubmittingComment(true);
     let mediaItems: { type: 'image' | 'video'; url: string }[] = [];
@@ -311,80 +313,118 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
     return map;
   }, [visibleComments]);
 
-  const renderComment = (comment: Comment) => {
+  const renderComment = (comment: Comment, isLast: boolean = false) => {
     const isFocused = focusedCommentId === comment.id;
     const hasChildren = commentThreads[comment.id] && commentThreads[comment.id].length > 0;
     const canDelete = userData && (userData.id === comment.authorId || userData.id === postAuthorId);
     const canEdit = userData && userData.id === comment.authorId;
     const isEditing = editingCommentId === comment.id;
+    const isOP = comment.authorId === postAuthorId;
     const extractedUrl = extractUrls(comment.content)[0];
     const borderClass = comment.authorCosmetics?.border ? `cosmetic-border-${comment.authorCosmetics.border}` : '';
 
     return (
-      <div key={comment.id} className={`relative flex flex-col animate-in fade-in slide-in-from-top-2 duration-300 group/comment ${isFocused ? 'z-[10]' : ''}`}>
-        <div className="flex gap-3 relative">
-          <div className="flex flex-col items-center shrink-0">
-             <div className={`relative shrink-0 w-8 h-8 rounded-xl ${borderClass}`}>
-              <img src={comment.authorAvatar} className="w-full h-full rounded-xl object-cover ring-2 ring-slate-50 dark:ring-slate-800 bg-white dark:bg-slate-800" alt="" />
+      <div key={comment.id} className={`relative flex flex-col animate-in fade-in slide-in-from-top-2 duration-500 group/comment ${isFocused ? 'z-[10]' : ''}`}>
+        <div className="flex gap-4 relative">
+          
+          {/* Thread Connector Visuals */}
+          <div className="flex flex-col items-center shrink-0 w-8">
+             <div className={`relative shrink-0 w-8 h-8 rounded-xl z-10 transition-transform duration-300 group-hover/comment:scale-105 ${borderClass}`}>
+              <img src={comment.authorAvatar} className="w-full h-full rounded-xl object-cover ring-2 ring-white dark:ring-slate-900 bg-slate-100 shadow-sm" alt="" />
+              {isOP && (
+                <div className="absolute -bottom-1.5 -right-1.5 bg-indigo-600 text-white px-1.5 py-0.5 rounded-md text-[6px] font-black uppercase tracking-widest shadow-lg border border-white dark:border-slate-900">OP</div>
+              )}
              </div>
-             {hasChildren && <div className="w-px flex-1 bg-slate-200 dark:bg-slate-700 my-1" />}
+             {hasChildren && <div className="w-0.5 flex-1 bg-slate-100 dark:bg-slate-800/60 my-1 rounded-full" />}
+             {!isLast && !hasChildren && comment.parentId && <div className="absolute left-4 -bottom-4 w-0.5 h-4 bg-slate-100 dark:bg-slate-800/60" />}
           </div>
 
-          <div className="flex-1 min-w-0 pb-4">
+          <div className="flex-1 min-w-0 pb-6">
              <div 
                onClick={() => !isEditing && setFocusedCommentId(isFocused ? null : comment.id)}
-               className={`relative p-4 rounded-2xl rounded-tl-none transition-all duration-300 ${isFocused && !isEditing ? 'bg-white dark:bg-slate-800 shadow-xl ring-2 ring-indigo-500 z-10' : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-md'}`}
+               className={`relative p-5 rounded-[1.8rem] rounded-tl-none transition-all duration-300 cursor-pointer ${
+                   isFocused && !isEditing 
+                     ? 'bg-white dark:bg-slate-800 shadow-2xl ring-2 ring-indigo-500/40 z-10' 
+                     : 'bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/50 hover:bg-white dark:hover:bg-slate-800 hover:border-slate-200 dark:hover:border-slate-700 hover:shadow-lg'
+                }`}
              >
-                <div className="flex justify-between items-baseline mb-1">
-                  <span className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest leading-none">{comment.authorName}</span>
-                  <span className="text-[8px] font-mono font-bold text-slate-300 dark:text-slate-500">
+                <div className="flex justify-between items-baseline mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-wider leading-none">{comment.authorName}</span>
+                    {isOP && <span className="w-1 h-1 bg-indigo-500 rounded-full animate-pulse" />}
+                  </div>
+                  <span className="text-[8px] font-mono font-bold text-slate-400 dark:text-slate-500 opacity-60">
                     {comment.timestamp?.toDate ? comment.timestamp.toDate().toLocaleString(locale, { 
-                      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' 
-                    }) : 'SYNC...'}
+                      day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' 
+                    }) : 'Establishing...'}
                   </span>
                 </div>
                 
                 {isEditing ? (
-                    <div className="mt-2">
+                    <div className="mt-3 animate-in fade-in duration-300" onClick={e => e.stopPropagation()}>
                         <RichTextEditor 
                             ref={editEditorRef}
                             content={editContent} 
                             onChange={setEditContent}
                             onSubmit={() => handleUpdateComment(comment.id)}
-                            className="border border-indigo-200 dark:border-indigo-800 rounded-xl"
+                            className="border border-indigo-200 dark:border-indigo-800/50 rounded-2xl overflow-hidden"
                             minHeight="60px"
                         />
-                        <div className="flex gap-2 mt-2 justify-end">
-                            <button onClick={() => setEditingCommentId(null)} className="text-[9px] font-black uppercase text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">Cancel</button>
-                            <button onClick={() => handleUpdateComment(comment.id)} className="text-[9px] font-black uppercase text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-lg transition-all shadow-sm">Save</button>
+                        <div className="flex gap-2 mt-3 justify-end">
+                            <button onClick={() => setEditingCommentId(null)} className="text-[9px] font-black uppercase text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 px-4 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">Cancel</button>
+                            <button onClick={() => handleUpdateComment(comment.id)} className="text-[9px] font-black uppercase text-white bg-indigo-600 hover:bg-indigo-700 px-5 py-2 rounded-xl transition-all shadow-lg shadow-indigo-200 dark:shadow-none">Save_Update</button>
                         </div>
                     </div>
                 ) : (
                     <>
                         <div className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-relaxed" dangerouslySetInnerHTML={{ __html: comment.content }} />
-                        {extractedUrl && <div className="mt-3 max-w-[280px]"><LinkPreview url={extractedUrl} compact={true} /></div>}
+                        {extractedUrl && <div className="mt-4"><LinkPreview url={extractedUrl} compact={true} /></div>}
                         {comment.media && comment.media.length > 0 && (
-                        <div className="mt-3 rounded-xl overflow-hidden border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 max-w-[240px]">
-                            {comment.media[0].type === 'video' ? <video src={comment.media[0].url} className="w-full h-auto" controls /> : <img src={comment.media[0].url} className="w-full h-auto object-cover" alt="" />}
+                        <div className="mt-4 rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 max-w-full md:max-w-[400px]">
+                            {comment.media[0].type === 'video' ? (
+                                <video src={comment.media[0].url} className="w-full h-auto" controls />
+                            ) : (
+                                <img src={comment.media[0].url} className="w-full h-auto object-cover" alt="Echo Visual" />
+                            )}
                         </div>
                         )}
                     </>
                 )}
              </div>
 
-             <div className="flex items-center gap-4 mt-1.5 ml-1">
-                <button onClick={() => setReplyingTo(comment.id)} className="text-[8px] font-black uppercase text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1">Echo</button>
+             {/* Actions Bar */}
+             <div className="flex items-center gap-6 mt-2 ml-1 opacity-60 group-hover/comment:opacity-100 transition-opacity">
+                <button 
+                    onClick={(e) => { e.stopPropagation(); setReplyingTo(comment.id); editorRef.current?.focus(); }} 
+                    className="text-[8px] font-black uppercase text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1.5"
+                >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+                    ECHO_REPLY
+                </button>
                 {canEdit && (
-                    <button onClick={() => { setEditingCommentId(comment.id); setEditContent(comment.content); }} className="text-[8px] font-black uppercase text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1">Edit</button>
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); setEditingCommentId(comment.id); setEditContent(comment.content); }} 
+                        className="text-[8px] font-black uppercase text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors flex items-center gap-1.5"
+                    >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                        EDIT
+                    </button>
                 )}
                 {canDelete && (
-                  <button onClick={() => setCommentToDelete(comment.id)} className="text-[8px] font-black uppercase text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 transition-colors flex items-center gap-1">Purge</button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setCommentToDelete(comment.id); }} 
+                    className="text-[8px] font-black uppercase text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 transition-colors flex items-center gap-1.5"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    PURGE
+                  </button>
                 )}
              </div>
 
-             {commentThreads[comment.id] && (
-               <div className="mt-3 space-y-4">
-                 {commentThreads[comment.id].map(reply => renderComment(reply))}
+             {/* Nested Replies Rendering */}
+             {hasChildren && (
+               <div className="mt-6 space-y-6">
+                 {commentThreads[comment.id].map((reply, ridx) => renderComment(reply, ridx === commentThreads[comment.id].length - 1))}
                </div>
              )}
           </div>
@@ -394,76 +434,158 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
   };
 
   return (
-    <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800 animate-in slide-in-from-bottom-2 duration-500">
-      <div className="space-y-6 mb-8">
-        {commentThreads['root'].length > 0 ? commentThreads['root'].map(comment => renderComment(comment)) : (
-          <div className="text-center py-8 opacity-50"><p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono">No neural echoes yet.</p></div>
+    <div className="mt-10 pt-10 border-t border-slate-100 dark:border-slate-800/50 animate-in slide-in-from-bottom-4 duration-700">
+      
+      {/* 1. Comment Stream */}
+      <div className="space-y-8 mb-12">
+        <div className="flex items-center gap-3 mb-10 px-1">
+            <h3 className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] font-mono">Neural_Echoes</h3>
+            <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800/60" />
+            <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 font-mono">COUNT: {visibleComments.length}</span>
+        </div>
+        
+        {commentThreads['root'].length > 0 ? (
+            commentThreads['root'].map((comment, idx) => renderComment(comment, idx === commentThreads['root'].length - 1))
+        ) : (
+          <div className="text-center py-16 opacity-40 bg-slate-50/50 dark:bg-slate-800/20 rounded-[3rem] border border-dashed border-slate-200 dark:border-slate-700">
+             <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 dark:text-slate-600">
+                <ICONS.Messages />
+             </div>
+             <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono">Zero_Frequency_Reflections</p>
+          </div>
         )}
       </div>
 
-      <div className="flex flex-col gap-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-[2rem] border border-slate-100 dark:border-slate-800 relative group/input z-20">
+      {/* 2. Interactive Input Deck */}
+      <div className="sticky bottom-4 z-40 bg-white dark:bg-slate-900 rounded-[2.8rem] p-4 shadow-2xl border border-slate-100 dark:border-slate-800 transition-all duration-500 ring-4 ring-slate-50/50 dark:ring-slate-950/50 group/input focus-within:ring-indigo-500/10">
+        
+        {/* Reply Context Bar */}
         {replyingTo && (
-          <div className="flex items-center justify-between bg-indigo-100/50 dark:bg-indigo-900/30 px-4 py-2 rounded-xl text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-2 border border-indigo-100 dark:border-indigo-800">
-            <span>Targeting Node: {comments.find(c => c.id === replyingTo)?.authorName || 'Unknown'}</span>
-            <button type="button" onClick={() => setReplyingTo(null)} className="opacity-60 hover:opacity-100 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-lg p-1 transition-all"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></button>
+          <div className="flex items-center justify-between bg-indigo-50 dark:bg-indigo-900/40 px-5 py-3 rounded-2xl text-[9px] font-black text-indigo-600 dark:text-indigo-300 uppercase tracking-widest mb-4 border border-indigo-100 dark:border-indigo-800/50 animate-in slide-in-from-top-2 duration-300">
+            <span className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" />
+                Targeting_Node: {comments.find(c => c.id === replyingTo)?.authorName || 'Fragment'}
+            </span>
+            <button 
+                type="button" 
+                onClick={() => setReplyingTo(null)} 
+                className="hover:bg-white dark:hover:bg-slate-800 rounded-lg p-1.5 transition-all text-indigo-400 hover:text-rose-500 active:scale-90"
+            >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+            </button>
           </div>
         )}
 
+        {/* Media Preview Area */}
         {previewUrl && (
-          <div className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-indigo-500 shadow-lg group/preview mb-2 mx-2 bg-slate-200 dark:bg-slate-800">
-             {selectedFile?.type.startsWith('video/') ? <video src={previewUrl} className="w-full h-full object-cover" /> : <img src={previewUrl} className="w-full h-full object-cover" alt="" />}
-             <button onClick={removeSelectedFile} className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/preview:opacity-100 transition-opacity text-white"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></button>
-             {isUploadingMedia && <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10"><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /></div>}
+          <div className="relative w-24 h-24 rounded-2xl overflow-hidden border-2 border-indigo-500 shadow-xl group/preview mb-4 mx-2 animate-in zoom-in-95 duration-300">
+             {selectedFile?.type.startsWith('video/') ? (
+                 <video src={previewUrl} className="w-full h-full object-cover" muted />
+             ) : (
+                 <img src={previewUrl} className="w-full h-full object-cover" alt="Echo Buffer" />
+             )}
+             <button 
+                onClick={removeSelectedFile} 
+                className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/preview:opacity-100 transition-opacity text-white hover:text-rose-400"
+             >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+             </button>
+             {isUploadingMedia && <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10"><div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" /></div>}
           </div>
         )}
 
-        <div className="flex gap-2 items-end">
-           <div className="flex gap-1 shrink-0 pb-1.5">
-              <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 transition-all active:scale-90"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5} d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Z" /></button>
-              <button type="button" onClick={() => { setIsGiphyPickerOpen(!isGiphyPickerOpen); setIsEmojiPickerOpen(false); }} className="p-3 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-90 text-[10px] font-black font-mono text-slate-400 dark:text-slate-500">GIF</button>
-              <button type="button" onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }} className="p-3 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-90 text-xl leading-none">😊</button>
+        {/* Input Controls */}
+        <div className="flex gap-4 items-end">
+           <div className="flex gap-1 shrink-0 pb-1.5 px-1">
+              <button 
+                type="button" 
+                onClick={() => fileInputRef.current?.click()} 
+                className="p-3.5 rounded-2xl hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all active:scale-90 border border-transparent hover:border-indigo-100 dark:hover:border-indigo-800"
+                title="Attach Media"
+              >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5} d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Z" />
+              </button>
+              <button 
+                type="button" 
+                onClick={() => { setIsGiphyPickerOpen(!isGiphyPickerOpen); setIsEmojiPickerOpen(false); }} 
+                className={`p-3.5 rounded-2xl transition-all active:scale-90 text-[10px] font-black font-mono border border-transparent ${isGiphyPickerOpen ? 'bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 border-indigo-100 dark:border-indigo-800' : 'hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600 hover:border-indigo-100'}`}
+                title="Giphy Fragment"
+              >
+                  GIF
+              </button>
+              <button 
+                type="button" 
+                onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }} 
+                className={`p-3.5 rounded-2xl transition-all active:scale-90 text-xl leading-none border border-transparent ${isEmojiPickerOpen ? 'bg-indigo-50 dark:bg-indigo-900/40 border-indigo-100 dark:border-indigo-800' : 'hover:bg-indigo-50 dark:hover:bg-slate-800'}`}
+                title="Neural Glyph"
+              >
+                  😊
+              </button>
            </div>
-           <div className="relative flex-1">
+
+           {/* Main Input Component */}
+           <div className="relative flex-1 group/field">
               <RichTextEditor 
                 ref={editorRef}
                 content={newComment}
                 onChange={handleEditorChange}
                 onSubmit={handleSubmitComment}
-                placeholder="Broadcast your echo..."
-                className="w-full bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700 rounded-[2.2rem] px-6 py-3"
+                placeholder={replyingTo ? "Compose echo response..." : "Transmit new echo sequence..."}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-[2.2rem] px-6 py-4 transition-all focus-within:bg-white dark:focus-within:bg-slate-700 focus-within:border-indigo-300 dark:focus-within:border-indigo-900 focus-within:shadow-lg"
                 minHeight="50px"
               />
+
+              {/* Mentions Dropdown Portal */}
               {showMentionList && (
-                <div className="absolute bottom-full left-0 mb-2 w-56 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 z-50">
-                    <div className="px-3 py-1.5 bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
-                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 font-mono">{isSearching ? 'Scanning...' : 'Select_Node'}</span>
+                <div className="absolute bottom-full left-0 mb-3 w-64 bg-white/95 dark:bg-slate-800/95 backdrop-blur-2xl border border-slate-200 dark:border-slate-700 rounded-[2rem] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 z-[60]">
+                    <div className="px-5 py-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 font-mono">
+                            {isSearching ? 'SCANNIG_NODES...' : 'IDENTIFY_NODE'}
+                        </span>
+                        {isSearching && <div className="w-3 h-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />}
                     </div>
-                    {isSearching ? (
-                       <div className="p-3 text-center"><div className="w-3 h-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" /></div>
-                    ) : mentionResults.length > 0 ? (
-                        mentionResults.map(user => (
-                            <button key={user.id} onClick={() => selectMention(user)} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors text-left group">
-                                <img src={user.avatarUrl} className="w-6 h-6 rounded-md object-cover" alt="" />
-                                <div className="min-w-0">
-                                    <span className="text-[10px] font-bold text-slate-900 dark:text-white truncate block">{user.displayName}</span>
-                                    <span className="text-[8px] font-mono text-slate-400 dark:text-slate-500 truncate block">@{user.username}</span>
-                                </div>
-                            </button>
-                        ))
-                    ) : <div className="px-3 py-2 text-[9px] text-slate-400 italic text-center">No nodes found.</div>}
+                    {mentionResults.length > 0 ? (
+                        <div className="p-1.5">
+                            {mentionResults.map(user => (
+                                <button 
+                                    key={user.id} 
+                                    onClick={() => selectMention(user)} 
+                                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-600 dark:hover:bg-indigo-500 hover:text-white rounded-2xl transition-all text-left group/mitem"
+                                >
+                                    <img src={user.avatarUrl} className="w-8 h-8 rounded-xl object-cover border border-slate-100 group-hover/mitem:border-white/20" alt="" />
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-xs font-black truncate group-hover/mitem:text-white">@{user.username}</span>
+                                            {user.verifiedHuman && <span className="text-indigo-500 group-hover/mitem:text-white text-[10px]"><ICONS.Verified /></span>}
+                                        </div>
+                                        <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 truncate block group-hover/mitem:text-white/60">{user.displayName}</span>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    ) : !isSearching && <div className="px-5 py-4 text-[10px] text-slate-400 italic text-center font-medium">No results in sector.</div>}
                 </div>
               )}
+
+              {/* Submit Button Integrated in Input */}
               <button 
                 onClick={handleSubmitComment}
-                disabled={(!newComment.trim() && !selectedFile && !selectedGif) || isSubmittingComment}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-indigo-700 transition-all active:scale-90 disabled:opacity-30 disabled:active:scale-100 z-10"
+                disabled={(!newComment.trim() || newComment === '<p></p>') && !selectedFile && !selectedGif || isSubmittingComment}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 bg-slate-950 dark:bg-white text-white dark:text-slate-950 rounded-full flex items-center justify-center shadow-xl hover:bg-indigo-600 dark:hover:bg-indigo-400 dark:hover:text-white transition-all active:scale-90 disabled:opacity-20 disabled:active:scale-100 z-10 group/send"
               >
-                {isSubmittingComment ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <svg className="w-4 h-4 rotate-90 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />}
+                {isSubmittingComment ? (
+                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                ) : (
+                    <svg className="w-5 h-5 rotate-90 ml-0.5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                )}
               </button>
            </div>
         </div>  
       </div>
-      <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} accept="image/*,video/*" />
+
+      {/* Hidden Pickers & Inputs */}
+      <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} accept="image/*,video/*,.heic,.avif,.webp" />
+      
       {(isEmojiPickerOpen || isGiphyPickerOpen) && createPortal(
         <>
           <div className="fixed inset-0 z-[9990] bg-transparent" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />
@@ -474,7 +596,15 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
         </>,
         document.body
       )}
-      <DeleteConfirmationModal isOpen={!!commentToDelete} title="SILENCE_ECHO" description="Permanently delete this comment? This action cannot be reversed." onConfirm={handleExecuteDelete} onCancel={() => setCommentToDelete(null)} confirmText="CONFIRM_PURGE" />
+
+      <DeleteConfirmationModal 
+        isOpen={!!commentToDelete} 
+        title="SILENCE_ECHO" 
+        description="Permanently purge this neural reflection? This protocol cannot be reversed once initialized." 
+        onConfirm={handleExecuteDelete} 
+        onCancel={() => setCommentToDelete(null)} 
+        confirmText="CONFIRM_PURGE" 
+      />
     </div>
   );
 };
