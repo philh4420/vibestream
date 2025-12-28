@@ -10,6 +10,7 @@ import { uploadToCloudinary } from '../../services/cloudinary';
 import { EmojiPicker } from '../ui/EmojiPicker';
 import { GiphyPicker } from '../ui/GiphyPicker';
 import { GiphyGif } from '../../services/giphy';
+import { RichTextEditor, RichTextEditorRef } from '../ui/RichTextEditor';
 
 interface CreateSignalBoxProps {
   userData: User | null;
@@ -18,7 +19,7 @@ interface CreateSignalBoxProps {
 }
 
 export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOpen }) => {
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState(''); // Stores HTML
   const [isExpanded, setIsExpanded] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
   
@@ -35,7 +36,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showGifPicker, setShowGifPicker] = useState(false);
 
-  // Mentions
+  // Mentions (Simplified logic for RTE)
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionResults, setMentionResults] = useState<User[]>([]);
   const [mentionedUserCache, setMentionedUserCache] = useState<User[]>([]);
@@ -43,7 +44,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
   const [isSearching, setIsSearching] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<RichTextEditorRef>(null);
 
   // Search Users Effect
   useEffect(() => {
@@ -83,14 +84,17 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
     setIsExpanded(true);
   };
 
-  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const val = e.target.value;
-    setContent(val);
-
-    const cursor = e.target.selectionStart;
-    const textBeforeCursor = val.slice(0, cursor);
-    const lastWord = textBeforeCursor.split(/\s/).pop();
-
+  const handleEditorChange = (html: string) => {
+    setContent(html);
+    
+    // Rudimentary mention trigger detection in HTML string (Note: A dedicated Tiptap extension is better for robust mentions)
+    // Here we just check for the last word being @something in the raw text derived from HTML for search triggering
+    // This is a simplified approach for the "Rich Text" feature upgrade.
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    const text = tempDiv.innerText || "";
+    
+    const lastWord = text.split(/\s/).pop();
     if (lastWord && lastWord.startsWith('@')) {
       const query = lastWord.slice(1);
       if (query.length >= 1) {
@@ -105,36 +109,8 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
     }
   };
 
-  const renderHighlightedContent = (text: string) => {
-    // Regex to split by mentions (@username) and hashtags (#tag)
-    const parts = text.split(/((?:@|#)[a-zA-Z0-9_]+)/g);
-    return parts.map((part, i) => {
-        if (part.startsWith('@')) {
-            return <span key={i} className="text-indigo-600 dark:text-indigo-400 font-bold">{part}</span>;
-        }
-        if (part.startsWith('#')) {
-            return <span key={i} className="text-rose-500 dark:text-rose-400 font-bold">{part}</span>;
-        }
-        return <span key={i}>{part}</span>;
-    });
-  };
-
   const handleEmojiSelect = (emoji: string) => {
-    const input = textareaRef.current;
-    if (!input) {
-      setContent(prev => prev + emoji);
-      return;
-    }
-    const start = input.selectionStart || 0;
-    const end = input.selectionEnd || 0;
-    const text = input.value;
-    const before = text.substring(0, start);
-    const after = text.substring(end, text.length);
-    setContent(before + emoji + after);
-    setTimeout(() => {
-      input.focus();
-      input.setSelectionRange(start + emoji.length, start + emoji.length);
-    }, 0);
+    editorRef.current?.insertContent(emoji);
   };
 
   const handleGifSelect = (gif: GiphyGif) => {
@@ -147,29 +123,15 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
   };
 
   const selectMention = (user: User) => {
-    const cursor = textareaRef.current?.selectionStart || 0;
-    const textBefore = content.slice(0, cursor);
-    const textAfter = content.slice(cursor);
-    
-    // Find the last occurrence of '@' before cursor
-    const lastWordStart = textBefore.lastIndexOf('@');
-    
-    if (lastWordStart !== -1) {
-        const newContent = content.slice(0, lastWordStart) + `@${user.username} ` + textAfter;
-        setContent(newContent);
-        setMentionedUserCache(prev => {
-            if (prev.some(u => u.id === user.id)) return prev;
-            return [...prev, user];
-        });
-    }
+    // Insert mention as bold text for now
+    editorRef.current?.insertContent(`<strong>@${user.username}</strong> `);
+    setMentionedUserCache(prev => {
+        if (prev.some(u => u.id === user.id)) return prev;
+        return [...prev, user];
+    });
     setMentionQuery(null);
     setShowMentionList(false);
-    
-    setTimeout(() => {
-      if (textareaRef.current) {
-        textareaRef.current.focus();
-      }
-    }, 10);
+    editorRef.current?.focus();
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -225,7 +187,9 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
   };
 
   const handlePost = async () => {
-    if ((!content.trim() && selectedFiles.length === 0 && !selectedGif && !isPollMode) || !userData || !db) return;
+    // Check if content is empty (HTML might be <p></p>)
+    const isEmpty = !content || content === '<p></p>';
+    if ((isEmpty && selectedFiles.length === 0 && !selectedGif && !isPollMode) || !userData || !db) return;
 
     // Validate Poll
     if (isPollMode) {
@@ -277,7 +241,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         authorId: userData.id,
         authorName: userData.displayName,
         authorAvatar: userData.avatarUrl,
-        content: content.trim(),
+        content: content.trim(), // Save HTML
         contentLengthTier: content.length > 280 ? 'deep' : 'standard',
         media: mediaItems,
         likes: 0,
@@ -289,9 +253,9 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         ...pollPayload
       });
 
-      const finalContent = content.trim();
       // Notify mentioned users
-      const mentionsToNotify = mentionedUserCache.filter(u => finalContent.includes(`@${u.username}`));
+      // Simple text scan of the HTML for @username
+      const mentionsToNotify = mentionedUserCache.filter(u => content.includes(`@${u.username}`));
       const uniqueMentions = Array.from(new Set(mentionsToNotify.map(u => u.id)))
         .map(id => mentionsToNotify.find(u => u.id === id));
 
@@ -304,7 +268,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
                 fromUserAvatar: userData.avatarUrl,
                 toUserId: targetUser.id,
                 targetId: postRef.id,
-                text: `mentioned you in a signal: "${finalContent.substring(0, 30)}..."`,
+                text: `mentioned you in a signal.`,
                 isRead: false,
                 timestamp: serverTimestamp(),
                 pulseFrequency: 'cognition'
@@ -313,6 +277,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
       }
 
       setContent('');
+      editorRef.current?.clear();
       setSelectedFiles([]);
       setMediaPreviews([]);
       setSelectedGif(null);
@@ -330,13 +295,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
     }
   };
 
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-    }
-  }, [content]);
-
   return (
     <div className={`bg-white dark:bg-slate-900 border-precision rounded-[3rem] p-6 md:p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)] hover:shadow-[0_30px_60px_-12px_rgba(0,0,0,0.08)] transition-all duration-500 group relative z-40 ${isExpanded ? 'ring-2 ring-indigo-500/20' : ''}`}>
       
@@ -351,31 +309,14 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         </div>
         
         <div className="flex-1 pt-1 relative">
-          <div className="relative w-full min-h-[60px]">
-              {/* Highlight Rendering Layer */}
-              <div 
-                className="absolute inset-0 w-full h-full text-lg font-medium whitespace-pre-wrap break-words pointer-events-none text-slate-900 dark:text-white"
-                aria-hidden="true"
-                style={{ overflowWrap: 'break-word' }}
-              >
-                 {renderHighlightedContent(content)}
-                 {/* Ensure trailing newline is rendered */}
-                 {content.endsWith('\n') && <br />}
-              </div>
-
-              {/* Input Layer */}
-              <textarea
-                ref={textareaRef}
-                value={content}
-                onChange={handleInput}
-                onFocus={handleFocus}
-                placeholder={isPollMode ? "Ask the network..." : `Initiate a new signal, ${userData?.displayName.split(' ')[0]}...`}
-                className={`w-full bg-transparent border-none text-lg font-medium focus:ring-0 resize-none overflow-hidden min-h-[60px] relative z-10 placeholder:text-slate-400 dark:placeholder:text-slate-500 caret-indigo-600 dark:caret-white ${content ? 'text-transparent' : 'text-slate-900 dark:text-white'}`}
-                rows={1}
-                aria-label="Create Post Content"
-                style={{ overflowWrap: 'break-word' }}
-              />
-          </div>
+          
+          <RichTextEditor 
+            ref={editorRef}
+            content={content}
+            onChange={handleEditorChange}
+            onFocus={handleFocus}
+            placeholder={isPollMode ? "Ask the network..." : `Initiate a new signal, ${userData?.displayName.split(' ')[0]}...`}
+          />
 
           {showMentionList && (
             <div className="absolute top-full left-0 z-50 w-64 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl mt-2 overflow-hidden animate-in fade-in slide-in-from-top-2">
@@ -487,7 +428,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
           <div className="flex items-center gap-4">
              <button 
                 onClick={handlePost}
-                disabled={isPosting || (!content.trim() && selectedFiles.length === 0 && !selectedGif && !isPollMode)}
+                disabled={isPosting || ((!content || content === '<p></p>') && selectedFiles.length === 0 && !selectedGif && !isPollMode)}
                 className="px-8 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[1.2rem] font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-indigo-600 dark:hover:bg-indigo-400 dark:hover:text-white transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
                 aria-label="Broadcast Signal"
              >

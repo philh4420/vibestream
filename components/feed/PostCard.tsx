@@ -71,30 +71,10 @@ export const PostCard: React.FC<PostCardProps> = ({
     }
   }, [isEditing]);
 
-  const textChunks = useMemo(() => {
-    return post.content.split(/([.!?]\s+)/).filter(Boolean).map((chunk, i, arr) => {
-       if (i % 2 !== 0) return null;
-       const next = arr[i+1];
-       return chunk + (next || '');
-    }).filter(Boolean);
-  }, [post.content]);
+  // Check if content is HTML (Simple check for Rich Text support)
+  const isHtml = post.content && (post.content.trim().startsWith('<') || post.content.includes('</'));
 
-  // Helper to render rich text (mentions/hashtags) inside chunks
-  const renderRichText = (text: string) => {
-    // Split by mentions (@user) or hashtags (#tag)
-    const parts = text.split(/((?:@|#)[a-zA-Z0-9_]+)/g);
-    return parts.map((part, i) => {
-        if (part.startsWith('@')) {
-            return <span key={i} className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline cursor-pointer">{part}</span>;
-        }
-        if (part.startsWith('#')) {
-            return <span key={i} className="text-rose-500 dark:text-rose-400 font-bold hover:underline cursor-pointer">{part}</span>;
-        }
-        return part;
-    });
-  };
-
-  // Extract first URL for preview
+  // Extract first URL for preview (naive extraction from HTML or text)
   const extractedUrl = useMemo(() => {
     const urls = extractUrls(post.content);
     return urls.length > 0 ? urls[0] : null;
@@ -370,6 +350,8 @@ export const PostCard: React.FC<PostCardProps> = ({
         <div className={`mb-8 ${isPulse ? 'text-center px-4' : ''}`}>
           {isEditing ? (
              <div className="animate-in fade-in slide-in-from-top-2 duration-300" onClick={(e) => e.stopPropagation()}>
+                {/* Note: For simplicity in editing, we revert to raw HTML editing or a simple textarea. 
+                    Full Rich Text Editing in-place would require mounting Tiptap here. */}
                 <textarea 
                     ref={editInputRef}
                     value={editContent}
@@ -394,32 +376,22 @@ export const PostCard: React.FC<PostCardProps> = ({
           ) : (
             <>
                 <div className={`text-slate-800 dark:text-slate-200 leading-relaxed font-medium tracking-tight ${isPulse ? 'text-2xl md:text-4xl font-black italic uppercase text-slate-900 dark:text-white' : isDeep ? 'text-base md:text-lg border-l-4 border-indigo-100 dark:border-indigo-900 pl-6 py-1' : 'text-base md:text-lg'}`}>
-                    {textChunks.map((chunk, idx) => {
-                    const reactions = post.inlineReactions?.[idx] || [];
-                    return (
+                    {/* Rich Text Rendering: Use ProseMirror styles if HTML */}
+                    {isHtml ? (
+                      <div 
+                        className="ProseMirror" 
+                        dangerouslySetInnerHTML={{ __html: post.content }} 
+                      />
+                    ) : (
+                      /* Legacy Plain Text Fallback */
+                      post.content.split(/([.!?]\s+)/).filter(Boolean).map((chunk, idx) => (
                         <span key={idx} className="relative group/chunk inline-block">
-                        <span className="hover:bg-indigo-50/80 dark:hover:bg-indigo-900/30 hover:text-indigo-900 dark:hover:text-indigo-200 rounded-lg transition-colors px-0.5 -mx-0.5 cursor-text">
-                            {renderRichText(chunk)}
+                          <span className="hover:bg-indigo-50/80 dark:hover:bg-indigo-900/30 hover:text-indigo-900 dark:hover:text-indigo-200 rounded-lg transition-colors px-0.5 -mx-0.5 cursor-text">
+                              {chunk}
+                          </span>
                         </span>
-                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex gap-1 opacity-0 group-hover/chunk:opacity-100 transition-all duration-300 z-10 pointer-events-none group-hover/chunk:pointer-events-auto scale-90 group-hover/chunk:scale-100 origin-bottom" onClick={(e) => e.stopPropagation()}>
-                            <div className="bg-white dark:bg-slate-800 rounded-full p-1 shadow-xl border border-slate-100 dark:border-slate-700 flex gap-1">
-                            {['🔥', '❤️', '💡', '🚀'].map(emoji => (
-                                <button key={emoji} onClick={(e) => handleInlineReact(e, idx, emoji)} className="w-8 h-8 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-full flex items-center justify-center text-sm transition-transform hover:scale-110">{emoji}</button>
-                            ))}
-                            </div>
-                        </div>
-                        {reactions.length > 0 && (
-                            <div className="inline-flex gap-1 ml-1 align-middle translate-y-[-2px]">
-                            {reactions.map(r => (
-                                <div key={r.emoji} className="flex items-center gap-0.5 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm text-[9px] font-black">
-                                {r.emoji} <span className="text-[8px] text-slate-400 font-mono">{r.count}</span>
-                                </div>
-                            ))}
-                            </div>
-                        )}
-                        </span>
-                    );
-                    })}
+                      ))
+                    )}
                 </div>
                 
                 {extractedUrl && (
