@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { User, UserSettings } from '../../types';
 import { db } from '../../services/firebase';
@@ -169,7 +168,7 @@ export const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ userData, onCl
         <div className="flex-1 flex flex-col min-w-0 bg-[#fcfcfd] dark:bg-slate-900 relative z-10">
           
           {/* Mobile Header (Visible only on small screens) */}
-          <div className="md:hidden p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-20">
+          <div className="md:hidden p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-md relative z-20">
              <div>
                 <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase italic tracking-tight">{activeTab}</h3>
                 <p className="text-[9px] font-mono text-slate-400 uppercase tracking-widest">Config_Mode</p>

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { auth, db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
@@ -158,7 +157,7 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({ onSelect, onClose }) =
                 ref={el => { categoriesRef.current[cat.id] = el; }}
                 className="space-y-6"
               >
-                <div className="flex items-center gap-4 sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10 py-2">
+                <div className="flex items-center gap-4 relative z-10 py-2">
                    <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] font-mono leading-none whitespace-nowrap">{cat.label}</span>
                    <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800" />
                 </div>

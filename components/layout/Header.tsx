@@ -332,7 +332,7 @@ export const Header: React.FC<HeaderProps> = ({
                 role="dialog"
                 aria-label="Notification Center"
               >
-                 <div className="p-6 pb-4 border-b border-slate-100/80 dark:border-slate-800/80 flex items-center justify-between bg-white/50 dark:bg-slate-900/50 sticky top-0 z-10 backdrop-blur-md">
+                 <div className="p-6 pb-4 border-b border-slate-100/80 dark:border-slate-800/80 flex items-center justify-between bg-white/50 dark:bg-slate-900/50 relative z-10 backdrop-blur-md">
                    <div>
                      <h3 className="text-lg font-black text-slate-950 dark:text-white tracking-tighter uppercase italic">Signal_Log</h3>
                      <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] font-mono mt-0.5">Encrypted Feed</p>
