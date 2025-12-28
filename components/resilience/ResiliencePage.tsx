@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { User, PresenceStatus } from '../../types';
 import { db } from '../../services/firebase';
@@ -18,9 +17,9 @@ interface ResiliencePageProps {
 }
 
 export const ResiliencePage: React.FC<ResiliencePageProps> = ({ userData, addToast }) => {
-  const [activeTab, setActiveTab] = useState<'monitor' | 'shield' | 'breath'>(() => {
+  const [activeTab, setActiveTab] = useState<'usage' | 'focus' | 'sync'>(() => {
     const saved = localStorage.getItem('vibe_resilience_tab');
-    return (saved as any) || 'monitor';
+    return (saved as any) || 'usage';
   });
 
   useEffect(() => {
@@ -35,13 +34,20 @@ export const ResiliencePage: React.FC<ResiliencePageProps> = ({ userData, addToa
     setIsFocusShieldActive(['Deep Work', 'Focus', 'Invisible'].includes(userData.presenceStatus || ''));
   }, [userData.presenceStatus]);
 
-  // Calculate Vitality Score Logic
+  // Calculate Vitality Score Logic (Web-Native Metrics)
   const calculateVitality = () => {
-    let score = 80;
+    let score = 75;
+    // Positive Reinforcements
     if (userData.verifiedHuman) score += 5;
-    if (userData.followers > 10) score += 5;
-    if (userData.following < 500) score += 5;
+    if (userData.resonance && userData.resonance > 1000) score += 5;
     if (isFocusShieldActive) score += 5;
+    
+    // Balanced Interaction Check
+    const following = userData.following || 1;
+    const followers = userData.followers || 1;
+    const ratio = followers / following;
+    if (ratio > 0.5) score += 10; // Healthy social ratio
+    
     return Math.min(100, score);
   };
 
@@ -49,11 +55,11 @@ export const ResiliencePage: React.FC<ResiliencePageProps> = ({ userData, addToa
     setVitalityScore(calculateVitality());
   }, [userData, isFocusShieldActive]);
 
-  // Shield Toggle Handler
+  // Shield Toggle Handler (In-Platform Focus)
   const toggleFocusShield = async () => {
     if (!db || !userData.id) return;
     const newStatus: PresenceStatus = isFocusShieldActive ? 'Online' : 'Deep Work';
-    const newMsg = isFocusShieldActive ? 'Systems nominal.' : 'Neural Shield Active. Notifications Muted.';
+    const newMsg = isFocusShieldActive ? 'Systems nominal.' : 'In-Platform Focus Active. Direct Messages Muted.';
     
     try {
       await updateDoc(doc(db, 'users', userData.id), {
@@ -61,7 +67,7 @@ export const ResiliencePage: React.FC<ResiliencePageProps> = ({ userData, addToa
         statusMessage: newMsg
       });
       setIsFocusShieldActive(!isFocusShieldActive);
-      addToast(isFocusShieldActive ? "Focus Shield Disengaged" : "Focus Shield Active", "success");
+      addToast(isFocusShieldActive ? "Focus Shield Disengaged" : "In-Platform Shield Active", "success");
     } catch (e) {
       addToast("Shield Protocol Failed", "error");
     }
@@ -78,16 +84,16 @@ export const ResiliencePage: React.FC<ResiliencePageProps> = ({ userData, addToa
 
       {/* 3. Module Content Swapper */}
       <div className="min-h-[500px]">
-        {activeTab === 'monitor' && <ResilienceMonitor userData={userData} />}
+        {activeTab === 'usage' && <ResilienceMonitor userData={userData} />}
         
-        {activeTab === 'shield' && (
+        {activeTab === 'focus' && (
           <ResilienceShield 
             isFocusShieldActive={isFocusShieldActive} 
             toggleFocusShield={toggleFocusShield} 
           />
         )}
         
-        {activeTab === 'breath' && <ResilienceBreathing />}
+        {activeTab === 'sync' && <ResilienceBreathing />}
       </div>
 
     </div>

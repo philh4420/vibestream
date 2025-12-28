@@ -17,7 +17,7 @@ export const ResilienceShield: React.FC<ResilienceShieldProps> = ({ isFocusShiel
              </div>
              <h3 className="text-3xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter leading-none mb-4">Focus_Shield</h3>
              <p className="text-sm text-slate-600 dark:text-slate-400 font-medium mb-8 leading-relaxed">
-                Activate high-intensity cognitive protection. This protocol will auto-reject incoming call signals, mute notifications, and update your grid status to "Deep Work".
+                Activate in-platform focus protocols. This will auto-decline incoming neural calls, mute internal audible alerts, and broadcast a "Deep Work" status to your mesh.
              </p>
              <button 
                onClick={toggleFocusShield}
@@ -30,14 +30,14 @@ export const ResilienceShield: React.FC<ResilienceShieldProps> = ({ isFocusShiel
 
        <div className="bg-slate-50 dark:bg-slate-900/50 rounded-[3rem] p-10 border border-slate-200/60 dark:border-slate-800 flex flex-col justify-between">
           <div>
-             <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-6">Signal_Integrity</h3>
+             <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-6">Interaction_Limiters</h3>
              <div className="space-y-4">
                 <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 flex items-center justify-between shadow-sm">
-                   <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest font-mono">Feed_Calibration</span>
-                   <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest font-mono">Nominal</span>
+                   <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest font-mono">Silent Browser Tabs</span>
+                   <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest font-mono">Active</span>
                 </div>
                 <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 flex items-center justify-between shadow-sm">
-                   <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest font-mono">Atmospheric_Sync</span>
+                   <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest font-mono">Visual Minimal Mode</span>
                    <div className="w-10 h-5 bg-indigo-600 dark:bg-indigo-500 rounded-full relative cursor-pointer">
                       <div className="w-3 h-3 bg-white rounded-full absolute top-1 right-1 shadow-sm" />
                    </div>
@@ -45,8 +45,8 @@ export const ResilienceShield: React.FC<ResilienceShieldProps> = ({ isFocusShiel
              </div>
           </div>
           <div className="mt-8 p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 text-center">
-             <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] font-mono">SYSTEM_DIAGNOSTICS</p>
-             <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-2 italic">Monitoring neural throughput across local grid segments.</p>
+             <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] font-mono">PLATFORM_DIAGNOSTICS</p>
+             <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-2 italic">Optimizing in-browser performance for sustainable usage.</p>
           </div>
        </div>
 

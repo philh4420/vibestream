@@ -1,18 +1,17 @@
-
 import React from 'react';
 import { ICONS } from '../../constants';
 
 interface ResilienceNavProps {
-  activeTab: 'monitor' | 'shield' | 'breath';
-  setActiveTab: (tab: 'monitor' | 'shield' | 'breath') => void;
+  activeTab: 'usage' | 'focus' | 'sync';
+  setActiveTab: (tab: 'usage' | 'focus' | 'sync') => void;
 }
 
 export const ResilienceNav: React.FC<ResilienceNavProps> = ({ activeTab, setActiveTab }) => {
   const tabs = [
-    { id: 'monitor', label: 'Monitor', icon: ICONS.Explore },
-    { id: 'shield', label: 'Shields', icon: ICONS.Verified },
-    { id: 'breath', label: 'Bio-Sync', icon: ICONS.Resilience }
-  ];
+    { id: 'usage', label: 'Usage', icon: ICONS.Telemetry },
+    { id: 'focus', label: 'Focus', icon: ICONS.Verified },
+    { id: 'sync', label: 'Bio-Sync', icon: ICONS.Resilience }
+  ] as const;
 
   return (
     <div className="relative z-30 flex justify-center w-full">
@@ -27,7 +26,7 @@ export const ResilienceNav: React.FC<ResilienceNavProps> = ({ activeTab, setActi
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800'
                 }`}
               >
-                {activeTab === tab.id && <div className="scale-75"><tab.icon /></div>}
+                <div className="scale-75"><tab.icon /></div>
                 {tab.label}
               </button>
             ))}
