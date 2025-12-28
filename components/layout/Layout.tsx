@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ICONS } from '../../constants';
 import { AppRoute, UserRole, Region, User as VibeUser, AppNotification, WeatherInfo, SystemSettings } from '../../types';
@@ -76,38 +77,42 @@ export const Layout: React.FC<LayoutProps> = ({
 
       <div className="flex-1 flex overflow-hidden relative h-full">
         
-        {/* Dynamic Left Navigation System */}
-        <LeftSidebar 
-          activeRoute={activeRoute}
-          onNavigate={onNavigate}
-          onOpenCreate={onOpenCreate}
-          userRole={userRole}
-          userData={userData}
-          systemSettings={systemSettings}
-        />
+        {/* Dynamic Left Navigation System - High Z-Index to stay above center overlays */}
+        <div className="relative z-[100] h-full">
+          <LeftSidebar 
+            activeRoute={activeRoute}
+            onNavigate={onNavigate}
+            onOpenCreate={onOpenCreate}
+            userRole={userRole}
+            userData={userData}
+            systemSettings={systemSettings}
+          />
+        </div>
 
         {/* Main Content Viewport with Global Atmosphere */}
-        <main className="flex-1 relative overflow-hidden flex flex-col min-w-0">
+        <main className="flex-1 relative overflow-hidden flex flex-col min-w-0 z-10">
           <AtmosphericBackground weather={weather}>
-            {/* Optimized Padding: Reduced on LG (2 cols active) to prevent squeeze, generous on mobile/XL */}
+            {/* The scroll-viewport is the parent of all central content */}
             <div className="flex-1 scroll-viewport px-4 md:px-6 lg:px-4 xl:px-10 py-6 relative z-10 pt-[calc(var(--header-h)+1rem)]" style={{ paddingLeft: 'max(1rem, var(--sal))', paddingRight: 'max(1rem, var(--sar))' }}>
-              <div className="w-full h-full pb-[calc(var(--bottom-nav-h)+4rem)] md:pb-24">
+              <div className="w-full h-full pb-[calc(var(--bottom-nav-h)+4rem)] md:pb-24 relative">
                 {children}
               </div>
             </div>
           </AtmosphericBackground>
         </main>
 
-        {/* Refined Right Sidebar - visible on large screens */}
-        <RightSidebar 
-          userData={userData} 
-          weather={weather} 
-          onNavigate={onNavigate} 
-          blockedIds={blockedIds}
-        />
+        {/* Refined Right Sidebar - High Z-Index to stay above center overlays */}
+        <div className="relative z-[100] h-full">
+          <RightSidebar 
+            userData={userData} 
+            weather={weather} 
+            onNavigate={onNavigate} 
+            blockedIds={blockedIds}
+          />
+        </div>
       </div>
 
-      {/* Portrait Mobile Tab Bar - Facebook Style Core Protocols */}
+      {/* Portrait Mobile Tab Bar */}
       <nav className={`${orientation === 'landscape' ? 'hidden' : 'md:hidden'} fixed bottom-0 left-0 right-0 glass-panel border-t border-precision z-[150] shadow-[0_-10px_40px_rgba(0,0,0,0.05)] bg-white/90 dark:bg-slate-900/90`} style={{ height: 'var(--bottom-nav-h)', paddingBottom: 'var(--sab)' }}>
         <div className="flex items-center justify-around h-full px-2">
           <button onClick={() => onNavigate(AppRoute.FEED)} className={`p-3 rounded-xl transition-all tap-feedback relative ${activeRoute === AppRoute.FEED ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400 shadow-inner' : 'text-slate-400'}`}>

@@ -108,7 +108,6 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Derived State
-  // Note: blockedIds should technically come from a blocked collection, but for now we safeguard against null access
   const blockedIds = useMemo(() => new Set(userData?.settings?.safety?.hiddenWords || []), [userData]);
 
   // Auth Listener
@@ -118,7 +117,6 @@ const App: React.FC = () => {
       setIsAuthLoading(false);
       if (!u) {
         setUserData(null);
-        // Only reset if logged out
         setActiveRoute(AppRoute.FEED);
       }
     });
@@ -146,7 +144,6 @@ const App: React.FC = () => {
 
     const root = window.document.documentElement;
     
-    // 1. Theme Logic (System/Light/Dark)
     const applyTheme = (isDark: boolean) => {
       if (isDark) root.classList.add('dark');
       else root.classList.remove('dark');
@@ -157,7 +154,6 @@ const App: React.FC = () => {
     } else if (appearance.theme === 'light') {
       applyTheme(false);
     } else {
-      // System Default
       const mql = window.matchMedia('(prefers-color-scheme: dark)');
       applyTheme(mql.matches);
       
@@ -166,11 +162,9 @@ const App: React.FC = () => {
       return () => mql.removeEventListener('change', listener);
     }
 
-    // 2. High Contrast logic
     if (appearance.highContrast) root.classList.add('high-contrast');
     else root.classList.remove('high-contrast');
 
-    // 3. Reduced Motion logic
     if (appearance.reducedMotion) root.classList.add('reduced-motion');
     else root.classList.remove('reduced-motion');
 
@@ -205,16 +199,14 @@ const App: React.FC = () => {
       setWeather(w);
     };
     updateAtmos();
-    const interval = setInterval(updateAtmos, 600000); // 10 mins
+    const interval = setInterval(updateAtmos, 600000); 
     return () => clearInterval(interval);
   }, [userData?.location]);
 
-  // Toast System Handler
   const addToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
     window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: message, type } }));
   }, []);
 
-  // Global Event Listeners
   useEffect(() => {
     const handleViewPost = (e: any) => setViewingPost(e.detail.post);
     const handleNavigate = (e: any) => setActiveRoute(e.detail.route);
@@ -228,7 +220,6 @@ const App: React.FC = () => {
     };
   }, []);
 
-  // Global Signal Handlers
   const handleLogout = async () => {
     await signOut(auth);
     setUserData(null);
@@ -298,10 +289,6 @@ const App: React.FC = () => {
     await batch.commit();
   };
 
-  const handleDeleteNotification = async (id: string) => {
-    await deleteDoc(doc(db, 'notifications', id));
-  };
-
   if (isAuthLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
@@ -315,7 +302,6 @@ const App: React.FC = () => {
     return <LandingPage onEnter={() => setActiveRoute(AppRoute.FEED)} systemSettings={systemSettings || { maintenanceMode: false, registrationDisabled: false, minTrustTier: 'Gamma', featureFlags: {}, lastUpdatedBy: '', updatedAt: '' } as any} />;
   }
 
-  // CRITICAL: Ensure User Data is Loaded before rendering protected routes to avoid null pointer exceptions
   if (!userData) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
@@ -347,160 +333,164 @@ const App: React.FC = () => {
         onOpenSettings={() => setIsSettingsOpen(true)}
         blockedIds={blockedIds}
       >
-        {activeRoute === AppRoute.FEED && (
-          <FeedPage 
-            posts={posts} 
-            userData={userData} 
-            onLike={handleLike} 
-            onBookmark={handleBookmark} 
-            onViewPost={setViewingPost}
-            onOpenCreate={() => {}} 
-            onTransmitStory={async (file) => {
-              const url = await uploadToCloudinary(file);
-              await setDoc(doc(collection(db, 'stories')), {
-                authorId: user.uid,
-                authorName: userData?.displayName,
-                authorAvatar: userData?.avatarUrl,
-                coverUrl: url,
-                timestamp: serverTimestamp(),
-                type: file.type.startsWith('video/') ? 'video' : 'image'
-              });
-              addToast("Temporal Fragment Broadcasted", "success");
-            }}
-            onGoLive={() => { setIsBroadcasting(true); setActiveStreamId(`stream_${Math.random().toString(36).substring(2, 11)}`); }}
-            onJoinStream={setActiveStream}
-            locale={region}
-            blockedIds={blockedIds}
-          />
-        )}
-        {activeRoute === AppRoute.EXPLORE && (
-          <ExplorePage 
-            posts={posts} users={allUsers} onLike={handleLike} onBookmark={handleBookmark} 
-            onViewPost={setViewingPost} onViewProfile={setViewingProfile} locale={region} 
-            searchQuery={searchQuery} onClearSearch={() => setSearchQuery('')}
-            userData={userData}
-          />
-        )}
-        {activeRoute === AppRoute.MESSAGES && (
-          <MessagesPage currentUser={userData!} locale={region} addToast={addToast} weather={weather} allUsers={allUsers} blockedIds={blockedIds} />
-        )}
-        {activeRoute === AppRoute.NOTIFICATIONS && (
-          <NotificationsPage 
-            notifications={notifications} 
-            onDelete={handleDeleteNotification}
-            onMarkRead={handleMarkAllRead}
-            addToast={addToast}
-            locale={region}
-            userData={userData}
-          />
-        )}
-        {activeRoute === AppRoute.PROFILE && (
-          <ProfilePage 
-            userData={userData!} onUpdateProfile={() => {}} addToast={addToast} locale={region} 
-            sessionStartTime={Date.now()} onViewPost={setViewingPost} onViewProfile={setViewingProfile} 
-            onOpenSettings={() => setIsSettingsOpen(true)} onLike={handleLike} onBookmark={handleBookmark}
-            blockedIds={blockedIds}
-          />
-        )}
-        {activeRoute === AppRoute.ADMIN && (
-          <AdminPanel addToast={addToast} locale={region} systemSettings={systemSettings!} userData={userData} />
-        )}
-        {activeRoute === AppRoute.MESH && (
-          <MeshPage 
-            currentUser={userData!} 
-            locale={region} 
-            addToast={addToast} 
-            onViewProfile={setViewingProfile}
-            blockedIds={blockedIds}
-          />
-        )}
-        {activeRoute === AppRoute.GATHERINGS && (
-          <GatheringsPage 
-            currentUser={userData!} locale={region} addToast={addToast} allUsers={allUsers}
-            onOpenLobby={setActiveLobbyGathering} onViewGathering={setViewingGathering} onRSVP={handleRSVP}
-          />
-        )}
-        {activeRoute === AppRoute.CLUSTERS && (
-          <ClustersPage currentUser={userData!} locale={region} addToast={addToast} onOpenChat={() => {}} allUsers={allUsers} weather={weather} />
-        )}
-        {activeRoute === AppRoute.STREAM_GRID && (
-          <StreamGridPage 
-            locale={region} onJoinStream={setActiveStream} onGoLive={() => setIsBroadcasting(true)} 
-            userData={userData} onTransmit={() => {}} 
-          />
-        )}
-        {activeRoute === AppRoute.TEMPORAL && (
-          <TemporalPage currentUser={userData} locale={region} addToast={addToast} />
-        )}
-        {activeRoute === AppRoute.SAVED && (
-          <DataVaultPage currentUser={userData!} locale={region} addToast={addToast} onViewPost={setViewingPost} />
-        )}
-        {activeRoute === AppRoute.VERIFIED_NODES && (
-          <VerifiedNodesPage users={allUsers} onViewProfile={setViewingProfile} />
-        )}
-        {activeRoute === AppRoute.SIMULATIONS && <SimulationsPage />}
-        {activeRoute === AppRoute.RESILIENCE && <ResiliencePage userData={userData!} addToast={addToast} />}
-        {activeRoute === AppRoute.SUPPORT && <SupportPage currentUser={userData!} locale={region} addToast={addToast} />}
-        {activeRoute === AppRoute.MARKETPLACE && <ResonanceMarketplace userData={userData!} addToast={addToast} />}
-        
-        {/* LEGAL PAGES */}
-        {activeRoute === AppRoute.PRIVACY && <div className="p-4 md:p-8"><PrivacyPage /></div>}
-        {activeRoute === AppRoute.TERMS && <div className="p-4 md:p-8"><TermsPage /></div>}
-        {activeRoute === AppRoute.COOKIES && <div className="p-4 md:p-8"><CookiesPage /></div>}
+        {/* Core Route Rendering */}
+        <div className="relative w-full min-h-full">
+            {activeRoute === AppRoute.FEED && (
+            <FeedPage 
+                posts={posts} 
+                userData={userData} 
+                onLike={handleLike} 
+                onBookmark={handleBookmark} 
+                onViewPost={setViewingPost}
+                onOpenCreate={() => {}} 
+                onTransmitStory={async (file) => {
+                const url = await uploadToCloudinary(file);
+                await setDoc(doc(collection(db, 'stories')), {
+                    authorId: user.uid,
+                    authorName: userData?.displayName,
+                    authorAvatar: userData?.avatarUrl,
+                    coverUrl: url,
+                    timestamp: serverTimestamp(),
+                    type: file.type.startsWith('video/') ? 'video' : 'image'
+                });
+                addToast("Temporal Fragment Broadcasted", "success");
+                }}
+                onGoLive={() => { setIsBroadcasting(true); setActiveStreamId(`stream_${Math.random().toString(36).substring(2, 11)}`); }}
+                onJoinStream={setActiveStream}
+                locale={region}
+                blockedIds={blockedIds}
+            />
+            )}
+            {activeRoute === AppRoute.EXPLORE && (
+            <ExplorePage 
+                posts={posts} users={allUsers} onLike={handleLike} onBookmark={handleBookmark} 
+                onViewPost={setViewingPost} onViewProfile={setViewingProfile} locale={region} 
+                searchQuery={searchQuery} onClearSearch={() => setSearchQuery('')}
+                userData={userData}
+            />
+            )}
+            {activeRoute === AppRoute.MESSAGES && (
+            <MessagesPage currentUser={userData!} locale={region} addToast={addToast} weather={weather} allUsers={allUsers} blockedIds={blockedIds} />
+            )}
+            {activeRoute === AppRoute.NOTIFICATIONS && (
+            <NotificationsPage 
+                notifications={notifications} 
+                onDelete={(id) => deleteDoc(doc(db, 'notifications', id))}
+                onMarkRead={handleMarkAllRead}
+                addToast={addToast}
+                locale={region}
+                userData={userData}
+            />
+            )}
+            {activeRoute === AppRoute.PROFILE && (
+            <ProfilePage 
+                userData={userData!} onUpdateProfile={() => {}} addToast={addToast} locale={region} 
+                sessionStartTime={Date.now()} onViewPost={setViewingPost} onViewProfile={setViewingProfile} 
+                onOpenSettings={() => setIsSettingsOpen(true)} onLike={handleLike} onBookmark={handleBookmark}
+                blockedIds={blockedIds}
+            />
+            )}
+            {activeRoute === AppRoute.ADMIN && (
+            <AdminPanel addToast={addToast} locale={region} systemSettings={systemSettings!} userData={userData} />
+            )}
+            {activeRoute === AppRoute.MESH && (
+            <MeshPage 
+                currentUser={userData!} 
+                locale={region} 
+                addToast={addToast} 
+                onViewProfile={setViewingProfile}
+                blockedIds={blockedIds}
+            />
+            )}
+            {activeRoute === AppRoute.GATHERINGS && (
+            <GatheringsPage 
+                currentUser={userData!} locale={region} addToast={addToast} allUsers={allUsers}
+                onOpenLobby={setActiveLobbyGathering} onViewGathering={setViewingGathering} onRSVP={handleRSVP}
+            />
+            )}
+            {activeRoute === AppRoute.CLUSTERS && (
+            <ClustersPage currentUser={userData!} locale={region} addToast={addToast} onOpenChat={() => {}} allUsers={allUsers} weather={weather} />
+            )}
+            {activeRoute === AppRoute.STREAM_GRID && (
+            <StreamGridPage 
+                locale={region} onJoinStream={setActiveStream} onGoLive={() => setIsBroadcasting(true)} 
+                userData={userData} onTransmit={() => {}} 
+            />
+            )}
+            {activeRoute === AppRoute.TEMPORAL && (
+            <TemporalPage currentUser={userData} locale={region} addToast={addToast} />
+            )}
+            {activeRoute === AppRoute.SAVED && (
+            <DataVaultPage currentUser={userData!} locale={region} addToast={addToast} onViewPost={setViewingPost} />
+            )}
+            {activeRoute === AppRoute.VERIFIED_NODES && (
+            <VerifiedNodesPage users={allUsers} onViewProfile={setViewingProfile} />
+            )}
+            {activeRoute === AppRoute.SIMULATIONS && <SimulationsPage />}
+            {activeRoute === AppRoute.RESILIENCE && <ResiliencePage userData={userData!} addToast={addToast} />}
+            {activeRoute === AppRoute.SUPPORT && <SupportPage currentUser={userData!} locale={region} addToast={addToast} />}
+            {activeRoute === AppRoute.MARKETPLACE && <ResonanceMarketplace userData={userData!} addToast={addToast} />}
+            
+            {activeRoute === AppRoute.PRIVACY && <div className="p-4 md:p-8"><PrivacyPage /></div>}
+            {activeRoute === AppRoute.TERMS && <div className="p-4 md:p-8"><TermsPage /></div>}
+            {activeRoute === AppRoute.COOKIES && <div className="p-4 md:p-8"><CookiesPage /></div>}
+
+            {/* In-Column Overlays: These now use absolute inset-0 and high z-index but are bound by the sidebars */}
+            {viewingPost && (
+                <div className="absolute inset-0 z-[200] bg-white dark:bg-[#020617] overflow-y-auto no-scrollbar">
+                <SinglePostView 
+                    post={viewingPost} userData={userData} locale={region} 
+                    onClose={() => setViewingPost(null)} onLike={handleLike} onBookmark={handleBookmark} 
+                    addToast={addToast} blockedIds={blockedIds}
+                />
+                </div>
+            )}
+
+            {viewingProfile && (
+                <div className="absolute inset-0 z-[200] bg-white dark:bg-[#020617] overflow-y-auto no-scrollbar">
+                <ProfilePage 
+                    userData={viewingProfile} onUpdateProfile={() => {}} addToast={addToast} locale={region} 
+                    sessionStartTime={Date.now()} onViewPost={setViewingPost} onViewProfile={setViewingProfile} 
+                    onLike={handleLike} onBookmark={handleBookmark} blockedIds={blockedIds}
+                />
+                <button 
+                    onClick={() => setViewingProfile(null)}
+                    className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[250] px-8 py-4 bg-slate-950 dark:bg-white text-white dark:text-slate-900 rounded-2xl shadow-2xl active:scale-90 font-black text-[10px] uppercase tracking-widest flex items-center gap-3"
+                >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth={3} /></svg>
+                    CLOSE_PROFILE
+                </button>
+                </div>
+            )}
+
+            {viewingGathering && (
+                <div className="absolute inset-0 z-[200] bg-white dark:bg-[#020617] overflow-y-auto no-scrollbar p-6">
+                <SingleGatheringView 
+                    gathering={viewingGathering} currentUser={userData!} allUsers={allUsers} locale={region}
+                    onBack={() => setViewingGathering(null)} onDelete={() => {}} onRSVP={handleRSVP} onOpenLobby={setActiveLobbyGathering}
+                />
+                </div>
+            )}
+
+            {activeLobbyGathering && (
+                <div className="absolute inset-0 z-[200] bg-white dark:bg-slate-900 flex flex-col">
+                    <ClustersPage 
+                        currentUser={userData!} locale={region} addToast={addToast} 
+                        onOpenChat={() => {}} allUsers={allUsers} weather={weather} 
+                        initialClusterId={activeLobbyGathering.linkedChatId}
+                    />
+                    <button 
+                        onClick={() => setActiveLobbyGathering(null)}
+                        className="absolute top-4 right-4 z-[260] p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl"
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth={3} /></svg>
+                    </button>
+                </div>
+            )}
+        </div>
       </Layout>
 
-      {/* Global Overlays */}
-      {viewingPost && (
-        <div className="fixed inset-0 z-[1100] bg-white dark:bg-[#020617] overflow-y-auto no-scrollbar scroll-viewport">
-          <SinglePostView 
-            post={viewingPost} userData={userData} locale={region} 
-            onClose={() => setViewingPost(null)} onLike={handleLike} onBookmark={handleBookmark} 
-            addToast={addToast} blockedIds={blockedIds}
-          />
-        </div>
-      )}
-
-      {viewingProfile && (
-        <div className="fixed inset-0 z-[1100] bg-white dark:bg-[#020617] overflow-y-auto no-scrollbar scroll-viewport">
-          <ProfilePage 
-            userData={viewingProfile} onUpdateProfile={() => {}} addToast={addToast} locale={region} 
-            sessionStartTime={Date.now()} onViewPost={setViewingPost} onViewProfile={setViewingProfile} 
-            onLike={handleLike} onBookmark={handleBookmark} blockedIds={blockedIds}
-          />
-          <button 
-            onClick={() => setViewingProfile(null)}
-            className="fixed top-6 right-6 z-[1200] p-4 bg-slate-950 dark:bg-white text-white dark:text-slate-900 rounded-full shadow-2xl active:scale-90"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth={3} /></svg>
-          </button>
-        </div>
-      )}
-
-      {viewingGathering && (
-        <div className="fixed inset-0 z-[1100] bg-white dark:bg-[#020617] overflow-y-auto no-scrollbar scroll-viewport p-6">
-          <SingleGatheringView 
-            gathering={viewingGathering} currentUser={userData!} allUsers={allUsers} locale={region}
-            onBack={() => setViewingGathering(null)} onDelete={() => {}} onRSVP={handleRSVP} onOpenLobby={setActiveLobbyGathering}
-          />
-        </div>
-      )}
-
-      {activeLobbyGathering && (
-        <div className="fixed inset-0 z-[2500] bg-white dark:bg-slate-900 flex flex-col">
-            <ClustersPage 
-                currentUser={userData!} locale={region} addToast={addToast} 
-                onOpenChat={() => {}} allUsers={allUsers} weather={weather} 
-                initialClusterId={activeLobbyGathering.linkedChatId}
-            />
-            <button 
-                onClick={() => setActiveLobbyGathering(null)}
-                className="fixed top-4 right-4 z-[2600] p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl"
-            >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth={3} /></svg>
-            </button>
-        </div>
-      )}
-
+      {/* Global Overlays (Settings and Broadcast should still be global fixed for focus) */}
       {isSettingsOpen && (
         <div className="fixed inset-0 z-[2700]">
            <SettingsOverlay 
