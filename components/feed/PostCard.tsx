@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Post, User } from '../../types';
 import { ICONS, PULSE_FREQUENCIES } from '../../constants';
@@ -109,6 +108,18 @@ export const PostCard: React.FC<PostCardProps> = ({
     if (!db) return;
     setIsDeleting(true);
     try {
+      // If this post is a relay, decrement the original post's share count
+      if (post.relaySource && post.relaySource.postId) {
+        try {
+          const originalPostRef = doc(db, 'posts', post.relaySource.postId);
+          await updateDoc(originalPostRef, {
+            shares: increment(-1)
+          });
+        } catch (e) {
+          console.warn("Original signal unreachable for counter update.");
+        }
+      }
+
       await deleteDoc(doc(db, 'posts', post.id));
       addToast("Signal Purged", "info");
     } catch (e) {
