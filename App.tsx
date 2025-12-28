@@ -176,7 +176,14 @@ const App: React.FC = () => {
 
     const qPosts = query(collection(db, 'posts'), orderBy('timestamp', 'desc'), limit(100));
     const unsubPosts = onSnapshot(qPosts, (snap: any) => {
-      setPosts(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Post)));
+      setPosts(snap.docs.map((d: any) => {
+        const data = d.data();
+        return { 
+          id: d.id, 
+          ...data,
+          isLiked: data.likedBy?.includes(user.uid) || false
+        } as Post;
+      }));
     });
 
     const qUsers = query(collection(db, 'users'), limit(100));

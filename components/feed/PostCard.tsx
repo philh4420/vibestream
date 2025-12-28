@@ -185,7 +185,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" /></svg>
             </button>
             {showOptions && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-2xl z-50 p-2 overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-2xl z-50 p-2 overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
                     {isAuthor ? (
                         <>
                             <button className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-all">Edit_Protocol</button>
@@ -205,11 +205,11 @@ export const PostCard: React.FC<PostCardProps> = ({
                 {isHtml ? <div className="ProseMirror" dangerouslySetInnerHTML={{ __html: post.content }} /> : post.content}
             </div>
             {extractedUrl && <LinkPreview url={extractedUrl} />}
-            {post.type === 'poll' && <PollNode post={post} userData={userData} addToast={addToast} />}
+            {post.type === 'poll' && <div onClick={e => e.stopPropagation()}><PollNode post={post} userData={userData} addToast={addToast} /></div>}
         </div>
 
         {post.media?.length > 0 && (
-          <div className="relative rounded-[2.5rem] overflow-hidden mb-8 bg-slate-950 border border-slate-100 dark:border-slate-800 shadow-lg">
+          <div className="relative rounded-[2.5rem] overflow-hidden mb-8 bg-slate-950 border border-slate-100 dark:border-slate-800 shadow-lg" onClick={e => e.stopPropagation()}>
             <div className="flex transition-transform duration-500" style={{ transform: `translateX(-${currentMediaIndex * 100}%)` }}>
               {post.media.map((item, idx) => (
                 <div key={idx} className="min-w-full aspect-[4/3] md:aspect-video relative">
@@ -231,14 +231,16 @@ export const PostCard: React.FC<PostCardProps> = ({
           <div className="flex gap-4">
             <div className="relative">
                 <button 
-                    onMouseDown={handlePulseStart} onMouseUp={handlePulseEnd}
+                    onMouseDown={handlePulseStart} 
+                    onMouseUp={handlePulseEnd}
+                    onClick={(e) => e.stopPropagation()}
                     className={`flex items-center gap-3 h-12 px-6 rounded-2xl transition-all border ${post.isLiked ? 'bg-rose-50 dark:bg-rose-900/30 border-rose-100 text-rose-600' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-white dark:hover:bg-slate-700'}`}
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" fill={post.isLiked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>
                     <span className="text-xs font-black">{post.likes}</span>
                 </button>
                 {isPulseMenuOpen && (
-                    <div className="absolute bottom-full left-0 mb-4 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-100 dark:border-slate-700 rounded-2xl p-2 flex gap-1 shadow-2xl animate-in slide-in-from-bottom-2 duration-200">
+                    <div className="absolute bottom-full left-0 mb-4 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-100 dark:border-slate-700 rounded-2xl p-2 flex gap-1 shadow-2xl animate-in slide-in-from-bottom-2 duration-200 z-50" onClick={e => e.stopPropagation()}>
                         {PULSE_FREQUENCIES.map(pf => (
                             <button 
                                 key={pf.id} onClick={(e) => { e.stopPropagation(); onLike(post.id, pf.id); setIsPulseMenuOpen(false); }}
