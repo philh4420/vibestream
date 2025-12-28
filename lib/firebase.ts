@@ -3,7 +3,7 @@ import * as FirebaseApp from 'firebase/app';
 const { initializeApp, getApps, getApp } = FirebaseApp as any;
 // Using namespace imports to resolve modular SDK export issues
 import * as Firestore from 'firebase/firestore';
-const { getFirestore } = Firestore as any;
+const { initializeFirestore } = Firestore as any;
 import * as FirebaseAuth from 'firebase/auth';
 const { getAuth } = FirebaseAuth as any;
 
@@ -32,6 +32,13 @@ try {
   app = initializeApp(firebaseConfig, 'LIB_FALLBACK');
 }
 
-export const db = getFirestore(app);
+/**
+ * VIBESTREAM CONNECTIVITY FIX:
+ * Ensures the 'Listen' channel doesn't fail due to browser access control.
+ */
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+});
+
 export const auth = getAuth(app);
 export default app;

@@ -5,7 +5,7 @@ import * as FirebaseAppCheck from 'firebase/app-check';
 const { initializeAppCheck, ReCaptchaV3Provider } = FirebaseAppCheck as any;
 // Using namespace imports to resolve modular SDK export issues
 import * as Firestore from 'firebase/firestore';
-const { getFirestore } = Firestore as any;
+const { initializeFirestore } = Firestore as any;
 import * as FirebaseAuth from 'firebase/auth';
 const { getAuth } = FirebaseAuth as any;
 
@@ -30,7 +30,6 @@ try {
 }
 
 // App Check Implementation - Standard Production Protocol
-// NOTE: A 400 error here usually means the Key Type is wrong (Must be v3, not v2) or Domain Mismatch.
 if (isBrowser && CONFIG.APP_CHECK.reCaptchaSiteKey) {
   try {
     const siteKey = CONFIG.APP_CHECK.reCaptchaSiteKey;
@@ -49,6 +48,14 @@ if (isBrowser && CONFIG.APP_CHECK.reCaptchaSiteKey) {
   console.debug("VibeStream Protocol: App Check bypassed (No Site Key detected in Config).");
 }
 
-export const db = getFirestore(app);
+/**
+ * VIBESTREAM CONNECTIVITY FIX:
+ * We use initializeFirestore with experimentalForceLongPolling to prevent 
+ * 'Access Control Checks' errors in restricted browser environments.
+ */
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+});
+
 export const auth = getAuth(app);
 export default app;
