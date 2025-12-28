@@ -29,9 +29,9 @@ import {
   Region, 
   WeatherInfo, 
   Post, 
-  LiveStream,
-  Gathering,
-  ToastMessage
+  LiveStream, 
+  Gathering, 
+  ToastMessage 
 } from './types';
 import { Layout } from './components/layout/Layout';
 import { LandingPage } from './components/landing/LandingPage';
@@ -108,6 +108,7 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Derived State
+  // Note: blockedIds should technically come from a blocked collection, but for now we safeguard against null access
   const blockedIds = useMemo(() => new Set(userData?.settings?.safety?.hiddenWords || []), [userData]);
 
   // Auth Listener
@@ -312,6 +313,16 @@ const App: React.FC = () => {
 
   if (!user) {
     return <LandingPage onEnter={() => setActiveRoute(AppRoute.FEED)} systemSettings={systemSettings || { maintenanceMode: false, registrationDisabled: false, minTrustTier: 'Gamma', featureFlags: {}, lastUpdatedBy: '', updatedAt: '' } as any} />;
+  }
+
+  // CRITICAL: Ensure User Data is Loaded before rendering protected routes to avoid null pointer exceptions
+  if (!userData) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mb-6" />
+        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em] font-mono animate-pulse">Syncing_Profile...</p>
+      </div>
+    );
   }
 
   return (
