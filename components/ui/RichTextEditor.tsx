@@ -1,3 +1,4 @@
+
 import React, { useCallback, useMemo, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { createEditor, Descendant, Editor, Element as SlateElement, Transforms, Text, BaseEditor } from 'slate';
 import { Slate, Editable, withReact, useSlate, ReactEditor } from 'slate-react';
@@ -20,7 +21,7 @@ export interface RichTextEditorRef {
   clear: () => void;
 }
 
-type CustomElement = { type: 'paragraph' | 'block-quote' | 'bulleted-list' | 'list-item' | 'code-block'; children: CustomText[] };
+type CustomElement = { type: 'paragraph' | 'block-quote' | 'bulleted-list' | 'list-item' | 'code-block' | 'heading-one' | 'heading-two'; children: CustomText[] };
 type CustomText = { text: string; bold?: boolean; italic?: boolean; code?: boolean; underline?: boolean };
 
 // --- CONSTANTS & HOTKEYS ---
@@ -50,6 +51,10 @@ const serialize = (node: Descendant): string => {
   const children = node.children.map(n => serialize(n)).join('');
 
   switch ((node as CustomElement).type) {
+    case 'heading-one':
+      return `<h1>${children}</h1>`;
+    case 'heading-two':
+      return `<h2>${children}</h2>`;
     case 'block-quote':
       return `<blockquote><p>${children}</p></blockquote>`;
     case 'bulleted-list':
@@ -87,6 +92,10 @@ const deserialize = (el: HTMLElement): Descendant | Descendant[] | null => {
       return children; // Root
     case 'BR':
       return { text: '\n' };
+    case 'H1':
+      return { type: 'heading-one', children } as CustomElement;
+    case 'H2':
+      return { type: 'heading-two', children } as CustomElement;
     case 'BLOCKQUOTE':
       return { type: 'block-quote', children } as CustomElement;
     case 'UL':
@@ -98,7 +107,7 @@ const deserialize = (el: HTMLElement): Descendant | Descendant[] | null => {
     case 'P':
       return { type: 'paragraph', children } as CustomElement;
     case 'A':
-      return { text: nodeEl.textContent || '' }; // Simplify links to text for now
+      return { text: nodeEl.textContent || '' };
     case 'STRONG':
     case 'B':
       return children.map(child => Text.isText(child) ? { ...child, bold: true } : child);
@@ -133,16 +142,16 @@ const ToggleButton = ({ format, icon: Icon, title }: { format: string, icon: Rea
     <button
       onMouseDown={(event) => {
         event.preventDefault();
-        if (LIST_TYPES.includes(format) || format === 'block-quote' || format === 'code-block') {
+        if (LIST_TYPES.includes(format) || ['block-quote', 'code-block', 'heading-one', 'heading-two'].includes(format)) {
             toggleBlock(editor, format);
         } else {
             toggleMark(editor, format);
         }
       }}
-      className={`p-2 rounded-lg transition-all active:scale-90 ${
+      className={`w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-xl transition-all duration-200 active:scale-90 ${
         isActive 
-          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20' 
-          : 'text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-indigo-500 dark:hover:text-indigo-400'
+          ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md scale-105' 
+          : 'text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
       }`}
       title={title}
     >
@@ -153,13 +162,23 @@ const ToggleButton = ({ format, icon: Icon, title }: { format: string, icon: Rea
 
 const Toolbar = () => {
   return (
-    <div className="flex items-center gap-1 p-1 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-slate-800/50 mb-2 overflow-x-auto no-scrollbar">
-      <ToggleButton format="bold" title="Bold" icon={<span className="font-black text-xs">B</span>} />
+    <div className="flex flex-wrap items-center gap-1 p-1.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800 rounded-2xl mb-4 shadow-sm sticky top-0 z-20">
+      <ToggleButton format="heading-one" title="Heading 1" icon={<span className="font-black text-xs">H1</span>} />
+      <ToggleButton format="heading-two" title="Heading 2" icon={<span className="font-bold text-xs">H2</span>} />
+      
+      <div className="w-px h-5 bg-slate-200 dark:bg-slate-800 mx-1" />
+      
+      <ToggleButton format="bold" title="Bold" icon={<span className="font-black text-xs serif">B</span>} />
       <ToggleButton format="italic" title="Italic" icon={<span className="italic font-bold text-xs serif">I</span>} />
-      <ToggleButton format="underline" title="Underline" icon={<span className="underline font-bold text-xs">U</span>} />
-      <ToggleButton format="code" title="Inline Code" icon={<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" /></svg>} />
-      <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1" />
+      <ToggleButton format="underline" title="Underline" icon={<span className="underline font-bold text-xs serif">U</span>} />
+      
+      <div className="w-px h-5 bg-slate-200 dark:bg-slate-800 mx-1" />
+      
+      <ToggleButton format="code" title="Inline Code" icon={<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" /></svg>} />
       <ToggleButton format="code-block" title="Code Block" icon={<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M14.25 9.75L16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" /></svg>} />
+      
+      <div className="w-px h-5 bg-slate-200 dark:bg-slate-800 mx-1" />
+      
       <ToggleButton format="block-quote" title="Quote" icon={<svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017C19.5693 16 20.017 15.5523 20.017 15V9C20.017 8.44772 19.5693 8 19.017 8H15.017C14.4647 8 14.017 8.44772 14.017 9V11C14.017 11.5523 13.5693 12 13.017 12H12.017V5H22.017V15C22.017 18.3137 19.3307 21 16.017 21H14.017ZM5.0166 21L5.0166 18C5.0166 16.8954 5.91203 16 7.0166 16H10.0166C10.5689 16 11.0166 15.5523 11.0166 15V9C11.0166 8.44772 10.5689 8 10.0166 8H6.0166C5.46432 8 5.0166 8.44772 5.0166 9V11C5.0166 11.5523 4.56889 12 4.0166 12H3.0166V5H13.0166V15C13.0166 18.3137 10.3303 21 7.0166 21H5.0166Z" /></svg>} />
       <ToggleButton format="bulleted-list" title="Bullet List" icon={<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>} />
     </div>
@@ -268,45 +287,40 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
        if (content === '' && editor.children.length > 0) {
            // Check if it's already empty
            const isEmpty = editor.children.length === 1 && (editor.children[0] as CustomElement).children[0].text === '' && (editor.children[0] as CustomElement).type === 'paragraph';
-           if (!isEmpty) {
-                // If parent says empty but we are not, clear it
-                // This is a bit tricky with Slate's controlled/uncontrolled nature. 
-                // We trust the local state 'value' mostly, but if parent forces clear (empty string), we reset.
-                // However, doing this on every render might lose cursor or partial edits if sync is slow.
-                // Best practice: The parent clears via the ref.clear() method we exposed.
-                // But if we strictly need to sync:
-                // setValue([{ type: 'paragraph', children: [{ text: '' }] }]);
-                // editor.children = [{ type: 'paragraph', children: [{ text: '' }] }];
-           }
+           // Best practice: The parent clears via the ref.clear() method we exposed.
        }
     }, [content, editor]);
 
     // Renderers
     const renderElement = useCallback((props: any) => {
         switch (props.element.type) {
+            case 'heading-one':
+                return <h1 {...props.attributes} className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight my-4 leading-tight">{props.children}</h1>;
+            case 'heading-two':
+                return <h2 {...props.attributes} className="text-xl font-bold text-slate-800 dark:text-slate-100 mt-4 mb-2 tracking-tight">{props.children}</h2>;
             case 'block-quote':
-                return <blockquote {...props.attributes} className="border-l-4 border-indigo-500 pl-4 italic text-slate-500 my-2">{props.children}</blockquote>;
+                return <blockquote {...props.attributes} className="border-l-4 border-indigo-500 pl-4 italic text-slate-500 dark:text-slate-400 my-4 text-lg font-medium">{props.children}</blockquote>;
             case 'bulleted-list':
-                return <ul {...props.attributes} className="list-disc pl-5 my-2">{props.children}</ul>;
+                return <ul {...props.attributes} className="list-disc pl-5 my-2 text-slate-700 dark:text-slate-300 space-y-1">{props.children}</ul>;
             case 'list-item':
                 return <li {...props.attributes}>{props.children}</li>;
             case 'code-block':
                 return (
-                    <pre {...props.attributes} className="bg-slate-900 text-slate-50 p-4 rounded-xl font-mono text-xs my-2 overflow-x-auto">
+                    <pre {...props.attributes} className="bg-slate-900 text-slate-50 p-4 rounded-2xl font-mono text-xs my-3 overflow-x-auto shadow-inner border border-slate-800">
                         <code>{props.children}</code>
                     </pre>
                 );
             default:
-                return <p {...props.attributes} className="mb-1">{props.children}</p>;
+                return <p {...props.attributes} className="mb-2 leading-relaxed text-slate-800 dark:text-slate-200">{props.children}</p>;
         }
     }, []);
 
     const renderLeaf = useCallback((props: any) => {
         let { children } = props;
-        if (props.leaf.bold) children = <strong>{children}</strong>;
-        if (props.leaf.code) children = <code className="bg-slate-200 dark:bg-slate-700 px-1 py-0.5 rounded font-mono text-xs">{children}</code>;
-        if (props.leaf.italic) children = <em>{children}</em>;
-        if (props.leaf.underline) children = <u>{children}</u>;
+        if (props.leaf.bold) children = <strong className="font-black text-slate-900 dark:text-white">{children}</strong>;
+        if (props.leaf.code) children = <code className="bg-slate-200 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded-md font-mono text-[0.9em] font-bold border border-slate-300 dark:border-slate-700">{children}</code>;
+        if (props.leaf.italic) children = <em className="italic text-slate-600 dark:text-slate-400">{children}</em>;
+        if (props.leaf.underline) children = <u className="decoration-indigo-500 decoration-2 underline-offset-2">{children}</u>;
         return <span {...props.attributes}>{children}</span>;
     }, []);
 
@@ -328,7 +342,7 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
     };
 
     return (
-      <div className="w-full">
+      <div className="w-full relative group">
         <Slate editor={editor} initialValue={value} onChange={handleChange}>
           {editable && <Toolbar />}
           <Editable
@@ -338,7 +352,8 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
             onFocus={onFocus}
             onKeyDown={onKeyDown}
             readOnly={!editable}
-            className="focus:outline-none min-h-[60px] text-lg font-medium text-slate-800 dark:text-slate-200 prose prose-slate dark:prose-invert max-w-none"
+            spellCheck={false}
+            className="focus:outline-none min-h-[100px] text-lg font-medium max-w-none"
           />
         </Slate>
       </div>
