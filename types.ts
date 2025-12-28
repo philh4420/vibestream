@@ -1,4 +1,3 @@
-
 export type UserRole = 'member' | 'verified' | 'creator' | 'admin';
 
 export type Region = 'en-GB' | 'en-US' | 'de-DE' | 'fr-FR' | 'ja-JP';
@@ -155,13 +154,6 @@ export interface Comment {
     type: 'image' | 'video';
     url: string;
   }[];
-}
-
-export interface NeuralInsight {
-  vibe: string;
-  keywords: string[];
-  impact: 'low' | 'moderate' | 'high' | 'critical';
-  summary: string;
 }
 
 export interface Post {
@@ -339,8 +331,7 @@ export enum AppRoute {
   RESILIENCE = 'resilience',
   SINGLE_POST = 'single_post',
   SUPPORT = 'support',
-  MARKETPLACE = 'marketplace',
-  AI_HUB = 'ai_hub'
+  MARKETPLACE = 'marketplace'
 }
 
 export interface ToastMessage {

@@ -1,5 +1,4 @@
-import React from 'react';
-
-export const NeuralInsightDrawer: React.FC<any> = () => {
-  return null;
-};
+/**
+ * AI Neural Insight Protocol Offline
+ */
+export const NeuralInsightDrawer = () => null;
