@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ICONS } from '../../constants';
 import { AppRoute, UserRole, User as VibeUser, AppNotification, SystemSettings } from '../../types';
@@ -25,12 +26,14 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   const unreadCount = notifications.filter(n => !n.isRead).length;
   const isVerified = userData?.verifiedHuman || ['verified', 'creator', 'admin'].includes(userData?.role || '');
 
-  // Safety check for feature flags - default to TRUE if undefined to prevent missing links
+  // Feature flag check
   const isEnabled = (route: AppRoute) => {
     if (route === AppRoute.ADMIN) return userRole === 'admin';
     if (!systemSettings || !systemSettings.featureFlags) return true;
     return systemSettings.featureFlags[route] !== false;
   };
+
+  const borderClass = userData?.cosmetics?.activeBorder ? `cosmetic-border-${userData.cosmetics.activeBorder}` : '';
 
   const NavItem = ({ 
     route, 
@@ -49,10 +52,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
     badge?: string | number,
     isSubItem?: boolean
   }) => {
-    // Admin check is strict
     if (route === AppRoute.ADMIN && userRole !== 'admin') return null;
-    
-    // Feature flag check (visual dimming only, or hide if preferred - here we just dim)
     const enabled = route ? isEnabled(route) : true;
     const isActive = route && activeRoute === route;
 
@@ -72,15 +72,12 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
         } ${!enabled ? 'opacity-50 grayscale cursor-not-allowed' : 'cursor-pointer'}`}
         aria-label={collapsed ? label : undefined}
       >
-        {/* Active Indicator Glow */}
         {isActive && !collapsed && (
           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-indigo-500 rounded-r-full shadow-[0_0_12px_rgba(99,102,241,0.6)]" />
         )}
-
         <div className={`relative z-10 flex items-center justify-center transition-transform duration-300 ${isActive ? 'scale-100' : 'group-hover:scale-110'}`}>
           {Icon ? <Icon /> : customIcon}
         </div>
-        
         {!collapsed && (
           <div className="flex-1 flex items-center justify-between min-w-0">
             <span className={`text-[13px] font-bold tracking-tight truncate ${isActive ? 'text-white dark:text-slate-950' : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
@@ -120,8 +117,6 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
 
   const sidebarContent = (collapsed: boolean) => (
     <div className={`flex flex-col h-full ${collapsed ? 'items-center px-2' : 'px-4'}`}>
-      
-      {/* 1. IDENTITY NODE CARD */}
       <div className="w-full mb-8 pt-2">
         <button 
           onClick={() => onNavigate(AppRoute.PROFILE)}
@@ -132,15 +127,14 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           } ${activeRoute === AppRoute.PROFILE ? 'ring-2 ring-indigo-500/20 border-indigo-500/30' : ''}`}
           aria-label="View Profile"
         >
-          <div className={`relative shrink-0 transition-transform duration-500 ${collapsed ? 'w-full h-full' : 'w-12 h-12'} ${activeRoute === AppRoute.PROFILE ? 'scale-105' : 'group-hover:scale-105'}`}>
+          <div className={`relative shrink-0 transition-transform duration-500 ${collapsed ? 'w-full h-full' : 'w-12 h-12'} ${activeRoute === AppRoute.PROFILE ? 'scale-105' : 'group-hover:scale-105'} ${borderClass}`}>
             <img 
               src={userData?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${auth.currentUser?.uid}`} 
-              className={`w-full h-full object-cover shadow-sm bg-slate-100 dark:bg-slate-800 ${collapsed ? 'rounded-2xl' : 'rounded-2xl'}`}
+              className={`w-full h-full object-cover shadow-sm bg-slate-100 dark:bg-slate-800 rounded-2xl`}
               alt="User" 
             />
             <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-[2.5px] border-white dark:border-slate-900 rounded-full z-10" />
           </div>
-          
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-0.5">
@@ -154,7 +148,6 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
               </p>
             </div>
           )}
-          
           {!collapsed && (
              <div className="opacity-0 group-hover:opacity-100 transition-opacity -ml-2 text-slate-300 dark:text-slate-600">
                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" /></svg>
@@ -162,31 +155,22 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           )}
         </button>
       </div>
-
-      {/* NAVIGATION SCROLL AREA */}
       <div className="flex-1 overflow-y-auto custom-scrollbar w-full space-y-1 pb-4">
-        {/* Core Protocols */}
         <ProtocolGroup title="Core_Uplink" collapsed={collapsed}>
           <NavItem route={AppRoute.FEED} icon={ICONS.Home} label="Central Hub" collapsed={collapsed} />
           <NavItem route={AppRoute.EXPLORE} icon={ICONS.Explore} label="Discovery" collapsed={collapsed} />
           <NavItem route={AppRoute.MESSAGES} icon={ICONS.Messages} label="Neural Comms" collapsed={collapsed} />
           <NavItem route={AppRoute.NOTIFICATIONS} icon={ICONS.Bell} label="Alerts" collapsed={collapsed} badge={unreadCount} />
         </ProtocolGroup>
-
-        {/* Identity Clusters */}
         <ProtocolGroup title="Network" collapsed={collapsed}>
           <NavItem route={AppRoute.MESH} icon={ICONS.Profile} label="My Mesh" collapsed={collapsed} />
           <NavItem route={AppRoute.CLUSTERS} icon={ICONS.Clusters} label="Hive Clusters" collapsed={collapsed} />
           <NavItem route={AppRoute.VERIFIED_NODES} icon={ICONS.Verified} label="Verified Tier" collapsed={collapsed} />
         </ProtocolGroup>
-
-        {/* Media & Archive */}
         <ProtocolGroup title="Media_Stream" collapsed={collapsed}>
           <NavItem route={AppRoute.STREAM_GRID} icon={ICONS.Streams} label="Live Grid" collapsed={collapsed} badge="ON_AIR" />
           <NavItem route={AppRoute.SAVED} icon={ICONS.Saved} label="Data Vault" collapsed={collapsed} />
         </ProtocolGroup>
-
-        {/* Advanced Modules */}
         <ProtocolGroup title="Modules" collapsed={collapsed}>
           <NavItem route={AppRoute.TEMPORAL} icon={ICONS.Temporal} label="Temporal" collapsed={collapsed} />
           <NavItem route={AppRoute.GATHERINGS} icon={ICONS.Gatherings} label="Gatherings" collapsed={collapsed} />
@@ -194,8 +178,6 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           <NavItem route={AppRoute.RESILIENCE} icon={ICONS.Resilience} label="Resilience" collapsed={collapsed} />
           <NavItem route={AppRoute.MARKETPLACE} icon={ICONS.Marketplace} label="Cyber Bazaar" collapsed={collapsed} />
         </ProtocolGroup>
-
-        {/* System & Support */}
         <ProtocolGroup title="System" collapsed={collapsed}>
           <NavItem route={AppRoute.SUPPORT} icon={ICONS.Support} label="Support Matrix" collapsed={collapsed} />
           {userRole === 'admin' && (
@@ -203,8 +185,6 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           )}
         </ProtocolGroup>
       </div>
-
-      {/* FOOTER META */}
       {!collapsed && (
         <div className="mt-auto pt-6 pb-2 px-2 border-t border-slate-100/50 dark:border-slate-800/50 w-full">
           <div className="flex flex-wrap gap-x-4 gap-y-2 justify-center text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.15em] font-mono">
@@ -222,15 +202,12 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
 
   return (
     <>
-      {/* Desktop Sidebar (Expanded) */}
       <aside 
         className="hidden lg:flex flex-col w-[280px] xl:w-[300px] shrink-0 border-r border-precision bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-xl pt-[calc(var(--header-h)+1.5rem)] h-full relative z-30 transition-colors duration-300"
         style={{ paddingLeft: 'max(0.5rem, var(--sal))' }}
       >
         {sidebarContent(false)}
       </aside>
-
-      {/* Tablet Sidebar (Collapsed) */}
       <aside 
         className="hidden md:flex lg:hidden flex-col shrink-0 w-[90px] border-r border-precision bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-xl pt-[calc(var(--header-h)+1.5rem)] h-full items-center relative z-30 transition-colors duration-300" 
         style={{ paddingLeft: 'var(--sal)' }}

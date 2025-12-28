@@ -84,7 +84,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
     return comments.filter(c => !blockedIds?.has(c.authorId));
   }, [comments, blockedIds]);
 
-  // --- MENTION LOGIC ---
   useEffect(() => {
     if (mentionQuery === null) {
       setMentionResults([]);
@@ -202,6 +201,9 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
         authorId: userData.id,
         authorName: userData.displayName,
         authorAvatar: userData.avatarUrl,
+        authorCosmetics: {
+          border: userData.cosmetics?.activeBorder || null
+        },
         content: commentText,
         likes: 0,
         timestamp: serverTimestamp(),
@@ -213,7 +215,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
       await addDoc(collection(db, 'posts', postId, 'comments'), payload);
       await updateDoc(doc(db, 'posts', postId), { comments: increment(1) });
 
-      // Notifications
       const batch = writeBatch(db);
       if (userData.id !== postAuthorId) {
         batch.set(doc(collection(db, 'notifications')), {
@@ -317,12 +318,15 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
     const canEdit = userData && userData.id === comment.authorId;
     const isEditing = editingCommentId === comment.id;
     const extractedUrl = extractUrls(comment.content)[0];
+    const borderClass = comment.authorCosmetics?.border ? `cosmetic-border-${comment.authorCosmetics.border}` : '';
 
     return (
       <div key={comment.id} className={`relative flex flex-col animate-in fade-in slide-in-from-top-2 duration-300 group/comment ${isFocused ? 'z-[10]' : ''}`}>
         <div className="flex gap-3 relative">
           <div className="flex flex-col items-center shrink-0">
-             <img src={comment.authorAvatar} className="w-8 h-8 rounded-xl object-cover border border-slate-200 dark:border-slate-700 shadow-sm bg-white dark:bg-slate-800" alt="" />
+             <div className={`relative shrink-0 w-8 h-8 rounded-xl ${borderClass}`}>
+              <img src={comment.authorAvatar} className="w-full h-full rounded-xl object-cover ring-2 ring-slate-50 dark:ring-slate-800 bg-white dark:bg-slate-800" alt="" />
+             </div>
              {hasChildren && <div className="w-px flex-1 bg-slate-200 dark:bg-slate-700 my-1" />}
           </div>
 
@@ -358,16 +362,10 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
                 ) : (
                     <>
                         <div className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-relaxed" dangerouslySetInnerHTML={{ __html: comment.content }} />
-                        
                         {extractedUrl && <div className="mt-3 max-w-[280px]"><LinkPreview url={extractedUrl} compact={true} /></div>}
-
                         {comment.media && comment.media.length > 0 && (
                         <div className="mt-3 rounded-xl overflow-hidden border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 max-w-[240px]">
-                            {comment.media[0].type === 'video' ? (
-                            <video src={comment.media[0].url} className="w-full h-auto" controls />
-                            ) : (
-                            <img src={comment.media[0].url} className="w-full h-auto object-cover" alt="" />
-                            )}
+                            {comment.media[0].type === 'video' ? <video src={comment.media[0].url} className="w-full h-auto" controls /> : <img src={comment.media[0].url} className="w-full h-auto object-cover" alt="" />}
                         </div>
                         )}
                     </>
@@ -407,25 +405,24 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
         {replyingTo && (
           <div className="flex items-center justify-between bg-indigo-100/50 dark:bg-indigo-900/30 px-4 py-2 rounded-xl text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-2 border border-indigo-100 dark:border-indigo-800">
             <span>Targeting Node: {comments.find(c => c.id === replyingTo)?.authorName || 'Unknown'}</span>
-            <button type="button" onClick={() => setReplyingTo(null)} className="opacity-60 hover:opacity-100 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-lg p-1 transition-all"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg></button>
+            <button type="button" onClick={() => setReplyingTo(null)} className="opacity-60 hover:opacity-100 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-lg p-1 transition-all"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></button>
           </div>
         )}
 
         {previewUrl && (
           <div className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-indigo-500 shadow-lg group/preview mb-2 mx-2 bg-slate-200 dark:bg-slate-800">
              {selectedFile?.type.startsWith('video/') ? <video src={previewUrl} className="w-full h-full object-cover" /> : <img src={previewUrl} className="w-full h-full object-cover" alt="" />}
-             <button onClick={removeSelectedFile} className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/preview:opacity-100 transition-opacity text-white"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg></button>
+             <button onClick={removeSelectedFile} className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/preview:opacity-100 transition-opacity text-white"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></button>
              {isUploadingMedia && <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10"><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /></div>}
           </div>
         )}
 
         <div className="flex gap-2 items-end">
            <div className="flex gap-1 shrink-0 pb-1.5">
-              <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 transition-all active:scale-90"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Z" /></svg></button>
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 transition-all active:scale-90"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5} d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Z" /></button>
               <button type="button" onClick={() => { setIsGiphyPickerOpen(!isGiphyPickerOpen); setIsEmojiPickerOpen(false); }} className="p-3 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-90 text-[10px] font-black font-mono text-slate-400 dark:text-slate-500">GIF</button>
               <button type="button" onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }} className="p-3 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-90 text-xl leading-none">😊</button>
            </div>
-
            <div className="relative flex-1">
               <RichTextEditor 
                 ref={editorRef}
@@ -436,7 +433,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
                 className="w-full bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700 rounded-[2.2rem] px-6 py-3"
                 minHeight="50px"
               />
-              
               {showMentionList && (
                 <div className="absolute bottom-full left-0 mb-2 w-56 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 z-50">
                     <div className="px-3 py-1.5 bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
@@ -457,20 +453,17 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
                     ) : <div className="px-3 py-2 text-[9px] text-slate-400 italic text-center">No nodes found.</div>}
                 </div>
               )}
-
               <button 
                 onClick={handleSubmitComment}
                 disabled={(!newComment.trim() && !selectedFile && !selectedGif) || isSubmittingComment}
                 className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-indigo-700 transition-all active:scale-90 disabled:opacity-30 disabled:active:scale-100 z-10"
               >
-                {isSubmittingComment ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <svg className="w-4 h-4 rotate-90 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>}
+                {isSubmittingComment ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <svg className="w-4 h-4 rotate-90 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />}
               </button>
            </div>
         </div>  
       </div>
-      
       <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} accept="image/*,video/*" />
-
       {(isEmojiPickerOpen || isGiphyPickerOpen) && createPortal(
         <>
           <div className="fixed inset-0 z-[9990] bg-transparent" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />
@@ -481,15 +474,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
         </>,
         document.body
       )}
-
-      <DeleteConfirmationModal
-        isOpen={!!commentToDelete}
-        title="SILENCE_ECHO"
-        description="Permanently delete this comment? This action cannot be reversed."
-        onConfirm={handleExecuteDelete}
-        onCancel={() => setCommentToDelete(null)}
-        confirmText="CONFIRM_PURGE"
-      />
+      <DeleteConfirmationModal isOpen={!!commentToDelete} title="SILENCE_ECHO" description="Permanently delete this comment? This action cannot be reversed." onConfirm={handleExecuteDelete} onCancel={() => setCommentToDelete(null)} confirmText="CONFIRM_PURGE" />
     </div>
   );
 };

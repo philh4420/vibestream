@@ -146,6 +146,9 @@ export interface Comment {
   authorId: string;
   authorName: string;
   authorAvatar: string;
+  authorCosmetics?: {
+    border?: string;
+  };
   content: string;
   likes: number;
   timestamp: any;
@@ -283,7 +286,7 @@ export interface Gathering {
 export interface Chat {
   id: string;
   participants: string[];
-  participantData: Record<string, { displayName: string; avatarUrl: string }>;
+  participantData: Record<string, { displayName: string; avatarUrl: string; activeBorder?: string }>;
   lastMessage?: string;
   lastMessageTimestamp?: any;
   isCluster?: boolean;

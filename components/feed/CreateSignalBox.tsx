@@ -36,7 +36,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showGifPicker, setShowGifPicker] = useState(false);
 
-  // Mentions (Simplified logic for RTE)
+  // Mentions
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionResults, setMentionResults] = useState<User[]>([]);
   const [mentionedUserCache, setMentionedUserCache] = useState<User[]>([]);
@@ -46,7 +46,9 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<RichTextEditorRef>(null);
 
-  // Search Users Effect
+  // COSMETIC INTEGRATION
+  const borderClass = userData?.cosmetics?.activeBorder ? `cosmetic-border-${userData.cosmetics.activeBorder}` : '';
+
   useEffect(() => {
     if (mentionQuery === null) {
       setMentionResults([]);
@@ -86,10 +88,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
 
   const handleEditorChange = (html: string) => {
     setContent(html);
-    
-    // Rudimentary mention trigger detection in HTML string (Note: A dedicated Tiptap extension is better for robust mentions)
-    // Here we just check for the last word being @something in the raw text derived from HTML for search triggering
-    // This is a simplified approach for the "Rich Text" feature upgrade.
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
     const text = tempDiv.innerText || "";
@@ -117,13 +115,12 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
     setSelectedGif(gif);
     setSelectedFiles([]);
     setMediaPreviews([]);
-    setIsPollMode(false); // GIF overrides poll
+    setIsPollMode(false); 
     setShowGifPicker(false);
     setIsExpanded(true);
   };
 
   const selectMention = (user: User) => {
-    // Insert mention as bold text for now
     editorRef.current?.insertContent(`<strong>@${user.username}</strong> `);
     setMentionedUserCache(prev => {
         if (prev.some(u => u.id === user.id)) return prev;
@@ -141,7 +138,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
       const newPreviews = newFiles.map(file => URL.createObjectURL(file));
       setMediaPreviews(prev => [...prev, ...newPreviews]);
       setSelectedGif(null);
-      setIsPollMode(false); // Media overrides poll
+      setIsPollMode(false); 
       setIsExpanded(true);
     }
   };
@@ -154,7 +151,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
     });
   };
 
-  // Poll Handling
   const handlePollOptionChange = (idx: number, val: string) => {
     const newOptions = [...pollOptions];
     newOptions[idx] = val;
@@ -178,7 +174,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
       setIsPollMode(false);
     } else {
       setIsPollMode(true);
-      // Clear conflicting attachments
       setSelectedFiles([]);
       setMediaPreviews([]);
       setSelectedGif(null);
@@ -187,11 +182,9 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
   };
 
   const handlePost = async () => {
-    // Check if content is empty (HTML might be <p></p>)
     const isEmpty = !content || content === '<p></p>';
     if ((isEmpty && selectedFiles.length === 0 && !selectedGif && !isPollMode) || !userData || !db) return;
 
-    // Validate Poll
     if (isPollMode) {
       const validOptions = pollOptions.filter(o => o.trim() !== '');
       if (validOptions.length < 2) {
@@ -219,7 +212,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         mediaItems.push({ type: 'image', url: selectedGif.images.original.url });
       }
 
-      // Construct Poll Data
       let pollPayload = {};
       if (isPollMode) {
         const options: PollOption[] = pollOptions
@@ -241,7 +233,11 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         authorId: userData.id,
         authorName: userData.displayName,
         authorAvatar: userData.avatarUrl,
-        content: content.trim(), // Save HTML
+        authorCosmetics: {
+          border: userData.cosmetics?.activeBorder || null,
+          filter: userData.cosmetics?.activeFilter || null
+        },
+        content: content.trim(), 
         contentLengthTier: content.length > 280 ? 'deep' : 'standard',
         media: mediaItems,
         likes: 0,
@@ -253,8 +249,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         ...pollPayload
       });
 
-      // Notify mentioned users
-      // Simple text scan of the HTML for @username
       const mentionsToNotify = mentionedUserCache.filter(u => content.includes(`@${u.username}`));
       const uniqueMentions = Array.from(new Set(mentionsToNotify.map(u => u.id)))
         .map(id => mentionsToNotify.find(u => u.id === id));
@@ -297,19 +291,18 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
 
   return (
     <div className={`bg-white dark:bg-slate-900 border-precision rounded-[3rem] p-6 md:p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)] hover:shadow-[0_30px_60px_-12px_rgba(0,0,0,0.08)] transition-all duration-500 group relative z-40 ${isExpanded ? 'ring-2 ring-indigo-500/20' : ''}`}>
-      
       <div className="flex gap-6 relative">
         <div className="relative shrink-0">
-          <img 
-            src={userData?.avatarUrl} 
-            className="w-12 h-12 md:w-16 md:h-16 rounded-[1.4rem] object-cover shadow-md ring-1 ring-slate-100 dark:ring-slate-800" 
-            alt="My Node" 
-          />
+          <div className={`w-12 h-12 md:w-16 md:h-16 rounded-[1.4rem] ${borderClass}`}>
+            <img 
+              src={userData?.avatarUrl} 
+              className="w-full h-full rounded-[1.4rem] object-cover shadow-md ring-4 ring-slate-50 dark:ring-slate-800 bg-white dark:bg-slate-800" 
+              alt="My Node" 
+            />
+          </div>
           <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full animate-pulse shadow-sm" />
         </div>
-        
         <div className="flex-1 pt-1 relative">
-          
           <RichTextEditor 
             ref={editorRef}
             content={content}
@@ -317,7 +310,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
             onFocus={handleFocus}
             placeholder={isPollMode ? "Ask the network..." : `Initiate a new signal, ${userData?.displayName.split(' ')[0]}...`}
           />
-
           {showMentionList && (
             <div className="absolute top-full left-0 z-50 w-64 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl mt-2 overflow-hidden animate-in fade-in slide-in-from-top-2">
                 <div className="px-3 py-2 bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
@@ -347,8 +339,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
           )}
         </div>
       </div>
-
-      {/* POLL BUILDER UI */}
       {isPollMode && (
         <div className="mt-6 mb-2 pl-[calc(4rem+1.5rem)] pr-2 animate-in slide-in-from-top-4 duration-300">
            <div className="space-y-3">
@@ -363,12 +353,11 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
                    />
                    {pollOptions.length > 2 && (
                      <button onClick={() => removePollOption(idx)} className="p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
                      </button>
                    )}
                 </div>
               ))}
-              
               {pollOptions.length < 4 && (
                 <button 
                   onClick={addPollOption}
@@ -380,7 +369,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
            </div>
         </div>
       )}
-
       {(mediaPreviews.length > 0 || selectedGif) && (
         <div className="mt-6 mb-4 pl-[calc(4rem+1.5rem)]">
           <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
@@ -388,7 +376,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
               <div key={idx} className="relative shrink-0 group/media">
                 <img src={url} className="h-32 w-32 object-cover rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm" alt="Preview" />
                 <button onClick={() => removeMedia(idx)} className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600 transition-all opacity-0 group-hover/media:opacity-100" aria-label="Remove media">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
                 </button>
               </div>
             ))}
@@ -396,35 +384,29 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
               <div key="gif-preview" className="relative shrink-0 group/media">
                 <img src={selectedGif.images.fixed_height.url} className="h-32 w-auto object-cover rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm" alt="GIF" />
                 <button onClick={() => setSelectedGif(null)} className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600 transition-all opacity-0 group-hover/media:opacity-100" aria-label="Remove GIF">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
                 </button>
               </div>
             )}
           </div>
         </div>
       )}
-
       {isExpanded && (
         <div className="mt-4 pl-[calc(4rem+1.5rem)] flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-4 animate-in fade-in slide-in-from-top-2 duration-300">
-          
           <div className="flex items-center gap-1">
             <button onClick={() => fileInputRef.current?.click()} className="p-2.5 rounded-xl hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" title="Upload Media" aria-label="Attach media">
               <div className="scale-90"><ICONS.Create /></div>
             </button>
-            
             <button onClick={() => { setShowGifPicker(!showGifPicker); setShowEmojiPicker(false); }} className={`p-2.5 rounded-xl transition-colors ${showGifPicker ? 'bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400' : 'hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600'}`} title="Add GIF" aria-label="Add GIF">
               <span className="text-[10px] font-black font-mono">GIF</span>
             </button>
-
             <button onClick={togglePollMode} className={`p-2.5 rounded-xl transition-colors ${isPollMode ? 'bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400' : 'hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600'}`} title="Create Poll" aria-label="Create Poll">
               <ICONS.Poll />
             </button>
-
             <button onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowGifPicker(false); }} className={`p-2.5 rounded-xl transition-colors ${showEmojiPicker ? 'bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400' : 'hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400'}`} title="Add Emoji" aria-label="Add Emoji">
               <span className="text-xl leading-none">😊</span>
             </button>
           </div>
-
           <div className="flex items-center gap-4">
              <button 
                 onClick={handlePost}
@@ -437,7 +419,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
           </div>
         </div>
       )}
-
       {(showEmojiPicker || showGifPicker) && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="absolute inset-0 bg-transparent" onClick={() => { setShowEmojiPicker(false); setShowGifPicker(false); }} />
@@ -448,7 +429,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         </div>,
         document.body
       )}
-
       <input type="file" ref={fileInputRef} className="hidden" multiple accept="image/*,video/*" onChange={handleFileSelect} />
     </div>
   );
