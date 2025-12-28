@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ICONS } from '../../constants';
 import { AppRoute, UserRole, Region, User as VibeUser, AppNotification, WeatherInfo, SystemSettings } from '../../types';
@@ -75,7 +74,7 @@ export const Layout: React.FC<LayoutProps> = ({
         onOpenSettings={onOpenSettings}
       />
 
-      <div className="flex-1 flex overflow-hidden relative mt-[var(--header-h)] h-[calc(100dvh-var(--header-h))]">
+      <div className="flex-1 flex overflow-hidden relative h-full">
         
         {/* Dynamic Left Navigation System */}
         <LeftSidebar 
@@ -91,7 +90,7 @@ export const Layout: React.FC<LayoutProps> = ({
         <main className="flex-1 relative overflow-hidden flex flex-col min-w-0">
           <AtmosphericBackground weather={weather}>
             {/* Optimized Padding: Reduced on LG (2 cols active) to prevent squeeze, generous on mobile/XL */}
-            <div className="flex-1 scroll-viewport px-4 md:px-6 lg:px-4 xl:px-10 py-6 relative z-10" style={{ paddingLeft: 'max(1rem, var(--sal))', paddingRight: 'max(1rem, var(--sar))' }}>
+            <div className="flex-1 scroll-viewport px-4 md:px-6 lg:px-4 xl:px-10 py-6 relative z-10 pt-[calc(var(--header-h)+1rem)]" style={{ paddingLeft: 'max(1rem, var(--sal))', paddingRight: 'max(1rem, var(--sar))' }}>
               <div className="w-full h-full pb-[calc(var(--bottom-nav-h)+4rem)] md:pb-24">
                 {children}
               </div>

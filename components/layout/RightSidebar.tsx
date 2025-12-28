@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
@@ -239,9 +238,9 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
   const filteredTrending = trendingPosts.filter(p => !blockedIds?.has(p.authorId)).slice(0, 5);
 
   return (
-    <aside className="hidden lg:flex flex-col w-[280px] xl:w-[320px] shrink-0 bg-slate-50/50 dark:bg-slate-900/50 border-l border-precision h-full overflow-hidden transition-colors duration-300">
+    <aside className="hidden lg:flex flex-col w-[280px] xl:w-[320px] shrink-0 bg-slate-50/50 dark:bg-slate-900/50 border-l border-precision h-full overflow-hidden transition-colors duration-300 pt-[calc(var(--header-h)+1rem)]">
       
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-6 space-y-8 py-8">
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-6 space-y-8 pb-8">
         
         {/* 1. SYSTEM MONITOR WIDGET */}
         <div className="bg-slate-950 rounded-[2.5rem] p-6 text-white shadow-2xl relative overflow-hidden group border border-white/5">

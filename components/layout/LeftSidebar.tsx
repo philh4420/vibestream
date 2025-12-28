@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ICONS } from '../../constants';
 import { AppRoute, UserRole, User as VibeUser, AppNotification, SystemSettings } from '../../types';
@@ -225,7 +224,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
     <>
       {/* Desktop Sidebar (Expanded) */}
       <aside 
-        className="hidden lg:flex flex-col w-[280px] xl:w-[300px] shrink-0 border-r border-precision bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-xl pt-6 h-full relative z-30 transition-colors duration-300"
+        className="hidden lg:flex flex-col w-[280px] xl:w-[300px] shrink-0 border-r border-precision bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-xl pt-[calc(var(--header-h)+1.5rem)] h-full relative z-30 transition-colors duration-300"
         style={{ paddingLeft: 'max(0.5rem, var(--sal))' }}
       >
         {sidebarContent(false)}
@@ -233,7 +232,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
 
       {/* Tablet Sidebar (Collapsed) */}
       <aside 
-        className="hidden md:flex lg:hidden flex-col shrink-0 w-[90px] border-r border-precision bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-xl pt-6 h-full items-center relative z-30 transition-colors duration-300" 
+        className="hidden md:flex lg:hidden flex-col shrink-0 w-[90px] border-r border-precision bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-xl pt-[calc(var(--header-h)+1.5rem)] h-full items-center relative z-30 transition-colors duration-300" 
         style={{ paddingLeft: 'var(--sal)' }}
       >
         {sidebarContent(true)}

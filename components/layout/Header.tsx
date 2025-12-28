@@ -201,57 +201,9 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  // Structured Nav Groups mimicking LeftSidebar
-  const navGroups = [
-    {
-      title: 'Core_Uplink',
-      items: [
-        { label: 'Hub', icon: ICONS.Home, route: AppRoute.FEED },
-        { label: 'Explore', icon: ICONS.Explore, route: AppRoute.EXPLORE },
-        { label: 'Comms', icon: ICONS.Messages, route: AppRoute.MESSAGES },
-        { label: 'Alerts', icon: ICONS.Bell, route: AppRoute.NOTIFICATIONS, badge: unreadCount > 0 ? unreadCount : undefined },
-      ]
-    },
-    {
-      title: 'Network',
-      items: [
-        { label: 'Mesh', icon: ICONS.Profile, route: AppRoute.MESH },
-        { label: 'Clusters', icon: ICONS.Clusters, route: AppRoute.CLUSTERS },
-        { label: 'Verified', icon: ICONS.Verified, route: AppRoute.VERIFIED_NODES },
-      ]
-    },
-    {
-      title: 'Media_Stream',
-      items: [
-        { label: 'Live', icon: ICONS.Streams, route: AppRoute.STREAM_GRID, badge: 'ON_AIR' },
-        { label: 'Vault', icon: ICONS.Saved, route: AppRoute.SAVED },
-      ]
-    },
-    {
-      title: 'Modules',
-      items: [
-        { label: 'Time', icon: ICONS.Temporal, route: AppRoute.TEMPORAL },
-        { label: 'Events', icon: ICONS.Gatherings, route: AppRoute.GATHERINGS },
-        { label: 'Sims', icon: ICONS.Simulations, route: AppRoute.SIMULATIONS },
-        { label: 'Health', icon: ICONS.Resilience, route: AppRoute.RESILIENCE },
-        { label: 'Market', icon: ICONS.Marketplace, route: AppRoute.MARKETPLACE },
-      ]
-    },
-    {
-      title: 'System',
-      items: [
-        { label: 'Support', icon: ICONS.Support, route: AppRoute.SUPPORT },
-      ]
-    }
-  ];
-
-  if (userRole === 'admin') {
-    navGroups[4].items.push({ label: 'Admin', icon: ICONS.Admin, route: AppRoute.ADMIN, badge: undefined });
-  }
-
   return (
     <header 
-      className="relative w-full z-[1000] glass-panel border-b border-slate-200/50 dark:border-slate-800/50 shadow-[0_4px_30px_rgba(0,0,0,0.03)] flex items-center transition-all duration-500 backdrop-blur-xl bg-white/70 dark:bg-slate-950/70 supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-slate-950/60" 
+      className="absolute top-0 left-0 right-0 z-[1000] glass-panel border-b border-slate-200/50 dark:border-slate-800/50 shadow-[0_4px_30px_rgba(0,0,0,0.03)] flex items-center transition-all duration-500 backdrop-blur-xl bg-white/70 dark:bg-slate-950/70 supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-slate-950/60" 
       style={{ 
         height: 'var(--header-h)',
         paddingLeft: 'max(1rem, var(--sal))',
