@@ -7,6 +7,8 @@ import * as Firestore from 'firebase/firestore';
 const { deleteDoc, doc, updateDoc, increment, addDoc, serverTimestamp, collection } = Firestore as any;
 import { CommentSection } from './CommentSection';
 import { DeleteConfirmationModal } from '../ui/DeleteConfirmationModal';
+import { extractUrls } from '../../lib/textUtils';
+import { LinkPreview } from '../ui/LinkPreview';
 
 interface PostCardProps {
   post: Post;
@@ -62,6 +64,12 @@ export const PostCard: React.FC<PostCardProps> = ({
        const next = arr[i+1];
        return chunk + (next || '');
     }).filter(Boolean);
+  }, [post.content]);
+
+  // Extract first URL for preview
+  const extractedUrl = useMemo(() => {
+    const urls = extractUrls(post.content);
+    return urls.length > 0 ? urls[0] : null;
   }, [post.content]);
 
   const formattedTimestamp = useMemo(() => {
@@ -327,6 +335,13 @@ export const PostCard: React.FC<PostCardProps> = ({
               );
             })}
           </div>
+          
+          {/* Link Preview Injection */}
+          {extractedUrl && (
+             <div onClick={(e) => e.stopPropagation()} className="mt-4">
+                <LinkPreview url={extractedUrl} />
+             </div>
+          )}
         </div>
 
         {post.media?.length > 0 && (

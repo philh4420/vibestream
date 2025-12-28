@@ -3,6 +3,8 @@ import React, { useEffect, useMemo } from 'react';
 import { Post, User, Region } from '../../types';
 import { ICONS } from '../../constants';
 import { CommentSection } from './CommentSection';
+import { extractUrls } from '../../lib/textUtils';
+import { LinkPreview } from '../ui/LinkPreview';
 
 interface SinglePostViewProps {
   post: Post;
@@ -41,6 +43,11 @@ export const SinglePostView: React.FC<SinglePostViewProps> = ({
     if (post.createdAt.length > 10) return post.createdAt;
     return `${now.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })}, ${post.createdAt}`;
   }, [post.timestamp, post.createdAt, locale]);
+
+  const extractedUrl = useMemo(() => {
+    const urls = extractUrls(post.content);
+    return urls.length > 0 ? urls[0] : null;
+  }, [post.content]);
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-32 max-w-4xl mx-auto w-full">
@@ -95,6 +102,7 @@ export const SinglePostView: React.FC<SinglePostViewProps> = ({
              <p className="text-xl md:text-2xl text-slate-800 dark:text-slate-200 font-medium leading-relaxed tracking-tight whitespace-pre-wrap transition-colors">
                {post.content}
              </p>
+             {extractedUrl && <div className="mt-4"><LinkPreview url={extractedUrl} /></div>}
              {post.capturedStatus && (
                <div className="mt-8 inline-flex items-center gap-4 px-6 py-4 bg-slate-50/80 dark:bg-slate-800/80 rounded-[2rem] border border-slate-100 dark:border-slate-700 transition-colors">
                   <span className="text-2xl filter drop-shadow-sm">{post.capturedStatus.emoji}</span>

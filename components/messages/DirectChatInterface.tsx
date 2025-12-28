@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { db } from '../../services/firebase';
@@ -24,6 +25,8 @@ import { GiphyPicker } from '../ui/GiphyPicker';
 import { DeleteConfirmationModal } from '../ui/DeleteConfirmationModal';
 import { uploadToCloudinary } from '../../services/cloudinary';
 import { GiphyGif } from '../../services/giphy';
+import { extractUrls } from '../../lib/textUtils';
+import { LinkPreview } from '../ui/LinkPreview';
 
 interface DirectChatInterfaceProps {
   chatId: string;
@@ -52,7 +55,7 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Read Receipts Logic: Mark unread messages as read IF currentUser settings allow
+  // Read Receipts Logic
   useEffect(() => {
     if (!db || !chatId || !currentUser.id) return;
     
@@ -64,7 +67,7 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
             const q = query(
                 collection(db, 'chats', chatId, 'messages'),
                 where('isRead', '==', false),
-                where('senderId', '!=', currentUser.id) // Only mark others' messages
+                where('senderId', '!=', currentUser.id)
             );
             const snap = await getDocs(q);
             if (!snap.empty) {
@@ -281,6 +284,7 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
         {messages.map((msg, idx) => {
           const isMe = msg.senderId === currentUser.id;
           const showAvatar = idx === 0 || messages[idx-1]?.senderId !== msg.senderId;
+          const extractedUrl = extractUrls(msg.text)[0];
           
           return (
             <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} group/msg animate-in slide-in-from-bottom-2 duration-300`}>
@@ -315,6 +319,12 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
 
                   <span className="leading-relaxed whitespace-pre-wrap font-bold">{msg.text}</span>
                   
+                  {extractedUrl && (
+                    <div className="mt-3 max-w-[300px]">
+                      <LinkPreview url={extractedUrl} compact={true} />
+                    </div>
+                  )}
+                  
                   <div className={`text-[8px] font-black uppercase mt-2 font-mono tracking-widest opacity-40 flex items-center gap-1 ${isMe ? 'justify-end text-white' : 'justify-start text-slate-500 dark:text-slate-400'}`}>
                     {msg.timestamp?.toDate ? msg.timestamp.toDate().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'SENDING'}
                     {isMe && msg.isRead && <span className="text-emerald-400 ml-1">READ</span>}
@@ -340,13 +350,16 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
                 ) : (
                   <img src={mediaPreview} className="h-16 w-16 object-cover rounded-xl border border-slate-200 dark:border-slate-700" alt="Preview" />
                 )}
-                <button onClick={clearMedia} className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600 transition-colors">
+                <button 
+                  onClick={clearMedia}
+                  className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600 transition-colors"
+                >
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
               <div>
-                <p className="text-[9px] font-black uppercase tracking-widest text-indigo-500 font-mono">Payload_Ready</p>
-                <p className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate max-w-[150px]">{selectedFile?.name || 'GIF_FRAGMENT'}</p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-indigo-500 font-mono">Artifact Ready</p>
+                <p className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate max-w-[150px]">{selectedFile?.name || 'GIF Fragment'}</p>
               </div>
             </div>
           )}
@@ -358,11 +371,19 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
               <button type="button" onClick={() => fileInputRef.current?.click()} className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-90 ${selectedFile ? 'bg-indigo-600 text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-slate-300'}`}>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Z" /></svg>
               </button>
-              <button type="button" onClick={() => { setIsGiphyPickerOpen(!isGiphyPickerOpen); setIsEmojiPickerOpen(false); }} className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-90 ${isGiphyPickerOpen ? 'bg-indigo-600 text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-slate-300'}`}>
+              <button 
+                type="button"
+                onClick={() => { setIsGiphyPickerOpen(!isGiphyPickerOpen); setIsEmojiPickerOpen(false); }}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-90 ${isGiphyPickerOpen ? 'bg-indigo-600 text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-slate-300'}`}
+              >
                 <span className="text-[9px] font-black font-mono">GIF</span>
               </button>
-              <button type="button" onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }} className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-90 ${isEmojiPickerOpen ? 'bg-indigo-600 text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-slate-300'}`}>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" /></svg>
+              <button 
+                type="button"
+                onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-90 ${isEmojiPickerOpen ? 'bg-indigo-600 text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-slate-300'}`}
+              >
+                <span className="text-xl leading-none">😊</span>
               </button>
             </div>
 

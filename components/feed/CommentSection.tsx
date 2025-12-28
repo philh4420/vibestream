@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { db } from '../../services/firebase';
@@ -23,6 +24,8 @@ import { GiphyPicker } from '../ui/GiphyPicker';
 import { uploadToCloudinary } from '../../services/cloudinary';
 import { GiphyGif } from '../../services/giphy';
 import { ICONS } from '../../constants';
+import { extractUrls } from '../../lib/textUtils';
+import { LinkPreview } from '../ui/LinkPreview';
 
 interface CommentSectionProps {
   postId: string;
@@ -330,6 +333,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
         return part;
     });
 
+    const extractedUrl = extractUrls(comment.content)[0];
+
     return (
       <div key={comment.id} className={`relative flex flex-col animate-in fade-in slide-in-from-top-2 duration-300 group/comment ${isFocused ? 'z-[10]' : ''}`}>
         <div className="flex gap-3 relative">
@@ -356,6 +361,12 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
                     {contentWithMentions}
                 </p>
                 
+                {extractedUrl && (
+                  <div className="mt-3 max-w-[280px]">
+                    <LinkPreview url={extractedUrl} compact={true} />
+                  </div>
+                )}
+
                 {comment.media && comment.media.length > 0 && (
                   <div className="mt-3 rounded-xl overflow-hidden border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 max-w-[240px]">
                     {comment.media[0].type === 'video' ? (

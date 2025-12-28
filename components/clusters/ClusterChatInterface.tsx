@@ -24,6 +24,8 @@ import { GiphyPicker } from '../ui/GiphyPicker';
 import { DeleteConfirmationModal } from '../ui/DeleteConfirmationModal';
 import { uploadToCloudinary } from '../../services/cloudinary';
 import { GiphyGif } from '../../services/giphy';
+import { extractUrls } from '../../lib/textUtils';
+import { LinkPreview } from '../ui/LinkPreview';
 
 interface ClusterChatInterfaceProps {
   chatId: string;
@@ -321,6 +323,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
                 }
 
                 const sender = chatData.participantData?.[msg.senderId] || allUsers.find(u => u.id === msg.senderId);
+                const extractedUrl = extractUrls(msg.text)[0];
 
                 return (
                     <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} group/msg animate-in fade-in slide-in-from-bottom-2 duration-300`}>
@@ -346,6 +349,12 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
                                         </div>
                                     ))}
                                     <span className="whitespace-pre-wrap leading-relaxed">{msg.text}</span>
+                                    
+                                    {extractedUrl && (
+                                      <div className="mt-3 max-w-[300px]">
+                                        <LinkPreview url={extractedUrl} compact={true} />
+                                      </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
