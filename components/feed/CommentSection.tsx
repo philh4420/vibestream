@@ -467,7 +467,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
               </button>
            </div>
         </div>
-      </form>
+      </div>
       
       <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} accept="image/*,video/*" />
 

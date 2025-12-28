@@ -1,32 +1,34 @@
+
 import React, { useState } from 'react';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
 const { doc, setDoc, serverTimestamp } = Firestore as any;
 import { ICONS } from '../../constants';
+import { RichTextEditor } from '../ui/RichTextEditor';
 
 interface AdminPushTerminalProps {
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
 }
 
 export const AdminPushTerminal: React.FC<AdminPushTerminalProps> = ({ addToast }) => {
-  const [text, setText] = useState('');
+  const [content, setContent] = useState('');
   const [severity, setSeverity] = useState<'info' | 'warning' | 'critical'>('info');
   const [type, setType] = useState<'persistent' | 'transient'>('transient');
   const [isBroadcasting, setIsBroadcasting] = useState(false);
 
   const handleBroadcast = async () => {
-    if (!text.trim() || !db) return;
+    if (!content.trim() || !db) return;
     setIsBroadcasting(true);
     try {
       await setDoc(doc(db, 'settings', 'global_signal'), {
-        text: text.trim(),
+        text: content.trim(),
         severity,
         type,
         active: true,
         timestamp: serverTimestamp()
       });
       addToast("CITADEL_OVERRIDE_ACTIVE: Signal Broadcasted", "success");
-      setText('');
+      setContent('');
     } catch (e) {
       addToast("Broadcast Interrupted: Unauthorized", "error");
     } finally {
@@ -63,12 +65,13 @@ export const AdminPushTerminal: React.FC<AdminPushTerminalProps> = ({ addToast }
             <div className="space-y-8">
                <div className="space-y-3">
                   <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 font-mono ml-2">Message_Manifest</label>
-                  <div className="relative">
-                    <textarea 
-                        value={text}
-                        onChange={(e) => setText(e.target.value)}
-                        placeholder="Type high-priority system signal..."
-                        className="w-full bg-white/5 border border-white/10 rounded-[2rem] p-8 text-xl font-black italic text-white placeholder:text-white/10 focus:bg-white/10 focus:border-rose-500/50 transition-all outline-none resize-none h-48"
+                  <div className="relative rounded-[2rem] overflow-hidden border border-white/10 bg-white/5">
+                    <RichTextEditor 
+                        content={content}
+                        onChange={setContent}
+                        placeholder="Establish priority system signal..."
+                        className="p-4"
+                        minHeight="160px"
                     />
                   </div>
                </div>
@@ -105,7 +108,7 @@ export const AdminPushTerminal: React.FC<AdminPushTerminalProps> = ({ addToast }
                <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row gap-4">
                   <button 
                     onClick={handleBroadcast}
-                    disabled={isBroadcasting || !text.trim()}
+                    disabled={isBroadcasting || !content.trim()}
                     className="flex-[2] py-5 bg-white text-slate-950 rounded-[2rem] font-black text-xs uppercase tracking-[0.4em] shadow-[0_0_40px_rgba(255,255,255,0.2)] hover:bg-rose-500 hover:text-white transition-all active:scale-95 disabled:opacity-20"
                   >
                     INITIATE_CITADEL_PUSH

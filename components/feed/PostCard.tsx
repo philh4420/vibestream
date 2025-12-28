@@ -10,6 +10,7 @@ import { DeleteConfirmationModal } from '../ui/DeleteConfirmationModal';
 import { extractUrls } from '../../lib/textUtils';
 import { LinkPreview } from '../ui/LinkPreview';
 import { PollNode } from './PollNode';
+import { RichTextEditor, RichTextEditorRef } from '../ui/RichTextEditor';
 
 interface PostCardProps {
   post: Post;
@@ -46,7 +47,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [rippleEffect, setRippleEffect] = useState<{ x: number, y: number, color: string } | null>(null);
   const pulseTimerRef = useRef<any>(null);
   const optionsRef = useRef<HTMLDivElement>(null);
-  const editInputRef = useRef<HTMLTextAreaElement>(null);
+  const editEditorRef = useRef<RichTextEditorRef>(null);
 
   const shouldAutoPlay = userData?.settings?.appearance?.autoPlayVideo !== false;
 
@@ -61,15 +62,6 @@ export const PostCard: React.FC<PostCardProps> = ({
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showOptions]);
-
-  // Focus textarea when entering edit mode
-  useEffect(() => {
-    if (isEditing && editInputRef.current) {
-        editInputRef.current.style.height = 'auto';
-        editInputRef.current.style.height = editInputRef.current.scrollHeight + 'px';
-        editInputRef.current.focus();
-    }
-  }, [isEditing]);
 
   // Check if content is HTML (Simple check for Rich Text support)
   const isHtml = post.content && (post.content.trim().startsWith('<') || post.content.includes('</'));
@@ -223,28 +215,6 @@ export const PostCard: React.FC<PostCardProps> = ({
     }
   };
 
-  const handleInlineReact = async (e: React.MouseEvent, chunkIndex: number, emoji: string) => {
-    e.stopPropagation();
-    if (!db || !userData) return;
-    const postRef = doc(db, 'posts', post.id);
-    const currentReactions = post.inlineReactions || {};
-    const chunkReactions = currentReactions[chunkIndex] || [];
-    const existing = chunkReactions.find(r => r.emoji === emoji);
-    let updated;
-    if (existing) {
-      if (existing.users.includes(userData.id)) {
-        updated = chunkReactions.map(r => r.emoji === emoji ? { ...r, count: r.count - 1, users: r.users.filter(u => u !== userData.id) } : r).filter(r => r.count > 0);
-      } else {
-        updated = chunkReactions.map(r => r.emoji === emoji ? { ...r, count: r.count + 1, users: [...r.users, userData.id] } : r);
-      }
-    } else {
-      updated = [...chunkReactions, { emoji, count: 1, users: [userData.id] }];
-    }
-    try {
-      await updateDoc(postRef, { [`inlineReactions.${chunkIndex}`]: updated });
-    } catch (e) { addToast("Micro-Signal Error", "error"); }
-  };
-
   if (isDeleting) return null;
 
   const isPulse = post.contentLengthTier === 'pulse';
@@ -350,13 +320,12 @@ export const PostCard: React.FC<PostCardProps> = ({
         <div className={`mb-8 ${isPulse ? 'text-center px-4' : ''}`}>
           {isEditing ? (
              <div className="animate-in fade-in slide-in-from-top-2 duration-300" onClick={(e) => e.stopPropagation()}>
-                {/* Note: For simplicity in editing, we revert to raw HTML editing or a simple textarea. 
-                    Full Rich Text Editing in-place would require mounting Tiptap here. */}
-                <textarea 
-                    ref={editInputRef}
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800/50 border-2 border-indigo-500/30 rounded-2xl p-4 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-indigo-500 transition-all resize-none min-h-[120px]"
+                <RichTextEditor 
+                    ref={editEditorRef}
+                    content={editContent}
+                    onChange={setEditContent}
+                    className="w-full bg-slate-50 dark:bg-slate-800/50 border-2 border-indigo-500/30 rounded-[2rem] overflow-hidden"
+                    minHeight="120px"
                 />
                 <div className="flex gap-2 mt-4 justify-end">
                     <button 
@@ -376,14 +345,12 @@ export const PostCard: React.FC<PostCardProps> = ({
           ) : (
             <>
                 <div className={`text-slate-800 dark:text-slate-200 leading-relaxed font-medium tracking-tight ${isPulse ? 'text-2xl md:text-4xl font-black italic uppercase text-slate-900 dark:text-white' : isDeep ? 'text-base md:text-lg border-l-4 border-indigo-100 dark:border-indigo-900 pl-6 py-1' : 'text-base md:text-lg'}`}>
-                    {/* Rich Text Rendering: Use ProseMirror styles if HTML */}
                     {isHtml ? (
                       <div 
                         className="ProseMirror" 
                         dangerouslySetInnerHTML={{ __html: post.content }} 
                       />
                     ) : (
-                      /* Legacy Plain Text Fallback */
                       post.content.split(/([.!?]\s+)/).filter(Boolean).map((chunk, idx) => (
                         <span key={idx} className="relative group/chunk inline-block">
                           <span className="hover:bg-indigo-50/80 dark:hover:bg-indigo-900/30 hover:text-indigo-900 dark:hover:text-indigo-200 rounded-lg transition-colors px-0.5 -mx-0.5 cursor-text">
@@ -400,7 +367,6 @@ export const PostCard: React.FC<PostCardProps> = ({
                     </div>
                 )}
 
-                {/* Poll Node Injection */}
                 {post.type === 'poll' && (
                     <div onClick={(e) => e.stopPropagation()}>
                         <PollNode post={post} userData={userData} addToast={addToast} />
