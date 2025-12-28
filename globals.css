@@ -308,7 +308,7 @@ html.dark {
 .pulse-active-indigo { animation: pulse-indigo 2s infinite; }
 
 /* =========================================================================
-   CHAT ENHANCEMENTS
+   MESSAGING UI ENHANCEMENTS
    ========================================================================= */
 
 .mask-gradient-chat {
@@ -316,13 +316,25 @@ html.dark {
   mask-image: linear-gradient(to top, black 95%, transparent 100%);
 }
 
-.ai-glow {
-  box-shadow: 0 0 30px rgba(99, 102, 241, 0.2);
-  border: 1px solid rgba(99, 102, 241, 0.3);
+.premium-bubble-shadow {
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1), 0 5px 15px -5px rgba(0,0,0,0.04);
 }
 
-.ai-text-gradient {
-  background: linear-gradient(to right, #6366f1, #a855f7);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.dark .premium-bubble-shadow {
+  box-shadow: 0 10px 40px -15px rgba(0,0,0,0.5), 0 4px 10px -2px rgba(0,0,0,0.3);
+}
+
+.chat-scroll-mask {
+  position: relative;
+}
+.chat-scroll-mask::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2rem;
+  background: linear-gradient(to bottom, var(--bg-main), transparent);
+  z-index: 10;
+  pointer-events: none;
 }
