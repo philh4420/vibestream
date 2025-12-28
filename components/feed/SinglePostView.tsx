@@ -32,13 +32,31 @@ export const SinglePostView: React.FC<SinglePostViewProps> = ({
     else window.scrollTo(0, 0);
   }, [post.id]);
 
-  const formattedTimestamp = useMemo(() => {
-    if (post.timestamp && post.timestamp.toDate) {
-      return post.timestamp.toDate().toLocaleString(locale, {
-        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false
-      });
-    }
-    return post.createdAt;
+  // RELATIVE TIME CALCULATION (Facebook Style)
+  const displayTime = useMemo(() => {
+    if (!post.timestamp) return { relative: post.createdAt, full: post.createdAt };
+    
+    const date = post.timestamp.toDate ? post.timestamp.toDate() : new Date(post.timestamp);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    let relative = '';
+    if (diffInSeconds < 60) relative = 'Just now';
+    else if (diffInSeconds < 3600) relative = `${Math.floor(diffInSeconds / 60)}m ago`;
+    else if (diffInSeconds < 86400) relative = `${Math.floor(diffInSeconds / 3600)}h ago`;
+    else if (diffInSeconds < 604800) relative = `${Math.floor(diffInSeconds / 86400)}d ago`;
+    else relative = date.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
+
+    const full = date.toLocaleString(locale, { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric',
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false
+    });
+    
+    return { relative, full };
   }, [post.timestamp, post.createdAt, locale]);
 
   const borderClass = post.authorCosmetics?.border ? `cosmetic-border-${post.authorCosmetics.border}` : '';
@@ -75,7 +93,12 @@ export const SinglePostView: React.FC<SinglePostViewProps> = ({
                 <h1 className="text-4xl md:text-5xl font-black text-slate-950 dark:text-white uppercase italic tracking-tighter leading-none mb-3">{post.authorName}</h1>
                 <div className="flex flex-wrap items-center gap-4">
                     <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest font-mono bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-lg">Broadcast_ID: {post.id.slice(0, 8)}</span>
-                    <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono">{formattedTimestamp}</span>
+                    <span className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest font-mono" title={displayTime.full}>
+                        {displayTime.relative}
+                    </span>
+                    <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono opacity-50">
+                        ({displayTime.full})
+                    </span>
                 </div>
              </div>
           </div>
