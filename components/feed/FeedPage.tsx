@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Post, User, Region, LiveStream } from '../../types';
 import { StoriesStrip } from './StoriesStrip';
@@ -69,7 +70,7 @@ export const FeedPage: React.FC<FeedPageProps> = ({
         />
       </section>
 
-      <section className="sticky top-[calc(var(--header-h)+1rem)] z-30 mb-8">
+      <section className="relative z-30 mb-8">
         <div className="py-2 bg-[#fcfcfd]/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-[2.5rem] border border-white/50 dark:border-white/10 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.05)] transition-all">
            <FeedProtocols active={activeProtocol} onChange={setActiveProtocol} />
         </div>
@@ -97,7 +98,7 @@ export const FeedPage: React.FC<FeedPageProps> = ({
              <div className="w-24 h-24 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] flex items-center justify-center mb-6 text-slate-300 dark:text-slate-600 shadow-sm relative z-10">
                 <ICONS.Explore />
              </div>
-             <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic leading-none mb-3">Signal_Void</h3>
+             <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter leading-none mb-3">Signal_Void</h3>
              <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] font-mono italic max-w-xs leading-relaxed">No active transmissions.</p>
           </div>
         )}

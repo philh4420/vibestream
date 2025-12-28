@@ -181,7 +181,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
       </div>
 
       {/* 2. Frequency Filters */}
-      <div className="sticky top-[calc(var(--header-h)+1rem)] z-30 mb-8 px-4 md:px-0">
+      <div className="relative z-30 mb-8 px-4 md:px-0">
          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/60 dark:border-white/10 p-1.5 rounded-[2rem] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] flex items-center justify-between gap-2 max-w-md">
             {(['all', 'pulses', 'system'] as const).map(f => (
               <button

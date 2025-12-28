@@ -15,7 +15,7 @@ export const ResilienceNav: React.FC<ResilienceNavProps> = ({ activeTab, setActi
   ];
 
   return (
-    <div className="sticky top-[calc(var(--header-h)+1rem)] z-30 flex justify-center w-full">
+    <div className="relative z-30 flex justify-center w-full">
          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-slate-200/60 dark:border-slate-700/60 p-2 rounded-[2.5rem] shadow-lg shadow-slate-200/20 dark:shadow-none flex gap-2 w-full max-w-md">
             {tabs.map((tab) => (
               <button

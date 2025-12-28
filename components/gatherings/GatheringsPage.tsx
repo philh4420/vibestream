@@ -226,7 +226,7 @@ export const GatheringsPage: React.FC<GatheringsPageProps> = ({
       </div>
 
       {/* Filter Bar */}
-      <div className="sticky top-[calc(var(--header-h)+1rem)] z-30 mb-8 px-2 md:px-0">
+      <div className="relative z-30 mb-8 px-2 md:px-0">
          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-white/60 dark:border-white/10 p-2 rounded-[2.5rem] shadow-sm overflow-x-auto no-scrollbar">
             <div className="flex gap-2 min-w-max">
                {(['All', 'Social', 'Tech', 'Gaming', 'Nightlife', 'Workshop'] as const).map(cat => (

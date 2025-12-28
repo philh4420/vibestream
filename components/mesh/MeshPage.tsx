@@ -209,8 +209,8 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
          </div>
       </div>
 
-      {/* 2. Sticky Control Bar */}
-      <div className="sticky top-[calc(var(--header-h)+1rem)] z-30 mb-8 px-2 md:px-0">
+      {/* 2. Control Bar */}
+      <div className="relative z-30 mb-8 px-2 md:px-0">
          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/60 dark:border-white/10 p-2 rounded-[2.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] dark:shadow-none flex flex-col md:flex-row items-center justify-between gap-3">
             
             {/* Tabs */}

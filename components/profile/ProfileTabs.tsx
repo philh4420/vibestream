@@ -19,7 +19,7 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({ activeTab, onTabChange
   ];
 
   return (
-    <div className="sticky top-[var(--header-h)] z-30 w-full bg-slate-50/90 dark:bg-[#020617]/90 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800/60 shadow-sm transition-all duration-500">
+    <div className="relative z-30 w-full bg-slate-50/90 dark:bg-[#020617]/90 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800/60 shadow-sm transition-all duration-500">
       <div className="max-w-[2560px] mx-auto px-4 sm:px-6 md:px-10 lg:px-14 py-3">
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar" role="tablist">
           {tabs.map((tab) => {

@@ -134,7 +134,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ addToast, locale, system
   return (
     <div className="flex flex-col w-full max-w-[2400px] mx-auto min-h-full pb-24 text-slate-900 dark:text-white">
       {/* Sticky Navigation Dock */}
-      <div className="sticky top-0 z-40 pt-2 pb-6 bg-gradient-to-b from-slate-50 via-slate-50/95 to-transparent dark:from-[#020617] dark:via-[#020617]/95 backdrop-blur-sm -mx-4 px-4 md:mx-0 md:px-0">
+      <div className="relative z-40 pt-2 pb-6 bg-gradient-to-b from-slate-50 via-slate-50/95 to-transparent dark:from-[#020617] dark:via-[#020617]/95 backdrop-blur-sm -mx-4 px-4 md:mx-0 md:px-0">
         <AdminHeader 
           activeTab={activeTab} 
           setActiveTab={setActiveTab} 
