@@ -144,10 +144,11 @@ export const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ userData, onCl
     <div className="fixed inset-0 z-[5000] flex items-center justify-center p-0 md:p-6 animate-in fade-in duration-300">
       <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-md" onClick={onClose} />
       
-      <div className="relative bg-[#fcfcfd] dark:bg-slate-900 w-full max-w-6xl h-full md:h-[90vh] md:rounded-[3.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-500 border border-white/20 dark:border-slate-800">
+      {/* Main Modal Container - Uses 100dvh on mobile to fix address bar scrolling issues */}
+      <div className="relative bg-[#fcfcfd] dark:bg-slate-900 w-full max-w-6xl h-[100dvh] md:h-[90vh] md:rounded-[3.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-500 border border-white/20 dark:border-slate-800">
         
-        {/* Mobile Header (Visible only on small screens) - Moved to Top of Flow */}
-        <div className="md:hidden p-4 pb-0 flex justify-between items-center bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-md z-30 shrink-0">
+        {/* Mobile Header (Visible only on small screens) */}
+        <div className="md:hidden p-4 pb-0 flex justify-between items-center bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-md z-30 shrink-0 border-b border-slate-100 dark:border-slate-800">
              <div>
                 <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">Settings</h2>
                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] font-mono">Config_Mode</p>
@@ -182,16 +183,17 @@ export const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ userData, onCl
           </div>
         </div>
 
-        {/* Content Viewport */}
-        <div className="flex-1 flex flex-col min-w-0 bg-[#fcfcfd] dark:bg-slate-900 relative z-10">
+        {/* Content Viewport - flex-1 with min-h-0 allows internal scroll to work properly */}
+        <div className="flex-1 flex flex-col min-h-0 bg-[#fcfcfd] dark:bg-slate-900 relative z-10">
           
-          {/* Internal Title (Mobile Context Awareness) */}
-          <div className="md:hidden px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm sticky top-0 z-10">
+          {/* Internal Title (Mobile Sticky) */}
+          <div className="md:hidden px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm sticky top-0 z-20">
              <span className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 font-mono block mb-1">Active_Protocol</span>
              <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tight">{activeTab}</h3>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 md:p-12 pb-32 md:pb-12 space-y-10 scroll-container relative">
+          {/* Scrollable Content Area */}
+          <div className="flex-1 overflow-y-auto p-6 md:p-12 pb-32 md:pb-12 space-y-10 scroll-container relative overscroll-contain">
             {activeTab === 'account' && (
               <SettingsAccount userData={userData} onLogout={onLogout} addToast={addToast} />
             )}
@@ -227,7 +229,7 @@ export const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ userData, onCl
           <div className="absolute bottom-[88px] md:bottom-[96px] left-0 right-0 h-12 bg-gradient-to-t from-[#fcfcfd] dark:from-slate-900 to-transparent pointer-events-none z-10 opacity-80" />
 
           {/* Persistent Footer */}
-          <div className="p-6 md:p-8 border-t border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl flex justify-between md:justify-end gap-4 shrink-0 absolute bottom-0 left-0 right-0 z-20 md:relative">
+          <div className="p-6 md:p-8 border-t border-slate-100 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl flex justify-between md:justify-end gap-4 shrink-0 absolute bottom-0 left-0 right-0 z-30 md:relative">
              <button 
                onClick={onClose}
                className="flex-1 md:flex-none px-8 py-4 rounded-[1.5rem] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-95"
