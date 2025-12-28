@@ -27,7 +27,8 @@ export const CONFIG = {
     appId: getEnv('VITE_FIREBASE_APP_ID'),
   },
   APP_CHECK: {
-    reCaptchaSiteKey: getEnv('VITE_RECAPTCHA_SITE_KEY') || '6LcNv90qAAAAALm_18p0906zM8M9_n5N0n2_M8M9', // Example key format
+    // Use the provided site key, but allow environment override for production deployment
+    reCaptchaSiteKey: getEnv('VITE_RECAPTCHA_SITE_KEY') || '6LcNv90qAAAAALm_18p0906zM8M9_n5N0n2_M8M9',
   },
   CLOUDINARY: {
     cloudName: getEnv('VITE_CLOUDINARY_CLOUD_NAME'),
