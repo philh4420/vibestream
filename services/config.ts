@@ -27,7 +27,7 @@ export const CONFIG = {
     appId: getEnv('VITE_FIREBASE_APP_ID'),
   },
   APP_CHECK: {
-    // Use the provided site key, but allow environment override for production deployment
+    // Strictly use environment variable; no hardcoded fallback.
     reCaptchaSiteKey: getEnv('VITE_RECAPTCHA_SITE_KEY'),
   },
   CLOUDINARY: {

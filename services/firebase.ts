@@ -29,31 +29,24 @@ try {
   app = initializeApp(CONFIG.FIREBASE, 'FALLBACK');
 }
 
-// App Check Implementation with Environment-Aware Security
+// App Check Implementation - Standard Production Protocol
+// NOTE: A 400 error here usually means the Key Type is wrong (Must be v3, not v2) or Domain Mismatch.
 if (isBrowser && CONFIG.APP_CHECK.reCaptchaSiteKey) {
   try {
-    const isDevelopment = 
-      location.hostname === 'localhost' || 
-      location.hostname === '127.0.0.1' || 
-      location.hostname.includes('webcontainer') || 
-      location.hostname.includes('stackblitz');
-
-    if (isDevelopment) {
-      // Force Debug Provider for development/preview to bypass reCAPTCHA 400 errors
-      // This is the standard Firebase fix for domain-locked reCAPTCHA keys
-      (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-      console.debug("VibeStream Protocol: App Check engaged in DEBUG mode.");
-    }
-
+    const siteKey = CONFIG.APP_CHECK.reCaptchaSiteKey;
+    
+    // Initialize App Check with the ReCaptchaV3Provider
     initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider(CONFIG.APP_CHECK.reCaptchaSiteKey),
+      provider: new ReCaptchaV3Provider(siteKey),
       isTokenAutoRefreshEnabled: true
     });
     
-    console.debug("VibeStream Protocol: App Check Synchronized.");
+    console.debug("VibeStream Protocol: App Check Signal Active.");
   } catch (err) {
-    console.warn("VibeStream Protocol: App Check Handshake Skipped/Failed", err);
+    console.warn("VibeStream Protocol: App Check Handshake Failed.", err);
   }
+} else if (isBrowser) {
+  console.debug("VibeStream Protocol: App Check bypassed (No Site Key detected in Config).");
 }
 
 export const db = getFirestore(app);
