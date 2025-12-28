@@ -1,3 +1,4 @@
+
 export type UserRole = 'member' | 'verified' | 'creator' | 'admin';
 
 export type Region = 'en-GB' | 'en-US' | 'de-DE' | 'fr-FR' | 'ja-JP';
@@ -156,6 +157,11 @@ export interface Comment {
   }[];
 }
 
+export interface PollOption {
+  id: string;
+  text: string;
+}
+
 export interface Post {
   id: string;
   authorId: string;
@@ -163,6 +169,14 @@ export interface Post {
   authorAvatar: string;
   content: string;
   contentLengthTier: 'pulse' | 'standard' | 'deep';
+  type?: 'text' | 'media' | 'poll'; // New field
+  
+  // Poll Specifics
+  pollOptions?: PollOption[];
+  pollVotes?: Record<string, number>; // optionId -> count
+  pollVoters?: Record<string, string>; // userId -> optionId
+  pollTotalVotes?: number;
+
   coAuthors?: { id: string, name: string, avatar: string }[];
   capturedStatus?: { emoji: string, message: string };
   media: {
@@ -188,7 +202,6 @@ export interface Post {
     authorAvatar: string;
   };
   pulseFrequency?: string; 
-  // Visual Overrides based on author's cosmetics
   authorCosmetics?: {
     border?: string;
     filter?: string;

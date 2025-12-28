@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { User } from '../../types';
+import { User, PollOption } from '../../types';
 import { ICONS } from '../../constants';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
@@ -27,6 +27,10 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
   const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
   const [selectedGif, setSelectedGif] = useState<GiphyGif | null>(null);
   
+  // Poll State
+  const [isPollMode, setIsPollMode] = useState(false);
+  const [pollOptions, setPollOptions] = useState<string[]>(['', '']);
+
   // Pickers
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showGifPicker, setShowGifPicker] = useState(false);
@@ -137,6 +141,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
     setSelectedGif(gif);
     setSelectedFiles([]);
     setMediaPreviews([]);
+    setIsPollMode(false); // GIF overrides poll
     setShowGifPicker(false);
     setIsExpanded(true);
   };
@@ -174,6 +179,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
       const newPreviews = newFiles.map(file => URL.createObjectURL(file));
       setMediaPreviews(prev => [...prev, ...newPreviews]);
       setSelectedGif(null);
+      setIsPollMode(false); // Media overrides poll
       setIsExpanded(true);
     }
   };
@@ -186,8 +192,49 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
     });
   };
 
+  // Poll Handling
+  const handlePollOptionChange = (idx: number, val: string) => {
+    const newOptions = [...pollOptions];
+    newOptions[idx] = val;
+    setPollOptions(newOptions);
+  };
+
+  const addPollOption = () => {
+    if (pollOptions.length < 4) {
+      setPollOptions([...pollOptions, '']);
+    }
+  };
+
+  const removePollOption = (idx: number) => {
+    if (pollOptions.length > 2) {
+      setPollOptions(pollOptions.filter((_, i) => i !== idx));
+    }
+  };
+
+  const togglePollMode = () => {
+    if (isPollMode) {
+      setIsPollMode(false);
+    } else {
+      setIsPollMode(true);
+      // Clear conflicting attachments
+      setSelectedFiles([]);
+      setMediaPreviews([]);
+      setSelectedGif(null);
+      setIsExpanded(true);
+    }
+  };
+
   const handlePost = async () => {
-    if ((!content.trim() && selectedFiles.length === 0 && !selectedGif) || !userData || !db) return;
+    if ((!content.trim() && selectedFiles.length === 0 && !selectedGif && !isPollMode) || !userData || !db) return;
+
+    // Validate Poll
+    if (isPollMode) {
+      const validOptions = pollOptions.filter(o => o.trim() !== '');
+      if (validOptions.length < 2) {
+        window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Poll requires at least 2 options.", type: 'error' } }));
+        return;
+      }
+    }
 
     setIsPosting(true);
     const mediaItems: { type: 'image' | 'video'; url: string }[] = [];
@@ -208,6 +255,24 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         mediaItems.push({ type: 'image', url: selectedGif.images.original.url });
       }
 
+      // Construct Poll Data
+      let pollPayload = {};
+      if (isPollMode) {
+        const options: PollOption[] = pollOptions
+          .filter(o => o.trim() !== '')
+          .map(text => ({ id: Math.random().toString(36).substr(2, 9), text: text.trim() }));
+        
+        pollPayload = {
+          type: 'poll',
+          pollOptions: options,
+          pollVotes: options.reduce((acc, opt) => ({ ...acc, [opt.id]: 0 }), {}),
+          pollVoters: {},
+          pollTotalVotes: 0
+        };
+      } else {
+        pollPayload = { type: mediaItems.length > 0 ? 'media' : 'text' };
+      }
+
       const postRef = await addDoc(collection(db, 'posts'), {
         authorId: userData.id,
         authorName: userData.displayName,
@@ -220,7 +285,8 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         shares: 0,
         createdAt: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
         timestamp: serverTimestamp(),
-        likedBy: []
+        likedBy: [],
+        ...pollPayload
       });
 
       const finalContent = content.trim();
@@ -250,6 +316,8 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
       setSelectedFiles([]);
       setMediaPreviews([]);
       setSelectedGif(null);
+      setIsPollMode(false);
+      setPollOptions(['', '']);
       setIsExpanded(false);
       setShowEmojiPicker(false);
       setShowGifPicker(false);
@@ -301,7 +369,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
                 value={content}
                 onChange={handleInput}
                 onFocus={handleFocus}
-                placeholder={`Initiate a new signal, ${userData?.displayName.split(' ')[0]}...`}
+                placeholder={isPollMode ? "Ask the network..." : `Initiate a new signal, ${userData?.displayName.split(' ')[0]}...`}
                 className={`w-full bg-transparent border-none text-lg font-medium focus:ring-0 resize-none overflow-hidden min-h-[60px] relative z-10 placeholder:text-slate-400 dark:placeholder:text-slate-500 caret-indigo-600 dark:caret-white ${content ? 'text-transparent' : 'text-slate-900 dark:text-white'}`}
                 rows={1}
                 aria-label="Create Post Content"
@@ -339,6 +407,39 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         </div>
       </div>
 
+      {/* POLL BUILDER UI */}
+      {isPollMode && (
+        <div className="mt-6 mb-2 pl-[calc(4rem+1.5rem)] pr-2 animate-in slide-in-from-top-4 duration-300">
+           <div className="space-y-3">
+              {pollOptions.map((opt, idx) => (
+                <div key={idx} className="flex gap-2">
+                   <input 
+                     type="text" 
+                     value={opt}
+                     onChange={(e) => handlePollOptionChange(idx, e.target.value)}
+                     placeholder={`Option ${idx + 1}`}
+                     className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-400"
+                   />
+                   {pollOptions.length > 2 && (
+                     <button onClick={() => removePollOption(idx)} className="p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+                     </button>
+                   )}
+                </div>
+              ))}
+              
+              {pollOptions.length < 4 && (
+                <button 
+                  onClick={addPollOption}
+                  className="text-[10px] font-black uppercase tracking-widest text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 transition-colors flex items-center gap-1 mt-2"
+                >
+                  <span className="text-lg leading-none">+</span> Add_Option
+                </button>
+              )}
+           </div>
+        </div>
+      )}
+
       {(mediaPreviews.length > 0 || selectedGif) && (
         <div className="mt-6 mb-4 pl-[calc(4rem+1.5rem)]">
           <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
@@ -374,6 +475,10 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
               <span className="text-[10px] font-black font-mono">GIF</span>
             </button>
 
+            <button onClick={togglePollMode} className={`p-2.5 rounded-xl transition-colors ${isPollMode ? 'bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400' : 'hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600'}`} title="Create Poll" aria-label="Create Poll">
+              <ICONS.Poll />
+            </button>
+
             <button onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowGifPicker(false); }} className={`p-2.5 rounded-xl transition-colors ${showEmojiPicker ? 'bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400' : 'hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-400'}`} title="Add Emoji" aria-label="Add Emoji">
               <span className="text-xl leading-none">😊</span>
             </button>
@@ -382,7 +487,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
           <div className="flex items-center gap-4">
              <button 
                 onClick={handlePost}
-                disabled={isPosting || (!content.trim() && selectedFiles.length === 0 && !selectedGif)}
+                disabled={isPosting || (!content.trim() && selectedFiles.length === 0 && !selectedGif && !isPollMode)}
                 className="px-8 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[1.2rem] font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-indigo-600 dark:hover:bg-indigo-400 dark:hover:text-white transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
                 aria-label="Broadcast Signal"
              >

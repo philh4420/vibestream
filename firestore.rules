@@ -5,7 +5,7 @@ service cloud.firestore {
 
     /**
      * =========================================================================
-     * VIBESTREAM CITADEL OS SECURITY MANIFEST v8.8 [EDIT_PROTOCOL_RESTORED]
+     * VIBESTREAM CITADEL OS SECURITY MANIFEST v9.0 [POLL_VOTING_ENABLED]
      * INFRASTRUCTURE REGION: GB_LON_CENTRAL
      * SECURITY CLEARANCE: LEVEL 5 (MESH_ADMIN)
      * =========================================================================
@@ -123,12 +123,12 @@ service cloud.firestore {
       
       allow create: if isAuthenticated() && incomingData().authorId == request.auth.uid;
         
-      // EDITING PROTOCOL RESTORED:
-      // Authors can update content/media. Public can update metrics.
+      // EDITING PROTOCOL:
+      // Authors can update content/media. Public can update metrics AND POLLS.
       allow update: if isAuthenticated() && (
         isAdmin() ||
         (resource.data.authorId == request.auth.uid && incomingData().diff(existingData()).affectedKeys().hasAny(['content', 'media', 'contentLengthTier', 'updatedAt'])) ||
-        incomingData().diff(existingData()).affectedKeys().hasOnly(['likes', 'comments', 'shares', 'likedBy', 'bookmarkedBy', 'inlineReactions', 'reactions'])
+        incomingData().diff(existingData()).affectedKeys().hasOnly(['likes', 'comments', 'shares', 'likedBy', 'bookmarkedBy', 'inlineReactions', 'reactions', 'pollVotes', 'pollVoters', 'pollTotalVotes'])
       );
       
       allow delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isAdmin());

@@ -9,6 +9,7 @@ import { CommentSection } from './CommentSection';
 import { DeleteConfirmationModal } from '../ui/DeleteConfirmationModal';
 import { extractUrls } from '../../lib/textUtils';
 import { LinkPreview } from '../ui/LinkPreview';
+import { PollNode } from './PollNode';
 
 interface PostCardProps {
   post: Post;
@@ -216,7 +217,10 @@ export const PostCard: React.FC<PostCardProps> = ({
         authorCosmetics: {
             border: userData.cosmetics?.activeBorder,
             filter: userData.cosmetics?.activeFilter
-        }
+        },
+        type: post.type || 'text',
+        // Don't duplicate poll data for relays, treat as static
+        pollOptions: post.pollOptions || null
       });
       await updateDoc(doc(db, 'posts', post.id), { shares: increment(1) });
       if (post.authorId !== userData.id) {
@@ -421,6 +425,13 @@ export const PostCard: React.FC<PostCardProps> = ({
                 {extractedUrl && (
                     <div onClick={(e) => e.stopPropagation()} className="mt-4">
                         <LinkPreview url={extractedUrl} />
+                    </div>
+                )}
+
+                {/* Poll Node Injection */}
+                {post.type === 'poll' && (
+                    <div onClick={(e) => e.stopPropagation()}>
+                        <PollNode post={post} userData={userData} addToast={addToast} />
                     </div>
                 )}
             </>
