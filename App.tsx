@@ -18,7 +18,8 @@ const {
   increment,
   setDoc,
   serverTimestamp,
-  writeBatch
+  writeBatch,
+  deleteDoc
 } = Firestore as any;
 import { 
   AppRoute, 
@@ -37,6 +38,7 @@ import { LandingPage } from './components/landing/LandingPage';
 import { FeedPage } from './components/feed/FeedPage';
 import { ExplorePage } from './components/explore/ExplorePage';
 import { MessagesPage } from './components/messages/MessagesPage';
+import { NotificationsPage } from './components/notifications/NotificationsPage';
 import { ProfilePage } from './components/profile/ProfilePage';
 import { AdminPanel } from './components/admin/AdminPanel';
 import { GatheringsPage } from './components/gatherings/GatheringsPage';
@@ -50,6 +52,9 @@ import { SimulationsPage } from './components/simulations/SimulationsPage';
 import { ResiliencePage } from './components/resilience/ResiliencePage';
 import { SupportPage } from './components/support/SupportPage';
 import { ResonanceMarketplace } from './components/marketplace/ResonanceMarketplace';
+import { PrivacyPage } from './components/legal/PrivacyPage';
+import { TermsPage } from './components/legal/TermsPage';
+import { CookiesPage } from './components/legal/CookiesPage';
 import { SinglePostView } from './components/feed/SinglePostView';
 import { SettingsOverlay } from './components/settings/SettingsOverlay';
 import { LiveBroadcastOverlay } from './components/streams/LiveBroadcastOverlay';
@@ -267,6 +272,16 @@ const App: React.FC = () => {
     } catch (e) { addToast("RSVP error", "error"); }
   };
 
+  const handleMarkAllRead = async () => {
+    const batch = writeBatch(db);
+    notifications.filter(n => !n.isRead).forEach(n => batch.update(doc(db, 'notifications', n.id), { isRead: true }));
+    await batch.commit();
+  };
+
+  const handleDeleteNotification = async (id: string) => {
+    await deleteDoc(doc(db, 'notifications', id));
+  };
+
   if (isAuthLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
@@ -292,11 +307,7 @@ const App: React.FC = () => {
         userRole={userData?.role}
         userData={userData}
         notifications={notifications}
-        onMarkRead={async () => {
-          const batch = writeBatch(db);
-          notifications.filter(n => !n.isRead).forEach(n => batch.update(doc(db, 'notifications', n.id), { isRead: true }));
-          await batch.commit();
-        }}
+        onMarkRead={handleMarkAllRead}
         onDeleteNotification={async (id) => await updateDoc(doc(db, 'notifications', id), { isRead: true })} 
         currentRegion={region}
         onRegionChange={setRegion}
@@ -342,6 +353,16 @@ const App: React.FC = () => {
         )}
         {activeRoute === AppRoute.MESSAGES && (
           <MessagesPage currentUser={userData!} locale={region} addToast={addToast} weather={weather} allUsers={allUsers} blockedIds={blockedIds} />
+        )}
+        {activeRoute === AppRoute.NOTIFICATIONS && (
+          <NotificationsPage 
+            notifications={notifications} 
+            onDelete={handleDeleteNotification}
+            onMarkRead={handleMarkAllRead}
+            addToast={addToast}
+            locale={region}
+            userData={userData}
+          />
         )}
         {activeRoute === AppRoute.PROFILE && (
           <ProfilePage 
@@ -391,6 +412,11 @@ const App: React.FC = () => {
         {activeRoute === AppRoute.RESILIENCE && <ResiliencePage userData={userData!} addToast={addToast} />}
         {activeRoute === AppRoute.SUPPORT && <SupportPage currentUser={userData!} locale={region} addToast={addToast} />}
         {activeRoute === AppRoute.MARKETPLACE && <ResonanceMarketplace userData={userData!} addToast={addToast} />}
+        
+        {/* LEGAL PAGES */}
+        {activeRoute === AppRoute.PRIVACY && <div className="p-4 md:p-8"><PrivacyPage /></div>}
+        {activeRoute === AppRoute.TERMS && <div className="p-4 md:p-8"><TermsPage /></div>}
+        {activeRoute === AppRoute.COOKIES && <div className="p-4 md:p-8"><CookiesPage /></div>}
       </Layout>
 
       {/* Global Overlays */}
