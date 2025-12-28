@@ -28,6 +28,7 @@ import { ProfileVisualsSection } from './sections/ProfileVisualsSection';
 import { ProfileResonanceSection } from './sections/ProfileResonanceSection';
 import { ProfileChronologySection } from './sections/ProfileChronologySection';
 import { ProfileConnectionsSection } from './sections/ProfileConnectionsSection';
+import { ProfileTelemetrySection } from './sections/ProfileTelemetrySection';
 
 interface ProfilePageProps {
   userData: User;
@@ -181,6 +182,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
       <div className="mt-8 px-4 sm:px-6 md:px-10 lg:px-14">
         {activeTab === 'broadcasting' && <ProfileBroadcastingSection posts={userPosts} locale={locale} userData={profileData} addToast={addToast} onViewPost={onViewPost} onLike={onLike} onBookmark={onBookmark} />}
+        {activeTab === 'telemetry' && <ProfileTelemetrySection userData={profileData} />}
         {activeTab === 'identity' && <ProfileAboutSection userData={profileData} locale={locale} />}
         {activeTab === 'visuals' && <ProfileVisualsSection posts={userPosts} onViewPost={onViewPost} />}
         {activeTab === 'resonance' && <ProfileResonanceSection userData={profileData} />}

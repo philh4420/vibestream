@@ -10,6 +10,7 @@ interface ProfileTabsProps {
 export const ProfileTabs: React.FC<ProfileTabsProps> = ({ activeTab, onTabChange }) => {
   const tabs = [
     { id: 'broadcasting', label: 'Timeline', icon: ICONS.Home },
+    { id: 'telemetry', label: 'Telemetry', icon: ICONS.Telemetry },
     { id: 'connections', label: 'Network', icon: ICONS.Clusters },
     { id: 'identity', label: 'Identity', icon: ICONS.Profile },
     { id: 'visuals', label: 'Visuals', icon: ICONS.Create },
