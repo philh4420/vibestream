@@ -28,6 +28,7 @@ import { ICONS } from '../../constants';
 import { extractUrls } from '../../lib/textUtils';
 import { LinkPreview } from '../ui/LinkPreview';
 import { DeleteConfirmationModal } from '../ui/DeleteConfirmationModal';
+import { RichTextEditor, RichTextEditorRef } from '../ui/RichTextEditor';
 
 interface CommentSectionProps {
   postId: string;
@@ -66,26 +67,24 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
   const [showMentionList, setShowMentionList] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
-  const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const editInputRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<RichTextEditorRef>(null);
+  const editEditorRef = useRef<RichTextEditorRef>(null);
 
   useEffect(() => {
     if (!db) return;
     const q = query(collection(db, 'posts', postId, 'comments'), orderBy('timestamp', 'asc'), limit(100));
     return onSnapshot(q, (snap: any) => {
-      // Filter out blocked comments locally
       const allComments = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Comment));
       setComments(allComments);
     });
   }, [postId]);
 
-  // Filter blocked comments
   const visibleComments = useMemo(() => {
     return comments.filter(c => !blockedIds?.has(c.authorId));
   }, [comments, blockedIds]);
 
-  // --- MENTION LOGIC START ---
+  // --- MENTION LOGIC ---
   useEffect(() => {
     if (mentionQuery === null) {
       setMentionResults([]);
@@ -95,16 +94,15 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
 
     const searchUsers = async () => {
       setIsSearching(true);
-      setShowMentionList(true); // Show dropdown immediately in loading state
+      setShowMentionList(true);
 
       try {
         const q = query(
           collection(db, 'users'),
           where('username', '>=', mentionQuery.toLowerCase()),
           where('username', '<=', mentionQuery.toLowerCase() + '\uf8ff'),
-          limit(3) // Smaller limit for comments
+          limit(3)
         );
-        
         const snap = await getDocs(q);
         const users = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as User));
         setMentionResults(users);
@@ -119,14 +117,13 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
     return () => clearTimeout(timer);
   }, [mentionQuery]);
 
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setNewComment(val);
-
-    const cursor = e.target.selectionStart || 0;
-    const textBeforeCursor = val.slice(0, cursor);
-    const lastWord = textBeforeCursor.split(/\s/).pop();
-
+  const handleEditorChange = (html: string) => {
+    setNewComment(html);
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    const text = tempDiv.innerText || "";
+    
+    const lastWord = text.split(/\s/).pop();
     if (lastWord && lastWord.startsWith('@')) {
       const query = lastWord.slice(1);
       if (query.length >= 1) {
@@ -142,29 +139,15 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
   };
 
   const selectMention = (user: User) => {
-    const cursor = inputRef.current?.selectionStart || 0;
-    const textBefore = newComment.slice(0, cursor);
-    const textAfter = newComment.slice(cursor);
-    const lastWordIndex = textBefore.lastIndexOf('@');
-    
-    if (lastWordIndex !== -1) {
-        const newContent = newComment.slice(0, lastWordIndex) + `@${user.username} ` + textAfter;
-        setNewComment(newContent);
-        // Robust cache update: Avoid duplicates
-        setMentionedUserCache(prev => {
-            if (prev.some(u => u.id === user.id)) return prev;
-            return [...prev, user];
-        });
-    }
-    
+    editorRef.current?.insertContent(`<strong>@${user.username}</strong> `);
+    setMentionedUserCache(prev => {
+        if (prev.some(u => u.id === user.id)) return prev;
+        return [...prev, user];
+    });
     setMentionQuery(null);
     setShowMentionList(false);
-    
-    setTimeout(() => {
-        inputRef.current?.focus();
-    }, 10);
+    editorRef.current?.focus();
   };
-  // --- MENTION LOGIC END ---
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -192,8 +175,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleSubmitComment = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmitComment = async () => {
     if ((!newComment.trim() && !selectedFile && !selectedGif) || !db || !userData) return;
     
     setIsSubmittingComment(true);
@@ -202,7 +184,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
     try {
       if (selectedFile) {
         setIsUploadingMedia(true);
-        addToast("Syncing Media Fragment...", "info");
         const url = await uploadToCloudinary(selectedFile);
         mediaItems.push({
           type: selectedFile.type.startsWith('video/') ? 'video' : 'image',
@@ -229,15 +210,11 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
       };
       if (replyingTo) payload.parentId = replyingTo;
 
-      const commentRef = await addDoc(collection(db, 'posts', postId, 'comments'), payload);
-      await updateDoc(doc(db, 'posts', postId), {
-        comments: increment(1)
-      });
+      await addDoc(collection(db, 'posts', postId, 'comments'), payload);
+      await updateDoc(doc(db, 'posts', postId), { comments: increment(1) });
 
-      // --- NOTIFICATIONS ---
+      // Notifications
       const batch = writeBatch(db);
-
-      // 1. Notify Post Author (if not self)
       if (userData.id !== postAuthorId) {
         batch.set(doc(collection(db, 'notifications')), {
           type: 'comment',
@@ -246,44 +223,26 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
           fromUserAvatar: userData.avatarUrl,
           toUserId: postAuthorId,
           targetId: postId,
-          text: `echoed on your signal: "${commentText.substring(0, 30)}${commentText.length > 30 ? '...' : ''}"`,
+          text: `echoed on your signal.`,
           isRead: false,
           timestamp: serverTimestamp(),
           pulseFrequency: 'intensity'
         });
       }
 
-      // 2. Notify Parent Comment Author
-      if (parent && parent.authorId !== userData.id && parent.authorId !== postAuthorId) {
-         batch.set(doc(collection(db, 'notifications')), {
-          type: 'comment',
-          fromUserId: userData.id,
-          fromUserName: userData.displayName,
-          fromUserAvatar: userData.avatarUrl,
-          toUserId: parent.authorId,
-          targetId: postId,
-          text: `replied to your comment: "${commentText.substring(0, 30)}${commentText.length > 30 ? '...' : ''}"`,
-          isRead: false,
-          timestamp: serverTimestamp(),
-          pulseFrequency: 'cognition'
-        });
-      }
-
-      // 3. Notify Mentioned Users
       const mentionsToNotify = mentionedUserCache.filter(u => commentText.includes(`@${u.username}`));
-      const uniqueMentions = Array.from(new Set(mentionsToNotify.map(u => u.id)))
-        .map(id => mentionsToNotify.find(u => u.id === id));
+      const uniqueMentions = Array.from(new Set(mentionsToNotify.map(u => u.id))).map(id => mentionsToNotify.find(u => u.id === id));
 
       uniqueMentions.forEach(targetUser => {
-        if (targetUser && targetUser.id !== userData.id && targetUser.id !== postAuthorId && (!parent || targetUser.id !== parent.authorId)) {
+        if (targetUser && targetUser.id !== userData.id && targetUser.id !== postAuthorId) {
             batch.set(doc(collection(db, 'notifications')), {
                 type: 'mention',
                 fromUserId: userData.id,
                 fromUserName: userData.displayName,
                 fromUserAvatar: userData.avatarUrl,
                 toUserId: targetUser.id,
-                targetId: postId, // Link to post, future: deep link to comment
-                text: `mentioned you in a comment: "${commentText.substring(0, 30)}..."`,
+                targetId: postId,
+                text: `mentioned you in a comment.`,
                 isRead: false,
                 timestamp: serverTimestamp(),
                 pulseFrequency: 'velocity'
@@ -294,6 +253,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
       await batch.commit();
 
       setNewComment('');
+      editorRef.current?.clear();
       setReplyingTo(null);
       setIsEmojiPickerOpen(false);
       removeSelectedFile();
@@ -327,9 +287,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
     if (!commentToDelete || !db) return;
     try {
       await deleteDoc(doc(db, 'posts', postId, 'comments', commentToDelete));
-      await updateDoc(doc(db, 'posts', postId), {
-        comments: increment(-1)
-      });
+      await updateDoc(doc(db, 'posts', postId), { comments: increment(-1) });
       addToast("Echo Silenced", "success");
     } catch (e) {
       addToast("Purge Protocol Failed", "error");
@@ -339,21 +297,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
   };
 
   const insertEmoji = (emoji: string) => {
-    const input = inputRef.current;
-    if (!input) {
-      setNewComment(prev => prev + emoji);
-      return;
-    }
-    const start = input.selectionStart || 0;
-    const end = input.selectionEnd || 0;
-    const text = input.value;
-    const before = text.substring(0, start);
-    const after = text.substring(end, text.length);
-    setNewComment(before + emoji + after);
-    setTimeout(() => {
-      input.focus();
-      input.setSelectionRange(start + emoji.length, start + emoji.length);
-    }, 0);
+    editorRef.current?.insertContent(emoji);
   };
 
   const commentThreads = useMemo(() => {
@@ -372,18 +316,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
     const canDelete = userData && (userData.id === comment.authorId || userData.id === postAuthorId);
     const canEdit = userData && userData.id === comment.authorId;
     const isEditing = editingCommentId === comment.id;
-    
-    // Highlight mentions & tags in content
-    const contentWithRichText = comment.content.split(/((?:@|#)[a-zA-Z0-9_]+)/g).map((part, i) => {
-        if (part.startsWith('@')) {
-            return <span key={i} className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline cursor-pointer">{part}</span>;
-        }
-        if (part.startsWith('#')) {
-            return <span key={i} className="text-rose-500 dark:text-rose-400 font-bold hover:underline cursor-pointer">{part}</span>;
-        }
-        return part;
-    });
-
     const extractedUrl = extractUrls(comment.content)[0];
 
     return (
@@ -410,12 +342,13 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
                 
                 {isEditing ? (
                     <div className="mt-2">
-                        <textarea 
-                            ref={editInputRef}
-                            value={editContent} 
-                            onChange={(e) => setEditContent(e.target.value)}
-                            className="w-full bg-slate-50 dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none resize-none"
-                            autoFocus
+                        <RichTextEditor 
+                            ref={editEditorRef}
+                            content={editContent} 
+                            onChange={setEditContent}
+                            onSubmit={() => handleUpdateComment(comment.id)}
+                            className="border border-indigo-200 dark:border-indigo-800 rounded-xl"
+                            minHeight="60px"
                         />
                         <div className="flex gap-2 mt-2 justify-end">
                             <button onClick={() => setEditingCommentId(null)} className="text-[9px] font-black uppercase text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">Cancel</button>
@@ -424,15 +357,9 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
                     </div>
                 ) : (
                     <>
-                        <p className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-relaxed whitespace-pre-wrap">
-                            {contentWithRichText}
-                        </p>
+                        <div className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-relaxed" dangerouslySetInnerHTML={{ __html: comment.content }} />
                         
-                        {extractedUrl && (
-                        <div className="mt-3 max-w-[280px]">
-                            <LinkPreview url={extractedUrl} compact={true} />
-                        </div>
-                        )}
+                        {extractedUrl && <div className="mt-3 max-w-[280px]"><LinkPreview url={extractedUrl} compact={true} /></div>}
 
                         {comment.media && comment.media.length > 0 && (
                         <div className="mt-3 rounded-xl overflow-hidden border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 max-w-[240px]">
@@ -448,32 +375,12 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
              </div>
 
              <div className="flex items-center gap-4 mt-1.5 ml-1">
-                <button 
-                  onClick={() => setReplyingTo(comment.id)}
-                  className="text-[8px] font-black uppercase text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1"
-                >
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
-                  Echo
-                </button>
-                
+                <button onClick={() => setReplyingTo(comment.id)} className="text-[8px] font-black uppercase text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1">Echo</button>
                 {canEdit && (
-                    <button 
-                        onClick={() => { setEditingCommentId(comment.id); setEditContent(comment.content); }}
-                        className="text-[8px] font-black uppercase text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1"
-                    >
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
-                        Edit
-                    </button>
+                    <button onClick={() => { setEditingCommentId(comment.id); setEditContent(comment.content); }} className="text-[8px] font-black uppercase text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1">Edit</button>
                 )}
-
                 {canDelete && (
-                  <button 
-                    onClick={() => setCommentToDelete(comment.id)}
-                    className="text-[8px] font-black uppercase text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 transition-colors flex items-center gap-1"
-                  >
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
-                    Purge
-                  </button>
+                  <button onClick={() => setCommentToDelete(comment.id)} className="text-[8px] font-black uppercase text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 transition-colors flex items-center gap-1">Purge</button>
                 )}
              </div>
 
@@ -491,16 +398,12 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
   return (
     <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800 animate-in slide-in-from-bottom-2 duration-500">
       <div className="space-y-6 mb-8">
-        {commentThreads['root'].length > 0 ? (
-          commentThreads['root'].map(comment => renderComment(comment))
-        ) : (
-          <div className="text-center py-8 opacity-50">
-            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono">No neural echoes yet.</p>
-          </div>
+        {commentThreads['root'].length > 0 ? commentThreads['root'].map(comment => renderComment(comment)) : (
+          <div className="text-center py-8 opacity-50"><p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono">No neural echoes yet.</p></div>
         )}
       </div>
 
-      <form onSubmit={handleSubmitComment} className="flex flex-col gap-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-[2rem] border border-slate-100 dark:border-slate-800 relative group/input focus-within:border-indigo-200 dark:focus-within:border-indigo-800 focus-within:ring-4 focus-within:ring-indigo-500/5 transition-all z-20">
+      <div className="flex flex-col gap-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-[2rem] border border-slate-100 dark:border-slate-800 relative group/input z-20">
         {replyingTo && (
           <div className="flex items-center justify-between bg-indigo-100/50 dark:bg-indigo-900/30 px-4 py-2 rounded-xl text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-2 border border-indigo-100 dark:border-indigo-800">
             <span>Targeting Node: {comments.find(c => c.id === replyingTo)?.authorName || 'Unknown'}</span>
@@ -510,68 +413,40 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
 
         {previewUrl && (
           <div className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-indigo-500 shadow-lg group/preview mb-2 mx-2 bg-slate-200 dark:bg-slate-800">
-             {selectedFile?.type.startsWith('video/') ? (
-               <video src={previewUrl} className="w-full h-full object-cover" />
-             ) : (
-               <img src={previewUrl} className="w-full h-full object-cover" alt="" />
-             )}
-             <button 
-               type="button"
-               onClick={removeSelectedFile}
-               className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/preview:opacity-100 transition-opacity text-white"
-             >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
-             </button>
-             {isUploadingMedia && (
-               <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
-                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-               </div>
-             )}
+             {selectedFile?.type.startsWith('video/') ? <video src={previewUrl} className="w-full h-full object-cover" /> : <img src={previewUrl} className="w-full h-full object-cover" alt="" />}
+             <button onClick={removeSelectedFile} className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/preview:opacity-100 transition-opacity text-white"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg></button>
+             {isUploadingMedia && <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10"><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /></div>}
           </div>
         )}
 
         <div className="flex gap-2 items-end">
            <div className="flex gap-1 shrink-0 pb-1.5">
-              <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 transition-all active:scale-90">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Z" /></svg>
-              </button>
-              <button type="button" onClick={() => { setIsGiphyPickerOpen(!isGiphyPickerOpen); setIsEmojiPickerOpen(false); }} className={`p-3 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-90 ${isGiphyPickerOpen ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`}>
-                <span className="text-[10px] font-black font-mono">GIF</span>
-              </button>
-              <button type="button" onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }} className={`p-3 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-90 ${isEmojiPickerOpen ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`}>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" /></svg>
-              </button>
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 transition-all active:scale-90"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Z" /></svg></button>
+              <button type="button" onClick={() => { setIsGiphyPickerOpen(!isGiphyPickerOpen); setIsEmojiPickerOpen(false); }} className="p-3 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-90 text-[10px] font-black font-mono text-slate-400 dark:text-slate-500">GIF</button>
+              <button type="button" onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }} className="p-3 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-90 text-xl leading-none">😊</button>
            </div>
 
            <div className="relative flex-1">
-              <input 
-                ref={inputRef}
-                type="text" 
-                value={newComment}
-                onChange={handleInput}
-                className="w-full bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700 rounded-[2.2rem] pl-6 pr-14 py-4 text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-0 focus:bg-white dark:focus:bg-slate-900 focus:border-indigo-500 dark:focus:border-indigo-500 transition-all outline-none"
+              <RichTextEditor 
+                ref={editorRef}
+                content={newComment}
+                onChange={handleEditorChange}
+                onSubmit={handleSubmitComment}
                 placeholder="Broadcast your echo..."
+                className="w-full bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700 rounded-[2.2rem] px-6 py-3"
+                minHeight="50px"
               />
               
-              {/* MENTION DROPDOWN (Positioned Above) */}
               {showMentionList && (
                 <div className="absolute bottom-full left-0 mb-2 w-56 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 z-50">
                     <div className="px-3 py-1.5 bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
-                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 font-mono">
-                          {isSearching ? 'Scanning_Grid...' : 'Select_Node'}
-                        </span>
+                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 font-mono">{isSearching ? 'Scanning...' : 'Select_Node'}</span>
                     </div>
                     {isSearching ? (
-                       <div className="p-3 text-center">
-                          <div className="w-3 h-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                       </div>
+                       <div className="p-3 text-center"><div className="w-3 h-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" /></div>
                     ) : mentionResults.length > 0 ? (
                         mentionResults.map(user => (
-                            <button
-                                key={user.id}
-                                onClick={() => selectMention(user)}
-                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors text-left group"
-                            >
+                            <button key={user.id} onClick={() => selectMention(user)} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors text-left group">
                                 <img src={user.avatarUrl} className="w-6 h-6 rounded-md object-cover" alt="" />
                                 <div className="min-w-0">
                                     <span className="text-[10px] font-bold text-slate-900 dark:text-white truncate block">{user.displayName}</span>
@@ -579,24 +454,16 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
                                 </div>
                             </button>
                         ))
-                    ) : (
-                       <div className="px-3 py-2 text-[9px] text-slate-400 dark:text-slate-500 italic text-center">
-                          No matching nodes found.
-                       </div>
-                    )}
+                    ) : <div className="px-3 py-2 text-[9px] text-slate-400 italic text-center">No nodes found.</div>}
                 </div>
               )}
 
               <button 
-                type="submit"
+                onClick={handleSubmitComment}
                 disabled={(!newComment.trim() && !selectedFile && !selectedGif) || isSubmittingComment}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-indigo-700 transition-all active:scale-90 disabled:opacity-30 disabled:active:scale-100"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-indigo-700 transition-all active:scale-90 disabled:opacity-30 disabled:active:scale-100 z-10"
               >
-                {isSubmittingComment ? (
-                  <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <svg className="w-4 h-4 rotate-90 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
-                )}
+                {isSubmittingComment ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <svg className="w-4 h-4 rotate-90 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>}
               </button>
            </div>
         </div>

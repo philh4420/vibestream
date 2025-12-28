@@ -15,7 +15,9 @@ const {
   doc, 
   arrayRemove,
   where,
-  getDocs
+  getDocs,
+  deleteDoc,
+  writeBatch
 } = Firestore as any;
 import { User, Message, Chat } from '../../types';
 import { ICONS } from '../../constants';
@@ -26,6 +28,7 @@ import { uploadToCloudinary } from '../../services/cloudinary';
 import { GiphyGif } from '../../services/giphy';
 import { extractUrls } from '../../lib/textUtils';
 import { LinkPreview } from '../ui/LinkPreview';
+import { RichTextEditor, RichTextEditorRef } from '../ui/RichTextEditor';
 
 interface ClusterChatInterfaceProps {
   chatId: string;
@@ -48,25 +51,22 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   
-  // Media & Picker State
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [isGiphyPickerOpen, setIsGiphyPickerOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedGif, setSelectedGif] = useState<GiphyGif | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   
-  // Admin & Management State
   const [nodeToRemove, setNodeToRemove] = useState<User | null>(null);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<RichTextEditorRef>(null);
 
   const isAdmin = chatData?.clusterAdmin === currentUser?.id;
 
-  // --- Real-time Messages ---
   useEffect(() => {
     if (!db || !chatId) return;
     const q = query(collection(db, 'chats', chatId, 'messages'), orderBy('timestamp', 'asc'), limit(100));
@@ -77,9 +77,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
     return () => unsub();
   }, [chatId]);
 
-  // --- Message Sending Logic ---
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendMessage = async () => {
     if ((!newMessage.trim() && !selectedFile && !selectedGif) || !chatId || isSending) return;
     
     setIsSending(true);
@@ -143,6 +141,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
       }
 
       setNewMessage('');
+      editorRef.current?.clear();
       clearMedia();
     } catch (e) { 
       addToast("Transmission Interrupted", "error"); 
@@ -151,7 +150,6 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
     }
   };
 
-  // --- Admin Logic ---
   const handleConfirmRemoval = async () => {
     if (!nodeToRemove || !db) return;
     try {
@@ -209,7 +207,6 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
     }
   };
 
-  // --- Helper Functions ---
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -241,15 +238,13 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
   };
 
   const insertEmoji = (emoji: string) => {
-    setNewMessage(prev => prev + emoji);
-    inputRef.current?.focus();
+    editorRef.current?.insertContent(emoji);
   };
 
   if (!chatData) return <div className="p-20 text-center opacity-40 uppercase font-black font-mono tracking-[0.3em]">Synching_Lobby...</div>;
 
   return (
     <div className="flex flex-col h-full bg-[#fdfdfe] dark:bg-slate-900 relative">
-      {/* HEADER */}
       <div className="px-6 py-4 border-b flex items-center justify-between backdrop-blur-3xl sticky top-0 z-20 bg-white/70 dark:bg-slate-900/70 border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-4">
           <button onClick={onBack} className="p-2 text-slate-400 active:scale-90 transition-transform hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl">
@@ -274,7 +269,6 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
       </div>
 
       <div className="flex flex-1 overflow-hidden relative">
-        {/* MEMBERS SIDEBAR */}
         {showMembers && (
             <div className="absolute inset-y-0 right-0 w-72 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-l border-slate-100 dark:border-slate-800 z-30 p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4 font-mono">Cluster_Nodes</h4>
@@ -305,7 +299,6 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
             </div>
         )}
 
-        {/* MESSAGE STREAM */}
         <div className="flex-1 overflow-y-auto no-scrollbar scroll-container px-4 md:px-8 pt-6 pb-32 space-y-6">
             {messages.map((msg, idx) => {
                 const isMe = msg.senderId === currentUser?.id;
@@ -348,13 +341,10 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
                                             )}
                                         </div>
                                     ))}
-                                    <span className="whitespace-pre-wrap leading-relaxed">{msg.text}</span>
                                     
-                                    {extractedUrl && (
-                                      <div className="mt-3 max-w-[300px]">
-                                        <LinkPreview url={extractedUrl} compact={true} />
-                                      </div>
-                                    )}
+                                    <div className="leading-relaxed font-bold" dangerouslySetInnerHTML={{ __html: msg.text }} />
+                                    
+                                    {extractedUrl && <div className="mt-3 max-w-[300px]"><LinkPreview url={extractedUrl} compact={true} /></div>}
                                 </div>
                             </div>
                         </div>
@@ -365,7 +355,6 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
         </div>
       </div>
 
-      {/* INPUT AREA */}
       <div className="p-4 md:p-6 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-slate-100 dark:border-slate-800 relative z-40">
          {mediaPreview && (
             <div className="absolute bottom-full left-4 mb-4 p-2 bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 flex items-center gap-3">
@@ -376,7 +365,7 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
             </div>
          )}
 
-         <form onSubmit={handleSendMessage} className="flex items-end gap-3 max-w-4xl mx-auto">
+         <div className="flex items-end gap-3 max-w-4xl mx-auto">
             <div className="flex gap-2 pb-1">
                <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-slate-400 hover:text-indigo-600 transition-colors rounded-2xl">
                   <ICONS.Create />
@@ -386,31 +375,30 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
                </button>
             </div>
             
-            <input 
-               ref={inputRef}
-               type="text" 
-               value={newMessage} 
-               onChange={(e) => setNewMessage(e.target.value)} 
-               placeholder="Broadcast to cluster..." 
-               className="flex-1 bg-slate-100/50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] px-6 py-4 text-sm font-bold text-slate-900 dark:text-white focus:ring-4 focus:ring-indigo-500/10 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all placeholder:text-slate-400"
-            />
+            <div className="flex-1 relative">
+                <RichTextEditor 
+                    ref={editorRef}
+                    content={newMessage} 
+                    onChange={setNewMessage}
+                    onSubmit={handleSendMessage}
+                    placeholder="Broadcast to cluster..." 
+                    className="w-full bg-slate-100/50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] px-6 py-3"
+                    minHeight="50px"
+                />
+            </div>
             
             <button 
+               onClick={handleSendMessage}
                disabled={(!newMessage.trim() && !selectedFile && !selectedGif) || isSending}
                className="w-14 h-14 bg-indigo-600 text-white rounded-[2rem] flex items-center justify-center shadow-xl shadow-indigo-200/50 dark:shadow-none hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 disabled:scale-100"
             >
-               {isSending ? (
-                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-               ) : (
-                   <svg className="w-6 h-6 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
-               )}
+               {isSending ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <svg className="w-6 h-6 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>}
             </button>
-         </form>
+         </div>
       </div>
 
       <input type="file" ref={fileInputRef} className="hidden" accept="image/*,video/*" onChange={handleFileSelect} />
 
-      {/* MODALS */}
       <DeleteConfirmationModal 
         isOpen={showLeaveModal} 
         title="LEAVE_CLUSTER" 
@@ -429,7 +417,6 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
         confirmText="EJECT"
       />
 
-      {/* Pickers Portal */}
       {(isEmojiPickerOpen || isGiphyPickerOpen) && createPortal(
         <>
           <div className="fixed inset-0 z-[9990] bg-transparent" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />

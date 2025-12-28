@@ -27,6 +27,7 @@ import { uploadToCloudinary } from '../../services/cloudinary';
 import { GiphyGif } from '../../services/giphy';
 import { extractUrls } from '../../lib/textUtils';
 import { LinkPreview } from '../ui/LinkPreview';
+import { RichTextEditor, RichTextEditorRef } from '../ui/RichTextEditor';
 
 interface DirectChatInterfaceProps {
   chatId: string;
@@ -53,13 +54,11 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<RichTextEditorRef>(null);
 
   // Read Receipts Logic
   useEffect(() => {
     if (!db || !chatId || !currentUser.id) return;
-    
-    // Only perform read receipt update if user enabled it
     if (currentUser.settings?.privacy?.readReceipts === false) return;
 
     const markRead = async () => {
@@ -81,7 +80,6 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
             console.error("Read receipt error", e);
         }
     };
-    
     markRead();
   }, [chatId, messages.length, currentUser.id, currentUser.settings?.privacy?.readReceipts]);
 
@@ -126,16 +124,14 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
   };
 
   const insertEmoji = (emoji: string) => {
-    setNewMessage(prev => prev + emoji);
-    inputRef.current?.focus();
+    editorRef.current?.insertContent(emoji);
   };
 
   const handleCall = (type: 'voice' | 'video') => {
     addToast("Feature coming soon", "info");
   };
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendMessage = async () => {
     if ((!newMessage.trim() && !selectedFile && !selectedGif) || !chatId || isSending) return;
     
     setIsSending(true);
@@ -198,6 +194,7 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
       }
 
       setNewMessage('');
+      editorRef.current?.clear();
       clearMedia();
     } catch (e) { 
       addToast("Transmission Interrupted", "error"); 
@@ -218,7 +215,6 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
     }
   };
 
-  // Resolve Other User
   const otherParticipantId = chatData.participants.find(id => id !== currentUser.id);
   const otherParticipant = chatData.participantData?.[otherParticipantId || ''];
   const targetUserFull = allUsers.find(u => u.id === otherParticipantId);
@@ -234,7 +230,6 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
 
   return (
     <div className="flex flex-col h-full relative animate-in fade-in duration-300">
-      {/* 1. GLASS HEADER */}
       <div className="absolute top-4 left-4 right-4 z-20">
         <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/50 dark:border-slate-700 rounded-[2rem] p-3 shadow-sm flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -272,7 +267,6 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
         </div>
       </div>
 
-      {/* 2. MESSAGE STREAM */}
       <div className="flex-1 overflow-y-auto no-scrollbar scroll-container px-4 md:px-8 pt-28 pb-32 space-y-6">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full opacity-30 text-center">
@@ -306,24 +300,15 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
                     }
                   `}
                 >
-                  {/* Media Rendering */}
                   {msg.media && msg.media.map((item, mIdx) => (
                     <div key={mIdx} className="mb-3 rounded-xl overflow-hidden shadow-md border border-white/10 dark:border-black/20">
-                      {item.type === 'video' ? (
-                        <video src={item.url} controls className="w-full h-auto max-h-[300px] object-cover" />
-                      ) : (
-                        <img src={item.url} alt="Attachment" className="w-full h-auto max-h-[400px] object-cover" />
-                      )}
+                      {item.type === 'video' ? <video src={item.url} controls className="w-full h-auto max-h-[300px] object-cover" /> : <img src={item.url} alt="Attachment" className="w-full h-auto max-h-[400px] object-cover" />}
                     </div>
                   ))}
 
-                  <span className="leading-relaxed whitespace-pre-wrap font-bold">{msg.text}</span>
+                  <div className="leading-relaxed font-bold" dangerouslySetInnerHTML={{ __html: msg.text }} />
                   
-                  {extractedUrl && (
-                    <div className="mt-3 max-w-[300px]">
-                      <LinkPreview url={extractedUrl} compact={true} />
-                    </div>
-                  )}
+                  {extractedUrl && <div className="mt-3 max-w-[300px]"><LinkPreview url={extractedUrl} compact={true} /></div>}
                   
                   <div className={`text-[8px] font-black uppercase mt-2 font-mono tracking-widest opacity-40 flex items-center gap-1 ${isMe ? 'justify-end text-white' : 'justify-start text-slate-500 dark:text-slate-400'}`}>
                     {msg.timestamp?.toDate ? msg.timestamp.toDate().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'SENDING'}
@@ -337,11 +322,9 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 3. INPUT DECK */}
       <div className="absolute bottom-6 left-4 right-4 z-30">
         <div className="max-w-4xl mx-auto bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl rounded-[2.5rem] p-2 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.15)] border border-white/50 dark:border-slate-700 flex flex-col gap-2">
           
-          {/* Preview Area */}
           {mediaPreview && (
             <div className="px-4 py-2 flex items-center gap-4 animate-in slide-in-from-bottom-2 bg-slate-50/90 dark:bg-slate-800/90 rounded-t-[2rem]">
               <div className="relative group">
@@ -350,12 +333,7 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
                 ) : (
                   <img src={mediaPreview} className="h-16 w-16 object-cover rounded-xl border border-slate-200 dark:border-slate-700" alt="Preview" />
                 )}
-                <button 
-                  onClick={clearMedia}
-                  className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600 transition-colors"
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
+                <button onClick={clearMedia} className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600 transition-colors"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg></button>
               </div>
               <div>
                 <p className="text-[9px] font-black uppercase tracking-widest text-indigo-500 font-mono">Artifact Ready</p>
@@ -364,58 +342,44 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
             </div>
           )}
 
-          <form onSubmit={handleSendMessage} className="flex items-center gap-2 pl-2">
-            
-            {/* Tools */}
+          <div className="flex items-center gap-2 pl-2">
             <div className="flex gap-1">
               <button type="button" onClick={() => fileInputRef.current?.click()} className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-90 ${selectedFile ? 'bg-indigo-600 text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-slate-300'}`}>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Z" /></svg>
               </button>
-              <button 
-                type="button"
-                onClick={() => { setIsGiphyPickerOpen(!isGiphyPickerOpen); setIsEmojiPickerOpen(false); }}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-90 ${isGiphyPickerOpen ? 'bg-indigo-600 text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-slate-300'}`}
-              >
+              <button type="button" onClick={() => { setIsGiphyPickerOpen(!isGiphyPickerOpen); setIsEmojiPickerOpen(false); }} className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-90 ${isGiphyPickerOpen ? 'bg-indigo-600 text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-slate-300'}`}>
                 <span className="text-[9px] font-black font-mono">GIF</span>
               </button>
-              <button 
-                type="button"
-                onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-90 ${isEmojiPickerOpen ? 'bg-indigo-600 text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-slate-300'}`}
-              >
+              <button type="button" onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }} className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-90 ${isEmojiPickerOpen ? 'bg-indigo-600 text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-slate-300'}`}>
                 <span className="text-xl leading-none">😊</span>
               </button>
             </div>
 
-            {/* Input Field */}
-            <input 
-              ref={inputRef} 
-              type="text" 
-              value={newMessage} 
-              onChange={(e) => setNewMessage(e.target.value)} 
-              placeholder="Inject message..." 
-              className="flex-1 bg-transparent border-none px-2 py-4 text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:ring-0 outline-none" 
-            />
+            <div className="flex-1">
+                <RichTextEditor 
+                    ref={editorRef}
+                    content={newMessage} 
+                    onChange={setNewMessage}
+                    onSubmit={handleSendMessage}
+                    placeholder="Inject message..."
+                    className="w-full bg-transparent border-none px-2 py-4 text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:ring-0 outline-none"
+                    minHeight="auto"
+                />
+            </div>
             
-            {/* Send Button */}
             <button 
+              onClick={handleSendMessage}
               disabled={(!newMessage.trim() && !selectedFile && !selectedGif) || isSending} 
               className="w-14 h-14 bg-slate-950 dark:bg-white text-white dark:text-slate-900 rounded-[2rem] flex items-center justify-center transition-all active:scale-90 disabled:opacity-20 hover:bg-black dark:hover:bg-slate-200 shadow-lg"
             >
-              {isSending ? (
-                <div className="w-5 h-5 border-2 border-white/20 border-t-white dark:border-slate-900/20 dark:border-t-slate-900 rounded-full animate-spin" />
-              ) : (
-                <svg className="w-5 h-5 rotate-90 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
-              )}
+              {isSending ? <div className="w-5 h-5 border-2 border-white/20 border-t-white dark:border-slate-900/20 dark:border-t-slate-900 rounded-full animate-spin" /> : <svg className="w-5 h-5 rotate-90 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>}
             </button>
-          </form>
+          </div>
         </div>
       </div>
 
-      {/* Hidden Pickers & Inputs */}
       <input type="file" ref={fileInputRef} className="hidden" accept="image/*,video/*,.heic,.heif,.avif,.webp" onChange={handleFileSelect} />
       
-      {/* FIXED POSITION PICKERS (Use Portal to break stacking context) */}
       {(isEmojiPickerOpen || isGiphyPickerOpen) && createPortal(
         <>
           <div className="fixed inset-0 z-[9990] bg-transparent" onClick={() => { setIsEmojiPickerOpen(false); setIsGiphyPickerOpen(false); }} />

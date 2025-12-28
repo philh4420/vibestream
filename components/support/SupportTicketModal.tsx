@@ -6,6 +6,7 @@ import * as Firestore from 'firebase/firestore';
 const { collection, addDoc, serverTimestamp, query, where, getDocs, writeBatch, doc } = Firestore as any;
 import { ICONS } from '../../constants';
 import { uploadToCloudinary } from '../../services/cloudinary';
+import { RichTextEditor } from '../ui/RichTextEditor';
 
 interface SupportTicketModalProps {
   currentUser: User;
@@ -39,7 +40,7 @@ export const SupportTicketModal: React.FC<SupportTicketModalProps> = ({ currentU
         userName: currentUser.displayName,
         userEmail: currentUser.email || 'N/A',
         subject,
-        description,
+        description, // Rich Text HTML
         category,
         attachmentUrl,
         status: 'open',
@@ -54,7 +55,6 @@ export const SupportTicketModal: React.FC<SupportTicketModalProps> = ({ currentU
       if (!adminSnap.empty) {
         const batch = writeBatch(db);
         adminSnap.docs.forEach((adminDoc: any) => {
-           // Don't notify self if admin creates a ticket (though rare)
            if (adminDoc.id === currentUser.id) return;
 
            const notifRef = doc(collection(db, 'notifications'));
@@ -93,7 +93,7 @@ export const SupportTicketModal: React.FC<SupportTicketModalProps> = ({ currentU
   return (
     <div className="fixed inset-0 z-[5000] flex items-center justify-center p-6 animate-in fade-in duration-300">
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={onClose} />
-      <div className="relative bg-white dark:bg-slate-900 w-full max-w-lg rounded-[3rem] p-8 md:p-10 shadow-2xl border border-white/20 dark:border-slate-800 animate-in zoom-in-95 duration-500 overflow-hidden flex flex-col">
+      <div className="relative bg-white dark:bg-slate-900 w-full max-w-lg rounded-[3rem] p-8 md:p-10 shadow-2xl border border-white/20 dark:border-slate-800 animate-in zoom-in-95 duration-500 overflow-hidden flex flex-col max-h-[90vh]">
         
         <div className="flex justify-between items-start mb-8 shrink-0">
            <div>
@@ -103,7 +103,7 @@ export const SupportTicketModal: React.FC<SupportTicketModalProps> = ({ currentU
            <button onClick={onClose} className="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-2xl transition-all active:scale-90"><svg className="w-6 h-6 text-slate-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 flex-1 overflow-y-auto no-scrollbar pr-1">
            <div className="space-y-2">
               <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono ml-2">Signal_Classification</label>
               <div className="grid grid-cols-2 gap-3">
@@ -133,12 +133,15 @@ export const SupportTicketModal: React.FC<SupportTicketModalProps> = ({ currentU
 
            <div className="space-y-2">
               <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono ml-2">Diagnostic_Log</label>
-              <textarea 
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Detailed description of the issue..."
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white dark:focus:bg-slate-700 transition-all text-slate-900 dark:text-white placeholder:text-slate-400 resize-none h-32"
-              />
+              <div className="border border-slate-100 dark:border-slate-700 rounded-2xl overflow-hidden">
+                <RichTextEditor 
+                    content={description}
+                    onChange={setDescription}
+                    placeholder="Detailed description of the issue..."
+                    className="bg-slate-50 dark:bg-slate-800"
+                    minHeight="150px"
+                />
+              </div>
            </div>
 
            <div className="space-y-2">

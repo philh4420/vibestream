@@ -1,6 +1,6 @@
 
 import React, { useCallback, useMemo, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { createEditor, Descendant, Editor, Element as SlateElement, Transforms, Text, BaseEditor } from 'slate';
+import { createEditor, Descendant, Editor, Element as SlateElement, Transforms, Text } from 'slate';
 import { Slate, Editable, withReact, useSlate, ReactEditor } from 'slate-react';
 import { withHistory } from 'slate-history';
 import isHotkey from 'is-hotkey';
@@ -12,7 +12,11 @@ interface RichTextEditorProps {
   onChange: (html: string) => void;
   placeholder?: string;
   onFocus?: () => void;
+  onBlur?: () => void;
   editable?: boolean;
+  onSubmit?: () => void; // Triggered on Enter (without Shift)
+  className?: string; // Wrapper class
+  minHeight?: string;
 }
 
 export interface RichTextEditorRef {
@@ -242,7 +246,7 @@ const toggleMark = (editor: Editor, format: string) => {
 // --- MAIN COMPONENT ---
 
 export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
-  ({ content, onChange, placeholder, onFocus, editable = true }, ref) => {
+  ({ content, onChange, placeholder, onFocus, onBlur, editable = true, onSubmit, className, minHeight = "100px" }, ref) => {
     // Initialize editor only once
     const editor = useMemo(() => withHistory(withReact(createEditor())), []);
     
@@ -285,9 +289,12 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
     // Handle External Content Updates (e.g. resets from parent)
     useEffect(() => {
        if (content === '' && editor.children.length > 0) {
-           // Check if it's already empty
+           // Check if it's already empty before resetting
            const isEmpty = editor.children.length === 1 && (editor.children[0] as CustomElement).children[0].text === '' && (editor.children[0] as CustomElement).type === 'paragraph';
-           // Best practice: The parent clears via the ref.clear() method we exposed.
+           if (!isEmpty) {
+                // We rely on imperative handle for clearing usually, but this is a failsafe
+                // Avoid doing this mid-typing if parent syncs state
+           }
        }
     }, [content, editor]);
 
@@ -325,6 +332,13 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
     }, []);
 
     const onKeyDown = (event: React.KeyboardEvent) => {
+        // Chat Mode: Submit on Enter (no Shift)
+        if (onSubmit && event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            onSubmit();
+            return;
+        }
+
         for (const hotkey in HOTKEYS) {
             if (isHotkey(hotkey, event as any)) {
                 event.preventDefault();
@@ -336,24 +350,25 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
 
     const handleChange = (newValue: Descendant[]) => {
         setValue(newValue);
-        // Serialize to HTML for parent consumption
         const html = newValue.map(node => serialize(node)).join('');
         onChange(html);
     };
 
     return (
-      <div className="w-full relative group">
+      <div className={`w-full relative group ${className}`}>
         <Slate editor={editor} initialValue={value} onChange={handleChange}>
-          {editable && <Toolbar />}
+          {editable && !onSubmit && <Toolbar />} 
           <Editable
             renderElement={renderElement}
             renderLeaf={renderLeaf}
             placeholder={placeholder}
             onFocus={onFocus}
+            onBlur={onBlur}
             onKeyDown={onKeyDown}
             readOnly={!editable}
             spellCheck={false}
-            className="focus:outline-none min-h-[100px] text-lg font-medium max-w-none"
+            className="focus:outline-none max-w-none text-base"
+            style={{ minHeight: minHeight }}
           />
         </Slate>
       </div>

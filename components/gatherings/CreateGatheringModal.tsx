@@ -3,6 +3,7 @@ import React, { useState, useRef } from 'react';
 import { User, Gathering } from '../../types';
 import { ICONS } from '../../constants';
 import { uploadToCloudinary } from '../../services/cloudinary';
+import { RichTextEditor } from '../ui/RichTextEditor';
 
 interface CreateGatheringModalProps {
   currentUser: User;
@@ -291,11 +292,15 @@ export const CreateGatheringModal: React.FC<CreateGatheringModalProps> = ({ curr
 
               <div className="space-y-2">
                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono ml-2">Manifest</label>
-                 <textarea 
-                   value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}
-                   placeholder="Brief description of the gathering..."
-                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white dark:focus:bg-slate-700 transition-all resize-none h-32 text-slate-900 dark:text-white"
-                 />
+                 <div className="rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-700">
+                    <RichTextEditor 
+                        content={formData.description} 
+                        onChange={(val) => setFormData({...formData, description: val})}
+                        placeholder="Brief description of the gathering..."
+                        className="bg-slate-50 dark:bg-slate-800"
+                        minHeight="150px"
+                    />
+                 </div>
               </div>
            </div>
         </div>

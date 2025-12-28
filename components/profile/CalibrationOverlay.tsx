@@ -3,6 +3,7 @@ import React, { useState, useRef } from 'react';
 import { User } from '../../types';
 import { uploadToCloudinary } from '../../services/cloudinary';
 import { ICONS } from '../../constants';
+import { RichTextEditor } from '../ui/RichTextEditor';
 
 interface CalibrationOverlayProps {
   userData: User;
@@ -153,12 +154,15 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
                 </div>
                 <div className="space-y-3">
                   <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono ml-2">Neural Bio-Signature</label>
-                  <textarea 
-                    value={form.bio} 
-                    onChange={e => setForm({...form, bio: e.target.value})} 
-                    className="w-full h-40 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] px-8 py-6 text-sm font-bold text-slate-900 dark:text-white resize-none outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600" 
-                    placeholder="Establish your signal history..."
-                  />
+                  <div className="rounded-[2rem] overflow-hidden border border-slate-200 dark:border-slate-700">
+                    <RichTextEditor 
+                        content={form.bio} 
+                        onChange={(val) => setForm({...form, bio: val})}
+                        placeholder="Establish your signal history..."
+                        className="bg-slate-50 dark:bg-slate-800"
+                        minHeight="160px"
+                    />
+                  </div>
                 </div>
               </div>
             )}
