@@ -34,6 +34,8 @@ export const PostCard: React.FC<PostCardProps> = ({
   blockedIds
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(post.content);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
@@ -43,6 +45,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [rippleEffect, setRippleEffect] = useState<{ x: number, y: number, color: string } | null>(null);
   const pulseTimerRef = useRef<any>(null);
   const optionsRef = useRef<HTMLDivElement>(null);
+  const editInputRef = useRef<HTMLTextAreaElement>(null);
 
   const shouldAutoPlay = userData?.settings?.appearance?.autoPlayVideo !== false;
 
@@ -57,6 +60,15 @@ export const PostCard: React.FC<PostCardProps> = ({
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showOptions]);
+
+  // Focus textarea when entering edit mode
+  useEffect(() => {
+    if (isEditing && editInputRef.current) {
+        editInputRef.current.style.height = 'auto';
+        editInputRef.current.style.height = editInputRef.current.scrollHeight + 'px';
+        editInputRef.current.focus();
+    }
+  }, [isEditing]);
 
   const textChunks = useMemo(() => {
     return post.content.split(/([.!?]\s+)/).filter(Boolean).map((chunk, i, arr) => {
@@ -87,6 +99,28 @@ export const PostCard: React.FC<PostCardProps> = ({
     e.stopPropagation();
     setShowOptions(false);
     setShowDeleteModal(true);
+  };
+
+  const initiateEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowOptions(false);
+    setIsEditing(true);
+    setEditContent(post.content);
+  };
+
+  const handleUpdatePost = async () => {
+    if (!editContent.trim() || !db) return;
+    try {
+        await updateDoc(doc(db, 'posts', post.id), {
+            content: editContent.trim(),
+            contentLengthTier: editContent.length > 280 ? 'deep' : 'standard',
+            updatedAt: serverTimestamp()
+        });
+        addToast("Signal Rewritten", "success");
+        setIsEditing(false);
+    } catch (e) {
+        addToast("Rewrite Protocol Failed", "error");
+    }
   };
 
   const handlePurgeSignal = async () => {
@@ -224,9 +258,9 @@ export const PostCard: React.FC<PostCardProps> = ({
   return (
     <article 
       className={`group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[3rem] transition-all duration-500 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)] mb-10 relative cursor-pointer overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${isPulse ? 'border-l-[6px] border-l-indigo-600' : ''} ${filterClass}`}
-      onClick={() => onViewPost?.(post)}
+      onClick={() => !isEditing && onViewPost?.(post)}
       onKeyDown={(e) => {
-        if ((e.key === 'Enter' || e.key === ' ') && onViewPost) {
+        if ((e.key === 'Enter' || e.key === ' ') && onViewPost && !isEditing) {
             e.preventDefault();
             onViewPost(post);
         }
@@ -296,10 +330,16 @@ export const PostCard: React.FC<PostCardProps> = ({
                       </span>
                     </button>
                     {isAuthor && (
-                      <button onClick={initiateDelete} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all text-left border-t border-slate-50 dark:border-slate-800 mt-1">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
-                        <span className="text-[9px] font-black uppercase tracking-widest font-mono">Purge_Node</span>
-                      </button>
+                      <>
+                        <button onClick={initiateEdit} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all text-left mt-1">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                            <span className="text-[9px] font-black uppercase tracking-widest font-mono">Rewrite_Signal</span>
+                        </button>
+                        <button onClick={initiateDelete} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all text-left border-t border-slate-50 dark:border-slate-800 mt-1">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg>
+                            <span className="text-[9px] font-black uppercase tracking-widest font-mono">Purge_Node</span>
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -309,38 +349,64 @@ export const PostCard: React.FC<PostCardProps> = ({
         </div>
 
         <div className={`mb-8 ${isPulse ? 'text-center px-4' : ''}`}>
-          <div className={`text-slate-800 dark:text-slate-200 leading-relaxed font-medium tracking-tight ${isPulse ? 'text-2xl md:text-4xl font-black italic uppercase text-slate-900 dark:text-white' : isDeep ? 'text-base md:text-lg border-l-4 border-indigo-100 dark:border-indigo-900 pl-6 py-1' : 'text-base md:text-lg'}`}>
-            {textChunks.map((chunk, idx) => {
-              const reactions = post.inlineReactions?.[idx] || [];
-              return (
-                <span key={idx} className="relative group/chunk inline-block">
-                  <span className="hover:bg-indigo-50/80 dark:hover:bg-indigo-900/30 hover:text-indigo-900 dark:hover:text-indigo-200 rounded-lg transition-colors px-0.5 -mx-0.5 cursor-text">{chunk}</span>
-                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex gap-1 opacity-0 group-hover/chunk:opacity-100 transition-all duration-300 z-10 pointer-events-none group-hover/chunk:pointer-events-auto scale-90 group-hover/chunk:scale-100 origin-bottom" onClick={(e) => e.stopPropagation()}>
-                     <div className="bg-white dark:bg-slate-800 rounded-full p-1 shadow-xl border border-slate-100 dark:border-slate-700 flex gap-1">
-                       {['🔥', '❤️', '💡', '🚀'].map(emoji => (
-                         <button key={emoji} onClick={(e) => handleInlineReact(e, idx, emoji)} className="w-8 h-8 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-full flex items-center justify-center text-sm transition-transform hover:scale-110">{emoji}</button>
-                       ))}
-                     </div>
-                  </div>
-                  {reactions.length > 0 && (
-                    <div className="inline-flex gap-1 ml-1 align-middle translate-y-[-2px]">
-                      {reactions.map(r => (
-                        <div key={r.emoji} className="flex items-center gap-0.5 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm text-[9px] font-black">
-                          {r.emoji} <span className="text-[8px] text-slate-400 font-mono">{r.count}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </span>
-              );
-            })}
-          </div>
-          
-          {/* Link Preview Injection */}
-          {extractedUrl && (
-             <div onClick={(e) => e.stopPropagation()} className="mt-4">
-                <LinkPreview url={extractedUrl} />
+          {isEditing ? (
+             <div className="animate-in fade-in slide-in-from-top-2 duration-300" onClick={(e) => e.stopPropagation()}>
+                <textarea 
+                    ref={editInputRef}
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-800/50 border-2 border-indigo-500/30 rounded-2xl p-4 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-indigo-500 transition-all resize-none min-h-[120px]"
+                />
+                <div className="flex gap-2 mt-4 justify-end">
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); setIsEditing(false); }}
+                        className="px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        Abort
+                    </button>
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); handleUpdatePost(); }}
+                        className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-700 transition-colors shadow-lg"
+                    >
+                        Commit_Update
+                    </button>
+                </div>
              </div>
+          ) : (
+            <>
+                <div className={`text-slate-800 dark:text-slate-200 leading-relaxed font-medium tracking-tight ${isPulse ? 'text-2xl md:text-4xl font-black italic uppercase text-slate-900 dark:text-white' : isDeep ? 'text-base md:text-lg border-l-4 border-indigo-100 dark:border-indigo-900 pl-6 py-1' : 'text-base md:text-lg'}`}>
+                    {textChunks.map((chunk, idx) => {
+                    const reactions = post.inlineReactions?.[idx] || [];
+                    return (
+                        <span key={idx} className="relative group/chunk inline-block">
+                        <span className="hover:bg-indigo-50/80 dark:hover:bg-indigo-900/30 hover:text-indigo-900 dark:hover:text-indigo-200 rounded-lg transition-colors px-0.5 -mx-0.5 cursor-text">{chunk}</span>
+                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex gap-1 opacity-0 group-hover/chunk:opacity-100 transition-all duration-300 z-10 pointer-events-none group-hover/chunk:pointer-events-auto scale-90 group-hover/chunk:scale-100 origin-bottom" onClick={(e) => e.stopPropagation()}>
+                            <div className="bg-white dark:bg-slate-800 rounded-full p-1 shadow-xl border border-slate-100 dark:border-slate-700 flex gap-1">
+                            {['🔥', '❤️', '💡', '🚀'].map(emoji => (
+                                <button key={emoji} onClick={(e) => handleInlineReact(e, idx, emoji)} className="w-8 h-8 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-full flex items-center justify-center text-sm transition-transform hover:scale-110">{emoji}</button>
+                            ))}
+                            </div>
+                        </div>
+                        {reactions.length > 0 && (
+                            <div className="inline-flex gap-1 ml-1 align-middle translate-y-[-2px]">
+                            {reactions.map(r => (
+                                <div key={r.emoji} className="flex items-center gap-0.5 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm text-[9px] font-black">
+                                {r.emoji} <span className="text-[8px] text-slate-400 font-mono">{r.count}</span>
+                                </div>
+                            ))}
+                            </div>
+                        )}
+                        </span>
+                    );
+                    })}
+                </div>
+                
+                {extractedUrl && (
+                    <div onClick={(e) => e.stopPropagation()} className="mt-4">
+                        <LinkPreview url={extractedUrl} />
+                    </div>
+                )}
+            </>
           )}
         </div>
 

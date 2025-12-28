@@ -52,6 +52,10 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
 
+  // Editing State
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+
   // Deletion State
   const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
 
@@ -64,6 +68,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
 
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editInputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (!db) return;
@@ -298,6 +303,20 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
     }
   };
 
+  const handleUpdateComment = async (commentId: string) => {
+    if (!editContent.trim() || !db) return;
+    try {
+        await updateDoc(doc(db, 'posts', postId, 'comments', commentId), {
+            content: editContent.trim(),
+            updatedAt: serverTimestamp()
+        });
+        setEditingCommentId(null);
+        addToast("Echo Updated", "success");
+    } catch (e) {
+        addToast("Update Failed", "error");
+    }
+  };
+
   const handleExecuteDelete = async () => {
     if (!commentToDelete || !db) return;
     try {
@@ -345,6 +364,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
     const isFocused = focusedCommentId === comment.id;
     const hasChildren = commentThreads[comment.id] && commentThreads[comment.id].length > 0;
     const canDelete = userData && (userData.id === comment.authorId || userData.id === postAuthorId);
+    const canEdit = userData && userData.id === comment.authorId;
+    const isEditing = editingCommentId === comment.id;
     
     // Highlight mentions in content (basic parsing)
     const contentWithMentions = comment.content.split(/(@\w+)/g).map((part, i) => {
@@ -366,8 +387,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
 
           <div className="flex-1 min-w-0 pb-4">
              <div 
-               onClick={() => setFocusedCommentId(isFocused ? null : comment.id)}
-               className={`relative p-4 rounded-2xl rounded-tl-none transition-all duration-300 ${isFocused ? 'bg-white dark:bg-slate-800 shadow-xl ring-2 ring-indigo-500 z-10' : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-md'}`}
+               onClick={() => !isEditing && setFocusedCommentId(isFocused ? null : comment.id)}
+               className={`relative p-4 rounded-2xl rounded-tl-none transition-all duration-300 ${isFocused && !isEditing ? 'bg-white dark:bg-slate-800 shadow-xl ring-2 ring-indigo-500 z-10' : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-md'}`}
              >
                 <div className="flex justify-between items-baseline mb-1">
                   <span className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest leading-none">{comment.authorName}</span>
@@ -378,24 +399,42 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
                   </span>
                 </div>
                 
-                <p className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-relaxed whitespace-pre-wrap">
-                    {contentWithMentions}
-                </p>
-                
-                {extractedUrl && (
-                  <div className="mt-3 max-w-[280px]">
-                    <LinkPreview url={extractedUrl} compact={true} />
-                  </div>
-                )}
+                {isEditing ? (
+                    <div className="mt-2">
+                        <textarea 
+                            ref={editInputRef}
+                            value={editContent} 
+                            onChange={(e) => setEditContent(e.target.value)}
+                            className="w-full bg-slate-50 dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none resize-none"
+                            autoFocus
+                        />
+                        <div className="flex gap-2 mt-2 justify-end">
+                            <button onClick={() => setEditingCommentId(null)} className="text-[9px] font-black uppercase text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">Cancel</button>
+                            <button onClick={() => handleUpdateComment(comment.id)} className="text-[9px] font-black uppercase text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-lg transition-all shadow-sm">Save</button>
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        <p className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-relaxed whitespace-pre-wrap">
+                            {contentWithMentions}
+                        </p>
+                        
+                        {extractedUrl && (
+                        <div className="mt-3 max-w-[280px]">
+                            <LinkPreview url={extractedUrl} compact={true} />
+                        </div>
+                        )}
 
-                {comment.media && comment.media.length > 0 && (
-                  <div className="mt-3 rounded-xl overflow-hidden border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 max-w-[240px]">
-                    {comment.media[0].type === 'video' ? (
-                      <video src={comment.media[0].url} className="w-full h-auto" controls />
-                    ) : (
-                      <img src={comment.media[0].url} className="w-full h-auto object-cover" alt="" />
-                    )}
-                  </div>
+                        {comment.media && comment.media.length > 0 && (
+                        <div className="mt-3 rounded-xl overflow-hidden border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 max-w-[240px]">
+                            {comment.media[0].type === 'video' ? (
+                            <video src={comment.media[0].url} className="w-full h-auto" controls />
+                            ) : (
+                            <img src={comment.media[0].url} className="w-full h-auto object-cover" alt="" />
+                            )}
+                        </div>
+                        )}
+                    </>
                 )}
              </div>
 
@@ -408,6 +447,16 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
                   Echo
                 </button>
                 
+                {canEdit && (
+                    <button 
+                        onClick={() => { setEditingCommentId(comment.id); setEditContent(comment.content); }}
+                        className="text-[8px] font-black uppercase text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1"
+                    >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                        Edit
+                    </button>
+                )}
+
                 {canDelete && (
                   <button 
                     onClick={() => setCommentToDelete(comment.id)}
