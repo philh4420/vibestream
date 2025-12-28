@@ -1,19 +1,20 @@
+
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
 const { 
   collection, 
   query, 
-  orderBy,
-  limit,
-  onSnapshot,
-  doc,
-  writeBatch,
-  serverTimestamp,
-  increment,
-  addDoc,
-  where,
-  getDocs
+  orderBy, 
+  limit, 
+  onSnapshot, 
+  doc, 
+  writeBatch, 
+  serverTimestamp, 
+  increment, 
+  addDoc, 
+  where, 
+  getDocs 
 } = Firestore as any;
 import { User as VibeUser, PresenceStatus, Post, WeatherInfo, AppRoute } from '../../types';
 import { ICONS } from '../../constants';
@@ -36,7 +37,6 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
-  // System Time & Uptime Logic
   useEffect(() => {
     let sessionStart = parseInt(localStorage.getItem('vibestream_session_start_timestamp') || '0', 10);
     if (!sessionStart) {
@@ -47,20 +47,16 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
     const timer = setInterval(() => {
       const now = new Date();
       setSystemTime(now);
-      
       const diff = Math.floor((now.getTime() - sessionStart) / 1000);
       if (isNaN(diff)) return;
-
       const h = Math.floor(diff / 3600).toString().padStart(2, '0');
       const m = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
       const s = (diff % 60).toString().padStart(2, '0');
       setUptime(`${h}:${m}:${s}`);
     }, 1000);
-
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch Following List
   useEffect(() => {
     if (!userData?.id || !db) return;
     const q = collection(db, 'users', userData.id, 'following');
@@ -71,32 +67,24 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
     return () => unsub();
   }, [userData?.id]);
 
-  // Fetch Active Contacts & Trending
   useEffect(() => {
     if (!db) return;
     setIsLoading(true);
-
-    // Simplified query to ensure data appears even without complex indexes
     const usersQuery = query(collection(db, 'users'), limit(50));
-    
     const unsubUsers = onSnapshot(usersQuery, (snap: any) => {
       const fetched = snap.docs
         .map((doc: any) => ({ id: doc.id, ...doc.data() } as VibeUser))
         .filter((user: VibeUser) => user.id !== auth.currentUser?.uid);
       
-      // Client-side sort to prioritize Online users, then verified, then new
       fetched.sort((a: VibeUser, b: VibeUser) => {
-        // Privacy Check for Sorting: If activity status is hidden, treat as Offline
         const aStatus = a.settings?.privacy?.activityStatus === false ? 'Offline' : (a.presenceStatus || 'Offline');
         const bStatus = b.settings?.privacy?.activityStatus === false ? 'Offline' : (b.presenceStatus || 'Offline');
-
         if (aStatus === 'Online' && bStatus !== 'Online') return -1;
         if (bStatus === 'Online' && aStatus !== 'Online') return 1;
         if (a.verifiedHuman && !b.verifiedHuman) return -1;
         if (!a.verifiedHuman && b.verifiedHuman) return 1;
         return 0;
       });
-
       setActiveContacts(fetched);
       setIsLoading(false);
     });
@@ -105,29 +93,21 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
     const unsubTrending = onSnapshot(trendingQuery, (snap: any) => {
       setTrendingPosts(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Post)));
     });
-
-    return () => {
-      unsubUsers();
-      unsubTrending();
-    };
+    return () => { unsubUsers(); unsubTrending(); };
   }, [userData?.id]);
 
   const handleFollowToggle = async (e: React.MouseEvent, targetUser: VibeUser) => {
     e.stopPropagation();
     if (!db || !auth.currentUser || processingIds.has(targetUser.id)) return;
-    
     const currentUser = auth.currentUser;
     const isFollowing = followingIds.has(targetUser.id);
     setProcessingIds(prev => new Set(prev).add(targetUser.id));
-
     try {
       const batch = writeBatch(db);
       const myRef = doc(db, 'users', currentUser.uid, 'following', targetUser.id);
       const theirRef = doc(db, 'users', targetUser.id, 'followers', currentUser.uid);
-      
       if (isFollowing) {
-        batch.delete(myRef);
-        batch.delete(theirRef);
+        batch.delete(myRef); batch.delete(theirRef);
         batch.update(doc(db, 'users', currentUser.uid), { following: increment(-1) });
         batch.update(doc(db, 'users', targetUser.id), { followers: increment(-1) });
       } else {
@@ -135,28 +115,14 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
         batch.set(theirRef, { linkedAt: serverTimestamp() });
         batch.update(doc(db, 'users', currentUser.uid), { following: increment(1) });
         batch.update(doc(db, 'users', targetUser.id), { followers: increment(1) });
-        
         const notifRef = doc(collection(db, 'notifications'));
         batch.set(notifRef, {
-          type: 'follow',
-          fromUserId: currentUser.uid,
-          fromUserName: currentUser.displayName || 'Neural Node',
-          fromUserAvatar: currentUser.photoURL || '',
-          toUserId: targetUser.id,
-          text: 'established a neural link with you',
-          isRead: false,
-          timestamp: serverTimestamp(),
-          pulseFrequency: 'cognition'
+          type: 'follow', fromUserId: currentUser.uid, fromUserName: currentUser.displayName, fromUserAvatar: currentUser.photoURL || '',
+          toUserId: targetUser.id, text: 'established a neural link', isRead: false, timestamp: serverTimestamp(), pulseFrequency: 'cognition'
         });
       }
       await batch.commit();
-      window.dispatchEvent(new CustomEvent('vibe-toast', { 
-        detail: { msg: isFollowing ? `Link Severed: ${targetUser.displayName}` : `Linked to ${targetUser.displayName}`, type: isFollowing ? 'info' : 'success' } 
-      }));
-    } catch (e) {
-      console.error(e);
-      window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Connection Protocol Failed", type: 'error' } }));
-    } finally {
+    } catch (e) { console.error(e); } finally {
       setProcessingIds(prev => { const s = new Set(prev); s.delete(targetUser.id); return s; });
     }
   };
@@ -165,73 +131,33 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
     e.stopPropagation();
     if (!db || !auth.currentUser) return;
     try {
-      const q = query(
-        collection(db, 'chats'), 
-        where('participants', 'array-contains', auth.currentUser.uid)
-      );
+      const q = query(collection(db, 'chats'), where('participants', 'array-contains', auth.currentUser.uid));
       const snap = await getDocs(q);
       const existingChat = snap.docs.find((d: any) => {
-        const data = d.data();
-        return !data.isCluster && data.participants.includes(targetUser.id);
+        const data = d.data(); return !data.isCluster && data.participants.includes(targetUser.id);
       });
-
-      if (existingChat) {
-        onNavigate(AppRoute.MESSAGES);
-      } else {
+      if (existingChat) { onNavigate(AppRoute.MESSAGES); } else {
         const participantData = {
-          [auth.currentUser.uid]: { 
-            displayName: auth.currentUser.displayName, 
-            avatarUrl: auth.currentUser.photoURL 
-          },
-          [targetUser.id]: { 
-            displayName: targetUser.displayName, 
-            avatarUrl: targetUser.avatarUrl 
-          }
+          [auth.currentUser.uid]: { displayName: auth.currentUser.displayName, avatarUrl: auth.currentUser.photoURL },
+          [targetUser.id]: { displayName: targetUser.displayName, avatarUrl: targetUser.avatarUrl, activeBorder: targetUser.cosmetics?.activeBorder }
         };
-
         await addDoc(collection(db, 'chats'), {
-          participants: [auth.currentUser.uid, targetUser.id],
-          participantData,
-          lastMessage: 'Link established.',
-          lastMessageTimestamp: serverTimestamp(),
-          isCluster: false
+          participants: [auth.currentUser.uid, targetUser.id], participantData, lastMessage: 'Link established.', lastMessageTimestamp: serverTimestamp(), isCluster: false
         });
-        
         onNavigate(AppRoute.MESSAGES);
-        window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Secure Channel Opened", type: 'success' } }));
       }
-    } catch (e) {
-      window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: "Comms Link Failed", type: 'error' } }));
-    }
-  };
-
-  const handleViewPost = (post: Post) => {
-    window.dispatchEvent(new CustomEvent('vibe-view-post', { detail: { post } }));
+    } catch (e) { console.error(e); }
   };
 
   const PRESENCE_DOTS: Record<PresenceStatus, string> = {
-    'Online': 'bg-[#10b981]',
-    'Focus': 'bg-[#f59e0b]',
-    'Deep Work': 'bg-[#e11d48]',
-    'In-Transit': 'bg-[#6366f1]',
-    'Away': 'bg-[#94a3b8]',
-    'Invisible': 'bg-[#334155]',
-    'Syncing': 'bg-[#60a5fa]',
-    'Offline': 'bg-slate-300'
+    'Online': 'bg-[#10b981]', 'Focus': 'bg-[#f59e0b]', 'Deep Work': 'bg-[#e11d48]', 'In-Transit': 'bg-[#6366f1]', 'Away': 'bg-[#94a3b8]', 'Invisible': 'bg-[#334155]', 'Syncing': 'bg-[#60a5fa]', 'Offline': 'bg-slate-300'
   };
 
-  // Filter based on privacy settings AND Block List
   const filteredContacts = activeContacts.filter(u => {
-    // 1. Block Filter
     if (blockedIds?.has(u.id)) return false;
-
-    // 2. Privacy Filter
     const isVisible = u.settings?.privacy?.activityStatus !== false;
     const status = isVisible ? (u.presenceStatus || 'Offline') : 'Offline';
-    
-    if (contactFilter === 'online') {
-      return ['Online', 'Focus', 'Deep Work', 'Syncing'].includes(status);
-    }
+    if (contactFilter === 'online') return ['Online', 'Focus', 'Deep Work', 'Syncing'].includes(status);
     return true;
   });
 
@@ -239,13 +165,9 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
 
   return (
     <aside className="hidden lg:flex flex-col w-[280px] xl:w-[320px] shrink-0 bg-slate-50/50 dark:bg-slate-900/50 border-l border-precision h-full overflow-hidden transition-colors duration-300 pt-[calc(var(--header-h)+1rem)]">
-      
       <div className="flex-1 overflow-y-auto custom-scrollbar px-6 space-y-8 pb-8">
-        
-        {/* 1. SYSTEM MONITOR WIDGET */}
         <div className="bg-slate-950 rounded-[2.5rem] p-6 text-white shadow-2xl relative overflow-hidden group border border-white/5">
           <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-600/20 blur-[80px] rounded-full translate-x-1/3 -translate-y-1/2" />
-          
           <div className="relative z-10">
             <div className="flex justify-between items-start mb-6">
               <div>
@@ -255,203 +177,95 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
                 </div>
                 <h3 className="text-xl font-black italic uppercase tracking-tighter leading-none">System_Link</h3>
               </div>
-              <div className="text-right">
-                <p className="text-[10px] font-mono font-bold text-slate-400">{uptime}</p>
-              </div>
+              <div className="text-right"><p className="text-[10px] font-mono font-bold text-slate-400">{uptime}</p></div>
             </div>
-
-            {/* Network Visualization */}
             <div className="h-10 flex items-end gap-1 mb-6 opacity-60 group-hover:opacity-100 transition-opacity">
                {Array.from({ length: 20 }).map((_, i) => (
-                 <div 
-                   key={i} 
-                   className="flex-1 bg-indigo-500/40 rounded-t-sm" 
-                   style={{ 
-                     height: `${20 + Math.random() * 80}%`,
-                     transition: 'height 0.5s ease-in-out'
-                   }} 
-                 />
+                 <div key={i} className="flex-1 bg-indigo-500/40 rounded-t-sm" style={{ height: `${20 + Math.random() * 80}%`, transition: 'height 0.5s ease-in-out' }} />
                ))}
             </div>
-
             <div className="grid grid-cols-2 gap-3">
                <div className="bg-white/5 rounded-xl p-3 border border-white/5 backdrop-blur-sm">
                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest font-mono mb-1">Local_Time</p>
-                  <p className="text-sm font-bold font-mono text-white">
-                    {systemTime.toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit' })}
-                  </p>
+                  <p className="text-sm font-bold font-mono text-white">{systemTime.toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit' })}</p>
                </div>
                <div className="bg-white/5 rounded-xl p-3 border border-white/5 backdrop-blur-sm">
                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest font-mono mb-1">Atmos</p>
-                  <p className="text-sm font-bold font-mono text-white flex items-center gap-2">
-                    {weather?.temp || '--'}°C 
-                    {weather?.icon && <img src={`https://openweathermap.org/img/wn/${weather.icon}.png`} className="w-4 h-4 brightness-200" alt="" />}
-                  </p>
+                  <p className="text-sm font-bold font-mono text-white flex items-center gap-2">{weather?.temp || '--'}°C {weather?.icon && <img src={`https://openweathermap.org/img/wn/${weather.icon}.png`} className="w-4 h-4 brightness-200" alt="" />}</p>
                </div>
             </div>
           </div>
         </div>
 
-        {/* 2. TOP SIGNALS (TRENDING) */}
         {filteredTrending.length > 0 && (
           <div className="space-y-5">
-            <div className="flex items-center justify-between px-2">
-              <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
-                <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] font-mono">Top_Signals</h4>
-              </div>
-              <span className="text-[8px] font-black text-slate-300 dark:text-slate-600 font-mono bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded-md">LIVE</span>
+            <div className="flex items-center gap-2 px-2">
+              <div className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
+              <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] font-mono">Top_Signals</h4>
             </div>
-            
             <div className="space-y-3">
-              {filteredTrending.map((post, idx) => (
-                <button 
-                  key={post.id} 
-                  onClick={() => handleViewPost(post)}
-                  className={`w-full group relative flex items-center gap-3 p-3 rounded-[1.5rem] border transition-all cursor-pointer text-left ${
-                    idx === 0 
-                      ? 'bg-gradient-to-br from-white to-indigo-50/30 dark:from-slate-800 dark:to-indigo-900/30 border-indigo-100 dark:border-slate-700 shadow-md' 
-                      : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-100 dark:hover:border-indigo-900 hover:shadow-lg'
-                  }`}
-                >
-                  <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-700 shadow-inner">
-                    {post.media?.[0]?.url ? (
-                      <img src={post.media[0].url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-500 scale-75"><ICONS.Explore /></div>
-                    )}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center mb-0.5">
-                       <p className="text-[9px] font-black text-slate-950 dark:text-white uppercase tracking-tight truncate">{post.authorName}</p>
-                       {idx === 0 && <span className="text-[7px] font-black text-amber-500 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded uppercase tracking-widest">#1</span>}
+              {filteredTrending.map((post, idx) => {
+                const authorBorder = post.authorCosmetics?.border ? `cosmetic-border-${post.authorCosmetics.border}` : '';
+                return (
+                  <button 
+                    key={post.id} 
+                    onClick={() => window.dispatchEvent(new CustomEvent('vibe-view-post', { detail: { post } }))}
+                    className={`w-full group relative flex items-center gap-3 p-3 rounded-[1.5rem] border transition-all text-left ${idx === 0 ? 'bg-gradient-to-br from-white to-indigo-50/30 dark:from-slate-800 dark:to-indigo-900/30 border-indigo-100 dark:border-slate-700 shadow-md' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-100 dark:hover:border-indigo-900 hover:shadow-lg'}`}
+                  >
+                    <div className={`relative w-12 h-12 rounded-xl shrink-0 bg-slate-100 dark:bg-slate-700 ${authorBorder}`}>
+                       <img src={post.authorAvatar} className="w-full h-full object-cover rounded-xl" alt="" />
                     </div>
-                    <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate leading-none italic group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                      "{post.content || 'Media Signal'}"
-                    </p>
-                    <div className="flex items-center gap-2 mt-1.5">
-                       <div className="h-0.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                          <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${Math.min((post.likes / 50) * 100, 100)}%` }} />
-                       </div>
-                       <span className="text-[7px] font-black text-slate-300 dark:text-slate-600 font-mono">{post.likes}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center mb-0.5">
+                         <p className="text-[9px] font-black text-slate-950 dark:text-white uppercase tracking-tight truncate">{post.authorName}</p>
+                      </div>
+                      <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate italic">"{post.content || 'Media Signal'}"</p>
                     </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* 3. ACTIVE NODES (CONTACTS) */}
         <div className="space-y-5">
            <div className="flex items-center justify-between px-2">
               <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] font-mono">Active_Nodes</h4>
-              <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg">
-                 <button 
-                   onClick={() => setContactFilter('all')}
-                   className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${contactFilter === 'all' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
-                 >
-                   All
-                 </button>
-                 <button 
-                   onClick={() => setContactFilter('online')}
-                   className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${contactFilter === 'online' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
-                 >
-                   Live
-                 </button>
-              </div>
            </div>
-
            <div className="space-y-2">
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-2xl border border-slate-50 dark:border-slate-700">
-                    <div className="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-xl animate-pulse" />
-                    <div className="space-y-1.5 flex-1">
-                      <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded w-1/2 animate-pulse" />
-                      <div className="h-1.5 bg-slate-50 dark:bg-slate-700 rounded w-1/3 animate-pulse" />
-                    </div>
-                  </div>
-                ))
-              ) : filteredContacts.length === 0 ? (
-                <div className="py-8 text-center border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-[1.5rem]">
-                  <p className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.2em] font-mono italic">No Nodes Detected</p>
-                </div>
-              ) : (
-                filteredContacts.slice(0, 15).map(node => {
+              {filteredContacts.slice(0, 15).map(node => {
                   const isFollowing = followingIds.has(node.id);
                   const isProcessing = processingIds.has(node.id);
                   const showActivity = node.settings?.privacy?.activityStatus !== false;
+                  const borderClass = node.cosmetics?.activeBorder ? `cosmetic-border-${node.cosmetics.activeBorder}` : '';
                   
                   return (
-                    <div 
-                      key={node.id}
-                      className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 border border-transparent hover:border-slate-100 dark:hover:border-slate-700 transition-all duration-300 group hover:shadow-md"
-                    >
+                    <div key={node.id} className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 border border-transparent hover:border-slate-100 dark:hover:border-slate-700 transition-all duration-300 group hover:shadow-md">
                       <div className="flex items-center gap-3 overflow-hidden flex-1 min-w-0">
-                        <div className="relative shrink-0">
-                          <img src={node.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${node.id}`} className="w-10 h-10 rounded-xl object-cover border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900" alt="" />
+                        <div className={`relative shrink-0 w-10 h-10 rounded-xl ${borderClass}`}>
+                          <img src={node.avatarUrl} className="w-full h-full rounded-xl object-cover" alt="" />
                           {showActivity && (
                             <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white dark:border-slate-800 ${PRESENCE_DOTS[node.presenceStatus || 'Invisible']}`} />
                           )}
                         </div>
                         <div className="text-left overflow-hidden flex-1">
                            <div className="flex items-center gap-1.5">
-                             <p className="text-[11px] font-black text-slate-900 dark:text-white truncate tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                               {node.displayName}
-                             </p>
+                             <p className="text-[11px] font-black text-slate-900 dark:text-white truncate tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{node.displayName}</p>
                              {node.verifiedHuman && <div className="text-indigo-500 scale-[0.6]"><ICONS.Verified /></div>}
                            </div>
-                           <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium truncate tracking-tight opacity-80">
-                             {showActivity ? (node.statusEmoji + ' ' + (node.statusMessage || node.presenceStatus)) : 'Status Hidden'}
-                           </p>
+                           <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium truncate tracking-tight">{showActivity ? (node.statusEmoji + ' ' + (node.statusMessage || node.presenceStatus)) : 'Status Hidden'}</p>
                         </div>
                       </div>
-                      
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0 pl-2 focus-within:opacity-100 focus-within:translate-x-0">
-                        <button 
-                          onClick={(e) => handleFollowToggle(e, node)}
-                          disabled={isProcessing}
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all shadow-sm ${isFollowing ? 'bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-400 dark:text-slate-300 hover:text-rose-500 dark:hover:text-rose-400 hover:border-rose-200 dark:hover:border-rose-800' : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-indigo-600 dark:hover:bg-indigo-400'}`}
-                          title={isFollowing ? 'Unlink' : 'Link'}
-                          aria-label={isFollowing ? 'Unfollow' : 'Follow'}
-                        >
-                          {isProcessing ? (
-                            <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
-                              {isFollowing 
-                                ? <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /> 
-                                : <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                              }
-                            </svg>
-                          )}
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0 pl-2">
+                        <button onClick={(e) => handleFollowToggle(e, node)} disabled={isProcessing} className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${isFollowing ? 'bg-white dark:bg-slate-700 border border-slate-200 text-slate-400 hover:text-rose-500' : 'bg-slate-950 dark:bg-white text-white dark:text-slate-950'}`}>
+                          {isProcessing ? <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>{isFollowing ? <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /> : <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />}</svg>}
                         </button>
-                        <button 
-                          onClick={(e) => handleMessage(e, node)}
-                          className="w-7 h-7 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-500 dark:hover:text-white rounded-lg flex items-center justify-center transition-all shadow-sm"
-                          title="Message"
-                          aria-label={`Message ${node.displayName}`}
-                        >
-                          <ICONS.Messages />
-                        </button>
+                        <button onClick={(e) => handleMessage(e, node)} className="w-7 h-7 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg flex items-center justify-center transition-all"><ICONS.Messages /></button>
                       </div>
                     </div>
                   );
                 })
-              )}
-           </div>
-        </div>
-
-        {/* 4. FOOTER MINI INFO */}
-        <div className="px-2 pt-6 border-t border-slate-100 dark:border-slate-800">
-           <div className="flex items-center justify-center gap-4 text-[8px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-widest font-mono">
-             <span>VIBE_OS 2.6.4</span>
-             <span>•</span>
-             <span>UK_LON</span>
-             <span>•</span>
-             <span>SECURE</span>
+              }
            </div>
         </div>
       </div>
