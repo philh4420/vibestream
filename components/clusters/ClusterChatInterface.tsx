@@ -29,7 +29,6 @@ import { GiphyGif } from '../../services/giphy';
 import { extractUrls } from '../../lib/textUtils';
 import { LinkPreview } from '../ui/LinkPreview';
 import { RichTextEditor, RichTextEditorRef } from '../ui/RichTextEditor';
-import { summarizeClusterThread } from '../../services/aiAssistant';
 
 interface ClusterChatInterfaceProps {
   chatId: string;
@@ -51,8 +50,6 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [threadSummary, setThreadSummary] = useState<string | null>(null);
-  const [isSummarizing, setIsSummarizing] = useState(false);
   
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [isGiphyPickerOpen, setIsGiphyPickerOpen] = useState(false);
@@ -79,15 +76,6 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
     });
     return () => unsub();
   }, [chatId]);
-
-  const handleSummarize = async () => {
-    if (messages.length < 5 || isSummarizing) return;
-    setIsSummarizing(true);
-    const summary = await summarizeClusterThread(messages);
-    setThreadSummary(summary);
-    setIsSummarizing(false);
-    setTimeout(() => setThreadSummary(null), 10000); // Clear after 10s
-  };
 
   const handleSendMessage = async () => {
     if ((!newMessage.trim() && !selectedFile && !selectedGif) || !chatId || isSending) return;
@@ -216,14 +204,6 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-2">
-           <button 
-             onClick={handleSummarize}
-             disabled={isSummarizing || messages.length < 5}
-             className="p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition-all active:scale-90 shadow-sm"
-             title="Hive Summary"
-           >
-              {isSummarizing ? <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <ICONS.Resilience />}
-           </button>
            <button onClick={() => setShowMembers(!showMembers)} className={`p-3 rounded-2xl transition-all border ${showMembers ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 border-indigo-200' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-700 shadow-sm'}`}>
               <ICONS.Profile />
            </button>
@@ -236,23 +216,6 @@ export const ClusterChatInterface: React.FC<ClusterChatInterfaceProps> = ({
       {/* CLUSTER STREAM AREA */}
       <div className="flex-1 overflow-hidden relative">
         
-        {/* THREAD SUMMARY OVERLAY */}
-        {threadSummary && (
-            <div className="absolute top-4 left-4 right-4 z-40 animate-in slide-in-from-top-4 duration-500">
-                <div className="bg-indigo-600 text-white p-5 rounded-[2.2rem] shadow-heavy border border-indigo-400 backdrop-blur-xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
-                    <div className="flex items-start gap-4 relative z-10">
-                        <div className="p-2.5 bg-white/20 rounded-xl text-white shadow-sm"><ICONS.Resilience /></div>
-                        <div className="flex-1 min-w-0">
-                            <span className="text-[9px] font-black uppercase tracking-[0.3em] font-mono text-indigo-200">Hive_Intelligence_Summary</span>
-                            <p className="text-sm font-bold mt-1 leading-relaxed">"{threadSummary}"</p>
-                        </div>
-                        <button onClick={() => setThreadSummary(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M6 18L18 6M6 6l12 12" /></svg></button>
-                    </div>
-                </div>
-            </div>
-        )}
-
         {showMembers && (
             <div className="absolute inset-y-0 right-0 w-80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl border-l border-slate-100 dark:border-slate-800 z-30 p-8 overflow-y-auto animate-in slide-in-from-right duration-300 shadow-heavy">
                <h4 className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-400 dark:text-slate-500 mb-6 font-mono">Cluster_Registry</h4>

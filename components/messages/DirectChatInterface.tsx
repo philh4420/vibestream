@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
@@ -28,7 +28,6 @@ import { GiphyGif } from '../../services/giphy';
 import { extractUrls } from '../../lib/textUtils';
 import { LinkPreview } from '../ui/LinkPreview';
 import { RichTextEditor, RichTextEditorRef } from '../ui/RichTextEditor';
-import { generateSmartReplies } from '../../services/aiAssistant';
 
 interface DirectChatInterfaceProps {
   chatId: string;
@@ -43,8 +42,6 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [smartReplies, setSmartReplies] = useState<string[]>([]);
-  const [isAiThinking, setIsAiThinking] = useState(false);
   
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [isGiphyPickerOpen, setIsGiphyPickerOpen] = useState(false);
@@ -81,30 +78,17 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
     markRead();
   }, [chatId, messages.length, currentUser.id, currentUser.settings?.privacy?.readReceipts]);
 
-  // Sync Messages & AI Smart Replies
+  // Sync Messages
   useEffect(() => {
     if (!db || !chatId) return;
     const q = query(collection(db, 'chats', chatId, 'messages'), orderBy('timestamp', 'asc'), limit(50));
-    const unsub = onSnapshot(q, async (snap: any) => {
+    const unsub = onSnapshot(q, (snap: any) => {
       const fetched = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Message));
       setMessages(fetched);
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 300);
-
-      // Trigger Smart Replies if last message is from peer
-      if (fetched.length > 0) {
-        const lastMsg = fetched[fetched.length - 1];
-        if (lastMsg.senderId !== currentUser.id) {
-            setIsAiThinking(true);
-            const replies = await generateSmartReplies(fetched);
-            setSmartReplies(replies);
-            setIsAiThinking(false);
-        } else {
-            setSmartReplies([]);
-        }
-      }
     });
     return () => unsub();
-  }, [chatId, currentUser.id]);
+  }, [chatId]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -190,7 +174,6 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
       setNewMessage('');
       editorRef.current?.clear();
       clearMedia();
-      setSmartReplies([]);
     } catch (e) { addToast("Uplink Interrupted", "error"); } finally { setIsSending(false); }
   };
 
@@ -341,35 +324,8 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
       </div>
 
       {/* INPUT COCKPIT */}
-      <div className="px-6 md:px-10 pb-8 pt-4 relative z-30 space-y-5 bg-gradient-to-t from-white dark:from-[#020617] via-white/50 dark:via-[#020617]/50 to-transparent">
+      <div className="px-6 md:px-10 pb-8 pt-4 relative z-30 bg-gradient-to-t from-white dark:from-[#020617] via-white/50 dark:via-[#020617]/50 to-transparent">
         
-        {/* AI SIGNAL INTELLIGENCE (Smart Replies) */}
-        {(smartReplies.length > 0 || isAiThinking) && (
-            <div className="max-w-4xl mx-auto flex flex-wrap gap-2 animate-in slide-in-from-bottom-2 duration-500">
-                <div className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg flex items-center gap-2 border border-indigo-100 dark:border-indigo-800">
-                    <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
-                    <span className="text-[8px] font-black uppercase tracking-widest font-mono text-indigo-600 dark:text-indigo-400 italic">Signal_AI:</span>
-                </div>
-                {isAiThinking ? (
-                    <div className="flex gap-1 items-center px-4">
-                        <div className="w-1 h-1 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                        <div className="w-1 h-1 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                        <div className="w-1 h-1 bg-indigo-400 rounded-full animate-bounce" />
-                    </div>
-                ) : (
-                    smartReplies.map((reply, i) => (
-                        <button 
-                            key={i} 
-                            onClick={() => handleSendMessage(reply)}
-                            className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-500 transition-all shadow-sm active:scale-95 whitespace-nowrap"
-                        >
-                            {reply}
-                        </button>
-                    ))
-                )}
-            </div>
-        )}
-
         <div className="max-w-4xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[3rem] p-2.5 shadow-premium focus-within:ring-8 focus-within:ring-indigo-500/5 transition-all duration-500">
           {mediaPreview && (
             <div className="px-4 py-4 flex items-center gap-4 animate-in slide-in-from-bottom-2 bg-slate-50 dark:bg-slate-800/80 rounded-[2.2rem] mb-2 border border-slate-100 dark:border-slate-700 backdrop-blur-md">
