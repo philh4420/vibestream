@@ -12,12 +12,13 @@ interface MeshPageProps {
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
   onViewProfile: (user: User) => void;
   blockedIds?: Set<string>;
+  onOpenMessages?: () => void;
 }
 
 type MeshTab = 'following' | 'followers' | 'discover';
 type SortOrder = 'resonance' | 'recent' | 'alpha';
 
-export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToast, onViewProfile, blockedIds }) => {
+export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToast, onViewProfile, blockedIds, onOpenMessages }) => {
   const [activeTab, setActiveTab] = useState<MeshTab>('following');
   const [sortOrder, setSortOrder] = useState<SortOrder>('resonance');
   const [users, setUsers] = useState<User[]>([]);
@@ -354,10 +355,16 @@ export const MeshPage: React.FC<MeshPageProps> = ({ currentUser, locale, addToas
                         {/* Interaction Dock */}
                         <div className="pt-6 border-t border-slate-50 dark:border-slate-900 flex items-center justify-between relative z-10">
                             <div className="flex gap-2">
-                                <button className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition-all flex items-center justify-center active:scale-90">
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); onOpenMessages?.(); }}
+                                  className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition-all flex items-center justify-center active:scale-90"
+                                >
                                     <ICONS.Messages />
                                 </button>
-                                <button className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition-all flex items-center justify-center active:scale-90">
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); addToast(`Scanning signals from ${user.displayName}...`, "info"); }}
+                                  className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition-all flex items-center justify-center active:scale-90"
+                                >
                                     <ICONS.Explore />
                                 </button>
                             </div>

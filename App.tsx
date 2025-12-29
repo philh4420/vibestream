@@ -96,10 +96,11 @@ const App: React.FC = () => {
     localStorage.setItem('vibe_region', region);
   }, [region]);
   
-  // UI Modal State
-  const [viewingPost, setViewingPost] = useState<Post | null>(null);
-  const [viewingProfile, setViewingProfile] = useState<User | null>(null);
-  const [viewingGathering, setViewingGathering] = useState<Gathering | null>(null);
+  // UI Selection State (Replacing Overlays with inline navigation)
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedGathering, setSelectedGathering] = useState<Gathering | null>(null);
+  
   const [activeLobbyGathering, setActiveLobbyGathering] = useState<Gathering | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [activeStream, setActiveStream] = useState<LiveStream | null>(null);
@@ -214,15 +215,25 @@ const App: React.FC = () => {
     window.dispatchEvent(new CustomEvent('vibe-toast', { detail: { msg: message, type } }));
   }, []);
 
+  // Global Event Handlers
   useEffect(() => {
-    const handleViewPost = (e: any) => setViewingPost(e.detail.post);
+    const handleViewPost = (e: any) => {
+      setSelectedPost(e.detail.post);
+      setActiveRoute(AppRoute.SINGLE_POST);
+    };
+    const handleViewProfile = (e: any) => {
+        setSelectedUser(e.detail.user);
+        setActiveRoute(AppRoute.PUBLIC_PROFILE);
+    };
     const handleNavigate = (e: any) => setActiveRoute(e.detail.route);
     
     window.addEventListener('vibe-view-post', handleViewPost);
+    window.addEventListener('vibe-view-profile', handleViewProfile);
     window.addEventListener('vibe-navigate', handleNavigate);
     
     return () => {
       window.removeEventListener('vibe-view-post', handleViewPost);
+      window.removeEventListener('vibe-view-profile', handleViewProfile);
       window.removeEventListener('vibe-navigate', handleNavigate);
     };
   }, []);
@@ -348,7 +359,7 @@ const App: React.FC = () => {
                 userData={userData} 
                 onLike={handleLike} 
                 onBookmark={handleBookmark} 
-                onViewPost={setViewingPost}
+                onViewPost={(p) => { setSelectedPost(p); setActiveRoute(AppRoute.SINGLE_POST); }}
                 onOpenCreate={() => {}} 
                 onTransmitStory={async (file) => {
                 const url = await uploadToCloudinary(file);
@@ -371,7 +382,8 @@ const App: React.FC = () => {
             {activeRoute === AppRoute.EXPLORE && (
             <ExplorePage 
                 posts={posts} users={allUsers} onLike={handleLike} onBookmark={handleBookmark} 
-                onViewPost={setViewingPost} onViewProfile={setViewingProfile} locale={region} 
+                onViewPost={(p) => { setSelectedPost(p); setActiveRoute(AppRoute.SINGLE_POST); }} 
+                onViewProfile={(u) => { setSelectedUser(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }} locale={region} 
                 searchQuery={searchQuery} onClearSearch={() => setSearchQuery('')}
                 userData={userData}
             />
@@ -392,7 +404,9 @@ const App: React.FC = () => {
             {activeRoute === AppRoute.PROFILE && (
             <ProfilePage 
                 userData={userData!} onUpdateProfile={() => {}} addToast={addToast} locale={region} 
-                sessionStartTime={Date.now()} onViewPost={setViewingPost} onViewProfile={setViewingProfile} 
+                sessionStartTime={Date.now()} 
+                onViewPost={(p) => { setSelectedPost(p); setActiveRoute(AppRoute.SINGLE_POST); }} 
+                onViewProfile={(u) => { setSelectedUser(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }} 
                 onOpenSettings={() => setIsSettingsOpen(true)} onLike={handleLike} onBookmark={handleBookmark}
                 blockedIds={blockedIds}
             />
@@ -405,14 +419,15 @@ const App: React.FC = () => {
                 currentUser={userData!} 
                 locale={region} 
                 addToast={addToast} 
-                onViewProfile={setViewingProfile}
+                onViewProfile={(u) => { setSelectedUser(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }}
                 blockedIds={blockedIds}
+                onOpenMessages={() => setActiveRoute(AppRoute.MESSAGES)}
             />
             )}
             {activeRoute === AppRoute.GATHERINGS && (
             <GatheringsPage 
                 currentUser={userData!} locale={region} addToast={addToast} allUsers={allUsers}
-                onOpenLobby={setActiveLobbyGathering} onViewGathering={setViewingGathering} onRSVP={handleRSVP}
+                onOpenLobby={setActiveLobbyGathering} onViewGathering={(g) => { setSelectedGathering(g); setActiveRoute(AppRoute.SINGLE_GATHERING); }} onRSVP={handleRSVP}
             />
             )}
             {activeRoute === AppRoute.CLUSTERS && (
@@ -428,10 +443,10 @@ const App: React.FC = () => {
             <TemporalPage currentUser={userData} locale={region} addToast={addToast} />
             )}
             {activeRoute === AppRoute.SAVED && (
-            <DataVaultPage currentUser={userData!} locale={region} addToast={addToast} onViewPost={setViewingPost} />
+            <DataVaultPage currentUser={userData!} locale={region} addToast={addToast} onViewPost={(p) => { setSelectedPost(p); setActiveRoute(AppRoute.SINGLE_POST); }} />
             )}
             {activeRoute === AppRoute.VERIFIED_NODES && (
-            <VerifiedNodesPage users={allUsers} onViewProfile={setViewingProfile} />
+            <VerifiedNodesPage users={allUsers} onViewProfile={(u) => { setSelectedUser(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }} />
             )}
             {activeRoute === AppRoute.SIMULATIONS && <SimulationsPage />}
             {activeRoute === AppRoute.RESILIENCE && <ResiliencePage userData={userData!} addToast={addToast} />}
@@ -442,41 +457,29 @@ const App: React.FC = () => {
             {activeRoute === AppRoute.TERMS && <div className="p-4 md:p-8"><TermsPage /></div>}
             {activeRoute === AppRoute.COOKIES && <div className="p-4 md:p-8"><CookiesPage /></div>}
 
-            {/* In-Column Overlays: These now use absolute inset-0 and high z-index but are bound by the sidebars */}
-            {viewingPost && (
-                <div className="absolute inset-0 z-[200] bg-white dark:bg-[#020617] overflow-y-auto no-scrollbar">
+            {activeRoute === AppRoute.SINGLE_POST && selectedPost && (
                 <SinglePostView 
-                    post={viewingPost} userData={userData} locale={region} 
-                    onClose={() => setViewingPost(null)} onLike={handleLike} onBookmark={handleBookmark} 
+                    post={selectedPost} userData={userData} locale={region} 
+                    onClose={() => setActiveRoute(AppRoute.FEED)} onLike={handleLike} onBookmark={handleBookmark} 
                     addToast={addToast} blockedIds={blockedIds}
                 />
-                </div>
             )}
 
-            {viewingProfile && (
-                <div className="absolute inset-0 z-[200] bg-white dark:bg-[#020617] overflow-y-auto no-scrollbar">
+            {activeRoute === AppRoute.PUBLIC_PROFILE && selectedUser && (
                 <ProfilePage 
-                    userData={viewingProfile} onUpdateProfile={() => {}} addToast={addToast} locale={region} 
-                    sessionStartTime={Date.now()} onViewPost={setViewingPost} onViewProfile={setViewingProfile} 
+                    userData={selectedUser} onUpdateProfile={() => {}} addToast={addToast} locale={region} 
+                    sessionStartTime={Date.now()} 
+                    onViewPost={(p) => { setSelectedPost(p); setActiveRoute(AppRoute.SINGLE_POST); }} 
+                    onViewProfile={(u) => { setSelectedUser(u); setActiveRoute(AppRoute.PUBLIC_PROFILE); }} 
                     onLike={handleLike} onBookmark={handleBookmark} blockedIds={blockedIds}
                 />
-                <button 
-                    onClick={() => setViewingProfile(null)}
-                    className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[250] px-8 py-4 bg-slate-950 dark:bg-white text-white dark:text-slate-900 rounded-2xl shadow-2xl active:scale-90 font-black text-[10px] uppercase tracking-widest flex items-center gap-3"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth={3} /></svg>
-                    CLOSE_PROFILE
-                </button>
-                </div>
             )}
 
-            {viewingGathering && (
-                <div className="absolute inset-0 z-[200] bg-white dark:bg-[#020617] overflow-y-auto no-scrollbar p-6">
+            {activeRoute === AppRoute.SINGLE_GATHERING && selectedGathering && (
                 <SingleGatheringView 
-                    gathering={viewingGathering} currentUser={userData!} allUsers={allUsers} locale={region}
-                    onBack={() => setViewingGathering(null)} onDelete={() => {}} onRSVP={handleRSVP} onOpenLobby={setActiveLobbyGathering}
+                    gathering={selectedGathering} currentUser={userData!} allUsers={allUsers} locale={region}
+                    onBack={() => setActiveRoute(AppRoute.GATHERINGS)} onDelete={() => {}} onRSVP={handleRSVP} onOpenLobby={setActiveLobbyGathering}
                 />
-                </div>
             )}
 
             {activeLobbyGathering && (
