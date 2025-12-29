@@ -39,7 +39,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   
-  // Optimistic chat state to handle race conditions when creating new chats
   const [optimisticChat, setOptimisticChat] = useState<Chat | null>(null);
 
   // 1. Sync Existing Chats
@@ -55,7 +54,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
       setChats(fetchedChats);
       setLoading(false);
       
-      // If we had an optimistic chat and it's now in the fetched list, clear optimistic state
       if (optimisticChat && fetchedChats.find(c => c.id === optimisticChat.id)) {
         setOptimisticChat(null);
       }
@@ -63,22 +61,19 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
     return () => unsub();
   }, [currentUser.id, optimisticChat]);
 
-  // 2. Fetch Contacts (Followers & Following)
+  // 2. Fetch Contacts (Network)
   useEffect(() => {
     const fetchContacts = async () => {
       if (!db || !currentUser.id) return;
       try {
-        // Fetch users the current user follows
         const followingSnap = await getDocs(collection(db, 'users', currentUser.id, 'following'));
         const followingIds = followingSnap.docs.map((d: any) => d.id);
         
-        // Fetch users who follow the current user
         const followersSnap = await getDocs(collection(db, 'users', currentUser.id, 'followers'));
         const followerIds = followersSnap.docs.map((d: any) => d.id);
 
         const uniqueIds = Array.from(new Set([...followingIds, ...followerIds]));
         
-        // Resolve full user objects
         const contactPromises = uniqueIds.map(id => getDoc(doc(db, 'users', id)));
         const snaps = await Promise.all(contactPromises);
         const resolvedContacts = snaps
@@ -93,14 +88,11 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
     fetchContacts();
   }, [currentUser.id, blockedIds]);
 
-  // Active chat is either found in real data OR it's the optimistic pending one
   const activeChat = chats.find(c => c.id === selectedChatId) || (selectedChatId === optimisticChat?.id ? optimisticChat : null);
 
-  // 3. Logic to Start or Open a Chat
   const startNewChat = async (targetUser: VibeUser) => {
     if (!db || !currentUser) return;
 
-    // Check if chat already exists
     const existing = chats.find(c => c.participants.includes(targetUser.id));
     if (existing) {
       setSelectedChatId(existing.id);
@@ -109,24 +101,21 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
       return;
     }
 
-    // Create new handshake
     const chatId = [currentUser.id, targetUser.id].sort().join('_');
     const participantData = {
       [currentUser.id]: { displayName: currentUser.displayName, avatarUrl: currentUser.avatarUrl },
       [targetUser.id]: { displayName: targetUser.displayName, avatarUrl: targetUser.avatarUrl, activeBorder: targetUser.cosmetics?.activeBorder }
     };
 
-    // Construct Optimistic Chat Object
     const newChatObj: Chat = {
       id: chatId,
       participants: [currentUser.id, targetUser.id],
       participantData,
-      lastMessage: 'Neural link established. Awaiting first packet...',
+      lastMessage: 'Neural link established.',
       lastMessageTimestamp: { seconds: Date.now() / 1000, nanoseconds: 0 },
       isCluster: false
     };
 
-    // Set UI state immediately
     setOptimisticChat(newChatObj);
     setSelectedChatId(chatId);
     setView('chat');
@@ -137,15 +126,14 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
         id: chatId,
         participants: [currentUser.id, targetUser.id],
         participantData,
-        lastMessage: 'Neural link established. Awaiting first packet...',
+        lastMessage: 'Neural link established.',
         lastMessageTimestamp: serverTimestamp(),
         isCluster: false
       });
-      addToast(`Handshake Secured with ${targetUser.displayName}`, "success");
+      addToast(`Link secured with ${targetUser.displayName}`, "success");
     } catch (e) {
       console.error(e);
-      addToast("Uplink Protocol Failed", "error");
-      // Revert on failure
+      addToast("Uplink Failed", "error");
       if (selectedChatId === chatId) {
         setSelectedChatId(null);
         setView('list');
@@ -170,33 +158,32 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
   return (
     <div className="flex h-full w-full bg-white dark:bg-slate-950 rounded-[3rem] overflow-hidden border border-slate-100 dark:border-slate-800 shadow-heavy transition-all duration-500">
       
-      {/* SIDEBAR: NAVIGATION PANEL */}
-      <div className={`${view === 'chat' ? 'hidden md:flex' : 'flex'} w-full md:w-[380px] lg:w-[440px] border-r border-slate-100 dark:border-slate-800 flex-col bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl shrink-0 relative z-20`}>
+      {/* SIDEBAR: NAV REGISTRY */}
+      <div className={`${view === 'chat' ? 'hidden md:flex' : 'flex'} w-full md:w-[380px] lg:w-[420px] border-r border-slate-100 dark:border-slate-800 flex-col bg-slate-50/30 dark:bg-slate-900/30 backdrop-blur-3xl shrink-0 relative z-20`}>
         
         <div className="p-8 pb-4 space-y-8">
            <div className="flex items-center justify-between">
-              <div className="space-y-1">
+              <div>
                  <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic leading-none">Neural_Comms</h2>
-                 <div className="flex items-center gap-2">
+                 <div className="flex items-center gap-2 mt-2">
                     <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_#10b981]" />
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] font-mono">Signal_Secure_v4</span>
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] font-mono">v3.1_Active_Sync</span>
                  </div>
               </div>
            </div>
 
-           {/* Mode Toggles */}
-           <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200/50 dark:border-slate-700/50">
+           <div className="flex p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200/50 dark:border-slate-700/50">
               <button 
                 onClick={() => setSidebarMode('chats')}
                 className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${sidebarMode === 'chats' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
               >
-                Conversations
+                Syncs
               </button>
               <button 
                 onClick={() => setSidebarMode('contacts')}
                 className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${sidebarMode === 'contacts' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
               >
-                Grid Registry
+                Nodes
               </button>
            </div>
 
@@ -208,81 +195,69 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                 type="text" 
                 value={searchQuery} 
                 onChange={(e) => setSearchQuery(e.target.value)} 
-                placeholder={sidebarMode === 'chats' ? "Search active links..." : "Scan followers..."} 
-                className="w-full bg-slate-50 dark:bg-slate-800/40 border border-transparent rounded-[1.8rem] pl-14 pr-6 py-5 text-sm font-bold outline-none focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/5 transition-all text-slate-900 dark:text-white shadow-inner" 
+                placeholder={sidebarMode === 'chats' ? "Search sync logs..." : "Search local grid..."} 
+                className="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[1.8rem] pl-14 pr-6 py-4 text-xs font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all text-slate-900 dark:text-white shadow-sm" 
               />
            </div>
         </div>
 
-        {/* List Content */}
-        <div className="flex-1 overflow-y-auto no-scrollbar px-4 pb-12 pt-4">
-          <div className="space-y-1.5">
+        {/* Sync Feed */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-4 pb-12 pt-4">
+          <div className="space-y-1">
             {sidebarMode === 'chats' ? (
               <>
-                {/* Always show optimistic chat if it exists and matches filter */}
-                {optimisticChat && (!searchQuery || optimisticChat.participantData?.[optimisticChat.participants.find(id => id !== currentUser.id)!]?.displayName.toLowerCase().includes(searchQuery.toLowerCase())) && (
-                   <button 
-                    key={optimisticChat.id} 
-                    onClick={() => { setSelectedChatId(optimisticChat.id); setView('chat'); }} 
-                    className={`w-full flex items-center gap-4 p-4 rounded-[2rem] transition-all border group relative ${
-                      selectedChatId === optimisticChat.id 
-                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-2xl border-transparent' 
-                        : 'bg-transparent text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-transparent'
-                    }`}
+                {optimisticChat && (
+                   <div 
+                    className="w-full flex items-center gap-4 p-4 rounded-[2rem] bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900/50 opacity-60 animate-pulse"
                   >
-                    <div className="relative shrink-0 w-14 h-14 rounded-[1.4rem]">
-                      <img src={optimisticChat.participantData?.[optimisticChat.participants.find(id => id !== currentUser.id)!]?.avatarUrl} className="w-full h-full rounded-[1.4rem] object-cover border-2 border-white dark:border-slate-800 shadow-sm opacity-50" alt="" />
+                    <div className="relative shrink-0 w-14 h-14 rounded-[1.4rem] bg-slate-200 dark:bg-slate-800 overflow-hidden" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 w-24 bg-slate-200 dark:bg-slate-800 rounded" />
+                      <div className="h-2 w-full bg-slate-200 dark:bg-slate-800 rounded" />
                     </div>
-                    <div className="text-left overflow-hidden flex-1 space-y-1">
-                      <div className="flex justify-between items-baseline">
-                        <p className={`font-black text-sm uppercase tracking-tight truncate ${selectedChatId === optimisticChat.id ? 'text-white dark:text-slate-900' : 'text-slate-900 dark:text-white'}`}>
-                            {optimisticChat.participantData?.[optimisticChat.participants.find(id => id !== currentUser.id)!]?.displayName}
-                        </p>
-                        <span className="text-[7px] font-mono font-black uppercase opacity-40 ml-2">SYNCING</span>
-                      </div>
-                      <p className="text-[10px] truncate font-medium opacity-60">Initializing secure link...</p>
-                    </div>
-                  </button>
+                  </div>
                 )}
 
                 {filteredItems.map(chat => {
                   const pId = chat.participants.find(id => id !== currentUser.id);
                   const pData = chat.participantData[pId || ''];
                   const peer = allUsers.find(u => u.id === pId);
-                  const borderClass = peer?.cosmetics?.activeBorder ? `cosmetic-border-${peer.cosmetics.activeBorder}` : '';
                   const isActive = selectedChatId === chat.id;
+                  const borderClass = peer?.cosmetics?.activeBorder ? `cosmetic-border-${peer.cosmetics.activeBorder}` : '';
 
                   return (
                     <button 
                       key={chat.id} 
                       onClick={() => { setSelectedChatId(chat.id); setView('chat'); }} 
-                      className={`w-full flex items-center gap-4 p-4 rounded-[2rem] transition-all border group relative ${
+                      className={`w-full flex items-center gap-4 p-4 rounded-[2.2rem] transition-all relative group ${
                         isActive 
-                          ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-2xl border-transparent' 
-                          : 'bg-transparent text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-transparent'
+                          ? 'bg-white dark:bg-white text-slate-900 dark:text-slate-900 shadow-xl ring-1 ring-black/5' 
+                          : 'bg-transparent text-slate-500 hover:bg-white/60 dark:hover:bg-slate-800/40'
                       }`}
                     >
-                      <div className={`relative shrink-0 w-14 h-14 rounded-[1.4rem] ${borderClass}`}>
-                        <img src={pData?.avatarUrl} className={`w-full h-full rounded-[1.4rem] object-cover border-2 transition-all ${isActive ? 'border-white/20' : 'border-white dark:border-slate-800 shadow-sm'}`} alt="" />
+                      <div className={`relative shrink-0 w-14 h-14 rounded-[1.5rem] ${borderClass}`}>
+                        <img src={pData?.avatarUrl} className="w-full h-full rounded-[1.5rem] object-cover border-2 border-white dark:border-slate-800 shadow-sm" alt="" />
                         {peer?.presenceStatus === 'Online' && (
-                          <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-[2.5px] border-white dark:border-slate-800 bg-emerald-500 shadow-lg" />
+                          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[3px] border-white dark:border-slate-800 bg-emerald-500 shadow-lg" />
                         )}
                       </div>
-                      <div className="text-left overflow-hidden flex-1 space-y-1">
-                        <div className="flex justify-between items-baseline">
-                          <p className={`font-black text-sm uppercase tracking-tight truncate ${isActive ? 'text-white dark:text-slate-900' : 'text-slate-900 dark:text-white'}`}>{pData?.displayName}</p>
+                      <div className="text-left overflow-hidden flex-1">
+                        <div className="flex justify-between items-baseline mb-0.5">
+                          <p className={`font-black text-[13px] uppercase tracking-tight truncate ${isActive ? 'text-slate-950' : 'text-slate-900 dark:text-white'}`}>
+                            {pData?.displayName}
+                          </p>
                           {chat.lastMessageTimestamp && (
-                            <span className={`text-[7px] font-mono font-black uppercase opacity-40 ml-2 ${isActive ? 'text-white' : ''}`}>
+                            <span className="text-[7px] font-mono font-black uppercase opacity-40">
                               {new Date(chat.lastMessageTimestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                             </span>
                           )}
                         </div>
-                        <p className={`text-[10px] truncate font-medium ${isActive ? 'opacity-80 text-white' : 'opacity-60 text-slate-500 dark:text-slate-400'}`}>
-                          {chat.lastMessage}
+                        <p className={`text-[10px] truncate font-medium ${isActive ? 'text-slate-500' : 'text-slate-400 dark:text-slate-500'} italic`}>
+                          {chat.lastMessage || 'Signal initialized.'}
                         </p>
                       </div>
                       {isActive && (
-                        <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-500 rounded-full shadow-[0_0_15px_#6366f1]" />
+                         <div className="absolute left-1.5 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-indigo-600 rounded-full shadow-[0_0_15px_#4f46e5]" />
                       )}
                     </button>
                   );
@@ -297,20 +272,20 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                   <button 
                     key={peer.id} 
                     onClick={() => startNewChat(peer)} 
-                    className="w-full flex items-center gap-4 p-4 rounded-[2rem] bg-transparent text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-700"
+                    className="w-full flex items-center gap-4 p-4 rounded-[2.2rem] bg-transparent text-slate-500 hover:bg-white dark:hover:bg-slate-800/40 transition-all group"
                   >
-                    <div className={`relative shrink-0 w-14 h-14 rounded-[1.4rem] ${borderClass}`}>
-                      <img src={peer.avatarUrl} className="w-full h-full rounded-[1.4rem] object-cover border-2 border-white dark:border-slate-800 shadow-sm" alt="" />
+                    <div className={`relative shrink-0 w-14 h-14 rounded-[1.5rem] ${borderClass}`}>
+                      <img src={peer.avatarUrl} className="w-full h-full rounded-[1.5rem] object-cover border-2 border-white dark:border-slate-800 shadow-sm" alt="" />
                       {peer.presenceStatus === 'Online' && (
-                        <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-[2.5px] border-white dark:border-slate-800 bg-emerald-500 shadow-lg" />
+                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[3px] border-white dark:border-slate-800 bg-emerald-500 shadow-lg" />
                       )}
                     </div>
                     <div className="text-left overflow-hidden flex-1">
-                       <p className="font-black text-sm uppercase tracking-tight truncate text-slate-900 dark:text-white">{peer.displayName}</p>
+                       <p className="font-black text-[13px] uppercase tracking-tight truncate text-slate-900 dark:text-white">{peer.displayName}</p>
                        <p className="text-[8px] font-mono text-indigo-500 dark:text-indigo-400 font-bold tracking-widest uppercase">@{peer.username}</p>
                     </div>
-                    <div className="p-2.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl">
-                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                    <div className="p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                       <ICONS.Create />
                     </div>
                   </button>
                 );
@@ -318,19 +293,19 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
             )}
 
             {!loading && filteredItems.length === 0 && !optimisticChat && (
-              <div className="py-20 text-center flex flex-col items-center opacity-30">
-                 <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-400 mb-4 scale-125">
+              <div className="py-20 text-center opacity-30 flex flex-col items-center">
+                 <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-400 mb-4">
                     <ICONS.Explore />
                  </div>
-                 <p className="text-[10px] font-black uppercase tracking-[0.4em] font-mono italic">Sector_Empty</p>
+                 <p className="text-[9px] font-black uppercase tracking-[0.4em] font-mono">SECTOR_EMPTY</p>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* VIEWPORT: ACTIVE HANDSHAKE */}
-      <div className={`${view === 'list' ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-slate-50 dark:bg-slate-950 relative overflow-hidden transition-colors duration-500`}>
+      {/* VIEWPORT: ACTIVE COMMAND CHANNEL */}
+      <div className={`${view === 'list' ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-white dark:bg-slate-950 relative overflow-hidden transition-colors duration-500`}>
         {selectedChatId && activeChat ? (
           <DirectChatInterface 
             chatId={selectedChatId} 
@@ -341,26 +316,26 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
             chatData={activeChat} 
           />
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center relative overflow-hidden">
-             <div className="absolute inset-0 pointer-events-none opacity-5 dark:opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)', backgroundSize: '32px 32px' }} />
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center relative">
+             <div className="absolute inset-0 pointer-events-none opacity-[0.03] dark:opacity-[0.07]" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)', backgroundSize: '40px 40px' }} />
              
-             <div className="w-32 h-32 bg-white dark:bg-slate-900 rounded-[3.5rem] border border-slate-100 dark:border-slate-800 shadow-2xl flex items-center justify-center mb-10 scale-110 relative group">
-                <div className="absolute inset-0 bg-indigo-500/5 rounded-[3.5rem] animate-pulse" />
-                <div className="scale-150 text-slate-200 dark:text-slate-700 group-hover:scale-125 group-hover:text-indigo-500 transition-all duration-700">
+             <div className="w-40 h-40 bg-slate-50 dark:bg-slate-900 rounded-[4rem] border border-slate-100 dark:border-slate-800 shadow-inner flex items-center justify-center mb-10 relative group overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="scale-[2] text-slate-200 dark:text-slate-800 group-hover:text-indigo-500/20 transition-all duration-700">
                    <ICONS.Messages />
                 </div>
              </div>
              
-             <h3 className="text-3xl font-black uppercase italic tracking-tighter text-slate-900 dark:text-white">Neural_Comms_Standby</h3>
-             <p className="text-[10px] font-black uppercase tracking-[0.5em] font-mono mt-4 text-slate-400 dark:text-slate-600 max-w-sm leading-loose">
-               Select a node from your link registry to initiate a secure encrypted synchronization protocol.
+             <h3 className="text-3xl font-black uppercase italic tracking-tighter text-slate-900 dark:text-white">Standby_Mode</h3>
+             <p className="text-[10px] font-black uppercase tracking-[0.5em] font-mono mt-4 text-slate-400 dark:text-slate-600 max-w-xs leading-loose">
+               Select an active node from the communication registry to initiate high-fidelity signal exchange.
              </p>
 
              <button 
                onClick={() => setSidebarMode('contacts')}
                className="mt-12 px-10 py-5 bg-slate-950 dark:bg-white text-white dark:text-slate-950 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.3em] shadow-xl hover:bg-indigo-600 dark:hover:bg-indigo-400 dark:hover:text-white transition-all active:scale-95 flex items-center gap-4 italic"
              >
-                <ICONS.Profile /> Access_Grid_Registry
+                <ICONS.Explore /> SCAN_LOCAL_NODES
              </button>
           </div>
         )}

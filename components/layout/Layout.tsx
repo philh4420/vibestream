@@ -95,28 +95,26 @@ export const Layout: React.FC<LayoutProps> = ({
         <main className="flex-1 relative overflow-hidden flex flex-col min-w-0 z-10">
           <AtmosphericBackground weather={weather}>
             <div 
-              className={`flex-1 scroll-viewport relative z-10 pt-[calc(var(--header-h)+1rem)] ${isMessageView ? 'px-0 md:px-4 py-0 md:py-4' : 'px-4 md:px-6 lg:px-8 xl:px-12 py-6'}`} 
-              style={{ 
-                paddingLeft: isMessageView ? '0' : 'max(1rem, var(--sal))', 
-                paddingRight: isMessageView ? '0' : 'max(1rem, var(--sar))' 
-              }}
+              className={`flex-1 scroll-viewport relative z-10 pt-[var(--header-h)] h-full w-full ${isMessageView ? 'p-0 md:p-3 lg:p-6' : 'px-4 md:px-6 lg:px-8 xl:px-12 py-6'}`} 
             >
-              <div className={`w-full h-full relative ${isMessageView ? 'pb-[calc(var(--bottom-nav-h))] md:pb-0' : 'pb-[calc(var(--bottom-nav-h)+4rem)] md:pb-24'}`}>
+              <div className={`w-full h-full relative ${isMessageView ? 'pb-[var(--bottom-nav-h)] md:pb-0' : 'pb-[calc(var(--bottom-nav-h)+4rem)] md:pb-24'}`}>
                 {children}
               </div>
             </div>
           </AtmosphericBackground>
         </main>
 
-        {/* Right Sidebar - Restored visibility for Message View */}
-        <div className="relative z-[100] h-full hidden xl:block">
-          <RightSidebar 
-            userData={userData} 
-            weather={weather} 
-            onNavigate={onNavigate} 
-            blockedIds={blockedIds}
-          />
-        </div>
+        {/* Right Sidebar - Logic handled inside component for visibility */}
+        {!isMessageView && (
+          <div className="relative z-[100] h-full hidden xl:block">
+            <RightSidebar 
+              userData={userData} 
+              weather={weather} 
+              onNavigate={onNavigate} 
+              blockedIds={blockedIds}
+            />
+          </div>
+        )}
       </div>
 
       {/* Portrait Mobile Tab Bar */}
