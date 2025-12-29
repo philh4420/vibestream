@@ -31,7 +31,7 @@ export const ProfileChronologySection: React.FC<ProfileChronologySectionProps> =
                   </p>
                   <span className="px-3 py-1 bg-slate-50 dark:bg-slate-800 rounded-lg text-[8px] font-black uppercase text-slate-400 dark:text-slate-500 font-mono border border-slate-100 dark:border-slate-700">PROTOCOL_EVENT_INIT</span>
                 </div>
-                <h4 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter italic leading-tight group-hover/event:text-indigo-600 dark:group-hover/event:text-indigo-400 transition-colors uppercase">{event.title}</h4>
+                <h4 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter italic leading-tight group-hover/event:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors uppercase">{event.title}</h4>
                 <div className="mt-6 flex flex-wrap gap-4">
                    <span className="px-5 py-2 bg-slate-950 dark:bg-white text-white dark:text-slate-900 rounded-xl text-[9px] font-black uppercase tracking-widest font-mono shadow-xl">Hash: {event.id.slice(0, 8).toUpperCase()}</span>
                    <span className="px-5 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl text-[9px] font-black uppercase tracking-widest font-mono border border-emerald-100 dark:border-emerald-900/30">Verified_Immutable</span>
