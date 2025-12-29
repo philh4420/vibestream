@@ -122,8 +122,8 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
   const showActivity = targetUserFull?.settings?.privacy?.activityStatus !== false;
 
   return (
-    <div className="flex flex-col h-full relative animate-in fade-in duration-500 bg-[#020617]">
-      <div className="relative z-20 px-8 py-5 border-b border-slate-900 bg-black/80 backdrop-blur-3xl flex items-center justify-between">
+    <div className="flex flex-col h-full w-full relative animate-in fade-in duration-500 bg-[#020617] min-h-0">
+      <div className="relative z-20 px-8 py-5 border-b border-slate-900 bg-black/80 backdrop-blur-3xl flex items-center justify-between shrink-0">
         <div className="flex items-center gap-6">
           <button onClick={onBack} className="md:hidden w-11 h-11 bg-slate-900 text-slate-500 rounded-2xl flex items-center justify-center transition-all"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3.5}><path d="M15 19l-7-7 7-7" /></svg></button>
           <div className="flex items-center gap-4">
@@ -142,7 +142,7 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-6 md:px-10 py-10 space-y-1 relative">
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-6 md:px-10 py-10 space-y-1 relative min-h-0">
         {messages.map((msg, idx) => {
           const isMe = msg.senderId === currentUser.id;
           return (
@@ -159,7 +159,7 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
         <div ref={messagesEndRef} className="h-10" />
       </div>
 
-      <div className="px-6 md:px-10 pb-8 pt-4 relative z-30">
+      <div className="px-6 md:px-10 pb-8 pt-4 relative z-30 shrink-0">
         <div className="max-w-4xl mx-auto bg-slate-900 border border-slate-800 rounded-[3rem] p-2.5 shadow-heavy">
           <div className="flex gap-2 items-end">
             <div className="flex gap-1.5 pb-1 pl-1">

@@ -140,9 +140,9 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
   }, [sidebarMode, chats, contacts, searchQuery, currentUser.id]);
 
   return (
-    <div className="flex h-full w-full bg-[#020617] md:rounded-t-[3rem] overflow-hidden border-x border-t border-slate-900 shadow-heavy transition-all duration-500 relative z-10">
-      <div className={`${view === 'chat' ? 'hidden md:flex' : 'flex'} w-full md:w-[380px] lg:w-[420px] border-r border-slate-900 flex-col bg-[#050b1a] shrink-0 relative z-20`}>
-        <div className="p-8 pb-4 space-y-8">
+    <div className="flex h-full w-full bg-[#020617] md:rounded-t-[3rem] overflow-hidden border-x border-t border-slate-900 shadow-heavy transition-all duration-500 relative z-10 min-h-0">
+      <div className={`${view === 'chat' ? 'hidden md:flex' : 'flex'} w-full md:w-[380px] lg:w-[420px] border-r border-slate-900 flex-col bg-[#050b1a] shrink-0 relative z-20 h-full`}>
+        <div className="p-8 pb-4 space-y-8 shrink-0">
            <div className="flex items-center justify-between">
               <div>
                  <h2 className="text-3xl font-black text-white uppercase italic leading-none tracking-tighter">NEURAL_COMMS</h2>
@@ -172,7 +172,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
                   const isActive = selectedChatId === chat.id;
                   return (
                     <button key={chat.id} onClick={() => { setSelectedChatId(chat.id); setView('chat'); }} className={`w-full flex items-center gap-4 p-4 rounded-[2.2rem] transition-all relative group ${isActive ? 'bg-white text-slate-950 shadow-xl' : 'bg-transparent text-slate-500 hover:bg-slate-900/50'}`}>
-                      {/* Fixed: Use 'chat' instead of 'chatData' which doesn't exist in this scope */}
                       <div className={`relative shrink-0 w-14 h-14 rounded-[1.5rem] ${chat?.participantData?.[pId || '']?.activeBorder ? `cosmetic-border-${chat.participantData[pId!].activeBorder}` : ''}`}>
                         <img src={pData?.avatarUrl} className="w-full h-full rounded-[1.5rem] object-cover border-2 border-slate-900" alt="" />
                       </div>
@@ -208,11 +207,11 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
         </div>
       </div>
 
-      <div className={`${view === 'list' ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-[#020617] relative overflow-hidden`}>
+      <div className={`${view === 'list' ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-[#020617] relative overflow-hidden h-full min-h-0`}>
         {selectedChatId && activeChat ? (
           <DirectChatInterface chatId={selectedChatId} currentUser={currentUser} allUsers={allUsers} onBack={() => setView('list')} addToast={addToast} chatData={activeChat} />
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center relative">
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center relative h-full">
              <div className="absolute inset-0 pointer-events-none opacity-[0.07]" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #312e81 1px, transparent 0)', backgroundSize: '48px 48px' }} />
              <div className="w-32 h-32 bg-[#050b1a] rounded-full border border-indigo-900/30 flex items-center justify-center mb-10 relative group overflow-hidden shadow-2xl">
                 <div className={`absolute inset-0 bg-indigo-500/10 ${isScanning ? 'animate-pulse scale-150' : 'opacity-0'} transition-all duration-1000`} />

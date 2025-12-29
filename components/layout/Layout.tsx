@@ -95,13 +95,13 @@ export const Layout: React.FC<LayoutProps> = ({
         <main className="flex-1 relative overflow-hidden flex flex-col min-w-0 z-10">
           <AtmosphericBackground weather={weather}>
             <div 
-              className={`flex-1 relative z-10 w-full overflow-hidden ${
+              className={`flex-1 relative z-10 w-full overflow-hidden flex flex-col ${
                 isMessageView 
-                  ? 'pt-4 px-0 md:px-4' // Add slight padding to reveal rounded corners of the chat page
+                  ? 'pt-4 px-0 md:px-4' 
                   : 'px-4 md:px-6 lg:px-8 xl:px-12 py-6 overflow-y-auto custom-scrollbar'
               }`} 
             >
-              <div className={`w-full h-full relative ${isMessageView ? 'pb-[var(--bottom-nav-h)] md:pb-4' : 'pb-[calc(var(--bottom-nav-h)+2rem)] md:pb-24'}`}>
+              <div className={`w-full h-full relative flex flex-col ${isMessageView ? 'pb-0' : 'pb-[calc(var(--bottom-nav-h)+2rem)] md:pb-24'}`}>
                 {children}
               </div>
             </div>
