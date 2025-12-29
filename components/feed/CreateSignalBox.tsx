@@ -45,7 +45,6 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<RichTextEditorRef>(null);
 
-  // COSMETIC INTEGRATION
   const borderClass = userData?.cosmetics?.activeBorder ? `cosmetic-border-${userData.cosmetics.activeBorder}` : '';
 
   useEffect(() => {
@@ -193,7 +192,7 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
     }
 
     setIsPosting(true);
-    const mediaItems: { type: 'image' | 'video'; url: string }[] = [];
+    const mediaItems: { type: 'image' | 'video' | 'file'; url: string }[] = [];
 
     try {
       if (selectedFiles.length > 0) {
@@ -398,30 +397,31 @@ export const CreateSignalBox: React.FC<CreateSignalBoxProps> = ({ userData, onOp
         </div>
       )}
       {isExpanded && (
-        <div className="mt-6 pl-[calc(3.5rem+1.25rem)] flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-6 animate-in fade-in slide-in-from-top-3 duration-500">
-          <div className="flex items-center gap-2">
-            <button onClick={() => fileInputRef.current?.click()} className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-700 transition-all active:scale-90 border border-transparent hover:border-slate-100 dark:hover:border-slate-700 shadow-sm" title="Uplink Artifact" aria-label="Attach media">
-              <ICONS.Create />
-            </button>
-            <button onClick={() => { setShowGifPicker(!showGifPicker); setShowEmojiPicker(false); }} className={`p-3.5 rounded-2xl transition-all active:scale-90 border ${showGifPicker ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-700 border-transparent shadow-sm'}`} title="GIF Library" aria-label="Add GIF">
-              <span className="text-[10px] font-black font-mono">GIF</span>
-            </button>
-            <button onClick={togglePollMode} className={`p-3.5 rounded-2xl transition-all active:scale-90 border ${isPollMode ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-700 border-transparent shadow-sm'}`} title="Consensus Poll" aria-label="Create Poll">
-              <ICONS.Poll />
-            </button>
-            <button onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowGifPicker(false); }} className={`p-3.5 rounded-2xl transition-all active:scale-90 border ${showEmojiPicker ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-white dark:hover:bg-slate-700 border-transparent shadow-sm'}`} title="Neural Glyph" aria-label="Add Emoji">
-              <span className="text-xl leading-none">😊</span>
-            </button>
-          </div>
-          <div className="flex items-center gap-4">
-             <button 
-                onClick={handlePost}
-                disabled={isPosting || ((!content || content === '<p></p>') && selectedFiles.length === 0 && !selectedGif && !isPollMode)}
-                className="px-10 py-4 bg-slate-950 dark:bg-white text-white dark:text-slate-950 rounded-[1.8rem] font-black text-[11px] uppercase tracking-[0.25em] shadow-[0_15px_40px_-10px_rgba(99,102,241,0.4)] hover:bg-indigo-600 dark:hover:bg-indigo-400 dark:hover:text-white transition-all active:scale-95 disabled:opacity-30 flex items-center gap-3 italic"
-                aria-label="Broadcast Signal"
-             >
-                {isPosting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>BROADCAST <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_10px_#10b981]" /></>}
-             </button>
+        <div className="mt-6 pl-[calc(3.5rem+1.25rem)] flex flex-col gap-4 animate-in fade-in slide-in-from-top-3 duration-500">
+          <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-6">
+            <div className="flex items-center gap-2">
+                <button onClick={() => fileInputRef.current?.click()} className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-700 transition-all active:scale-90 border border-transparent hover:border-slate-100 dark:hover:border-slate-700 shadow-sm" title="Uplink Artifact">
+                <ICONS.Create />
+                </button>
+                <button onClick={() => { setShowGifPicker(!showGifPicker); setShowEmojiPicker(false); }} className={`p-3.5 rounded-2xl transition-all active:scale-90 border ${showGifPicker ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-700 border-transparent shadow-sm'}`} title="GIF Library">
+                <span className="text-[10px] font-black font-mono">GIF</span>
+                </button>
+                <button onClick={togglePollMode} className={`p-3.5 rounded-2xl transition-all active:scale-90 border ${isPollMode ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-700 border-transparent shadow-sm'}`} title="Consensus Poll">
+                <ICONS.Poll />
+                </button>
+                <button onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowGifPicker(false); }} className={`p-3.5 rounded-2xl transition-all active:scale-90 border ${showEmojiPicker ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-white dark:hover:bg-slate-700 border-transparent shadow-sm'}`} title="Neural Glyph">
+                <span className="text-xl leading-none">😊</span>
+                </button>
+            </div>
+            <div className="flex items-center gap-4">
+                <button 
+                    onClick={handlePost}
+                    disabled={isPosting || ((!content || content === '<p></p>') && selectedFiles.length === 0 && !selectedGif && !isPollMode)}
+                    className="px-10 py-4 bg-slate-950 dark:bg-white text-white dark:text-slate-950 rounded-[1.8rem] font-black text-[11px] uppercase tracking-[0.25em] shadow-[0_15px_40px_-10px_rgba(99,102,241,0.4)] hover:bg-indigo-600 dark:hover:bg-indigo-400 dark:hover:text-white transition-all active:scale-95 disabled:opacity-30 flex items-center gap-3 italic"
+                >
+                    {isPosting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>BROADCAST <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_10px_#10b981]" /></>}
+                </button>
+            </div>
           </div>
         </div>
       )}

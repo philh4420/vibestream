@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
@@ -82,11 +81,12 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
     if (!db || !chatId) return;
     const q = query(collection(db, 'chats', chatId, 'messages'), orderBy('timestamp', 'asc'), limit(100));
     const unsub = onSnapshot(q, (snap: any) => {
-      setMessages(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Message)));
+      const fetched = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Message));
+      setMessages(fetched);
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 300);
     });
     return () => unsub();
-  }, [chatId]);
+  }, [chatId, currentUser.id]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -197,7 +197,6 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
     'Syncing': 'bg-blue-400 animate-pulse'
   };
 
-  // Grouping logic: identifies if the current message is part of a cluster from the same sender
   const isPartOfGroup = (idx: number) => {
     if (idx === 0) return false;
     return messages[idx].senderId === messages[idx - 1].senderId;
@@ -249,7 +248,7 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
         </div>
       </div>
 
-      {/* STREAM AREA: SPACIOUS & CLEAN */}
+      {/* STREAM AREA */}
       <div className="flex-1 overflow-y-auto custom-scrollbar px-6 md:px-10 py-10 space-y-2 mask-gradient-chat">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full opacity-10 text-center select-none pointer-events-none pb-20">
@@ -267,8 +266,6 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
           return (
             <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-1 duration-300 ${!grouped ? 'mt-6' : 'mt-1'}`}>
               <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%] md:max-w-[65%]`}>
-                
-                {/* Bubble Container */}
                 <div 
                   className={`
                     p-4 md:p-5 text-sm md:text-[15px] font-bold shadow-sm relative transition-all duration-300
@@ -305,10 +302,9 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
         <div ref={messagesEndRef} className="h-6" />
       </div>
 
-      {/* INPUT COCKPIT: TACTICAL INTERFACE */}
-      <div className="px-6 md:px-10 pb-8 pt-4 relative z-30">
+      {/* INPUT COCKPIT */}
+      <div className="px-6 md:px-10 pb-8 pt-4 relative z-30 space-y-4">
         <div className="max-w-4xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[3rem] p-2.5 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] focus-within:shadow-[0_40px_80px_-15px_rgba(79,70,229,0.2)] transition-all duration-500">
-          
           {mediaPreview && (
             <div className="px-4 py-4 flex items-center gap-4 animate-in slide-in-from-bottom-2 bg-slate-50 dark:bg-slate-800/80 rounded-[2.2rem] mb-2 border border-slate-100 dark:border-slate-700 backdrop-blur-md">
               <div className="relative">
@@ -328,13 +324,13 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
 
           <div className="flex gap-2 items-end">
             <div className="flex gap-1.5 pb-1 pl-1">
-              <button onClick={() => fileInputRef.current?.click()} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all active:scale-90 border ${selectedFile ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'}`}>
+              <button onClick={() => fileInputRef.current?.click()} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all active:scale-90 border ${selectedFile ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'}`}>
                 <ICONS.Create />
               </button>
-              <button onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all active:scale-90 border ${isEmojiPickerOpen ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-400'}`}>
+              <button onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsGiphyPickerOpen(false); }} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all active:scale-90 border ${isEmojiPickerOpen ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-400'}`}>
                 <span className="text-2xl leading-none">😊</span>
               </button>
-              <button onClick={() => { setIsGiphyPickerOpen(!isGiphyPickerOpen); setIsEmojiPickerOpen(false); }} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all active:scale-90 border ${isGiphyPickerOpen ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-400'}`}>
+              <button onClick={() => { setIsGiphyPickerOpen(!isGiphyPickerOpen); setIsEmojiPickerOpen(false); }} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all active:scale-90 border ${isGiphyPickerOpen ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-400'}`}>
                 <span className="text-[9px] font-black font-mono">GIF</span>
               </button>
             </div>

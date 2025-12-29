@@ -39,11 +39,9 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
   const filteredData = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
     const startTime = dateRange.start ? new Date(dateRange.start).getTime() : 0;
-    const endTime = dateRange.end ? new Date(dateRange.end).getTime() + 86400000 : Infinity; // Include full end day
+    const endTime = dateRange.end ? new Date(dateRange.end).getTime() + 86400000 : Infinity; 
 
-    // 1. Filter Nodes (Users)
     const matchedNodes = users.filter(u => {
-      // Basic Text Match
       const textMatch = !query || (
         u.displayName.toLowerCase().includes(query) ||
         u.username.toLowerCase().includes(query) ||
@@ -51,52 +49,33 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
         u.location?.toLowerCase().includes(query) ||
         u.tags?.some(t => t.toLowerCase().includes(query))
       );
-
-      // Trust Tier Filter
       const tierMatch = trustTiers.length === 0 || (u.trustTier && trustTiers.includes(u.trustTier));
-
-      // Geo Filter (Simulated: check if location string contains user location string)
       const geoMatch = geoRadius === 'global' || !userData?.location || (u.location && userData.location && u.location.toLowerCase().includes(userData.location.split(',')[0].toLowerCase().trim()));
-
-      // Date Filter (Joined At) - Optional for users but consistent
       const joinedAt = u.joinedAt as any;
       const joinedTime = joinedAt && typeof joinedAt === 'object' && 'toDate' in joinedAt ? joinedAt.toDate().getTime() : 0;
       const dateMatch = (!dateRange.start && !dateRange.end) || (joinedTime >= startTime && joinedTime <= endTime);
-
       return textMatch && tierMatch && geoMatch && dateMatch;
     });
 
-    // 2. Filter Signals (Posts)
     const matchedSignals = posts.filter(p => {
-      // Basic Text Match
       const textMatch = !query || (
         p.content.toLowerCase().includes(query) ||
         p.authorName.toLowerCase().includes(query) ||
         p.location?.toLowerCase().includes(query)
       );
-
-      // Media Type Filter
       let mediaMatch = true;
       if (mediaType === 'visual') mediaMatch = !!(p.media && p.media.length > 0);
       else if (mediaType === 'image') mediaMatch = p.media?.some(m => m.type === 'image') || false;
       else if (mediaType === 'video') mediaMatch = p.media?.some(m => m.type === 'video') || false;
       else if (mediaType === 'text') mediaMatch = !p.media || p.media.length === 0;
-
-      // Date Filter
       const postTime = p.timestamp && typeof p.timestamp === 'object' && 'toDate' in p.timestamp ? p.timestamp.toDate().getTime() : 0;
       const dateMatch = (!dateRange.start && !dateRange.end) || (postTime >= startTime && postTime <= endTime);
-
-      // Geo Filter (Simulated based on post location or author location if available)
       const geoMatch = geoRadius === 'global' || !userData?.location || (p.location && p.location.toLowerCase().includes(userData.location.split(',')[0].toLowerCase().trim()));
-
-      // Trust Tier Filter (Lookup author)
-      // Note: This requires O(N*M) which is acceptable for client side filtering of <1000 items
       let trustMatch = true;
       if (trustTiers.length > 0) {
          const author = users.find(u => u.id === p.authorId);
          trustMatch = !!(author && author.trustTier && trustTiers.includes(author.trustTier));
       }
-
       return textMatch && mediaMatch && dateMatch && geoMatch && trustMatch;
     });
 
@@ -113,8 +92,8 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
   return (
     <div className="w-full max-w-6xl mx-auto pb-24">
       
-      {/* 1. Header & Active Search Telemetry */}
-      <div className="mb-8 pt-4 px-4 md:px-0">
+      {/* 1. Header */}
+      <div className="mb-8 pt-4 px-4 md:px-0 space-y-6">
         {searchQuery ? (
           <div className="bg-slate-900 rounded-[2.5rem] p-8 md:p-10 text-white relative overflow-hidden shadow-2xl border border-white/10 animate-in slide-in-from-top-4 duration-500">
              <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/20 blur-[80px] rounded-full translate-x-1/3 -translate-y-1/3" />
@@ -125,7 +104,7 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
                       <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                       <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.3em] font-mono">Query_Active</span>
                    </div>
-                   <h1 className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase leading-none">"{searchQuery}"</h1>
+                   <h1 className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase leading-none text-white">"{searchQuery}"</h1>
                    <p className="text-[10px] font-bold text-slate-400 font-mono mt-2 tracking-widest">
                      Found {filteredData.nodes.length} Nodes • {filteredData.signals.length} Signals
                    </p>
@@ -151,7 +130,6 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/50 dark:border-white/10 rounded-[2rem] p-1.5 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.05)] flex flex-col md:flex-row gap-2">
             
             <div className="flex items-center justify-between w-full">
-                {/* Main Tabs */}
                 <div className="flex bg-slate-100/50 dark:bg-slate-800/50 rounded-[1.6rem] p-1">
                 {(['all', 'signals', 'nodes'] as const).map(f => (
                     <button
@@ -174,12 +152,10 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
             </div>
          </div>
 
-         {/* Collapsible Filter Panel */}
          {showFilters && (
              <div className="mt-4 p-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] shadow-xl animate-in slide-in-from-top-4 duration-300">
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                      
-                     {/* 1. Temporal Range */}
                      <div className="space-y-3">
                          <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono ml-1">Temporal_Window</label>
                          <div className="flex flex-col gap-2">
@@ -198,7 +174,6 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
                          </div>
                      </div>
 
-                     {/* 2. Signal Format */}
                      <div className="space-y-3">
                          <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono ml-1">Signal_Type</label>
                          <div className="grid grid-cols-2 gap-2">
@@ -214,7 +189,6 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
                          </div>
                      </div>
 
-                     {/* 3. Geo-Fencing */}
                      <div className="space-y-3">
                          <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono ml-1">Geo_Fencing</label>
                          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
@@ -238,7 +212,6 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
                          )}
                      </div>
 
-                     {/* 4. Trust Protocol */}
                      <div className="space-y-3">
                          <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono ml-1">Trust_Clearance</label>
                          <div className="flex flex-wrap gap-2">
@@ -280,10 +253,8 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
          )}
       </div>
 
-      {/* 3. Content Matrix */}
       <div className="space-y-12 px-4 md:px-0">
          
-         {/* NODE CLUSTER */}
          {showNodes && filteredData.nodes.length > 0 && (
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                <div className="flex items-center gap-4 mb-6">
@@ -325,7 +296,6 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
             </section>
          )}
 
-         {/* SIGNAL STREAM */}
          {showSignals && (
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
                <div className="flex items-center gap-4 mb-6">
@@ -342,7 +312,6 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
                            onClick={() => onViewPost(post)}
                            className="group bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-slate-800 hover:shadow-xl hover:border-indigo-100 dark:hover:border-indigo-900 transition-all duration-300 cursor-pointer flex flex-col h-full"
                         >
-                           {/* Media Header */}
                            {post.media && post.media.length > 0 ? (
                               <div className="aspect-square relative overflow-hidden bg-slate-100 dark:bg-slate-800">
                                  <img 
@@ -378,7 +347,6 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
                               </div>
                            )}
 
-                           {/* Mini Stats Footer (Only for media posts as text posts have internal footer) */}
                            {post.media && post.media.length > 0 && (
                               <div className="p-4 flex items-center justify-between border-t border-slate-50 dark:border-slate-800 bg-white dark:bg-slate-900">
                                  <div className="flex items-center gap-1.5">
@@ -401,7 +369,6 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
             </section>
          )}
 
-         {/* Empty State */}
          {filteredData.nodes.length === 0 && filteredData.signals.length === 0 && (
             <div className="py-40 text-center">
                <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300 dark:text-slate-600 animate-pulse">
