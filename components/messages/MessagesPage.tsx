@@ -140,7 +140,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
   }, [sidebarMode, chats, contacts, searchQuery, currentUser.id]);
 
   return (
-    <div className="flex h-full w-full bg-[#020617] md:rounded-t-[3rem] overflow-hidden border-x border-t border-slate-900 shadow-heavy transition-all duration-500 relative z-10 min-h-0">
+    <div className="flex h-full w-full bg-[#020617] md:rounded-[3rem] overflow-hidden border border-slate-900 shadow-heavy transition-all duration-500 relative z-10 min-h-0">
       <div className={`${view === 'chat' ? 'hidden md:flex' : 'flex'} w-full md:w-[380px] lg:w-[420px] border-r border-slate-900 flex-col bg-[#050b1a] shrink-0 relative z-20 h-full`}>
         <div className="p-8 pb-4 space-y-8 shrink-0">
            <div className="flex items-center justify-between">

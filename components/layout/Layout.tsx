@@ -101,7 +101,7 @@ export const Layout: React.FC<LayoutProps> = ({
                   : 'px-4 md:px-6 lg:px-8 xl:px-12 py-6 overflow-y-auto custom-scrollbar'
               }`} 
             >
-              <div className={`w-full h-full relative flex flex-col ${isMessageView ? 'pb-0' : 'pb-[calc(var(--bottom-nav-h)+2rem)] md:pb-24'}`}>
+              <div className={`w-full h-full relative flex flex-col ${isMessageView ? 'pb-[calc(var(--bottom-nav-h)+1rem)] md:pb-8' : 'pb-[calc(var(--bottom-nav-h)+2rem)] md:pb-24'}`}>
                 {children}
               </div>
             </div>
