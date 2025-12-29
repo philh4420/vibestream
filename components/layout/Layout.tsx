@@ -61,7 +61,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const isMessageView = activeRoute === AppRoute.MESSAGES;
 
   return (
-    <div className="flex flex-col h-screen w-full bg-slate-50 dark:bg-slate-950 overflow-hidden fixed inset-0">
+    <div className="flex flex-col h-[100dvh] w-full bg-slate-50 dark:bg-slate-950 overflow-hidden fixed inset-0">
       <Header 
         userRole={userRole} 
         userData={userData}
@@ -79,7 +79,7 @@ export const Layout: React.FC<LayoutProps> = ({
 
       <div className="flex-1 flex overflow-hidden relative">
         
-        {/* Dynamic Left Navigation System */}
+        {/* Navigation - Left Sidebar */}
         <div className="relative z-[100] h-full shrink-0">
           <LeftSidebar 
             activeRoute={activeRoute}
@@ -91,24 +91,24 @@ export const Layout: React.FC<LayoutProps> = ({
           />
         </div>
 
-        {/* Main Content Viewport */}
+        {/* Main Content Area */}
         <main className="flex-1 relative overflow-hidden flex flex-col min-w-0 z-10">
           <AtmosphericBackground weather={weather}>
             <div 
               className={`flex-1 relative z-10 w-full overflow-hidden flex flex-col ${
                 isMessageView 
-                  ? 'pt-4 px-0 md:px-4' 
+                  ? 'p-0 md:p-4' // Message view needs edge-to-edge for full card feel
                   : 'px-4 md:px-6 lg:px-8 xl:px-12 py-6 overflow-y-auto custom-scrollbar'
               }`} 
             >
-              <div className={`w-full h-full relative flex flex-col ${isMessageView ? 'pb-[calc(var(--bottom-nav-h)+1rem)] md:pb-8' : 'pb-[calc(var(--bottom-nav-h)+2rem)] md:pb-24'}`}>
+              <div className="w-full h-full relative flex flex-col">
                 {children}
               </div>
             </div>
           </AtmosphericBackground>
         </main>
 
-        {/* Right Sidebar */}
+        {/* Dynamic Nodes - Right Sidebar */}
         <div className="relative z-[100] h-full hidden xl:block shrink-0">
           <RightSidebar 
             userData={userData} 
@@ -119,9 +119,9 @@ export const Layout: React.FC<LayoutProps> = ({
         </div>
       </div>
 
-      {/* Portrait Mobile Tab Bar */}
-      <nav className={`${orientation === 'landscape' ? 'hidden' : 'md:hidden'} fixed bottom-0 left-0 right-0 glass-panel border-t border-precision z-[150] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl`} style={{ height: 'var(--bottom-nav-h)', paddingBottom: 'var(--sab)' }}>
-        <div className="flex items-center justify-around h-full px-2">
+      {/* Tab bar for mobile portrait */}
+      <nav className={`${orientation === 'landscape' ? 'hidden' : 'md:hidden'} shrink-0 glass-panel border-t border-precision z-[150] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]`} style={{ height: 'calc(var(--bottom-nav-h) + env(safe-area-inset-bottom))' }}>
+        <div className="flex items-center justify-around h-[var(--bottom-nav-h)] px-2">
           <button onClick={() => onNavigate(AppRoute.FEED)} className={`p-3 rounded-xl transition-all tap-feedback relative ${activeRoute === AppRoute.FEED ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-slate-400'}`}>
             <ICONS.Home />
           </button>
@@ -136,9 +136,7 @@ export const Layout: React.FC<LayoutProps> = ({
               onClick={onOpenCreate}
               className="absolute bottom-4 left-0 w-14 h-14 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl flex items-center justify-center shadow-2xl active:scale-90 transition-transform ring-[6px] ring-[#fcfcfd] dark:ring-slate-950 group z-20"
             >
-              <div className="group-active:rotate-90 transition-transform duration-300">
-                <ICONS.Create />
-              </div>
+              <ICONS.Create />
             </button>
           </div>
 
@@ -153,32 +151,6 @@ export const Layout: React.FC<LayoutProps> = ({
           </button>
         </div>
       </nav>
-
-      {/* Mobile Landscape Floating Navigation */}
-      {orientation === 'landscape' && (
-        <div className="md:hidden fixed top-1/2 -translate-y-1/2 flex flex-col gap-4 z-[300]" style={{ left: 'max(1.25rem, var(--sal))' }}>
-           <div className="glass-panel p-2.5 rounded-2xl flex flex-col gap-2 border-precision shadow-2xl bg-white/90 dark:bg-slate-900/90">
-              <button onClick={() => onNavigate(AppRoute.FEED)} className={`p-3 rounded-xl transition-all tap-feedback ${activeRoute === AppRoute.FEED ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-400'}`}>
-                <ICONS.Home />
-              </button>
-              <button onClick={() => onNavigate(AppRoute.STREAM_GRID)} className={`p-3 rounded-xl transition-all tap-feedback ${activeRoute === AppRoute.STREAM_GRID ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-400'}`}>
-                <ICONS.Streams />
-              </button>
-              <button onClick={() => onNavigate(AppRoute.MESSAGES)} className={`p-3 rounded-xl transition-all tap-feedback ${activeRoute === AppRoute.MESSAGES ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-400'}`}>
-                <ICONS.Messages />
-              </button>
-              <button onClick={() => onNavigate(AppRoute.PROFILE)} className={`p-3 rounded-xl transition-all tap-feedback ${activeRoute === AppRoute.PROFILE ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-400'}`}>
-                <ICONS.Profile />
-              </button>
-           </div>
-           <button 
-            onClick={onOpenCreate}
-            className="w-13 h-13 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-100 dark:shadow-none active:scale-90 transition-transform"
-          >
-            <ICONS.Create />
-          </button>
-        </div>
-      )}
     </div>
   );
 };
