@@ -28,7 +28,6 @@ import { GiphyGif } from '../../services/giphy';
 import { extractUrls } from '../../lib/textUtils';
 import { LinkPreview } from '../ui/LinkPreview';
 import { RichTextEditor, RichTextEditorRef } from '../ui/RichTextEditor';
-import { generateSmartReplies } from '../../services/gemini';
 
 interface DirectChatInterfaceProps {
   chatId: string;
@@ -51,10 +50,6 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   
   const [terminationTarget, setTerminationTarget] = useState<{ id: string, label: string } | null>(null);
-
-  // AI Smart Replies
-  const [smartReplies, setSmartReplies] = useState<string[]>([]);
-  const [isGeneratingReplies, setIsGeneratingReplies] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -91,28 +86,9 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
       const fetched = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Message));
       setMessages(fetched);
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 300);
-      
-      // Trigger Smart Reply Generation if the last message isn't from us
-      const lastMsg = fetched[fetched.length - 1];
-      if (lastMsg && lastMsg.senderId !== currentUser.id && !lastMsg.text.includes('system')) {
-        generateReplies(fetched);
-      } else {
-        setSmartReplies([]);
-      }
     });
     return () => unsub();
   }, [chatId]);
-
-  const generateReplies = async (msgList: Message[]) => {
-    setIsGeneratingReplies(true);
-    const context = msgList.slice(-5).map(m => ({
-        sender: m.senderId === currentUser.id ? 'Me' : 'Other',
-        text: m.text
-    }));
-    const replies = await generateSmartReplies(context);
-    setSmartReplies(replies);
-    setIsGeneratingReplies(false);
-  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -198,7 +174,6 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
       setNewMessage('');
       editorRef.current?.clear();
       clearMedia();
-      setSmartReplies([]);
     } catch (e) { addToast("Uplink Interrupted", "error"); } finally { setIsSending(false); }
   };
 
@@ -351,21 +326,6 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
       {/* INPUT COCKPIT */}
       <div className="px-6 md:px-10 pb-8 pt-4 relative z-30 bg-gradient-to-t from-white dark:from-[#020617] via-white/50 dark:via-[#020617]/50 to-transparent">
         
-        {/* Smart Replies */}
-        {smartReplies.length > 0 && !isSending && (
-            <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 animate-in slide-in-from-bottom-2 duration-500">
-                {smartReplies.map((reply, i) => (
-                    <button
-                        key={i}
-                        onClick={() => handleSendMessage(reply)}
-                        className="px-5 py-2.5 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800/60 rounded-full text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 whitespace-nowrap hover:bg-indigo-600 hover:text-white transition-all shadow-sm active:scale-95"
-                    >
-                        {reply}
-                    </button>
-                ))}
-            </div>
-        )}
-
         <div className="max-w-4xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[3rem] p-2.5 shadow-premium focus-within:ring-8 focus-within:ring-indigo-500/5 transition-all duration-500">
           {mediaPreview && (
             <div className="px-4 py-4 flex items-center gap-4 animate-in slide-in-from-bottom-2 bg-slate-50 dark:bg-slate-800/80 rounded-[2.2rem] mb-2 border border-slate-100 dark:border-slate-700 backdrop-blur-md">
