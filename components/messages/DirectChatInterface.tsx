@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { db } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
 const { 
@@ -28,7 +27,6 @@ import { GiphyGif } from '../../services/giphy';
 import { extractUrls } from '../../lib/textUtils';
 import { LinkPreview } from '../ui/LinkPreview';
 import { RichTextEditor, RichTextEditorRef } from '../ui/RichTextEditor';
-import { analyzeConversation } from '../../services/gemini';
 
 interface DirectChatInterfaceProps {
   chatId: string;
@@ -43,8 +41,6 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [isGiphyPickerOpen, setIsGiphyPickerOpen] = useState(false);
@@ -86,17 +82,6 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
     return () => unsub();
   }, [chatId]);
 
-  const handleAiAnalysis = async () => {
-    if (messages.length === 0) return;
-    setIsAnalyzing(true);
-    addToast("Initializing Neural Analysis...", "info");
-    const thread = messages.map(m => `${m.senderId === currentUser.id ? 'Self' : 'Peer'}: ${m.text}`);
-    const report = await analyzeConversation(thread);
-    setAiAnalysis(report || "Patterns unresolved.");
-    setIsAnalyzing(false);
-  };
-
-  // Fixed: Implemented the termination logic used by the modal
   const handleExecuteTermination = async () => {
     if (!terminationTarget || !db) return;
     try {
@@ -153,30 +138,11 @@ export const DirectChatInterface: React.FC<DirectChatInterfaceProps> = ({ chatId
           </div>
         </div>
         <div className="flex items-center gap-3">
-           <button 
-             onClick={handleAiAnalysis}
-             disabled={isAnalyzing || messages.length === 0}
-             className={`px-4 py-2.5 rounded-xl border transition-all flex items-center gap-2 group ${isAnalyzing ? 'bg-indigo-900/50 border-indigo-700 text-indigo-300' : 'bg-slate-900 border-slate-800 text-indigo-400 hover:border-indigo-500 hover:bg-indigo-500/10'}`}
-           >
-              {isAnalyzing ? <div className="w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" /> : <div className="group-hover:animate-pulse"><ICONS.Resilience /></div>}
-              <span className="text-[9px] font-black uppercase tracking-widest font-mono">Neural_Analysis</span>
-           </button>
            <button onClick={() => setTerminationTarget({ id: chatId, label: otherParticipant?.displayName || 'Link' })} className="w-12 h-12 bg-slate-900 text-slate-500 hover:text-rose-500 rounded-2xl flex items-center justify-center transition-all border border-slate-800"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar px-6 md:px-10 py-10 space-y-1 relative">
-        {aiAnalysis && (
-            <div className="max-w-xl mx-auto mb-12 bg-indigo-950/40 border border-indigo-500/30 rounded-[2.5rem] p-8 shadow-2xl animate-in slide-in-from-top-4 duration-500 relative">
-                <button onClick={() => setAiAnalysis(null)} className="absolute top-4 right-4 text-indigo-300 hover:text-white transition-colors p-2"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3.5}><path d="M6 18L18 6M6 6l12 12" /></svg></button>
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-indigo-500 rounded-xl text-white shadow-[0_0_15px_#6366f1] animate-pulse"><ICONS.Resilience /></div>
-                    <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em] font-mono">Gemini_Thread_Report</span>
-                </div>
-                <div className="text-xs font-medium text-indigo-100 leading-relaxed ProseMirror italic" dangerouslySetInnerHTML={{ __html: aiAnalysis.replace(/\n/g, '<br/>') }} />
-            </div>
-        )}
-
         {messages.map((msg, idx) => {
           const isMe = msg.senderId === currentUser.id;
           return (
