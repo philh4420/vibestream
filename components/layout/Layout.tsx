@@ -38,8 +38,8 @@ export const Layout: React.FC<LayoutProps> = ({
   notifications,
   onMarkRead,
   onDeleteNotification,
-  currentRegion,
-  onRegionChange,
+  currentRegion, 
+  onRegionChange, 
   onSearch,
   weather = null,
   systemSettings,
@@ -61,7 +61,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const isMessageView = activeRoute === AppRoute.MESSAGES;
 
   return (
-    <div className="flex flex-col h-full w-full bg-slate-50 dark:bg-slate-950 overflow-hidden fixed inset-0">
+    <div className="flex flex-col h-screen w-full bg-slate-50 dark:bg-slate-950 overflow-hidden fixed inset-0">
       <Header 
         userRole={userRole} 
         userData={userData}
@@ -77,10 +77,10 @@ export const Layout: React.FC<LayoutProps> = ({
         onOpenSettings={onOpenSettings}
       />
 
-      <div className="flex-1 flex overflow-hidden relative h-full">
+      <div className="flex-1 flex overflow-hidden relative">
         
         {/* Dynamic Left Navigation System */}
-        <div className="relative z-[100] h-full">
+        <div className="relative z-[100] h-full shrink-0">
           <LeftSidebar 
             activeRoute={activeRoute}
             onNavigate={onNavigate}
@@ -94,22 +94,27 @@ export const Layout: React.FC<LayoutProps> = ({
         {/* Main Content Viewport */}
         <main className="flex-1 relative overflow-hidden flex flex-col min-w-0 z-10">
           <AtmosphericBackground weather={weather}>
+            {/* 
+              CORE FIX: Removed 'h-full' from the viewport container when isMessageView is true.
+              Using flex-1 and absolute positioning to ensure the content takes the full remaining height
+              without overflowing the screen or overlapping the header.
+            */}
             <div 
-              className={`flex-1 scroll-viewport relative z-10 h-full w-full ${
+              className={`flex-1 relative z-10 w-full overflow-hidden ${
                 isMessageView 
-                  ? 'pt-[calc(var(--header-h)+1.5rem)] px-0 md:px-4 lg:px-6 pb-0' 
-                  : 'pt-[var(--header-h)] px-4 md:px-6 lg:px-8 xl:px-12 py-6'
+                  ? 'pt-[var(--header-h)] px-0' 
+                  : 'pt-[var(--header-h)] px-4 md:px-6 lg:px-8 xl:px-12 py-6 overflow-y-auto custom-scrollbar'
               }`} 
             >
-              <div className={`w-full h-full relative ${isMessageView ? 'pb-[var(--bottom-nav-h)] md:pb-4' : 'pb-[calc(var(--bottom-nav-h)+4rem)] md:pb-24'}`}>
+              <div className={`w-full h-full relative ${isMessageView ? 'pb-[var(--bottom-nav-h)] md:pb-0' : 'pb-[calc(var(--bottom-nav-h)+2rem)] md:pb-24'}`}>
                 {children}
               </div>
             </div>
           </AtmosphericBackground>
         </main>
 
-        {/* Right Sidebar - Restored for ALL views on large screens */}
-        <div className="relative z-[100] h-full hidden xl:block">
+        {/* Right Sidebar */}
+        <div className="relative z-[100] h-full hidden xl:block shrink-0">
           <RightSidebar 
             userData={userData} 
             weather={weather} 

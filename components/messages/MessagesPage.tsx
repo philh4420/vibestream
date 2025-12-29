@@ -160,7 +160,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
   }, [sidebarMode, chats, contacts, searchQuery, currentUser.id]);
 
   return (
-    <div className="flex h-full w-full bg-white dark:bg-slate-950 rounded-[3rem] overflow-hidden border border-slate-100 dark:border-slate-800 shadow-heavy transition-all duration-500">
+    <div className="flex h-full w-full bg-white dark:bg-slate-950 md:rounded-t-[3rem] overflow-hidden border-x border-t border-slate-100 dark:border-slate-800 shadow-heavy transition-all duration-500 relative z-10">
       
       {/* SIDEBAR: NAV REGISTRY */}
       <div className={`${view === 'chat' ? 'hidden md:flex' : 'flex'} w-full md:w-[380px] lg:w-[420px] border-r border-slate-100 dark:border-slate-800 flex-col bg-slate-50/30 dark:bg-slate-900/30 backdrop-blur-3xl shrink-0 relative z-20`}>
@@ -192,7 +192,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
            </div>
 
            <div className="relative group">
-              <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 transition-colors pointer-events-none scale-110">
+              <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors pointer-events-none scale-110">
                  <ICONS.Search />
               </div>
               <input 
