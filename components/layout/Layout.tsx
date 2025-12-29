@@ -95,26 +95,28 @@ export const Layout: React.FC<LayoutProps> = ({
         <main className="flex-1 relative overflow-hidden flex flex-col min-w-0 z-10">
           <AtmosphericBackground weather={weather}>
             <div 
-              className={`flex-1 scroll-viewport relative z-10 pt-[var(--header-h)] h-full w-full ${isMessageView ? 'p-0 md:p-3 lg:p-6' : 'px-4 md:px-6 lg:px-8 xl:px-12 py-6'}`} 
+              className={`flex-1 scroll-viewport relative z-10 h-full w-full ${
+                isMessageView 
+                  ? 'pt-[calc(var(--header-h)+1.5rem)] px-0 md:px-4 lg:px-6 pb-0' 
+                  : 'pt-[var(--header-h)] px-4 md:px-6 lg:px-8 xl:px-12 py-6'
+              }`} 
             >
-              <div className={`w-full h-full relative ${isMessageView ? 'pb-[var(--bottom-nav-h)] md:pb-0' : 'pb-[calc(var(--bottom-nav-h)+4rem)] md:pb-24'}`}>
+              <div className={`w-full h-full relative ${isMessageView ? 'pb-[var(--bottom-nav-h)] md:pb-4' : 'pb-[calc(var(--bottom-nav-h)+4rem)] md:pb-24'}`}>
                 {children}
               </div>
             </div>
           </AtmosphericBackground>
         </main>
 
-        {/* Right Sidebar - Logic handled inside component for visibility */}
-        {!isMessageView && (
-          <div className="relative z-[100] h-full hidden xl:block">
-            <RightSidebar 
-              userData={userData} 
-              weather={weather} 
-              onNavigate={onNavigate} 
-              blockedIds={blockedIds}
-            />
-          </div>
-        )}
+        {/* Right Sidebar - Restored for ALL views on large screens */}
+        <div className="relative z-[100] h-full hidden xl:block">
+          <RightSidebar 
+            userData={userData} 
+            weather={weather} 
+            onNavigate={onNavigate} 
+            blockedIds={blockedIds}
+          />
+        </div>
       </div>
 
       {/* Portrait Mobile Tab Bar */}
