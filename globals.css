@@ -1,340 +1,68 @@
 
-/* =========================================================================
-   VIBESTREAM 2026+ ULTIMATE CSS RESET & MODERN DESIGN MANIFEST
-   OKLCH CORE | ZERO-SCROLLBAR ARCHITECTURE | MOBILE-FIRST
-   ========================================================================= */
+/* Existing styles... */
 
-/* 1. THE 2026 GLOBAL RESET */
-@layer reset {
-  *, *::before, *::after {
-    box-sizing: border-box;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  * {
-    margin: 0;
-    padding: 0;
-    font: inherit;
-    scrollbar-width: none; 
-    -ms-overflow-style: none;
-  }
-
-  *::-webkit-scrollbar {
-    display: none;
-    width: 0;
-    height: 0;
-    background: transparent;
-  }
-
-  /* Specific Override for Custom Scrollbars */
-  .custom-scrollbar {
-    scrollbar-width: thin !important;
-    scrollbar-color: oklch(0.8 0.05 250) transparent !important;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar {
-    display: block !important;
-    width: 4px !important;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent !important;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: oklch(0.8 0.05 250 / 0.3) !important;
-    border-radius: 20px !important;
-    border: 1px solid transparent !important;
-    background-clip: content-box !important;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: oklch(0.6 0.1 250 / 0.5) !important;
-  }
-
-  html {
-    font-size: 16px;
-    height: 100dvh;
-    width: 100vw;
-    color-scheme: light dark;
-    overflow: hidden !important; 
-    overscroll-behavior: none !important;
-    cursor: default;
-    background-color: var(--bg-main);
-    position: fixed; 
-    top: 0;
-    left: 0;
-  }
-
-  body {
-    height: 100%;
-    width: 100%;
-    line-height: 1.6;
-    text-rendering: optimizeLegibility;
-    -webkit-text-size-adjust: none;
-    background-color: var(--bg-main);
-    color: var(--text-main);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    overflow: hidden !important;
-  }
-
-  #root {
-    height: 100%;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    isolation: isolate;
-    overflow: hidden !important;
-  }
-
-  img, picture, video, canvas, svg {
-    display: block;
-    max-width: 100%;
-    user-select: none;
-    -webkit-user-drag: none;
-  }
-
-  button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: inherit;
-    touch-action: manipulation;
-  }
-
-  p, h1, h2, h3, h4, h5, h6 {
-    overflow-wrap: break-word;
-    text-wrap: pretty;
-  }
-
-  input, textarea, select {
-    background: none;
-    border: none;
-    outline: none;
-  }
+/* 2026 PREMIUM UI EXTENSIONS */
+.shadow-premium {
+  box-shadow: 
+    0 10px 40px -10px rgba(0, 0, 0, 0.08),
+    0 5px 15px -5px rgba(0, 0, 0, 0.04),
+    0 2px 4px -2px rgba(0, 0, 0, 0.02);
 }
 
-/* 2. SYSTEM CONSTANTS & PRISM VARIABLES */
-:root {
-  --bg-main: oklch(0.99 0.005 240);
-  --text-main: oklch(0.25 0.02 240);
-  --text-muted: oklch(0.55 0.02 240);
-  --accent: oklch(0.55 0.22 260);
-  --accent-soft: oklch(0.55 0.22 260 / 0.08);
-  --rose-vibrant: oklch(0.6 0.25 20);
-  --emerald-vibrant: oklch(0.7 0.2 150);
-  --glass-surface: oklch(1 0 0 / 0.85);
-  --glass-border: oklch(0 0 0 / 0.05);
-  --sat: env(safe-area-inset-top);
-  --sar: env(safe-area-inset-right);
-  --sab: env(safe-area-inset-bottom);
-  --sal: env(safe-area-inset-left);
-  --header-h: calc(4.5rem + var(--sat));
-  --bottom-nav-h: calc(4rem + var(--sab));
-  --p-50: #eef2ff;
-  --p-100: #e0e7ff;
-  --p-200: #c7d2fe;
-  --p-500: #6366f1;
-  --p-600: #4f46e5;
-  --p-700: #4338ca;
-  --p-900: #312e81;
+.dark .shadow-premium {
+  box-shadow: 
+    0 20px 60px -12px rgba(0, 0, 0, 0.6),
+    0 8px 20px -8px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.05);
 }
 
-.bg-indigo-50 { background-color: var(--p-50) !important; }
-.bg-indigo-100 { background-color: var(--p-100) !important; }
-.bg-indigo-500 { background-color: var(--p-500) !important; }
-.bg-indigo-600 { background-color: var(--p-600) !important; }
-.bg-indigo-900 { background-color: var(--p-900) !important; }
-.text-indigo-500 { color: var(--p-500) !important; }
-.text-indigo-600 { color: var(--p-600) !important; }
-.text-indigo-700 { color: var(--p-700) !important; }
-.border-indigo-100 { border-color: var(--p-100) !important; }
-.border-indigo-200 { border-color: var(--p-200) !important; }
-.border-indigo-500 { border-color: var(--p-500) !important; }
-.border-indigo-600 { border-color: var(--p-600) !important; }
-
-html.dark {
-  --bg-main: #020617;
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --glass-surface: rgba(15, 23, 42, 0.85);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  color-scheme: dark;
+.shadow-heavy {
+    box-shadow: 
+    0 30px 100px -20px rgba(0, 0, 0, 0.15),
+    0 15px 40px -15px rgba(0, 0, 0, 0.1);
 }
 
-.scroll-viewport {
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  -webkit-overflow-scrolling: touch !important;
-  scrollbar-width: none;
-  overscroll-behavior-y: contain !important;
-  display: flex;
-  flex-direction: column;
+.dark .shadow-heavy {
+    box-shadow: 
+    0 40px 120px -30px rgba(0, 0, 0, 0.8),
+    0 20px 50px -20px rgba(0, 0, 0, 0.5);
 }
 
-/* =========================================================================
-   COSMETIC PROTOCOLS: BORDERS
-   ========================================================================= */
-
-@property --gradient-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
+@keyframes signal-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
-@keyframes neon-spin {
-  0% { --gradient-angle: 0deg; }
-  100% { --gradient-angle: 360deg; }
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  background-size: 200% 100%;
+  animation: signal-shimmer 2.5s infinite;
 }
 
-/* Neon Pulse Border */
-.cosmetic-border-border_neon {
-  position: relative;
-  z-index: 1;
-}
-.cosmetic-border-border_neon::before {
-  content: "";
-  position: absolute;
-  inset: -3px;
-  border-radius: inherit;
-  background: conic-gradient(from var(--gradient-angle), #ff00ea, #00eaff, #ff00ea);
-  animation: neon-spin 2s linear infinite;
-  z-index: -1;
-  filter: blur(4px);
-}
+/* Chat bubble sequence rounding */
+.rounded-bubble-top { border-top-left-radius: 2rem; border-top-right-radius: 2rem; border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem; }
+.rounded-bubble-mid { border-radius: 0.5rem 2rem 2rem 0.5rem; }
+.rounded-bubble-end { border-radius: 0.5rem 2rem 2rem 2rem; }
 
-/* Gold Halo Border */
-.cosmetic-border-border_gold {
-  position: relative;
-  box-shadow: 0 0 0 2px #ffd700, 0 0 15px #ffd700;
-  border: 2px solid #fff !important;
-  animation: gold-pulse 2s infinite alternate;
+/* ProseMirror / Slate Overrides for Messaging */
+.ProseMirror p { margin-bottom: 0 !important; }
+.ProseMirror strong { font-weight: 900; }
+.ProseMirror code { 
+    background: rgba(0,0,0,0.1); 
+    padding: 0.2rem 0.4rem; 
+    border-radius: 0.4rem; 
+    font-family: 'JetBrains Mono', monospace; 
 }
-@keyframes gold-pulse {
-  0% { box-shadow: 0 0 0 2px #ffd700, 0 0 5px #ffd700; }
-  100% { box-shadow: 0 0 0 3px #fff, 0 0 20px #ffd700; }
-}
+.dark .ProseMirror code { background: rgba(255,255,255,0.1); }
 
-/* Glitch Ring Border */
-.cosmetic-border-border_glitch {
-  position: relative;
-  box-shadow: -2px 0 #00ffff, 2px 0 #ff00ff;
-  animation: glitch-skew 1s infinite linear alternate-reverse;
+/* Custom utility for the 2026 glass effect */
+.glass-panel-heavy {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
-@keyframes glitch-skew {
-  0%, 100% { transform: skew(0deg); }
-  20% { transform: skew(-2deg); }
-  40% { transform: skew(2deg); }
-}
-
-/* =========================================================================
-   COSMETIC PROTOCOLS: TRAILS
-   ========================================================================= */
-
-.signal-trail-dot {
-  position: fixed;
-  pointer-events: none;
-  z-index: 9999;
-  border-radius: 50%;
-  animation: trail-fade 0.8s ease-out forwards;
-}
-@keyframes trail-fade {
-  0% { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(0); }
-}
-.trail-trail_cyber { background: #00eaff; box-shadow: 0 0 8px #00eaff; }
-.trail-trail_matrix { background: #0f0; box-shadow: 0 0 8px #0f0; border-radius: 0; }
-.trail-trail_fire { background: #ff4500; box-shadow: 0 0 10px #ff8c00; }
-
-/* =========================================================================
-   COSMETIC PROTOCOLS: FILTERS
-   ========================================================================= */
-
-.filter-filter_crt {
-  position: relative;
-  overflow: hidden;
-}
-.filter-filter_crt::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-  background-size: 100% 3px, 3px 100%;
-  pointer-events: none;
-  z-index: 50;
-}
-
-.filter-filter_vapor {
-  filter: hue-rotate(320deg) saturate(1.4) contrast(1.1);
-}
-.filter-filter_vapor::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(45deg, rgba(255, 0, 255, 0.05), transparent);
-  pointer-events: none;
-  z-index: 50;
-}
-
-.filter-filter_noir {
-  filter: grayscale(100%) contrast(1.3) brightness(0.9);
-}
-
-/* =========================================================================
-   PRESENCE & PULSE ANIMATIONS
-   ========================================================================= */
-
-@keyframes pulse-emerald {
-  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-}
-.pulse-active-emerald { animation: pulse-emerald 2s infinite; }
-
-@keyframes pulse-amber {
-  0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
-}
-.pulse-active-amber { animation: pulse-amber 2s infinite; }
-
-@keyframes pulse-indigo {
-  0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
-}
-.pulse-active-indigo { animation: pulse-indigo 2s infinite; }
-
-/* =========================================================================
-   MESSAGING UI ENHANCEMENTS
-   ========================================================================= */
-
-.mask-gradient-chat {
-  -webkit-mask-image: linear-gradient(to top, black 95%, transparent 100%);
-  mask-image: linear-gradient(to top, black 95%, transparent 100%);
-}
-
-.premium-bubble-shadow {
-  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1), 0 5px 15px -5px rgba(0,0,0,0.04);
-}
-
-.dark .premium-bubble-shadow {
-  box-shadow: 0 10px 40px -15px rgba(0,0,0,0.5), 0 4px 10px -2px rgba(0,0,0,0.3);
-}
-
-.chat-scroll-mask {
-  position: relative;
-}
-.chat-scroll-mask::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2rem;
-  background: linear-gradient(to bottom, var(--bg-main), transparent);
-  z-index: 10;
-  pointer-events: none;
+.dark .glass-panel-heavy {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }

@@ -1,4 +1,3 @@
-
 import * as FirebaseApp from 'firebase/app';
 const { initializeApp, getApps, getApp } = FirebaseApp as any;
 import * as FirebaseAppCheck from 'firebase/app-check';
@@ -42,22 +41,22 @@ if (isBrowser && CONFIG.APP_CHECK.reCaptchaSiteKey) {
 }
 
 /**
- * VIBESTREAM CONNECTIVITY FIX v2.0:
- * We use a more aggressive set of flags to bypass browser 'Access Control' check failures.
- * 1. experimentalForceLongPolling: Forces XHR instead of persistent fetch streams.
- * 2. useFetchStreams: false: Specifically tells the SDK NOT to use the modern Fetch API for 
- *    the long-lived 'Listen' channel, which often triggers the CORS 'access control' error 
- *    in proxied or sandboxed environments.
+ * VIBESTREAM CONNECTIVITY FIX v2.1:
+ * Enforcing XHR Long Polling to bypass strict CORS environments.
+ * This explicitly disables the modern Fetch API streams for the Listen channel.
  */
 let dbInstance;
 try {
   dbInstance = initializeFirestore(app, {
-    experimentalForceLongPolling: true,
-    useFetchStreams: false,
+    experimentalForceLongPolling: true, // Forces XHR over Fetch Streams
+    useFetchStreams: false,             // Explicitly disable fetch streams
+    ignoreUndefinedProperties: true     // Prevents crashes on undefined data
   });
+  console.log("VibeStream Protocol: Firestore initialized with Long-Polling strategy.");
 } catch (e) {
-  // If already initialized, get current instance
+  // Fallback if already initialized (e.g. via HMR or shared lib)
   dbInstance = getFirestore(app);
+  console.warn("VibeStream Protocol: Using existing Firestore instance.");
 }
 
 export const db = dbInstance;
