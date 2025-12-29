@@ -107,13 +107,12 @@ export interface User {
     icon: string;
   }[];
   settings?: UserSettings;
-  // Resonance Gamification
   resonance?: number;
   cosmetics?: {
     activeBorder?: string;
     activeTrail?: string;
     activeFilter?: string;
-    signalColor?: string; // Prism Feature
+    signalColor?: string;
     unlockedItems: string[];
   };
 }
@@ -132,6 +131,13 @@ export interface AppNotification {
   text: string;
   isRead: boolean;
   timestamp: any;
+  // Metadata for richer UX
+  metadata?: {
+    thumbnailUrl?: string;
+    snippet?: string;
+    isPriority?: boolean;
+    actionLabel?: string;
+  };
 }
 
 export interface InlineReaction {
@@ -172,14 +178,11 @@ export interface Post {
   authorAvatar: string;
   content: string;
   contentLengthTier: 'pulse' | 'standard' | 'deep';
-  type?: 'text' | 'media' | 'poll'; // New field
-  
-  // Poll Specifics
+  type?: 'text' | 'media' | 'poll';
   pollOptions?: PollOption[];
-  pollVotes?: Record<string, number>; // optionId -> count
-  pollVoters?: Record<string, string>; // userId -> optionId
+  pollVotes?: Record<string, number>;
+  pollVoters?: Record<string, string>;
   pollTotalVotes?: number;
-
   coAuthors?: { id: string, name: string, avatar: string }[];
   capturedStatus?: { emoji: string, message: string };
   media: {
@@ -235,9 +238,9 @@ export interface SonicEcho {
   authorName: string;
   authorAvatar: string;
   audioUrl: string;
-  waveform: number[]; // Array of normalized amplitudes (0-1)
+  waveform: number[];
   filter: AudioFilterType;
-  duration: number; // Seconds
+  duration: number;
   timestamp: any;
   listens: number;
 }
@@ -261,19 +264,19 @@ export interface Gathering {
   organizerAvatar: string;
   title: string;
   description: string;
-  date: string; // ISO String Start Date
-  endDate?: string; // ISO String End Date
-  location: string; // Display Location Name (Venue Name or Platform)
-  address?: string; // Physical Address for Map
-  linkUrl?: string; // Virtual Meeting Link
+  date: string;
+  endDate?: string;
+  location: string;
+  address?: string;
+  linkUrl?: string;
   type: 'physical' | 'virtual';
   category: 'Social' | 'Tech' | 'Gaming' | 'Nightlife' | 'Workshop';
   coverUrl: string;
-  attendees: string[]; // Array of User IDs
-  maxAttendees?: number; // Optional capacity
-  waitlist?: string[]; // Array of User IDs in queue
+  attendees: string[];
+  maxAttendees?: number;
+  waitlist?: string[];
   createdAt: any;
-  linkedChatId?: string; // Neural Lobby ID
+  linkedChatId?: string;
   latestStatus?: {
     message: string;
     timestamp: any;
