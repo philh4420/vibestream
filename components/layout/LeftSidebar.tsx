@@ -116,7 +116,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   );
 
   const sidebarContent = (collapsed: boolean) => (
-    <div className={`flex flex-col h-full ${collapsed ? 'items-center px-2' : 'px-4'}`}>
+    <div className={`flex flex-col h-full ${collapsed ? 'items-center px-2' : 'px-4'} pt-4`}>
       <div className="w-full mb-8 pt-2">
         <button 
           onClick={() => onNavigate(AppRoute.PROFILE)}
@@ -203,13 +203,13 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   return (
     <>
       <aside 
-        className="hidden lg:flex flex-col w-[280px] xl:w-[300px] shrink-0 border-r border-precision bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-xl pt-[calc(var(--header-h)+1.5rem)] h-full relative z-30 transition-colors duration-300"
+        className="hidden lg:flex flex-col w-[280px] xl:w-[300px] shrink-0 border-r border-precision bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-xl h-full relative z-30 transition-colors duration-300"
         style={{ paddingLeft: 'max(0.5rem, var(--sal))' }}
       >
         {sidebarContent(false)}
       </aside>
       <aside 
-        className="hidden md:flex lg:hidden flex-col shrink-0 w-[90px] border-r border-precision bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-xl pt-[calc(var(--header-h)+1.5rem)] h-full items-center relative z-30 transition-colors duration-300" 
+        className="hidden md:flex lg:hidden flex-col shrink-0 w-[90px] border-r border-precision bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-xl h-full items-center relative z-30 transition-colors duration-300" 
         style={{ paddingLeft: 'var(--sal)' }}
       >
         {sidebarContent(true)}

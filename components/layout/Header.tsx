@@ -64,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header 
-      className="absolute top-0 left-0 right-0 z-[1000] border-b border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl bg-white/70 dark:bg-slate-950/70" 
+      className="relative z-[1000] border-b border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl bg-white/70 dark:bg-slate-950/70 shrink-0" 
       style={{ height: 'var(--header-h)' }}
     >
       <div className="flex items-center justify-between w-full max-w-[2560px] mx-auto h-full px-4 md:px-6">
@@ -98,7 +98,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="relative" ref={menuRef}>
             <button 
               onClick={() => setIsSystemMenuOpen(!isSystemMenuOpen)}
-              className="flex items-center gap-3 p-1.5 rounded-[1.4rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-all active:scale-95"
+              className="flex items-center gap-3 p-1.5 rounded-[1.4rem] bg-white dark:bg-slate-900 border border-slate-200 border-slate-800 shadow-sm transition-all active:scale-95"
             >
               <div className={`relative w-8 h-8 md:w-9 md:h-9 rounded-[1rem] ${borderClass}`}>
                 <img src={userData?.avatarUrl} className="w-full h-full rounded-[1rem] object-cover bg-slate-100" alt="" />

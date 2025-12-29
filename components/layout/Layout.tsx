@@ -94,19 +94,14 @@ export const Layout: React.FC<LayoutProps> = ({
         {/* Main Content Viewport */}
         <main className="flex-1 relative overflow-hidden flex flex-col min-w-0 z-10">
           <AtmosphericBackground weather={weather}>
-            {/* 
-              CORE FIX: Removed 'h-full' from the viewport container when isMessageView is true.
-              Using flex-1 and absolute positioning to ensure the content takes the full remaining height
-              without overflowing the screen or overlapping the header.
-            */}
             <div 
               className={`flex-1 relative z-10 w-full overflow-hidden ${
                 isMessageView 
-                  ? 'pt-[var(--header-h)] px-0' 
-                  : 'pt-[var(--header-h)] px-4 md:px-6 lg:px-8 xl:px-12 py-6 overflow-y-auto custom-scrollbar'
+                  ? 'pt-4 px-0 md:px-4' // Add slight padding to reveal rounded corners of the chat page
+                  : 'px-4 md:px-6 lg:px-8 xl:px-12 py-6 overflow-y-auto custom-scrollbar'
               }`} 
             >
-              <div className={`w-full h-full relative ${isMessageView ? 'pb-[var(--bottom-nav-h)] md:pb-0' : 'pb-[calc(var(--bottom-nav-h)+2rem)] md:pb-24'}`}>
+              <div className={`w-full h-full relative ${isMessageView ? 'pb-[var(--bottom-nav-h)] md:pb-4' : 'pb-[calc(var(--bottom-nav-h)+2rem)] md:pb-24'}`}>
                 {children}
               </div>
             </div>

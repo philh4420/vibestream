@@ -168,7 +168,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
   const filteredTrending = trendingPosts.filter(p => !blockedIds?.has(p.authorId)).slice(0, 5);
 
   return (
-    <aside className="hidden lg:flex flex-col w-[280px] xl:w-[320px] shrink-0 bg-slate-50/50 dark:bg-slate-900/50 border-l border-precision h-screen sticky top-0 overflow-hidden transition-colors duration-300 pt-[calc(var(--header-h)+1rem)]">
+    <aside className="hidden lg:flex flex-col w-[280px] xl:w-[320px] shrink-0 bg-slate-50/50 dark:bg-slate-900/50 border-l border-precision h-screen sticky top-0 overflow-hidden transition-colors duration-300 pt-4">
       <div className="flex-1 overflow-y-auto custom-scrollbar px-6 space-y-8 pb-12">
         <div className="bg-slate-950 rounded-[2.5rem] p-6 text-white shadow-2xl relative overflow-hidden group border border-white/5">
           <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-600/20 blur-[80px] rounded-full translate-x-1/3 -translate-y-1/2" />
