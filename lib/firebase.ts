@@ -1,9 +1,8 @@
 
 import * as FirebaseApp from 'firebase/app';
 const { initializeApp, getApps, getApp } = FirebaseApp as any;
-// Using namespace imports to resolve modular SDK export issues
 import * as Firestore from 'firebase/firestore';
-const { initializeFirestore } = Firestore as any;
+const { initializeFirestore, getFirestore } = Firestore as any;
 import * as FirebaseAuth from 'firebase/auth';
 const { getAuth } = FirebaseAuth as any;
 
@@ -33,12 +32,20 @@ try {
 }
 
 /**
- * VIBESTREAM CONNECTIVITY FIX:
- * Ensures the 'Listen' channel doesn't fail due to browser access control.
+ * VIBESTREAM CONNECTIVITY FIX v2.0:
+ * Disabling fetch streams ensures the browser doesn't block the long-lived
+ * Firestore 'Listen' channel via strict CORS/Access-Control checks.
  */
-export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-});
+let dbInstance;
+try {
+  dbInstance = initializeFirestore(app, {
+    experimentalForceLongPolling: true,
+    useFetchStreams: false,
+  });
+} catch (e) {
+  dbInstance = getFirestore(app);
+}
 
+export const db = dbInstance;
 export const auth = getAuth(app);
 export default app;

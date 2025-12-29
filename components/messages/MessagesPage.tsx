@@ -38,6 +38,9 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
   const [view, setView] = useState<'list' | 'chat'>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  
+  // Optimistic chat state to handle race conditions when creating new chats
+  const [optimisticChat, setOptimisticChat] = useState<Chat | null>(null);
 
   // 1. Sync Existing Chats
   useEffect(() => {
@@ -48,11 +51,17 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
       orderBy('lastMessageTimestamp', 'desc')
     );
     const unsub = onSnapshot(q, (snap: any) => {
-      setChats(snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Chat)).filter(c => !c.isCluster));
+      const fetchedChats = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Chat)).filter(c => !c.isCluster);
+      setChats(fetchedChats);
       setLoading(false);
+      
+      // If we had an optimistic chat and it's now in the fetched list, clear optimistic state
+      if (optimisticChat && fetchedChats.find(c => c.id === optimisticChat.id)) {
+        setOptimisticChat(null);
+      }
     });
     return () => unsub();
-  }, [currentUser.id]);
+  }, [currentUser.id, optimisticChat]);
 
   // 2. Fetch Contacts (Followers & Following)
   useEffect(() => {
@@ -84,7 +93,8 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
     fetchContacts();
   }, [currentUser.id, blockedIds]);
 
-  const activeChat = chats.find(c => c.id === selectedChatId);
+  // Active chat is either found in real data OR it's the optimistic pending one
+  const activeChat = chats.find(c => c.id === selectedChatId) || (selectedChatId === optimisticChat?.id ? optimisticChat : null);
 
   // 3. Logic to Start or Open a Chat
   const startNewChat = async (targetUser: VibeUser) => {
@@ -101,12 +111,28 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
 
     // Create new handshake
     const chatId = [currentUser.id, targetUser.id].sort().join('_');
-    try {
-      const participantData = {
-        [currentUser.id]: { displayName: currentUser.displayName, avatarUrl: currentUser.avatarUrl },
-        [targetUser.id]: { displayName: targetUser.displayName, avatarUrl: targetUser.avatarUrl, activeBorder: targetUser.cosmetics?.activeBorder }
-      };
+    const participantData = {
+      [currentUser.id]: { displayName: currentUser.displayName, avatarUrl: currentUser.avatarUrl },
+      [targetUser.id]: { displayName: targetUser.displayName, avatarUrl: targetUser.avatarUrl, activeBorder: targetUser.cosmetics?.activeBorder }
+    };
 
+    // Construct Optimistic Chat Object
+    const newChatObj: Chat = {
+      id: chatId,
+      participants: [currentUser.id, targetUser.id],
+      participantData,
+      lastMessage: 'Neural link established. Awaiting first packet...',
+      lastMessageTimestamp: { seconds: Date.now() / 1000, nanoseconds: 0 },
+      isCluster: false
+    };
+
+    // Set UI state immediately
+    setOptimisticChat(newChatObj);
+    setSelectedChatId(chatId);
+    setView('chat');
+    setSidebarMode('chats');
+
+    try {
       await setDoc(doc(db, 'chats', chatId), {
         id: chatId,
         participants: [currentUser.id, targetUser.id],
@@ -115,13 +141,16 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
         lastMessageTimestamp: serverTimestamp(),
         isCluster: false
       });
-
-      setSelectedChatId(chatId);
-      setView('chat');
-      setSidebarMode('chats');
       addToast(`Handshake Secured with ${targetUser.displayName}`, "success");
     } catch (e) {
+      console.error(e);
       addToast("Uplink Protocol Failed", "error");
+      // Revert on failure
+      if (selectedChatId === chatId) {
+        setSelectedChatId(null);
+        setView('list');
+        setOptimisticChat(null);
+      }
     }
   };
 
@@ -189,48 +218,76 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
         <div className="flex-1 overflow-y-auto no-scrollbar px-4 pb-12 pt-4">
           <div className="space-y-1.5">
             {sidebarMode === 'chats' ? (
-              filteredItems.map(chat => {
-                const pId = chat.participants.find(id => id !== currentUser.id);
-                const pData = chat.participantData[pId || ''];
-                const peer = allUsers.find(u => u.id === pId);
-                const borderClass = peer?.cosmetics?.activeBorder ? `cosmetic-border-${peer.cosmetics.activeBorder}` : '';
-                const isActive = selectedChatId === chat.id;
-
-                return (
-                  <button 
-                    key={chat.id} 
-                    onClick={() => { setSelectedChatId(chat.id); setView('chat'); }} 
+              <>
+                {/* Always show optimistic chat if it exists and matches filter */}
+                {optimisticChat && (!searchQuery || optimisticChat.participantData?.[optimisticChat.participants.find(id => id !== currentUser.id)!]?.displayName.toLowerCase().includes(searchQuery.toLowerCase())) && (
+                   <button 
+                    key={optimisticChat.id} 
+                    onClick={() => { setSelectedChatId(optimisticChat.id); setView('chat'); }} 
                     className={`w-full flex items-center gap-4 p-4 rounded-[2rem] transition-all border group relative ${
-                      isActive 
+                      selectedChatId === optimisticChat.id 
                         ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-2xl border-transparent' 
                         : 'bg-transparent text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-transparent'
                     }`}
                   >
-                    <div className={`relative shrink-0 w-14 h-14 rounded-[1.4rem] ${borderClass}`}>
-                      <img src={pData?.avatarUrl} className={`w-full h-full rounded-[1.4rem] object-cover border-2 transition-all ${isActive ? 'border-white/20' : 'border-white dark:border-slate-800 shadow-sm'}`} alt="" />
-                      {peer?.presenceStatus === 'Online' && (
-                        <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-[2.5px] border-white dark:border-slate-800 bg-emerald-500 shadow-lg" />
-                      )}
+                    <div className="relative shrink-0 w-14 h-14 rounded-[1.4rem]">
+                      <img src={optimisticChat.participantData?.[optimisticChat.participants.find(id => id !== currentUser.id)!]?.avatarUrl} className="w-full h-full rounded-[1.4rem] object-cover border-2 border-white dark:border-slate-800 shadow-sm opacity-50" alt="" />
                     </div>
                     <div className="text-left overflow-hidden flex-1 space-y-1">
                       <div className="flex justify-between items-baseline">
-                        <p className={`font-black text-sm uppercase tracking-tight truncate ${isActive ? 'text-white dark:text-slate-900' : 'text-slate-900 dark:text-white'}`}>{pData?.displayName}</p>
-                        {chat.lastMessageTimestamp && (
-                          <span className={`text-[7px] font-mono font-black uppercase opacity-40 ml-2 ${isActive ? 'text-white' : ''}`}>
-                            {new Date(chat.lastMessageTimestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
-                          </span>
+                        <p className={`font-black text-sm uppercase tracking-tight truncate ${selectedChatId === optimisticChat.id ? 'text-white dark:text-slate-900' : 'text-slate-900 dark:text-white'}`}>
+                            {optimisticChat.participantData?.[optimisticChat.participants.find(id => id !== currentUser.id)!]?.displayName}
+                        </p>
+                        <span className="text-[7px] font-mono font-black uppercase opacity-40 ml-2">SYNCING</span>
+                      </div>
+                      <p className="text-[10px] truncate font-medium opacity-60">Initializing secure link...</p>
+                    </div>
+                  </button>
+                )}
+
+                {filteredItems.map(chat => {
+                  const pId = chat.participants.find(id => id !== currentUser.id);
+                  const pData = chat.participantData[pId || ''];
+                  const peer = allUsers.find(u => u.id === pId);
+                  const borderClass = peer?.cosmetics?.activeBorder ? `cosmetic-border-${peer.cosmetics.activeBorder}` : '';
+                  const isActive = selectedChatId === chat.id;
+
+                  return (
+                    <button 
+                      key={chat.id} 
+                      onClick={() => { setSelectedChatId(chat.id); setView('chat'); }} 
+                      className={`w-full flex items-center gap-4 p-4 rounded-[2rem] transition-all border group relative ${
+                        isActive 
+                          ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-2xl border-transparent' 
+                          : 'bg-transparent text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-transparent'
+                      }`}
+                    >
+                      <div className={`relative shrink-0 w-14 h-14 rounded-[1.4rem] ${borderClass}`}>
+                        <img src={pData?.avatarUrl} className={`w-full h-full rounded-[1.4rem] object-cover border-2 transition-all ${isActive ? 'border-white/20' : 'border-white dark:border-slate-800 shadow-sm'}`} alt="" />
+                        {peer?.presenceStatus === 'Online' && (
+                          <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-[2.5px] border-white dark:border-slate-800 bg-emerald-500 shadow-lg" />
                         )}
                       </div>
-                      <p className={`text-[10px] truncate font-medium ${isActive ? 'opacity-80 text-white' : 'opacity-60 text-slate-500 dark:text-slate-400'}`}>
-                        {chat.lastMessage}
-                      </p>
-                    </div>
-                    {isActive && (
-                       <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-500 rounded-full shadow-[0_0_15px_#6366f1]" />
-                    )}
-                  </button>
-                );
-              })
+                      <div className="text-left overflow-hidden flex-1 space-y-1">
+                        <div className="flex justify-between items-baseline">
+                          <p className={`font-black text-sm uppercase tracking-tight truncate ${isActive ? 'text-white dark:text-slate-900' : 'text-slate-900 dark:text-white'}`}>{pData?.displayName}</p>
+                          {chat.lastMessageTimestamp && (
+                            <span className={`text-[7px] font-mono font-black uppercase opacity-40 ml-2 ${isActive ? 'text-white' : ''}`}>
+                              {new Date(chat.lastMessageTimestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                            </span>
+                          )}
+                        </div>
+                        <p className={`text-[10px] truncate font-medium ${isActive ? 'opacity-80 text-white' : 'opacity-60 text-slate-500 dark:text-slate-400'}`}>
+                          {chat.lastMessage}
+                        </p>
+                      </div>
+                      {isActive && (
+                        <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-500 rounded-full shadow-[0_0_15px_#6366f1]" />
+                      )}
+                    </button>
+                  );
+                })}
+              </>
             ) : (
               filteredItems.map(contact => {
                 const peer = contact as VibeUser;
@@ -260,7 +317,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
               })
             )}
 
-            {!loading && filteredItems.length === 0 && (
+            {!loading && filteredItems.length === 0 && !optimisticChat && (
               <div className="py-20 text-center flex flex-col items-center opacity-30">
                  <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-400 mb-4 scale-125">
                     <ICONS.Explore />
