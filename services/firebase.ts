@@ -1,3 +1,4 @@
+
 import * as FirebaseApp from 'firebase/app';
 const { initializeApp, getApps, getApp } = FirebaseApp as any;
 import * as FirebaseAppCheck from 'firebase/app-check';
@@ -26,17 +27,29 @@ try {
   app = initializeApp(CONFIG.FIREBASE, 'FALLBACK');
 }
 
-// App Check Implementation
-if (isBrowser && CONFIG.APP_CHECK.reCaptchaSiteKey) {
-  try {
-    const siteKey = CONFIG.APP_CHECK.reCaptchaSiteKey;
-    initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider(siteKey),
-      isTokenAutoRefreshEnabled: true
-    });
-    console.debug("VibeStream Protocol: App Check Signal Active.");
-  } catch (err) {
-    console.warn("VibeStream Protocol: App Check Handshake Failed.", err);
+/**
+ * APP CHECK RESTORATION PROTOCOL
+ * Ensures only verified nodes can transmit signals to the Core.
+ */
+if (isBrowser) {
+  // Support for development environments
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.includes('stackblitz')) {
+    (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+  }
+
+  if (CONFIG.APP_CHECK.reCaptchaSiteKey) {
+    try {
+      const siteKey = CONFIG.APP_CHECK.reCaptchaSiteKey;
+      initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider(siteKey),
+        isTokenAutoRefreshEnabled: true
+      });
+      console.debug("VibeStream Protocol: App Check Handshake Established.");
+    } catch (err) {
+      console.warn("VibeStream Protocol: App Check Handshake Failed.", err);
+    }
+  } else {
+    console.warn("VibeStream Protocol: App Check Missing Site Key. Buffer Vulnerable.");
   }
 }
 
