@@ -5,7 +5,7 @@ service cloud.firestore {
 
     /**
      * =========================================================================
-     * VIBESTREAM CITADEL OS SECURITY MANIFEST v9.0 [POLL_VOTING_ENABLED]
+     * VIBESTREAM CITADEL OS SECURITY MANIFEST v10.0 [STABLE_AI_EXPANSION]
      * INFRASTRUCTURE REGION: GB_LON_CENTRAL
      * SECURITY CLEARANCE: LEVEL 5 (MESH_ADMIN)
      * =========================================================================
@@ -264,9 +264,11 @@ service cloud.firestore {
           ))
         );
         
+        // UPDATED: Allow participants to update isRead status
         allow update: if isAuthenticated() && (
-          incomingData().senderId == request.auth.uid ||
-          incomingData().diff(existingData()).affectedKeys().hasOnly(['isRead'])
+          existingData().senderId == request.auth.uid ||
+          (get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid]) && 
+           incomingData().diff(existingData()).affectedKeys().hasOnly(['isRead']))
         );
         
         allow delete: if isAdmin() || (resource.data.senderId == request.auth.uid);
@@ -952,6 +954,24 @@ service cloud.firestore {
     
     match /final_node_integrity_seal/{id} {
       allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // -------------------------------------------------------------------------
+    // NEURAL AI EXPANSION NODES (v10.0)
+    // -------------------------------------------------------------------------
+    
+    match /ai_insights/{insightId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    match /smart_replies_cache/{cacheId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    match /vibe_metrics/{metricId} {
+      allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
   }

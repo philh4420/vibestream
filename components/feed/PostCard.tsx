@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Post, User } from '../../types';
 import { ICONS, PULSE_FREQUENCIES } from '../../constants';
@@ -9,6 +10,7 @@ import { DeleteConfirmationModal } from '../ui/DeleteConfirmationModal';
 import { extractUrls } from '../../lib/textUtils';
 import { LinkPreview } from '../ui/LinkPreview';
 import { PollNode } from './PollNode';
+import { analyzeSignal } from '../../services/gemini';
 
 interface PostCardProps {
   post: Post;
@@ -43,6 +45,10 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [isPulseMenuOpen, setIsPulseMenuOpen] = useState(false);
   const pulseTimerRef = useRef<any>(null);
   const optionsRef = useRef<HTMLDivElement>(null);
+
+  // AI States
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiInsight, setAiInsight] = useState<string | null>(null);
 
   const shouldAutoPlay = userData?.settings?.appearance?.autoPlayVideo !== false;
 
@@ -151,6 +157,18 @@ export const PostCard: React.FC<PostCardProps> = ({
     } catch (e) {
       addToast("Relay Protocol Failed", "error");
     }
+  };
+
+  const handleAIDiagnostic = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (aiInsight) {
+      setAiInsight(null);
+      return;
+    }
+    setIsAnalyzing(true);
+    const insight = await analyzeSignal(post.content, post.authorName);
+    setAiInsight(insight);
+    setIsAnalyzing(false);
   };
 
   const handleDelete = async () => {
@@ -263,6 +281,24 @@ export const PostCard: React.FC<PostCardProps> = ({
             {post.type === 'poll' && <div onClick={e => e.stopPropagation()}><PollNode post={post} userData={userData} addToast={addToast} /></div>}
         </div>
 
+        {/* AI Insight Bar */}
+        {aiInsight && (
+            <div className="mb-10 animate-in slide-in-from-top-2 duration-500">
+                <div className="bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/50 rounded-[2rem] p-6 relative overflow-hidden group/ai">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover/ai:opacity-20 transition-opacity">
+                        <ICONS.Simulations />
+                    </div>
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
+                        <span className="text-[9px] font-black uppercase tracking-widest text-indigo-500 dark:text-indigo-400 font-mono">Neural_Diagnostic_Insight</span>
+                    </div>
+                    <p className="text-xs md:text-sm font-bold text-slate-700 dark:text-indigo-200 italic leading-relaxed">
+                        "{aiInsight}"
+                    </p>
+                </div>
+            </div>
+        )}
+
         {post.media?.length > 0 && (
           <div className="relative rounded-[3rem] overflow-hidden mb-10 bg-slate-950 border border-white/5 dark:border-white/10 shadow-2xl group/media" onClick={e => e.stopPropagation()}>
             <div className="flex transition-transform duration-700 cubic-bezier(0.2, 1, 0.2, 1)" style={{ transform: `translateX(-${currentMediaIndex * 100}%)` }}>
@@ -329,6 +365,18 @@ export const PostCard: React.FC<PostCardProps> = ({
             >
                <svg className="w-5 h-5 group-hover/btn:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M7.5 12l3 3m-3-3l-3 3" /></svg>
                <span className="text-xs font-black font-mono tracking-wider">{post.shares}</span>
+            </button>
+
+            <button 
+                onClick={handleAIDiagnostic}
+                className={`flex items-center gap-3 h-14 px-7 rounded-[1.6rem] transition-all border group/btn ${isAnalyzing ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 dark:bg-slate-800/40 text-slate-400 border-transparent hover:bg-white dark:hover:bg-slate-800 hover:border-indigo-200 dark:hover:border-indigo-800 shadow-sm'}`}
+                title="AI Signal Analysis"
+            >
+               {isAnalyzing ? (
+                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+               ) : (
+                   <div className="scale-110 group-hover/btn:rotate-[360deg] transition-transform duration-1000"><ICONS.Simulations /></div>
+               )}
             </button>
           </div>
           
