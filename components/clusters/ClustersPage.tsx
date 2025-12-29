@@ -96,7 +96,13 @@ export const ClustersPage: React.FC<ClustersPageProps> = ({ currentUser, locale,
                   const participantData: any = { [currentUser.id]: { displayName: currentUser.displayName, avatarUrl: currentUser.avatarUrl } };
                   parts.forEach(pId => {
                      const user = allUsers.find(u => u.id === pId);
-                     if (user) participantData[pId] = { displayName: user.displayName, avatarUrl: user.avatarUrl, activeBorder: user.cosmetics?.activeBorder };
+                     if (user) {
+                       participantData[pId] = { 
+                         displayName: user.displayName, 
+                         avatarUrl: user.avatarUrl, 
+                         activeBorder: user.cosmetics?.activeBorder || null 
+                       };
+                     }
                   });
                   await setDoc(doc(db, 'chats', clusterId), {
                     participants: [currentUser.id, ...parts], participantData, lastMessage: 'Cluster communications initialised.', lastMessageTimestamp: serverTimestamp(), isCluster: true, clusterName: name, clusterAdmin: currentUser.id, clusterAvatar: `https://api.dicebear.com/7.x/initials/svg?seed=${name}`

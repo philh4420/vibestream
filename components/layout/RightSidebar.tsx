@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../../services/firebase';
 import * as Firestore from 'firebase/firestore';
@@ -138,7 +139,11 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ userData, weather, o
       if (existingChat) { onNavigate(AppRoute.MESSAGES); } else {
         const participantData = {
           [auth.currentUser.uid]: { displayName: auth.currentUser.displayName, avatarUrl: auth.currentUser.photoURL },
-          [targetUser.id]: { displayName: targetUser.displayName, avatarUrl: targetUser.avatarUrl, activeBorder: targetUser.cosmetics?.activeBorder }
+          [targetUser.id]: { 
+            displayName: targetUser.displayName, 
+            avatarUrl: targetUser.avatarUrl, 
+            activeBorder: targetUser.cosmetics?.activeBorder || null 
+          }
         };
         await addDoc(collection(db, 'chats'), {
           participants: [auth.currentUser.uid, targetUser.id], participantData, lastMessage: 'Link established.', lastMessageTimestamp: serverTimestamp(), isCluster: false

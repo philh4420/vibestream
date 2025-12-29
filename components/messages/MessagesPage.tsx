@@ -104,7 +104,11 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser, locale,
     const chatId = [currentUser.id, targetUser.id].sort().join('_');
     const participantData = {
       [currentUser.id]: { displayName: currentUser.displayName, avatarUrl: currentUser.avatarUrl },
-      [targetUser.id]: { displayName: targetUser.displayName, avatarUrl: targetUser.avatarUrl, activeBorder: targetUser.cosmetics?.activeBorder }
+      [targetUser.id]: { 
+        displayName: targetUser.displayName, 
+        avatarUrl: targetUser.avatarUrl, 
+        activeBorder: targetUser.cosmetics?.activeBorder || null 
+      }
     };
 
     const newChatObj: Chat = {
