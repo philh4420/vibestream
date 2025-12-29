@@ -1,10 +1,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { db, auth } from '../../services/firebase';
-import * as Firestore from 'firebase/firestore';
-const { doc, updateDoc } = Firestore as any;
+import { auth } from '../../services/firebase';
 import { ICONS } from '../../constants';
-import { UserRole, Region, User as VibeUser, AppRoute, PresenceStatus, AppNotification } from '../../types';
+import { UserRole, Region, User as VibeUser, AppRoute, AppNotification } from '../../types';
 
 interface HeaderProps {
   userRole: UserRole;
@@ -47,8 +45,7 @@ export const Header: React.FC<HeaderProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   
-  const unreadNotifications = notifications.filter(n => !n.isRead);
-  const unreadCount = unreadNotifications.length;
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -67,27 +64,24 @@ export const Header: React.FC<HeaderProps> = ({
     setIsNotifOpen(false);
     if (n.type === 'message') {
         onNavigate(AppRoute.MESSAGES);
-    } else if (n.targetId) {
-        if (n.type === 'follow') {
-            window.dispatchEvent(new CustomEvent('vibe-navigate', { detail: { route: AppRoute.PROFILE, userId: n.fromUserId } }));
-        } else {
-            window.dispatchEvent(new CustomEvent('vibe-navigate', { detail: { route: AppRoute.FEED } }));
-        }
+    } else {
+        onNavigate(AppRoute.FEED);
     }
   };
 
   const borderClass = userData?.cosmetics?.activeBorder ? `cosmetic-border-${userData.cosmetics.activeBorder}` : '';
 
-  const DropdownItem = ({ icon: Icon, label, onClick, colorClass = "", badge = "" }: any) => (
+  const DropdownItem = ({ icon: Icon, label, onClick, colorClass = "text-slate-400 group-hover:text-white" }: any) => (
     <button 
       onClick={() => { onClick(); setIsSystemMenuOpen(false); }} 
-      className={`w-full flex items-center justify-between p-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-2xl transition-all text-left group ${colorClass}`}
+      className="w-full flex items-center gap-4 px-5 py-4 hover:bg-white/5 transition-all text-left group active:scale-[0.98]"
     >
-      <div className="flex items-center gap-3">
-        <div className="scale-90 group-hover:scale-110 transition-transform"><Icon /></div>
-        <span className="text-[11px] font-black uppercase tracking-widest">{label}</span>
+      <div className={`transition-all duration-300 scale-110 ${colorClass}`}>
+        <Icon />
       </div>
-      {badge && <span className="text-[8px] font-black bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded uppercase">{badge}</span>}
+      <span className={`text-[11px] font-black uppercase tracking-[0.25em] font-mono ${colorClass}`}>
+        {label}
+      </span>
     </button>
   );
 
@@ -123,7 +117,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
                 <ICONS.Bell />
                 {unreadCount > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 text-white rounded-lg text-[9px] font-black flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-950 animate-in zoom-in duration-300">
+                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 text-white rounded-lg text-[9px] font-black flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-950">
                         {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                 )}
@@ -132,63 +126,29 @@ export const Header: React.FC<HeaderProps> = ({
             {isNotifOpen && (
                 <div className="absolute right-0 top-full mt-4 w-[340px] md:w-[400px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.2rem] shadow-heavy z-[1100] animate-in zoom-in-95 slide-in-from-top-2 duration-200 overflow-hidden flex flex-col max-h-[500px]">
                     <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
-                        <div>
-                            <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Neural_Peek</h4>
-                            <p className="text-[8px] font-mono text-slate-400 uppercase tracking-widest mt-0.5">High_Priority_Signals</p>
-                        </div>
-                        <button onClick={onMarkRead} className="text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest hover:underline">Mark_All_Read</button>
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white font-mono">Neural_Signals</h4>
+                        <button onClick={onMarkRead} className="text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest hover:underline">Mark_All</button>
                     </div>
-                    
                     <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
                         {notifications.length === 0 ? (
-                            <div className="py-12 text-center">
-                                <p className="text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-widest italic">All_Clear_Sector</p>
-                            </div>
+                            <div className="py-12 text-center opacity-30 italic text-[10px] uppercase font-mono">Sector_Silent</div>
                         ) : (
-                            <div className="space-y-1">
-                                {notifications.slice(0, 5).map(n => (
-                                    <button 
-                                        key={n.id} 
-                                        onClick={() => handleNotifClick(n)}
-                                        className={`w-full flex items-center gap-4 p-3 rounded-2xl transition-all text-left group ${n.isRead ? 'opacity-60' : 'bg-slate-50/80 dark:bg-indigo-900/10 ring-1 ring-inset ring-indigo-500/10'}`}
-                                    >
-                                        <div className="relative shrink-0">
-                                            <img src={n.fromUserAvatar} className="w-10 h-10 rounded-xl object-cover border border-slate-200 dark:border-slate-700" alt="" />
-                                            {!n.isRead && <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-indigo-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-xs font-bold text-slate-900 dark:text-white line-clamp-2">
-                                                <span className="font-black italic uppercase text-[10px] mr-1">{n.fromUserName}</span>
-                                                {n.text}
-                                            </p>
-                                            <p className="text-[8px] font-mono text-slate-400 mt-1 uppercase">
-                                                {n.timestamp?.toDate ? n.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'NOW'}
-                                            </p>
-                                        </div>
-                                        {n.metadata?.thumbnailUrl && (
-                                            <img src={n.metadata.thumbnailUrl} className="w-10 h-10 rounded-lg object-cover grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all" alt="" />
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
+                            notifications.slice(0, 5).map(n => (
+                                <button key={n.id} onClick={() => handleNotifClick(n)} className="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-indigo-900/10 transition-all text-left">
+                                    <img src={n.fromUserAvatar} className="w-10 h-10 rounded-xl object-cover border border-slate-200 dark:border-slate-700" alt="" />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-bold text-slate-900 dark:text-white truncate"><span className="uppercase font-black mr-1">{n.fromUserName}</span> {n.text}</p>
+                                    </div>
+                                </button>
+                            ))
                         )}
                     </div>
-
-                    <button 
-                        onClick={() => { onNavigate(AppRoute.NOTIFICATIONS); setIsNotifOpen(false); }}
-                        className="p-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] hover:text-indigo-600 dark:hover:text-white transition-all text-center"
-                    >
-                        Access_Full_Archive →
-                    </button>
                 </div>
             )}
           </div>
 
-          <button 
-            onClick={() => onNavigate(AppRoute.MARKETPLACE)}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-cyan-50 dark:bg-cyan-900/30 border border-cyan-100 dark:border-cyan-800 text-cyan-600 dark:text-cyan-400 font-black text-[10px] uppercase transition-all hover:shadow-md"
-          >
-             <div className="w-5 h-5 bg-cyan-500 rounded-full flex items-center justify-center text-[10px] text-white shadow-sm animate-pulse"><ICONS.Marketplace /></div>
+          <button onClick={() => onNavigate(AppRoute.MARKETPLACE)} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-cyan-50 dark:bg-cyan-900/30 border border-cyan-100 dark:border-cyan-800 text-cyan-600 dark:text-cyan-400 font-black text-[10px] uppercase transition-all hover:shadow-md">
+             <div className="w-5 h-5 bg-cyan-500 rounded-full flex items-center justify-center text-white animate-pulse"><ICONS.Marketplace /></div>
              <span className="font-mono">{userData?.resonance?.toLocaleString() || '0'}</span>
           </button>
 
@@ -205,30 +165,36 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             {isSystemMenuOpen && (
-              <div className="absolute right-0 top-full mt-4 w-72 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.2rem] shadow-heavy p-2.5 z-[1100] animate-in zoom-in-95 duration-200 overflow-hidden">
-                <div className="p-4 mb-2 border-b border-slate-100 dark:border-slate-800">
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono">Bridge_Access</p>
+              <div className="absolute right-0 top-full mt-4 w-72 bg-[#0a0f1d] border border-slate-800 rounded-[2rem] shadow-[0_30px_100px_rgba(0,0,0,0.8)] z-[1100] animate-in zoom-in-95 duration-200 overflow-hidden ring-1 ring-white/5">
+                <div className="px-6 py-5 border-b border-white/5">
+                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] font-mono">BRIDGE_ACCESS</p>
                 </div>
                 
-                <DropdownItem icon={ICONS.Profile} label="My Neural Node" onClick={() => onNavigate(AppRoute.PROFILE)} />
-                <DropdownItem icon={ICONS.Saved} label="Data Vault" onClick={() => onNavigate(AppRoute.SAVED)} />
-                <DropdownItem icon={ICONS.Resilience} label="Resilience Hub" onClick={() => onNavigate(AppRoute.RESILIENCE)} />
-                <DropdownItem icon={ICONS.Marketplace} label="Marketplace" onClick={() => onNavigate(AppRoute.MARKETPLACE)} />
-                <DropdownItem icon={ICONS.Support} label="Support Matrix" onClick={() => onNavigate(AppRoute.SUPPORT)} />
-                
-                {userRole === 'admin' && (
-                  <DropdownItem icon={ICONS.Admin} label="Citadel Root" onClick={() => onNavigate(AppRoute.ADMIN)} colorClass="text-indigo-600 dark:text-indigo-400" />
-                )}
+                <div className="py-2">
+                    <DropdownItem icon={ICONS.Profile} label="My Neural Node" onClick={() => onNavigate(AppRoute.PROFILE)} />
+                    <DropdownItem icon={ICONS.Saved} label="Data Vault" onClick={() => onNavigate(AppRoute.SAVED)} />
+                    <DropdownItem icon={ICONS.Resilience} label="Resilience Hub" onClick={() => onNavigate(AppRoute.RESILIENCE)} />
+                    <DropdownItem icon={ICONS.Marketplace} label="Marketplace" onClick={() => onNavigate(AppRoute.MARKETPLACE)} />
+                    <DropdownItem icon={ICONS.Support} label="Support Matrix" onClick={() => onNavigate(AppRoute.SUPPORT)} />
+                    
+                    {userRole === 'admin' && (
+                    <DropdownItem icon={ICONS.Admin} label="Citadel Root" onClick={() => onNavigate(AppRoute.ADMIN)} colorClass="text-indigo-400 group-hover:text-white" />
+                    )}
+                </div>
 
-                <div className="my-2 border-t border-slate-100 dark:border-slate-800" />
+                <div className="border-t border-white/5 py-2">
+                    <DropdownItem icon={ICONS.Settings} label="System Config" onClick={() => onOpenSettings?.()} />
+                    <DropdownItem 
+                       icon={() => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>} 
+                       label="Disconnect" 
+                       onClick={onLogout} 
+                       colorClass="text-rose-500 group-hover:text-rose-400"
+                    />
+                </div>
                 
-                <DropdownItem icon={ICONS.Settings} label="System Config" onClick={() => onOpenSettings?.()} />
-                <DropdownItem 
-                   icon={() => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>} 
-                   label="Disconnect" 
-                   onClick={onLogout} 
-                   colorClass="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20"
-                />
+                <div className="px-6 py-4 bg-black/40 text-center">
+                    <span className="text-[7px] font-black text-slate-600 uppercase tracking-[0.5em] font-mono">CORE_UPLINK_STABLE</span>
+                </div>
               </div>
             )}
           </div>
