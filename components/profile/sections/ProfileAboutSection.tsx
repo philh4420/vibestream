@@ -59,7 +59,6 @@ export const ProfileAboutSection: React.FC<ProfileAboutSectionProps> = ({ userDa
     ? new Date(userData.dob).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' }) 
     : 'Awaiting Temporal Data';
 
-  // Parse skills with format "SkillName:Level"
   const parsedSkills = (userData.skills || []).map(s => {
     const [name, level] = s.split(':');
     return { name, level: parseInt(level) || 50 };
@@ -159,7 +158,6 @@ export const ProfileAboutSection: React.FC<ProfileAboutSectionProps> = ({ userDa
            </div>
 
            <div className="grid grid-cols-1 gap-4 overflow-y-auto no-scrollbar max-h-[500px] pr-2">
-              {/* Highlighted Primary Website Tile */}
               {userData.website && (
                 <div className="col-span-full">
                   <SocialCard platform="Primary" url={userData.website} isPrimary={true} />

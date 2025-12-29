@@ -185,7 +185,6 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({ userData
 
             {activeSubTab === 'footprint' && (
               <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-300">
-                {/* Primary Website Integration */}
                 <div className="bg-slate-50 dark:bg-slate-800 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 mb-6">
                   <h4 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest mb-6 font-mono">Primary_Uplink_Node</h4>
                   <InputField 

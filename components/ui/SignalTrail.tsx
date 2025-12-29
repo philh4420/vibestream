@@ -17,22 +17,18 @@ export const SignalTrail: React.FC<SignalTrailProps> = ({ activeTrail }) => {
       let clientX: number;
       let clientY: number;
 
-      // Safely distinguish between TouchEvent and MouseEvent
       if ('touches' in e) {
-        // It's a TouchEvent
         if (e.touches.length > 0) {
           clientX = e.touches[0].clientX;
           clientY = e.touches[0].clientY;
         } else {
-          return; // No touch points available
+          return;
         }
       } else {
-        // It's a MouseEvent
         clientX = (e as MouseEvent).clientX;
         clientY = (e as MouseEvent).clientY;
       }
 
-      // Throttle creation distance
       const dist = Math.hypot(clientX - lastPos.current.x, clientY - lastPos.current.y);
       if (dist > 15) { 
         createParticle(clientX, clientY);
@@ -46,15 +42,12 @@ export const SignalTrail: React.FC<SignalTrailProps> = ({ activeTrail }) => {
       dot.className = `signal-trail-dot trail-${activeTrail}`;
       dot.style.left = `${x}px`;
       dot.style.top = `${y}px`;
-      // Randomize size slightly
       const size = Math.random() * 6 + 4;
       dot.style.width = `${size}px`;
       dot.style.height = `${size}px`;
       
       trailContainer.current.appendChild(dot);
 
-      // Cleanup happens via CSS animation 'trail-fade' on globals.css,
-      // but we remove from DOM after animation completes
       setTimeout(() => {
         if (dot.parentNode) dot.parentNode.removeChild(dot);
       }, 800);

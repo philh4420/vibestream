@@ -39,17 +39,12 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({ activeTab, onTabChange
                   }
                 `}
               >
-                {/* Icon */}
                 <div className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'scale-90 group-hover:scale-100 opacity-70 group-hover:opacity-100'}`}>
                   <tab.icon />
                 </div>
-
-                {/* Label */}
                 <span className="uppercase tracking-widest font-mono text-[10px]">
                   {tab.label}
                 </span>
-
-                {/* Active Indicator Dot */}
                 {isActive && (
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 dark:bg-emerald-600 ml-1 animate-pulse shadow-[0_0_8px_currentColor]" />
                 )}

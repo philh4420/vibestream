@@ -1,7 +1,35 @@
 
-/* Existing styles... */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* 2026 PREMIUM UI EXTENSIONS */
+:root {
+  --header-h: 72px;
+  --bottom-nav-h: 64px;
+  --sal: env(safe-area-inset-left);
+  --sar: env(safe-area-inset-right);
+  --sat: env(safe-area-inset-top);
+  --sab: env(safe-area-inset-bottom);
+}
+
+/* CUSTOM SCROLLBARS */
+.custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.4); }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* 2026 PREMIUM UI COMPONENTS */
+.glass-panel {
+  @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-slate-200/50 dark:border-white/10;
+}
+
+.border-precision {
+  @apply border-slate-200/60 dark:border-slate-800/60;
+}
+
 .shadow-premium {
   box-shadow: 
     0 10px 40px -10px rgba(0, 0, 0, 0.08),
@@ -28,23 +56,111 @@
     0 20px 50px -20px rgba(0, 0, 0, 0.5);
 }
 
-@keyframes signal-shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+/* COSMETIC ANIMATIONS */
+
+/* 1. Borders */
+.cosmetic-border-border_neon {
+    position: relative;
+    padding: 2px;
+}
+.cosmetic-border-border_neon::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: conic-gradient(from 0deg, transparent, #6366f1, transparent 20%, #d946ef, transparent 40%);
+    border-radius: inherit;
+    animation: rotate-border 4s linear infinite;
+    z-index: -1;
 }
 
-.animate-shimmer {
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
-  background-size: 200% 100%;
-  animation: signal-shimmer 2.5s infinite;
+.cosmetic-border-border_gold {
+    position: relative;
+    padding: 2px;
+}
+.cosmetic-border-border_gold::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: radial-gradient(circle, #eab308, #fbbf24, transparent);
+    border-radius: inherit;
+    animation: pulse-glow 2s ease-in-out infinite;
+    z-index: -1;
 }
 
-/* Chat bubble sequence rounding */
+.cosmetic-border-border_glitch {
+    position: relative;
+    padding: 1px;
+    box-shadow: 2px 0 #ef4444, -2px 0 #06b6d4;
+    animation: glitch-borders 0.3s steps(2) infinite;
+}
+
+@keyframes rotate-border {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes pulse-glow {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes glitch-borders {
+    0% { transform: translate(0); }
+    50% { transform: translate(-1px, 1px); }
+    100% { transform: translate(1px, -1px); }
+}
+
+/* 2. Trails & Particles */
+.signal-trail-dot {
+    position: fixed;
+    pointer-events: none;
+    border-radius: 50%;
+    z-index: 9999;
+    animation: trail-fade 0.8s ease-out forwards;
+}
+
+.trail-trail_cyber { background: #06b6d4; box-shadow: 0 0 10px #06b6d4; }
+.trail-trail_matrix { background: #10b981; border-radius: 0; box-shadow: 0 0 5px #10b981; }
+.trail-trail_fire { background: #f97316; box-shadow: 0 0 12px #ef4444; }
+
+@keyframes trail-fade {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(0); opacity: 0; }
+}
+
+/* 3. Global Filters */
+.filter-filter_crt {
+    position: relative;
+}
+.filter-filter_crt::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05));
+    background-size: 100% 4px, 3px 100%;
+    pointer-events: none;
+    z-index: 100;
+}
+
+.filter-filter_vapor {
+    filter: sepia(0.2) hue-rotate(280deg) saturate(1.5) contrast(1.1);
+}
+
+.filter-filter_noir {
+    filter: grayscale(1) contrast(1.4);
+}
+
+/* CHAT BUBBLE SHAPING */
 .rounded-bubble-top { border-top-left-radius: 2rem; border-top-right-radius: 2rem; border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem; }
 .rounded-bubble-mid { border-radius: 0.5rem 2rem 2rem 0.5rem; }
 .rounded-bubble-end { border-radius: 0.5rem 2rem 2rem 2rem; }
 
-/* ProseMirror / Slate Overrides for Messaging */
+/* UTILS */
+.tap-feedback:active { transform: scale(0.96); opacity: 0.8; }
+
+.italic-tighter { font-style: italic; letter-spacing: -0.05em; }
+
+/* PROSEMIRROR OVERRIDES */
 .ProseMirror p { margin-bottom: 0 !important; }
 .ProseMirror strong { font-weight: 900; }
 .ProseMirror code { 
@@ -54,15 +170,3 @@
     font-family: 'JetBrains Mono', monospace; 
 }
 .dark .ProseMirror code { background: rgba(255,255,255,0.1); }
-
-/* Custom utility for the 2026 glass effect */
-.glass-panel-heavy {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-}
-.dark .glass-panel-heavy {
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}

@@ -96,7 +96,7 @@ const App: React.FC = () => {
     localStorage.setItem('vibe_region', region);
   }, [region]);
   
-  // UI Selection State (Replacing Overlays with inline navigation)
+  // UI Selection State
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedGathering, setSelectedGathering] = useState<Gathering | null>(null);
@@ -222,10 +222,28 @@ const App: React.FC = () => {
       setActiveRoute(AppRoute.SINGLE_POST);
     };
     const handleViewProfile = (e: any) => {
+        if (e.detail.userId) {
+            const user = allUsers.find(u => u.id === e.detail.userId);
+            if (user) {
+                setSelectedUser(user);
+                setActiveRoute(AppRoute.PUBLIC_PROFILE);
+                return;
+            }
+        }
         setSelectedUser(e.detail.user);
         setActiveRoute(AppRoute.PUBLIC_PROFILE);
     };
-    const handleNavigate = (e: any) => setActiveRoute(e.detail.route);
+    const handleNavigate = (e: any) => {
+        if (e.detail.userId) {
+             const user = allUsers.find(u => u.id === e.detail.userId);
+             if (user) {
+                 setSelectedUser(user);
+                 setActiveRoute(AppRoute.PUBLIC_PROFILE);
+                 return;
+             }
+        }
+        setActiveRoute(e.detail.route);
+    };
     
     window.addEventListener('vibe-view-post', handleViewPost);
     window.addEventListener('vibe-view-profile', handleViewProfile);
@@ -236,7 +254,7 @@ const App: React.FC = () => {
       window.removeEventListener('vibe-view-profile', handleViewProfile);
       window.removeEventListener('vibe-navigate', handleNavigate);
     };
-  }, []);
+  }, [allUsers]);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -351,7 +369,6 @@ const App: React.FC = () => {
         onOpenSettings={() => setIsSettingsOpen(true)}
         blockedIds={blockedIds}
       >
-        {/* Core Route Rendering */}
         <div className="relative w-full min-h-full">
             {activeRoute === AppRoute.FEED && (
             <FeedPage 
@@ -427,7 +444,7 @@ const App: React.FC = () => {
             {activeRoute === AppRoute.GATHERINGS && (
             <GatheringsPage 
                 currentUser={userData!} locale={region} addToast={addToast} allUsers={allUsers}
-                onOpenLobby={setActiveLobbyGathering} onViewGathering={(g) => { setSelectedGathering(g); setActiveRoute(AppRoute.SINGLE_GATHERING); }} onRSVP={handleRSVP}
+                onOpenLobby={(g) => setActiveLobbyGathering(g)} onViewGathering={(g) => { setSelectedGathering(g); setActiveRoute(AppRoute.SINGLE_GATHERING); }} onRSVP={handleRSVP}
             />
             )}
             {activeRoute === AppRoute.CLUSTERS && (
@@ -478,7 +495,7 @@ const App: React.FC = () => {
             {activeRoute === AppRoute.SINGLE_GATHERING && selectedGathering && (
                 <SingleGatheringView 
                     gathering={selectedGathering} currentUser={userData!} allUsers={allUsers} locale={region}
-                    onBack={() => setActiveRoute(AppRoute.GATHERINGS)} onDelete={() => {}} onRSVP={handleRSVP} onOpenLobby={setActiveLobbyGathering}
+                    onBack={() => setActiveRoute(AppRoute.GATHERINGS)} onDelete={() => {}} onRSVP={handleRSVP} onOpenLobby={(g) => setActiveLobbyGathering(g)}
                 />
             )}
 
@@ -500,7 +517,7 @@ const App: React.FC = () => {
         </div>
       </Layout>
 
-      {/* Global Overlays (Settings and Broadcast should still be global fixed for focus) */}
+      {/* Global Overlays */}
       {isSettingsOpen && (
         <div className="fixed inset-0 z-[2700]">
            <SettingsOverlay 

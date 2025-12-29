@@ -35,18 +35,18 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   onBlock
 }) => {
   const showActivity = userData.settings?.privacy?.activityStatus !== false;
-  const showLocation = userData.settings?.privacy?.showLocation !== false;
+  const borderClass = userData.cosmetics?.activeBorder ? `cosmetic-border-${userData.cosmetics.activeBorder}` : '';
 
   return (
     <div className="w-full bg-white dark:bg-slate-900 shadow-sm relative z-20 transition-colors duration-300">
-      {/* 1. COVER PHOTO */}
+      {/* 1. COVER PHOTO (30vh Scale) */}
       <div className="max-w-[2560px] mx-auto relative h-[30vh] md:h-[480px] bg-slate-100 dark:bg-slate-800 md:rounded-b-[3.5rem] overflow-hidden group">
         <img 
           src={userData.coverUrl || 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80'} 
           className="w-full h-full object-cover transition-transform duration-[8s] group-hover:scale-105" 
           alt="Cover" 
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
         
         {isOwnProfile && (
           <button 
@@ -62,9 +62,9 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       <div className="max-w-[2560px] mx-auto px-6 sm:px-10 lg:px-14">
         <div className="flex flex-col md:flex-row items-center md:items-end gap-8 md:gap-12 -mt-24 md:-mt-32 pb-10">
           
-          {/* Avatar Area */}
+          {/* Avatar Area with Aura */}
           <div className="relative group shrink-0">
-            <div className="p-2.5 bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl">
+            <div className={`p-2.5 bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl ${borderClass}`}>
               <img 
                 src={userData.avatarUrl} 
                 className="w-36 h-36 md:w-56 md:h-56 rounded-[2rem] object-cover bg-slate-50 dark:bg-slate-800 transition-transform duration-500 group-hover:scale-[1.02]" 
@@ -110,7 +110,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             </div>
           </div>
 
-          {/* Header Action Buttons */}
+          {/* Action Dock */}
           <div className="flex items-center gap-3 md:pb-4 w-full md:w-auto">
             {isOwnProfile ? (
               <>

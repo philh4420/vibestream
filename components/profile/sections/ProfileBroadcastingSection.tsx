@@ -24,7 +24,6 @@ export const ProfileBroadcastingSection: React.FC<ProfileBroadcastingSectionProp
 }) => {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[2560px] mx-auto">
-      {/* Transmission Flow */}
       {posts.length > 0 ? (
         posts.map(post => (
           <PostCard 
@@ -40,8 +39,8 @@ export const ProfileBroadcastingSection: React.FC<ProfileBroadcastingSectionProp
           />
         ))
       ) : (
-        <div className="py-32 text-center bg-white rounded-[3rem] border border-slate-100 shadow-sm flex flex-col items-center justify-center opacity-50">
-          <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] font-mono italic">Awaiting primary transmission sequence establishment...</p>
+        <div className="py-32 text-center bg-white dark:bg-slate-900 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col items-center justify-center opacity-50">
+          <p className="text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.4em] font-mono italic">Awaiting primary transmission sequence establishment...</p>
         </div>
       )}
     </div>

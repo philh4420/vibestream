@@ -31,7 +31,6 @@ export const ProfileConnectionsSection: React.FC<ProfileConnectionsSectionProps>
         const connectionIds = snapshot.docs.map((d: any) => d.id);
 
         if (connectionIds.length > 0) {
-          // Fetch user details for each ID
           const userPromises = connectionIds.map((id: string) => getDoc(doc(db, 'users', id)));
           const userSnaps = await Promise.all(userPromises);
           const users = userSnaps
@@ -59,7 +58,6 @@ export const ProfileConnectionsSection: React.FC<ProfileConnectionsSectionProps>
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[3.5rem] p-8 md:p-12 shadow-sm animate-in fade-in slide-in-from-bottom-6 duration-700 max-w-[2560px] mx-auto min-h-[600px] flex flex-col transition-colors">
       
-      {/* Header & Controls */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-10 pb-8 border-b border-slate-100 dark:border-slate-800">
          <div className="flex bg-slate-50 dark:bg-slate-800 p-1.5 rounded-[2rem] border border-slate-100 dark:border-slate-700">
             <button 
@@ -90,10 +88,9 @@ export const ProfileConnectionsSection: React.FC<ProfileConnectionsSectionProps>
          </div>
       </div>
 
-      {/* Grid */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-           {Array.from({length: 6}).map((_, i) => (
+           {[1,2,3,4,5,6].map(i => (
              <div key={i} className="h-24 bg-slate-50 dark:bg-slate-800 rounded-[2rem] animate-pulse border border-slate-100 dark:border-slate-700" />
            ))}
         </div>
@@ -122,7 +119,7 @@ export const ProfileConnectionsSection: React.FC<ProfileConnectionsSectionProps>
 
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute right-4">
                    <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center shadow-sm">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path d="M9 5l7 7-7 7" /></svg>
                    </div>
                 </div>
              </div>

@@ -160,7 +160,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             </div>
             <h1 className="text-2xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-4">Signal_Severed</h1>
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-8">
-              Connection to this node has been blocked.
+              Connection to this node has been blocked by Citadel Protocol.
             </p>
             {onUnblock && (
                <button onClick={onUnblock} className="px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.2em] hover:opacity-90 transition-opacity">
@@ -202,7 +202,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       <DeleteConfirmationModal
         isOpen={showBlockModal}
         title="BLOCK_NODE"
-        description={`Block ${profileData.displayName}? This will hide their signals and sever all connections.`}
+        description={`Sever all ties and hide signals from ${profileData.displayName}? This can be reversed in Security Settings.`}
         onConfirm={() => { onBlock?.(); setShowBlockModal(false); }}
         onCancel={() => setShowBlockModal(false)}
         confirmText="CONFIRM_BLOCK"

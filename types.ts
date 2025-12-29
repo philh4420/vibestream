@@ -131,7 +131,6 @@ export interface AppNotification {
   text: string;
   isRead: boolean;
   timestamp: any;
-  // Metadata for richer UX
   metadata?: {
     thumbnailUrl?: string;
     snippet?: string;
